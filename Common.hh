@@ -12,18 +12,18 @@ typedef unsigned char byte;
 
 // Input.cpp
 #define INPUT_BUF_SIZE      100
-#define INPUT_TOKEN_COUNT   25
+#define INPUT_TOKEN_COUNT   30
 
 // Stacks.hh / Input.cpp
 #define LOCAL_VARIABLE_COUNT    8
 
 // Stacks.cpp
-#define DATA_STACK_SIZE     16
+#define DATA_STACK_SIZE     20
 #define CALL_STACK_SIZE     10
 
 // Storage.hh
 #define P_STRING_SIZE     100
-#define P_CODE_SIZE       200 
+#define P_CODE_SIZE       400 
 
 // Storage.cpp
 #define MAP_SIZE          10
