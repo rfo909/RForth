@@ -30,7 +30,16 @@ before parsing:
 
 M DDRB write ;  # set pin 13 to output
 M PORTB write ;  # turn led on
-0 PORTB write ;  # turn led off
+0 PORTB write ;  # turn led off (together with the other 7 pins on the port)
+
+: on PORTB read M | PORTB write ;
+: off PORTB read M ! & PORTB write ;
+
+on ;
+off ;
+on ;
+off ;
+
 ```
 
 The =x define up to 8 differently named local variables inside 
