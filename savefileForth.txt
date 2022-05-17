@@ -1,0 +1,131 @@
+List( "+","ADD",
+  "-","SUB",
+  "*","MUL",
+  "/","DIV",
+  "%","MOD",
+  "<<","LSHIFT",
+  ">>","RSHIFT",
+  "|", "BIT_OR",
+  "&", "BIT_AND",
+  "!", "BIT_NOT",
+  "==", "EQ",
+  "return", "RETURN",
+  "read", "READ",
+  "write", "WRITE",
+  "dup", "DUP",
+  "pop", "POP"
+)
+
+
+
+# Op-codes
+# Position in list is binary op-code
+# --
+	List(
+		"EOF",
+		"RET",
+		
+		"CALL",
+		"JMP",
+		"ZJMP",
+		"CJMP",
+		"POP",
+		"DUP",
+
+		"READ",
+		"WRITE",
+
+		"LSET",
+		"LGET",
+
+		"ADD",
+		"SUB",
+		"MUL",
+		"DIV",
+		"MOD",
+		"NEG",
+		"GT",
+		"LT",
+		"GE",
+		"LE",
+		"EQ",
+		"NE",
+		"L_AND",  # Logical  
+		"L_OR",
+		"L_NOT",
+
+		"LSHIFT",
+		"RSHIFT",
+		"B_AND",   # bitwise
+		"B_OR",
+		"B_NOT"
+	 )
+/opCodes
+ 
+# Check for duplicates
+# --
+	opCodes.length == opCodes.unique.length
+/unique
+
+
+# Create code
+# --
+	pos=0
+	opCodes->s
+		println("#define OP_" + s + "    " + pos)
+		pos=pos+1
+	|
+/c1
+
+
+# Create code
+# --
+	opCodes->s
+		Inner{
+			s.chars->c 
+				out("'" + c + "'") 
+			| _.concat(",") + ",'\0'"
+		} => chars
+		str="const char STR_OP_"+s+"[] PROGMEM = {" + chars + "};"
+		println(str)
+/c2a
+
+# Create code
+# --
+	println
+	println("char *getOp (byte b) {")
+	println("	// auto-generated")
+
+	pos=0
+	opCodes->s
+		Inner {
+			@ 	if (b==OP_<<s>>) return "<<s>>";
+			.mergeExpr->line println(line)
+		}
+		pos=pos+1
+	|	
+	println()
+	println('	return NULL;')
+	println("}")
+/c2
+		
+
+# Create code
+# --
+	println("bool executeOp (byte b) {")
+	println("	switch (b) {")
+	pos=0
+	opCodes->s
+		{
+		@ 	case OP_<<s>> : return true;
+			.mergeExpr->line println(line)
+		}
+		pos=pos+1
+	|	
+	println("	}")
+	println('	return false;')
+	println("}")
+/c3
+		
+
+	
