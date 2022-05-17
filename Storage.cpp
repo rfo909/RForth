@@ -133,6 +133,13 @@ static int mapNext=0;
 
 void mapAddPos (char *name, int codePos) {
   LOG("mapAddPos",codePos);
+  int oldPos=mapLookupPos(name);
+  if (oldPos >= 0) {
+    // overwrite existing def
+    mapData[oldPos].codePos=codePos;
+    return;
+  }
+  // add new
   if (mapNext >= MAP_SIZE) err("mapAddPos",mapNext);
   mapData[mapNext].name=name;
   mapData[mapNext].codePos=codePos;

@@ -29,7 +29,7 @@ typedef unsigned char byte;
 #define MAP_SIZE          10
 
 // .ino
-//#define ENABLE_DISASSEMBLER 
+#define ENABLE_DISASSEMBLER 
 
 
 void err (char *s, int i);

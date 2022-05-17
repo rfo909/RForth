@@ -470,9 +470,10 @@ void executeCode (byte *initialCode) {
   }
   // Show data stack
   int count = dsCount();
-  Serial.print(F("Number of values on stack: "));
-  Serial.println(count);
-  
+  //Serial.print(F("Number of values on stack: "));
+  //Serial.println(count);
+
+  Serial.println("--");
   for (int i=count-1; i>=0; i--) {
     Serial.print("  ");
     Serial.println(dsGet(i));
