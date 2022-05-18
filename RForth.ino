@@ -460,14 +460,16 @@ bool executeOneOp();
 void executeCode (byte *initialCode) {
   csPush(initialCode);
 
-  //Serial.println(F("INSIDE executeCode"));
-  //disassemble(initialCode);
-  
+  unsigned long startTime=millis();
   while(!csEmpty()) {
     if (!executeOneOp()) {
       return;
     }
   }
+  unsigned long endTime=millis();
+  Serial.print(endTime-startTime);
+  Serial.println(" ms");
+  
   // Show data stack
   int count = dsCount();
   //Serial.print(F("Number of values on stack: "));
@@ -485,9 +487,6 @@ bool executeOneOp () {
   CStackFrame *curr=csPeek();
   byte *code=curr->code;
 
-  //Serial.println(F("INSIDE executeOneOp"));
-  //disassemble(code);
-  
   int pos=curr->pc;
   curr->pc=curr->pc+1; // may also be modified by JMP-instructions
  

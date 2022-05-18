@@ -71,7 +71,7 @@ When the stack gets too big, type "clear" followed by semicolon.
 0 set
 
 # Looping
-0 =a loop{ a 1 + =a a 10 > break a }
+0 =a loop{ a 1 + =a a 10 > break a } ;
 
 # Puts values 1-10 on stack. Remember to clear
 # stack after, because max data stack depth is limited.
