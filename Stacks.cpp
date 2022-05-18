@@ -1,38 +1,11 @@
 # include "Stacks.hh"
 
-static int dataStack[DATA_STACK_SIZE];
+static DStackValue dataStack[DATA_STACK_SIZE];
 static int dsNext=0;
 
-void dsPush (int val) {
-  LOG("dsPush val=",val);
-  if (dsNext >= DATA_STACK_SIZE) {
-    err("dsPush",dsNext);
-  } else {
-    dataStack[dsNext++]=val;
-  }
-}
 
 bool dsEmpty() {
   return (dsNext==0);
-}
-
-int dsPeek () {
-  LOG("dsPeek dsNext=",dsNext);
-  if (dsNext <= 0) {
-    err("dsPeek",dsNext);
-  }
-  return dataStack[dsNext-1];
-}
-
-int dsPop () {
-  LOG("dsPop dsNext=",dsNext);
-  dsNext--;
-  if (dsNext < 0) {
-    dsNext=0;
-    err("dsPop",dsNext);
-  } else {
-    return dataStack[dsNext];
-  }
 }
 
 int dsCount() {
@@ -40,10 +13,77 @@ int dsCount() {
   return dsNext;
 }
 
+
+void dsPushValue (byte type, int val) {
+  LOG("dsPushValue val=",val);
+  if (dsNext >= DATA_STACK_SIZE) {
+    err("dsPushValue",dsNext);
+  } else {
+    DStackValue *x=dataStack + dsNext;
+    dsNext++;
+    x->type=type;
+    x->val=val;
+  }
+}
+
+void dsPush (int val) {
+  dsPushValue(DS_TYPE_NUM, val);
+}
+
+
+
+DStackValue *dsPeekValue() {
+  LOG("dsPeekValue dsNext=",dsNext);
+  if (dsNext <= 0) {
+    err("dsPeekValue",dsNext);
+  }
+  return dataStack + (dsNext-1);;
+}
+
+int dsPeek () {
+  DStackValue *x = dsPeekValue();
+  if (x->type != DS_TYPE_NUM) {
+    err("dsPeek: not number", x->type);
+  }
+  return x->val;
+}
+
+
+
+DStackValue *dsPopValue() {
+  LOG("dsPopValue dsNext=",dsNext);
+  dsNext--;
+  if (dsNext < 0) {
+    dsNext=0;
+    err("dsPopValue",dsNext);
+  } 
+  return dataStack + dsNext;
+}
+
+int dsPop () {
+  DStackValue *x = dsPopValue();
+  if (x->type != DS_TYPE_NUM) {
+    err("dsPop: not number", x->type);
+  }
+  return x->val; 
+}
+
+
+DStackValue *dsGetValue (int pos) {
+  LOG("dsGetValue",pos);
+  return dataStack+pos;
+}
+
 int dsGet (int pos) {
   LOG("dsGet",pos);
-  return dataStack[pos];
+  DStackValue *x=dsGetValue(pos);
+  if (x->type != DS_TYPE_NUM) {
+    err("dsGet: not number", pos);
+  }
+  return x->val;
 }
+
+
 
 // ------------------
 

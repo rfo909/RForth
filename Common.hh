@@ -23,7 +23,7 @@ typedef unsigned char byte;
 
 // Storage.hh
 #define P_STRING_SIZE     100
-#define P_CODE_SIZE       400 
+#define P_CODE_SIZE       300 
 
 // Storage.cpp
 #define MAP_SIZE          10

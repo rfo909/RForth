@@ -1,0 +1,9 @@
+2022-05-17 v0.1 
+
+2022-05-18 v0.1.1 Data Stack value types
+
+Added support for types on stack. Keeping current functions
+dsPush() dsPeek() dsPop() dsGet() but added checks so they can
+only work on numeric data.
+
+The WORD type is for word literals (to be introduced)

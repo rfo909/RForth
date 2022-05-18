@@ -4,6 +4,14 @@
 #include "Common.hh"
 
 typedef struct {
+  byte type;
+  int val;
+} DStackValue;
+
+#define DS_TYPE_NUM     0
+#define DS_TYPE_WORD    1
+
+typedef struct {
   byte *code;
   int pc;
   int localVariables[LOCAL_VARIABLE_COUNT];
@@ -11,12 +19,23 @@ typedef struct {
 
 
 
-void dsPush (int val);
 bool dsEmpty();
-int dsPeek ();
-int dsPop ();
 int dsCount();
-int dsGet (int pos); 
+
+void dsPushValue (byte type, int val);
+void dsPush (int val);
+
+DStackValue *dsPeekValue();
+int dsPeek ();
+
+DStackValue *dsPopValue ();
+int dsPop ();
+
+DStackValue *dsGetValue (int pos); 
+int dsGet (int pos);
+
+
+
 
 void csPush (byte *code);
 bool csEmpty ();
