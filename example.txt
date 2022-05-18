@@ -1,0 +1,18 @@
+: DDRB 0x24 ;
+: PORTB 0x25 ;
+
+: mask =count 1 count << ;
+: M 5 mask ;
+
+: on PORTB read M | PORTB write ;
+: off PORTB read M ! & PORTB write ;
+
+
+# Testing speed
+# --
+
+0 =a loop{ a 1 + =a a 100 > break } ;
+
+# 11 ms #op=1416
+
+

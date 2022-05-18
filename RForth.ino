@@ -84,11 +84,20 @@ void setup() {
 
 void parseTokens();
 
+bool inComment=false;
+
 void loop() {
   // put your main code here, to run repeatedly:
   char c=Serial.read();
   if (c==-1) return;
+  if (c=='#') {
+    inComment=true;
+    return;
+  }
   if (c==' ' || c=='\r' || c=='\n' || c=='\t') {
+    if (c=='\n' || c=='\r') {
+      inComment=false;
+    }
     if (!inpEmpty()) {
       char *str=inpChop();
       inpAddToken(str);
@@ -98,7 +107,7 @@ void loop() {
       }
     }
   } else {
-    inpAddChar(c);
+    if (!inComment) inpAddChar(c);
   }
 }
 
@@ -457,18 +466,22 @@ bool parseLoop() {
 bool executeOneOp();
 
 
+
 void executeCode (byte *initialCode) {
   csPush(initialCode);
 
+  int executeOpCount=0;
   unsigned long startTime=millis();
   while(!csEmpty()) {
     if (!executeOneOp()) {
       return;
     }
+    executeOpCount++;
   }
   unsigned long endTime=millis();
   Serial.print(endTime-startTime);
-  Serial.println(" ms");
+  Serial.print(F(" ms #op="));
+  Serial.println(executeOpCount);
   
   // Show data stack
   int count = dsCount();
