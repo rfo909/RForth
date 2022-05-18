@@ -101,7 +101,8 @@ void csPush (byte *theCode) {
     f->code=theCode;
     f->pc=0;
     for (int i=0; i<LOCAL_VARIABLE_COUNT; i++) {
-      f->localVariables[i]=0;
+      int *ptr=f->localVariables;
+      *(ptr+i)=0;
     }
   }
 }

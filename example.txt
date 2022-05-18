@@ -4,6 +4,7 @@
 : mask =count 1 count << ;
 : M 5 mask ;
 
+: init DDRB read M | DDRB write ;
 : on PORTB read M | PORTB write ;
 : off PORTB read M ! & PORTB write ;
 
@@ -14,5 +15,23 @@
 0 =a loop{ a 1 + =a a 100 > break } ;
 
 # 11 ms #op=1416
+
+
+-------------
+Alternative
+-------------
+
+# Modify register - change one or more bits at a time
+
+: SetReg =addr =mask =value
+	addr read mask ! &
+		value | addr write ;
+
+: DDRB 0x24 ;
+: PORTB 0x25 ;
+
+: init b0010_0000 b0010_0000 DDRB SetReg ;
+: a b0010_0000 b0010_0000 PORTB SetReg ;
+: b b0000_0000 b0010_0000 PORTB SetReg ;
 
 

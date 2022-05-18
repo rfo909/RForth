@@ -19,6 +19,7 @@ void inpReset() {
 
   nextToken=0;
   tokenParsePos=0;
+  nextLocalVariable=0;
 }
 
 void inpAddChar (char c) {

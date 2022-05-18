@@ -64,6 +64,7 @@ void log (char *s, int i) {
 static void reset() {
   inpReset();
   //stacksReset();
+  
   Serial.println(F("Ok."));
 }
 
@@ -73,7 +74,8 @@ void setup() {
   Serial.setTimeout(10);
 
   Serial.println(F("-----------------"));
-  Serial.println(F("  RForth v0.1"));
+  Serial.print(F("RForth "));
+  Serial.print(VERSION);
   Serial.println(F("-----------------"));
   getHeapSize();
 

@@ -10,6 +10,9 @@ typedef unsigned char byte;
 #define NULL    0
 
 
+#define VERSION "0.1.1"
+
+
 // Input.cpp
 #define INPUT_BUF_SIZE      100
 #define INPUT_TOKEN_COUNT   30
