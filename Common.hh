@@ -34,22 +34,25 @@ typedef unsigned char byte;
 
 #ifdef ENABLE_DISASSEMBLER
  
-  #define P_STRING_SIZE     100
-  #define P_CODE_SIZE       200 
+  #define P_STRING_SIZE     70
+  #define P_CODE_SIZE       170 
 
 #else
 
-  #define P_STRING_SIZE     200
-  #define P_CODE_SIZE       300 
+  #define P_STRING_SIZE     70
+  #define P_CODE_SIZE       200 
 
 #endif
 
 // Storage.cpp
-#define MAP_SIZE          40
+#define MAP_SIZE          30
 
 
 
-void err (char *s, int i);
+void err (char *s, long a);
+void err2 (char *s, long a, long b);
+void warn (char *s, long a, long b);
+void halt();
 
 #define LOG(a,b)  log(a,b)
 //#define LOG(a,b)

@@ -13,7 +13,7 @@ int dsCount() {
 }
 
 
-void dsPushValue (byte type, int val) {
+void dsPushValue (byte type, long val) {
   if (dsNext >= DATA_STACK_SIZE) {
     err("dsPushValue",dsNext);
   } else {
@@ -24,8 +24,8 @@ void dsPushValue (byte type, int val) {
   }
 }
 
-void dsPush (int val) {
-  dsPushValue(DS_TYPE_NUM, val);
+void dsPush (long val) {
+  dsPushValue(DS_TYPE_LONG, val);
 }
 
 
@@ -37,9 +37,9 @@ DStackValue *dsPeekValue() {
   return dataStack + (dsNext-1);;
 }
 
-int dsPeek () {
+long dsPeek () {
   DStackValue *x = dsPeekValue();
-  if (x->type != DS_TYPE_NUM) {
+  if (x->type > DS_LAST_NUMBER_TYPE) {
     err("dsPeek: not number", x->type);
   }
   return x->val;
@@ -56,9 +56,9 @@ DStackValue *dsPopValue() {
   return dataStack + dsNext;
 }
 
-int dsPop () {
+long dsPop () {
   DStackValue *x = dsPopValue();
-  if (x->type != DS_TYPE_NUM) {
+  if (x->type > DS_LAST_NUMBER_TYPE) {
     err("dsPop: not number", x->type);
   }
   return x->val; 
@@ -69,9 +69,9 @@ DStackValue *dsGetValue (int pos) {
   return dataStack+pos;
 }
 
-int dsGet (int pos) {
+long dsGet (int pos) {
   DStackValue *x=dsGetValue(pos);
-  if (x->type != DS_TYPE_NUM) {
+  if (x->type != DS_TYPE_INT) {
     err("dsGet: not number", pos);
   }
   return x->val;
@@ -82,6 +82,19 @@ void dsDupValue() {
   dsPushValue(x->type, x->val);
 }
 
+// change type of top value on stack, return true if ok, 
+// false if illegal
+bool dsTypeCast (byte newType) {
+  DStackValue *x=dsPeekValue();
+  if (x->type <= DS_LAST_NUMBER_TYPE && newType <= DS_LAST_NUMBER_TYPE) {
+    x->type=newType;
+    return true;
+  } else {
+    err2("Invalid type cast",x->type,newType);
+    halt();
+  }
+  return false;  
+}
 // ------------------
 
 static CStackFrame callStack[CALL_STACK_SIZE];
@@ -96,7 +109,7 @@ void csPush (byte *theCode) {
     f->code=theCode;
     f->pc=0;
     for (int i=0; i<LOCAL_VARIABLE_COUNT; i++) {
-      int *ptr=f->localVariables;
+      long *ptr=f->localVariables;
       *(ptr+i)=0;
     }
   }

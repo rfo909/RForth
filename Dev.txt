@@ -35,6 +35,12 @@ Adding EEPROM support, as we have 1Kb of permanent storage there. Will change
 the storage model into a sequence of string + code + string + code, as each
 is terminated by a single 0-byte.
 
+Added types and extended stack to contain long values (4 bytes). Changed default 
+type from int to long.
+
+Added internal function millis for simple timing.
+
+
 
 
 

@@ -8,16 +8,20 @@ typedef struct {
   long val;
 } DStackValue;
 
-#define DS_TYPE_NUM      0     // default: signed int
+#define DS_TYPE_INT      0     // default: signed int
 #define DS_TYPE_UINT     1
 #define DS_TYPE_BYTE     2
 #define DS_TYPE_LONG     3
 #define DS_TYPE_ULONG    4
 
+#define DS_LAST_NUMBER_TYPE   9
+  // number types can be cast freely between each other
+
+#define DS_TYPE_WORD    10
 typedef struct {
   byte *code;
   int pc;
-  int localVariables[LOCAL_VARIABLE_COUNT];
+  long localVariables[LOCAL_VARIABLE_COUNT];
 } CStackFrame;
 
 
@@ -25,19 +29,20 @@ typedef struct {
 bool dsEmpty();
 int dsCount();
 
-void dsPushValue (byte type, int val);
-void dsPush (int val);
+void dsPushValue (byte type, long val);
+void dsPush (long val);
 
 DStackValue *dsPeekValue();
-int dsPeek ();
+long dsPeek ();
 
 DStackValue *dsPopValue ();
-int dsPop ();
+long dsPop ();
 
 DStackValue *dsGetValue (int pos); 
-int dsGet (int pos);
+long dsGet (int pos);
 
 void dsDupValue();
+bool dsTypeCast (byte newType);
 
 
 

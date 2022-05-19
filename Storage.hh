@@ -12,7 +12,7 @@ int psCount();
 
 int to7BitPush (int b);
 void pcInt7bit (int b);
-void pcInt (int i);
+void pcInt (long i);
 
 
 void pcAddByte (byte b);
@@ -20,7 +20,7 @@ int pcGetMark();
 void pcResetToMark(int mark);
 byte *pcChop ();
 int pcChopInt ();
-byte *pcGetPointer (int pos);
+byte *pcGetPointer (long pos);
 int pcGetLocalPos();
 void setLocalPosByte (int pos, byte b);
 int pcCount();

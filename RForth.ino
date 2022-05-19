@@ -51,12 +51,32 @@ int getHeapSize() {
   return 0;
 }
 
-
-void err (char *s, int i) {
+void err (char *s, long a) {
   Serial.print(F("ERROR: "));
   Serial.print(s);
   Serial.print(" ");
-  Serial.println(i);
+  Serial.println(a);
+  halt();
+}
+void err2 (char *s, long a, long b) {
+  Serial.print(F("ERROR: "));
+  Serial.print(s);
+  Serial.print(" ");
+  Serial.print(a);
+  Serial.print(" ");
+  Serial.println(b);
+  halt();
+}
+void warn (char *s, long a, long b) {
+  Serial.print(F("WARN: "));
+  Serial.print(s);
+  Serial.print(" ");
+  Serial.print(a);
+  Serial.print(" ");
+  Serial.println(b);
+}
+
+void halt() {
   for(;;) ;
 }
 
@@ -312,7 +332,7 @@ bool parseImmediateCode() {
         continue;
       }
       char buf[10];
-      itoa(dsPeek(),buf,16);
+      ltoa(dsPeek(),buf,16);
       Serial.print(F("--> 0x"));
       Serial.println(buf);
       continue;
@@ -323,8 +343,8 @@ bool parseImmediateCode() {
         Serial.println(F("bin: no value on stack"));
         continue;
       }
-      char buf[20];
-      itoa(dsPeek(),buf,2);
+      char buf[34];
+      ltoa(dsPeek(),buf,2);
       Serial.print(F("--> b"));
       Serial.println(buf);
       continue;
@@ -342,8 +362,10 @@ bool parseImmediateCode() {
   //Serial.print(F("parseImmediateCode, codePos="));
   //Serial.println(codePos);
   byte *code=pcGetPointer(codePos);
-  
-  //disassemble(code);
+
+#ifdef ENABLE_DISASSEMBLER
+  disassemble(code);
+#endif
 
   executeCode(code);
   
@@ -357,8 +379,8 @@ bool isDigit(char c) {
 bool parseIf();
 bool parseLoop();
 
-int parseHex (char *s) {
-  int val=0;
+unsigned long parseHex (char *s) {
+  unsigned long val=0;
   for (int i=0; i<strlen(s); i++) {
     char c=s[i];
     val=val*16;
@@ -473,7 +495,7 @@ bool parseWord() {
 
   // enter hex number as 0x...
   if (word[0]=='0' && word[1]=='x') {
-    int val=parseHex(word+2);
+    long val=parseHex(word+2);
     pcInt(val);
 
     inpTokenAdvance();
@@ -496,7 +518,7 @@ bool parseWord() {
 
   // decimal numbers
   if (isDigit(word[0])) {
-    pcInt(atoi(word));
+    pcInt(atol(word));
     
     inpTokenAdvance();
     return true;
@@ -583,7 +605,81 @@ bool parseLoop() {
 
 bool executeOneOp();
 
+void printPadded (char *leftPad, int w1, char *str, char *rightPad, int w2) {
+  w1=w1-strlen(str);
+  w2=w2-strlen(str);
+  for (int i=0; i<w1; i++) {
+    Serial.print(leftPad);
+  }
+  Serial.print(str);
+  for (int i=0; i<w2; i++) {
+    Serial.print(rightPad);
+  }
+}
 
+void displayStackValue (DStackValue *x) {
+  char buf[34];
+  switch (x->type) {
+    case DS_TYPE_INT : {
+      itoa((int) x->val, buf, 10);
+      printPadded(" ", 10, buf, " ", 0);
+      Serial.print(" 0x");
+      itoa((int) x->val, buf, 16);
+      printPadded("0", 4, buf, " ", 0);
+      Serial.println("  INT");
+      return;
+    }
+    case DS_TYPE_UINT : {
+      itoa((unsigned int) x->val, buf, 10);
+      printPadded(" ", 10, buf, " ", 8);
+      itoa((unsigned int) x->val, buf, 16);
+      Serial.print(" 0x");
+      printPadded("0", 4, buf, " ", 8);
+      Serial.println("  UINT");
+      return;
+    }
+    case DS_TYPE_BYTE : {
+      itoa((byte) x->val, buf, 10);
+      printPadded(" ", 10, buf, " ", 0);
+      Serial.print(" 0x");
+      itoa((byte) x->val, buf, 16);
+      printPadded("0", 2, buf, " ", 0);
+      Serial.print(" b");
+      itoa((byte) x->val, buf, 2);
+      printPadded("0", 8, buf, " ", 0);
+      Serial.println("  BYTE");
+      return;
+    }
+    case DS_TYPE_LONG : {
+      ltoa(x->val, buf, 10);
+      printPadded(" ", 10, buf, " ", 0);
+      Serial.print(" 0x");
+      ltoa(x->val, buf, 16);
+      printPadded("0", 8, buf, " ", 0);
+      Serial.println("  LONG");
+      return;
+    }
+    case DS_TYPE_ULONG : {
+      ltoa((unsigned long) x->val, buf, 10);
+      printPadded(" ", 10, buf, " ", 0);
+      Serial.print(" 0x");
+      ltoa((unsigned long) x->val, buf, 16);
+      printPadded("0", 8, buf, " ", 0);
+      Serial.println("  ULONG");
+      return;
+    }
+  }
+  
+  Serial.print(F("** Unknown type: "));
+  Serial.println(x->type);
+
+  itoa(x->val & 0xFF, buf, 10);
+  printPadded(" ", 6, buf, " ", 0);
+  Serial.print(" 0x");
+  itoa(x->val & 0xFF, buf, 16);
+  printPadded("0", 8, buf, " ", 0);
+  Serial.println();
+}
 
 void executeCode (byte *initialCode) {
   csPush(initialCode);
@@ -610,9 +706,7 @@ void executeCode (byte *initialCode) {
   for (int i=count-1; i>=0; i--) {
     Serial.print("  ");
     DStackValue *x=dsGetValue(i);
-    Serial.print(x->val);
-    Serial.print(F("   type="));
-    Serial.println(x->type);
+    displayStackValue(x);
   }
   
 }
@@ -646,7 +740,7 @@ bool executeOneOp () {
         Serial.println(F("OP_CALL - data stack empty"));
         return false;  
       }
-      int codePos=dsPop();
+      long codePos=dsPop();
       byte *code=pcGetPointer(codePos);
       //Serial.print(F("OP_CALL csPush "));
       //Serial.println(codePos);
@@ -659,7 +753,7 @@ bool executeOneOp () {
         Serial.println(F("OP_JMP - data stack empty"));
         return false;
       }
-      int pos=dsPop();
+      long pos=dsPop();
       curr->pc=(byte) pos;
       
       return true;
@@ -669,7 +763,7 @@ bool executeOneOp () {
         Serial.println(F("OP_ZJMP - data stack empty"));
         return false;
       }
-      int pos=dsPop();
+      long pos=dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_ZJMP - data stack empty"));
         return false;
@@ -684,7 +778,7 @@ bool executeOneOp () {
         Serial.println(F("OP_CJMP - data stack empty"));
         return false;
       }
-      int pos=dsPop();
+      long pos=dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_CJMP - data stack empty"));
         return false;
@@ -716,7 +810,7 @@ bool executeOneOp () {
         Serial.println(F("OP_READ - data stack empty"));
         return false;
       }
-      int addr=dsPop();
+      long addr=dsPop();
       byte *ptr=(byte *) addr;
       dsPush(*ptr);
       return true;
@@ -726,12 +820,12 @@ bool executeOneOp () {
         Serial.println(F("OP_WRITE - data stack empty"));
         return false;
       }
-      int addr=dsPop();
+      long addr=dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_WRITE - data stack empty"));
         return false;
       }
-      int value=dsPop();
+      long value=dsPop();
       byte *ptr=(byte *) addr;
       *ptr = (byte) value;
       return true;
@@ -741,12 +835,12 @@ bool executeOneOp () {
         Serial.println(F("OP_LSET - data stack empty"));
         return false;
       }
-      int varNo=dsPop();
+      long varNo=dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_LSET - data stack empty"));
         return false;
       }
-      int value=dsPop();
+      long value=dsPop();
       
       curr->localVariables[varNo]=value;
       return true;
@@ -756,7 +850,7 @@ bool executeOneOp () {
         Serial.println(F("OP_LGET - data stack empty"));
         return false;
       }
-      int varNo=dsPop();
+      long varNo=dsPop();
       
       dsPush(curr->localVariables[varNo]);
       return true;
@@ -766,12 +860,12 @@ bool executeOneOp () {
         Serial.println(F("OP_ADD - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_ADD - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      long a = dsPop();
       dsPush(a+b);
       return true;
     }
@@ -780,12 +874,12 @@ bool executeOneOp () {
         Serial.println(F("OP_SUB - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_SUB - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      long a = dsPop();
       dsPush(a-b);
       return true;
     }
@@ -794,12 +888,12 @@ bool executeOneOp () {
         Serial.println(F("OP_MUL - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_MUL - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      long a = dsPop();
       dsPush(a*b);
       return true;
     }
@@ -808,12 +902,12 @@ bool executeOneOp () {
         Serial.println(F("OP_DIV - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_DIV - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      long a = dsPop();
       dsPush(a/b);
       return true;
     }
@@ -822,12 +916,12 @@ bool executeOneOp () {
         Serial.println(F("OP_MOD - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_MOD - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      long a = dsPop();
       dsPush(a % b);
       return true;
     }
@@ -836,7 +930,7 @@ bool executeOneOp () {
         Serial.println(F("OP_NEG - data stack empty"));
         return false;
       }
-      int value = dsPop();
+      long value = dsPop();
       dsPush(-value);
       return true;
     }
@@ -845,12 +939,12 @@ bool executeOneOp () {
         Serial.println(F("OP_GT - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_GT - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      long a = dsPop();
       dsPush(a > b);
       return true;
     }
@@ -859,12 +953,12 @@ bool executeOneOp () {
         Serial.println(F("OP_LT - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_LT - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      long a = dsPop();
       dsPush(a < b);
       return true;
     }
@@ -873,12 +967,12 @@ bool executeOneOp () {
         Serial.println(F("OP_GE - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_GE - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      long a = dsPop();
       dsPush(a >= b);
       return true;
     }
@@ -887,12 +981,12 @@ bool executeOneOp () {
         Serial.println(F("OP_LE - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_LE - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      long a = dsPop();
       dsPush(a <= b);
       return true;
     }
@@ -901,12 +995,12 @@ bool executeOneOp () {
         Serial.println(F("OP_EQ - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_EQ - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      long a = dsPop();
       dsPush(a == b);
       return true;
     }
@@ -915,12 +1009,12 @@ bool executeOneOp () {
         Serial.println(F("OP_NE - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_NE - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      long a = dsPop();
       dsPush(a != b);
       return true;
     }
@@ -929,12 +1023,12 @@ bool executeOneOp () {
         Serial.println(F("OP_L_AND - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_L_AND - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      long a = dsPop();
       dsPush(a && b);
       return true;
     }
@@ -943,12 +1037,12 @@ bool executeOneOp () {
         Serial.println(F("OP_L_OR - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_L_OR - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      long a = dsPop();
       dsPush(a || b);
       return true;
     }
@@ -957,7 +1051,7 @@ bool executeOneOp () {
         Serial.println(F("OP_L_NOT - data stack empty"));
         return false;
       }
-      int val = dsPop();
+      long val = dsPop();
       dsPush(!val);
       return true;
     }
@@ -966,12 +1060,12 @@ bool executeOneOp () {
         Serial.println(F("OP_LSHIFT - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_LSHIFT - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      unsigned long a = dsPop();
       dsPush(a << b);
       return true;
     }
@@ -980,12 +1074,12 @@ bool executeOneOp () {
         Serial.println(F("OP_RSHIFT - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_RSHIFT - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      unsigned long a = dsPop();
       dsPush(a >> b);
       return true;
     }
@@ -994,12 +1088,12 @@ bool executeOneOp () {
         Serial.println(F("OP_B_AND - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      unsigned long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_B_AND - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      unsigned long a = dsPop();
       dsPush(a & b);
       return true;
     }
@@ -1008,12 +1102,12 @@ bool executeOneOp () {
         Serial.println(F("OP_B_OR - data stack empty"));
         return false;
       }
-      int b = dsPop();
+      unsigned long b = dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_B_OR - data stack empty"));
         return false;
       }
-      int a = dsPop();
+      unsigned long a = dsPop();
       dsPush(a | b);
       return true;
     }
@@ -1022,7 +1116,7 @@ bool executeOneOp () {
         Serial.println(F("OP_B_NOT - data stack empty"));
         return false;
       }
-      int val = dsPop();
+      unsigned long val = dsPop();
       dsPush(~val);
       return true;
     }
@@ -1031,7 +1125,7 @@ bool executeOneOp () {
         Serial.println(F("OP_LSET0 - data stack empty"));
         return false;
       }
-      int value=dsPop();
+      long value=dsPop();
       
       curr->localVariables[0]=value;
       return true;
@@ -1041,7 +1135,7 @@ bool executeOneOp () {
         Serial.println(F("OP_LSET1 - data stack empty"));
         return false;
       }
-      int value=dsPop();
+      long value=dsPop();
       
       curr->localVariables[1]=value;
       return true;
@@ -1051,7 +1145,7 @@ bool executeOneOp () {
         Serial.println(F("OP_LSET2 - data stack empty"));
         return false;
       }
-      int value=dsPop();
+      long value=dsPop();
       
       curr->localVariables[2]=value;
       return true;
@@ -1061,7 +1155,7 @@ bool executeOneOp () {
         Serial.println(F("OP_LSET3 - data stack empty"));
         return false;
       }
-      int value=dsPop();
+      long value=dsPop();
       
       curr->localVariables[3]=value;
       return true;
@@ -1082,7 +1176,30 @@ bool executeOneOp () {
       dsPush(curr->localVariables[3]);
       return true;
     }
-    
+    case OP_AS_BYTE : {
+      dsTypeCast(DS_TYPE_BYTE);
+      return true;
+    }
+    case OP_AS_INT : {
+      dsTypeCast(DS_TYPE_INT);
+      return true;
+    }
+    case OP_AS_UINT : {
+      dsTypeCast(DS_TYPE_UINT);
+      return true;
+    }
+    case OP_AS_LONG : {
+      dsTypeCast(DS_TYPE_LONG);
+      return true;
+    }
+    case OP_AS_ULONG : {
+      dsTypeCast(DS_TYPE_ULONG);
+      return true;
+    }
+    case OP_MILLIS : {
+      dsPushValue(DS_TYPE_ULONG, millis());
+      return true;
+    }
 
 /*
      if (dsEmpty()) {

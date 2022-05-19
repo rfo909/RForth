@@ -47,6 +47,14 @@ char *getOp (byte b) {
     if (b==OP_LGET2) return "LGET2";
     if (b==OP_LGET3) return "LGET3";
 
+    if (b==OP_AS_BYTE)  return "AS_BYTE";
+    if (b==OP_AS_INT)   return "AS_INT";
+    if (b==OP_AS_UINT)  return "AS_UNIT";
+    if (b==OP_AS_LONG)  return "AS_LONG";
+    if (b==OP_AS_ULONG) return "AS_ULONG";
+
+    if (b==OP_MILLIS) return "MILLIS";
+
     return NULL;
 }
 
@@ -80,6 +88,15 @@ int lookupSymbol (char *sym) {
   if (!strcmp(sym,"write")) return OP_WRITE;
   if (!strcmp(sym,"dup")) return OP_DUP;
   if (!strcmp(sym,".")) return OP_POP;
-  if (!strcmp(sym,"-")) return OP_NEG;
+  if (!strcmp(sym,"neg")) return OP_NEG;
+
+  if (!strcmp(sym,":byte")) return OP_AS_BYTE;
+  if (!strcmp(sym,":int")) return OP_AS_INT;
+  if (!strcmp(sym,":uint")) return OP_AS_UINT;
+  if (!strcmp(sym,":long")) return OP_AS_LONG;
+  if (!strcmp(sym,":ulong")) return OP_AS_ULONG;
+
+  if (!strcmp(sym,"millis")) return OP_MILLIS;
+  
   return -1; 
 }

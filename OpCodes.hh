@@ -51,6 +51,8 @@
 #define OP_AS_LONG    43
 #define OP_AS_ULONG   44
 
+#define OP_MILLIS     45
+
 
 char *getOp (byte b);
 

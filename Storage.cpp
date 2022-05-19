@@ -54,7 +54,7 @@ int pcChopInt () {
   return i;
 }
 
-byte *pcGetPointer (int pos) {
+byte *pcGetPointer (long pos) {
   return pcData+pos;
 }
 
@@ -80,7 +80,7 @@ void pcInt7bit (int b) {
 
 
 
-void pcInt (int i) {
+void pcInt (long i) {
   bool neg=(i<0);
   if (neg) i=-i;
   
@@ -92,9 +92,9 @@ void pcInt (int i) {
     pcInt7bit(7); // arg for LSHIFT
     pcAddByte(OP_LSHIFT);
     
-    pcInt7bit(i & 0x7f);
+    pcInt7bit(i & 0x7fff);
     pcAddByte(OP_B_OR);  
-  } else {
+  } else if (i < 32700) {
     pcInt7bit( i & 0x7F);
     pcInt7bit( (i >> 7) & 0x7F);
     
@@ -108,6 +108,32 @@ void pcInt (int i) {
     
     pcAddByte(OP_B_OR);
     pcAddByte(OP_B_OR);
+  } else {
+    unsigned long xx = (unsigned long) i;
+    
+    // full 32 bit long
+    pcInt7bit(xx & 0x7F);
+    
+    pcInt7bit( (xx >> 7) & 0x7F);
+    pcInt7bit( 7 );
+    pcAddByte(OP_LSHIFT);
+    pcAddByte(OP_B_OR);
+    
+    pcInt7bit( (xx >> 14) & 0x7F);
+    pcInt7bit(14);
+    pcAddByte(OP_LSHIFT);
+    pcAddByte(OP_B_OR);
+
+    pcInt7bit( (xx >> 21) & 0x7F);
+    pcInt7bit(21);
+    pcAddByte(OP_LSHIFT);
+    pcAddByte(OP_B_OR);
+
+    pcInt7bit( (xx >> 28) & 0x7F);
+    pcInt7bit(28);
+    pcAddByte(OP_LSHIFT);
+    pcAddByte(OP_B_OR);
+
   }
   if (neg) {
     pcAddByte(OP_NEG);
