@@ -30,6 +30,10 @@ Alternative
 : DDRB 0x24 ;
 : PORTB 0x25 ;
 
+: on 0xFF M DDRB SetReg 0xFF M PORTB SetReg ;
+
+: off 0xFF M PORTB SetReg ;
+
 : init b0010_0000 b0010_0000 DDRB SetReg ;
 : a b0010_0000 b0010_0000 PORTB SetReg ;
 : b b0000_0000 b0010_0000 PORTB SetReg ;

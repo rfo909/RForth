@@ -23,6 +23,10 @@ char *psChop () {
   return s;
 }
 
+int psCount() {
+  return psNext;
+}
+
 
 // pc = persistent code data 
 
@@ -31,31 +35,26 @@ static int pcStart=0;
 static int pcNext=0;
 
 void pcAddByte (byte b) {
-  LOG("pcAddByte",b);
   if (pcNext >= P_CODE_SIZE) err("pcAddByte", pcNext);
   pcData[pcNext++]=b;
 }
 
 int pcGetMark() {
-  LOG("pcGetMark",pcStart);
   return pcStart;
 }
 
 void pcResetToMark(int mark) {
-  LOG("pcResetToMark", mark);
   pcStart=mark;
   pcNext=mark;
 }
 
 int pcChopInt () {
-  LOG("pcChopInt",pcStart);
   int i=pcStart;
   pcStart=pcNext;
   return i;
 }
 
 byte *pcGetPointer (int pos) {
-  LOG("pcGetPointer",pos);
   return pcData+pos;
 }
 
@@ -76,14 +75,12 @@ int to7BitPush (int b) {
 }
 
 void pcInt7bit (int b) {
-  LOG("pcInt7bit", b);
   return pcAddByte(to7BitPush(b));
 }
 
 
 
 void pcInt (int i) {
-  LOG("pcInt",i);
   bool neg=(i<0);
   if (neg) i=-i;
   
@@ -119,6 +116,10 @@ void pcInt (int i) {
 }
 
 
+int pcCount() {
+  return pcNext;
+}
+
 
 // ---
 
@@ -131,12 +132,19 @@ typedef struct {
 static MapValue mapData[MAP_SIZE];
 static int mapNext=0;
 
+int mapLookupMapIndex (char *name) {
+  for (int i=0; i<mapNext; i++) {
+    if (!strcmp(mapData[i].name, name)) return i;
+  }
+  return -1;
+}
+
 void mapAddPos (char *name, int codePos) {
-  LOG("mapAddPos",codePos);
-  int oldPos=mapLookupPos(name);
-  if (oldPos >= 0) {
+  int mapIndex=mapLookupMapIndex(name);
+  if (mapIndex >= 0) {
+    //LOG("mapAddPos: overwriting mapIndex",mapIndex);
     // overwrite existing def
-    mapData[oldPos].codePos=codePos;
+    (mapData+mapIndex)->codePos=codePos;
     return;
   }
   // add new
@@ -147,7 +155,6 @@ void mapAddPos (char *name, int codePos) {
 }
 
 int mapLookupPos (char *name) {
-  LOG("mapLookupPos",mapNext);
   for (int i=0; i<mapNext; i++) {
     if (!strcmp(mapData[i].name, name)) return mapData[i].codePos;
   }
@@ -155,11 +162,9 @@ int mapLookupPos (char *name) {
 }
 
 int mapCount () {
-  LOG("mapCount",mapNext);
   return mapNext;
 }
 
 char *mapGetName (int pos) {
-  LOG("mapGetName", pos);
   return mapData[pos].name;
 }

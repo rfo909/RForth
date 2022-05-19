@@ -34,6 +34,7 @@ int dsPop ();
 DStackValue *dsGetValue (int pos); 
 int dsGet (int pos);
 
+void dsDupValue();
 
 
 

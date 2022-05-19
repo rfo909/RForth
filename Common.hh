@@ -29,7 +29,7 @@ typedef unsigned char byte;
 #define P_CODE_SIZE       300 
 
 // Storage.cpp
-#define MAP_SIZE          10
+#define MAP_SIZE          20
 
 // .ino
 #define ENABLE_DISASSEMBLER 
@@ -37,9 +37,9 @@ typedef unsigned char byte;
 
 void err (char *s, int i);
 
-// #define LOG(a,b)  log(a,b)
+#define LOG(a,b)  log(a,b)
+//#define LOG(a,b)
 
-#define LOG(a,b)
 void log (char *s, int i);
 
 

@@ -75,7 +75,7 @@ void setup() {
 
   Serial.println(F("-----------------"));
   Serial.print(F("RForth "));
-  Serial.print(VERSION);
+  Serial.println(VERSION);
   Serial.println(F("-----------------"));
   getHeapSize();
 
@@ -195,7 +195,7 @@ bool parseWordDef() {
   int codePos=pcChopInt();
   byte *code=pcGetPointer(codePos);
   
-  disassemble(code);
+  // disassemble(code);
   
   Serial.print(F("Saving word "));
   Serial.print(name);
@@ -216,6 +216,39 @@ bool parseImmediateCode() {
         Serial.print("   ");
         Serial.println(mapGetName(i));
       }
+      continue;
+    }
+    if (inpTokenMatches("stats")) {
+      Serial.print("ps:");
+      Serial.print(psCount());
+      Serial.print(" of ");
+      Serial.println(P_STRING_SIZE);
+      
+      Serial.print("pc:");
+      Serial.print(pcCount());
+      Serial.print(" of ");
+      Serial.println(P_CODE_SIZE);
+      
+      Serial.print("map:");
+      Serial.print(mapCount());
+      Serial.print(" of ");
+      Serial.println(MAP_SIZE);
+
+      continue;
+    }
+    char *inpToken=inpTokenGet();
+    if (strlen(inpToken) > 4 && inpToken[0]=='d' && inpToken[1]=='i' && inpToken[2]=='s' && inpToken[3]==':') {
+      char *word=inpToken+4; 
+      int codePos=mapLookupPos(word);
+      if (codePos < 0) {
+        Serial.println(F("Undefined word"));
+        continue;
+      }
+      Serial.println();
+      disassemble(pcGetPointer(codePos));
+      Serial.println();
+
+      inpTokenAdvance();
       continue;
     }
     if (inpTokenMatches("clear")) {
@@ -259,7 +292,7 @@ bool parseImmediateCode() {
   //Serial.println(codePos);
   byte *code=pcGetPointer(codePos);
   
-  disassemble(code);
+  //disassemble(code);
 
   executeCode(code);
   
@@ -493,7 +526,10 @@ void executeCode (byte *initialCode) {
   Serial.println("--");
   for (int i=count-1; i>=0; i--) {
     Serial.print("  ");
-    Serial.println(dsGet(i));
+    DStackValue *x=dsGetValue(i);
+    Serial.print(x->val);
+    Serial.print(F("   type="));
+    Serial.println(x->type);
   }
   
 }
@@ -588,9 +624,7 @@ bool executeOneOp () {
         Serial.println(F("OP_DUP - data stack empty"));
         return false;
       }
-      int value=dsPop();
-      dsPush(value);
-      dsPush(value);
+      dsDupValue();
       
       return true;
     }

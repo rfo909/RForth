@@ -7,10 +7,13 @@
 void psAddChar (char c);
 void psAddStr (char *str);
 char *psChop ();
+int psCount();
+
 
 int to7BitPush (int b);
 void pcInt7bit (int b);
 void pcInt (int i);
+
 
 void pcAddByte (byte b);
 int pcGetMark();
@@ -20,6 +23,8 @@ int pcChopInt ();
 byte *pcGetPointer (int pos);
 int pcGetLocalPos();
 void setLocalPosByte (int pos, byte b);
+int pcCount();
+
 
 void mapAddPos (char *name, int codePos);
 int mapLookupPos (char *name);
