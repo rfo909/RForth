@@ -13,4 +13,20 @@ Fixed bug: names of local variables were not reset along with other Input resets
 Modified OP_DUP to call func in Stacks which handles the new struct type values
 on data stack.
 
+2022-05-19
+----------
+
 Fixed bug that prevented redef. of word.
+
+Optimization: created lget[0-3] and lset[0-3] and using PUSH + lset / lget for
+local variables beyond the first 4. This results in smaller code, which is good when
+every byte of ram counts.
+
+Created interactive commands stats and dis:xxx plus help.
+
+Changed memory allocations for persistent string and code depending on whether
+disassembler is enabled or not, as enabling it costs about 200 bytes of string 
+constants on the heap.
+
+
+

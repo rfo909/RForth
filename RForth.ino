@@ -24,6 +24,8 @@
  * Interactive commands:
  * 
  * clear  - clear stack
+ * stats  - show memory use
+ * dis:xxx - disassemble word function xxx
  * hex - show top value as hex
  * bin - show top value as binary
  */
@@ -69,7 +71,7 @@ static void reset() {
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   while (!Serial) ; // wait for connect
   Serial.setTimeout(10);
 
@@ -120,7 +122,11 @@ void loop() {
 
 // code MUST end with OP_EOF
 void disassemble (byte *code) {
-  
+
+#ifndef ENABLE_DISASSEMBLER
+    Serial.println(F("The disassemble functionality is turned off to save memory"));
+#endif
+
 #ifdef ENABLE_DISASSEMBLER
 
   for (int pos=0; pos<128; pos++) {
@@ -218,13 +224,25 @@ bool parseImmediateCode() {
       }
       continue;
     }
+    if (inpTokenMatches("help")) {
+      Serial.println(F("Interactive commands"));
+      Serial.println(F("--------------------"));
+      Serial.println(F("words     - show defined words"));
+      Serial.println(F("stats     - show memory use"));
+      Serial.println(F("clear     - clear data stack"));
+      Serial.println(F("hex       - show value from stack in hex"));
+      Serial.println(F("bin       - show value from stack in binary"));
+      Serial.println(F("dis:xxx   - disassemble word function xxx"));
+      
+      continue;
+    }
     if (inpTokenMatches("stats")) {
-      Serial.print("ps:");
+      Serial.print("ps: ");
       Serial.print(psCount());
       Serial.print(" of ");
       Serial.println(P_STRING_SIZE);
       
-      Serial.print("pc:");
+      Serial.print("pc: ");
       Serial.print(pcCount());
       Serial.print(" of ");
       Serial.println(P_CODE_SIZE);
@@ -242,11 +260,11 @@ bool parseImmediateCode() {
       int codePos=mapLookupPos(word);
       if (codePos < 0) {
         Serial.println(F("Undefined word"));
-        continue;
+      } else {
+        Serial.println();
+        disassemble(pcGetPointer(codePos));
+        Serial.println();
       }
-      Serial.println();
-      disassemble(pcGetPointer(codePos));
-      Serial.println();
 
       inpTokenAdvance();
       continue;
@@ -355,8 +373,19 @@ bool parseWord() {
     char *varName=word+1;
     int pos=inpLocalVariablePos(varName);
     if (pos >= 0) {
-      pcInt7bit(pos);
-      pcAddByte(OP_LSET);
+      
+      if (pos==0) {
+        pcAddByte(OP_LSET0);
+      } else if (pos==1) {
+        pcAddByte(OP_LSET1);
+      } else if (pos==2) {
+        pcAddByte(OP_LSET2);
+      } else if (pos==3) {
+        pcAddByte(OP_LSET3);
+      } else {
+        pcInt7bit(pos);
+        pcAddByte(OP_LSET);
+      }
       
       inpTokenAdvance();
       return true;
@@ -369,9 +398,20 @@ bool parseWord() {
       }
       // add new variable
       pos = inpLocalVariableAdd(varName);
-      pcInt7bit(pos);
-      pcAddByte(OP_LSET);
-      
+ 
+      if (pos==0) {
+        pcAddByte(OP_LSET0);
+      } else if (pos==1) {
+        pcAddByte(OP_LSET1);
+      } else if (pos==2) {
+        pcAddByte(OP_LSET2);
+      } else if (pos==3) {
+        pcAddByte(OP_LSET3);
+      } else {
+        pcInt7bit(pos);
+        pcAddByte(OP_LSET);
+      }
+       
       inpTokenAdvance();
       return true;
     }
@@ -380,8 +420,19 @@ bool parseWord() {
   // local variable lookup
   int varPos=inpLocalVariablePos(word);
   if (varPos >= 0) {
-    pcInt7bit(varPos);
-    pcAddByte(OP_LGET);
+    
+    if (varPos==0) {
+      pcAddByte(OP_LGET0);
+    } else if (varPos==1) {
+      pcAddByte(OP_LGET1);
+    } else if (varPos==2) {
+      pcAddByte(OP_LGET2);
+    } else if (varPos==3) {
+      pcAddByte(OP_LGET3);
+    } else {
+      pcInt7bit(varPos);
+      pcAddByte(OP_LGET);
+    }
     
     inpTokenAdvance();
     return true;
@@ -942,7 +993,76 @@ bool executeOneOp () {
       int val = dsPop();
       dsPush(~val);
       return true;
-    };
+    }
+    case OP_LSET0 : {
+     if (dsEmpty()) {
+        Serial.println(F("OP_LSET0 - data stack empty"));
+        return false;
+      }
+      int value=dsPop();
+      
+      curr->localVariables[0]=value;
+      return true;
+    }
+    case OP_LSET1 : {
+     if (dsEmpty()) {
+        Serial.println(F("OP_LSET1 - data stack empty"));
+        return false;
+      }
+      int value=dsPop();
+      
+      curr->localVariables[1]=value;
+      return true;
+    }
+    case OP_LSET2 : {
+     if (dsEmpty()) {
+        Serial.println(F("OP_LSET2 - data stack empty"));
+        return false;
+      }
+      int value=dsPop();
+      
+      curr->localVariables[2]=value;
+      return true;
+    }
+    case OP_LSET3 : {
+     if (dsEmpty()) {
+        Serial.println(F("OP_LSET3 - data stack empty"));
+        return false;
+      }
+      int value=dsPop();
+      
+      curr->localVariables[3]=value;
+      return true;
+    }
+    case OP_LGET0 : {
+      dsPush(curr->localVariables[0]);
+      return true;
+    }
+    case OP_LGET1 : {
+      dsPush(curr->localVariables[1]);
+      return true;      
+    }
+    case OP_LGET2 : {
+      dsPush(curr->localVariables[2]);
+      return true;
+    }
+    case OP_LGET3 : {
+      dsPush(curr->localVariables[3]);
+      return true;
+    }
+    
+
+/*
+     if (dsEmpty()) {
+        Serial.println(F("OP_LSET - data stack empty"));
+        return false;
+      }
+      int value=dsPop();
+      
+      curr->localVariables[varNo]=value;
+      return true;
+*/
+    
   }   
   err("Unknown OP", b);
   return false;

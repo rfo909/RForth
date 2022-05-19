@@ -36,6 +36,15 @@
 #define OP_B_OR    30
 #define OP_B_NOT    31
 
+#define OP_LSET0      32
+#define OP_LSET1      33
+#define OP_LSET2      34
+#define OP_LSET3      35
+#define OP_LGET0      36
+#define OP_LGET1      37
+#define OP_LGET2      38
+#define OP_LGET3      39
+
 
 char *getOp (byte b);
 

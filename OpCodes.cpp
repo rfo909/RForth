@@ -38,6 +38,15 @@ char *getOp (byte b) {
     if (b==OP_B_OR) return "B_OR";
     if (b==OP_B_NOT) return "B_NOT";
 
+    if (b==OP_LSET0) return "LSET0";
+    if (b==OP_LSET1) return "LSET1";
+    if (b==OP_LSET2) return "LSET2";
+    if (b==OP_LSET3) return "LSET3";
+    if (b==OP_LGET0) return "LGET0";
+    if (b==OP_LGET1) return "LGET1";
+    if (b==OP_LGET2) return "LGET2";
+    if (b==OP_LGET3) return "LGET3";
+
     return NULL;
 }
 
@@ -71,6 +80,6 @@ int lookupSymbol (char *sym) {
   if (!strcmp(sym,"write")) return OP_WRITE;
   if (!strcmp(sym,"dup")) return OP_DUP;
   if (!strcmp(sym,".")) return OP_POP;
-  if (!strcmp(sym,"inv")) return OP_NEG;
+  if (!strcmp(sym,"-")) return OP_NEG;
   return -1; 
 }

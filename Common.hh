@@ -12,9 +12,14 @@ typedef unsigned char byte;
 
 #define VERSION "0.1.1"
 
+// .ino
+#define ENABLE_DISASSEMBLER 
+  // enabling costs us almost 200 bytes of SRAM due to 
+  // message strings on heap inside the disassemble() function.
+
 
 // Input.cpp
-#define INPUT_BUF_SIZE      100
+#define INPUT_BUF_SIZE      200
 #define INPUT_TOKEN_COUNT   30
 
 // Stacks.hh / Input.cpp
@@ -24,15 +29,24 @@ typedef unsigned char byte;
 #define DATA_STACK_SIZE     20
 #define CALL_STACK_SIZE     10
 
+
 // Storage.hh
-#define P_STRING_SIZE     100
-#define P_CODE_SIZE       300 
+
+#ifdef ENABLE_DISASSEMBLER
+ 
+  #define P_STRING_SIZE     100
+  #define P_CODE_SIZE       300 
+
+#else
+
+  #define P_STRING_SIZE     200
+  #define P_CODE_SIZE       400 
+
+#endif
 
 // Storage.cpp
 #define MAP_SIZE          20
 
-// .ino
-#define ENABLE_DISASSEMBLER 
 
 
 void err (char *s, int i);
