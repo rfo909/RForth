@@ -509,7 +509,6 @@ bool parseIf() {
 
 
 bool parseLoop() {
-  Serial.println(F("parseLoop"));
   int startPos=pcGetLocalPos();
   int breakJmpAddr=-1;
   
