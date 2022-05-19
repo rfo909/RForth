@@ -1,0 +1,9 @@
+Sys.savefile.dir
+/WorkDir
+
+WorkDir.files->f
+	reject(f.name.endsWith(".txt") || f.name.endsWith(".md"))
+	out(f)
+/ProjectFiles
+
+

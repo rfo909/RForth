@@ -45,6 +45,12 @@
 #define OP_LGET2      38
 #define OP_LGET3      39
 
+#define OP_AS_BYTE    40
+#define OP_AS_INT     41
+#define OP_AS_UINT    42
+#define OP_AS_LONG    43
+#define OP_AS_ULONG   44
+
 
 char *getOp (byte b);
 

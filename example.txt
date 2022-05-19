@@ -18,9 +18,9 @@
 
 
 
--------------
-Alternative
--------------
+# -------------
+# Alternative
+# -------------
 
 # Modify register - change one or more bits at a time
 

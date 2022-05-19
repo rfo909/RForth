@@ -1,8 +1,12 @@
+#include "EEPROM.h"
+
+
 #include "Common.hh"
 #include "Input.hh"
 #include "Stacks.hh"
 #include "Storage.hh"
 #include "OpCodes.hh"
+
 
 /**
  * A simple forth compiler. Syntax:
@@ -71,7 +75,7 @@ static void reset() {
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   while (!Serial) ; // wait for connect
   Serial.setTimeout(10);
 
@@ -98,6 +102,8 @@ void loop() {
     inComment=true;
     return;
   }
+  Serial.print(c);
+
   if (c==' ' || c=='\r' || c=='\n' || c=='\t') {
     if (c=='\n' || c=='\r') {
       inComment=false;
@@ -111,7 +117,9 @@ void loop() {
       }
     }
   } else {
-    if (!inComment) inpAddChar(c);
+    if (!inComment) {
+      inpAddChar(c);
+    }
   }
 }
 
@@ -123,9 +131,6 @@ void loop() {
 // code MUST end with OP_EOF
 void disassemble (byte *code) {
 
-#ifndef ENABLE_DISASSEMBLER
-    Serial.println(F("The disassemble functionality is turned off to save memory"));
-#endif
 
 #ifdef ENABLE_DISASSEMBLER
 
@@ -152,6 +157,8 @@ void disassemble (byte *code) {
     if (b==OP_EOF) break;
   }
 
+#else
+    Serial.println(F("The disassemble functionality is turned off to save memory"));
 #endif
 
 }
@@ -203,9 +210,9 @@ bool parseWordDef() {
   
   // disassemble(code);
   
-  Serial.print(F("Saving word "));
+  Serial.print(F("Saving word '"));
   Serial.print(name);
-  Serial.print(F(" at position "));
+  Serial.print(F("' at position "));
   Serial.println(codePos);
   
   psAddStr(name);
@@ -214,26 +221,46 @@ bool parseWordDef() {
   return true;
 }
 
+void eepromFormat () {
+  Serial.print(F("Starting format of EEPROM: "));
+  unsigned long length = EEPROM.length();
+  Serial.print(length);
+  Serial.println(F(" bytes capacity"));
+  
+  for (int i=0; i<length; i++) {
+    EEPROM.update(i,0);
+  }
+
+
+  Serial.println(F("Validating format (0-bytes)"));
+  for (int i=0; i<length; i++) {
+    if (EEPROM.read(i) != 0) {
+      Serial.println(F("ERROR: format incomplete"));
+    }
+  }
+  Serial.println(F("EEPROM format completed"));
+}
+
 bool parseImmediateCode() {
   while (!inpTokenMatches(";")) {
+    if (inpTokenMatches("help")) {
+      Serial.println(F("Interactive commands"));
+      Serial.println(F("--------------------"));
+      Serial.println(F("words          - show defined words"));
+      Serial.println(F("stats          - show memory use"));
+      Serial.println(F("clear          - clear data stack"));
+      Serial.println(F("hex            - show value from stack in hex"));
+      Serial.println(F("bin            - show value from stack in binary"));
+      Serial.println(F("dis:xxx        - disassemble word function xxx"));
+      Serial.println(F("ee:format:yes  - format EEPROM storage"));
+      continue;
+    }
     if (inpTokenMatches("words")) {
       int cnt=mapCount();
       for (int i=0; i<cnt; i++) {
         Serial.print("   ");
         Serial.println(mapGetName(i));
       }
-      continue;
-    }
-    if (inpTokenMatches("help")) {
-      Serial.println(F("Interactive commands"));
-      Serial.println(F("--------------------"));
-      Serial.println(F("words     - show defined words"));
-      Serial.println(F("stats     - show memory use"));
-      Serial.println(F("clear     - clear data stack"));
-      Serial.println(F("hex       - show value from stack in hex"));
-      Serial.println(F("bin       - show value from stack in binary"));
-      Serial.println(F("dis:xxx   - disassemble word function xxx"));
-      
       continue;
     }
     if (inpTokenMatches("stats")) {
@@ -246,12 +273,18 @@ bool parseImmediateCode() {
       Serial.print(pcCount());
       Serial.print(" of ");
       Serial.println(P_CODE_SIZE);
+      Serial.print("ps + pc: ");
+      Serial.println(psCount()+pcCount());
       
       Serial.print("map:");
       Serial.print(mapCount());
       Serial.print(" of ");
       Serial.println(MAP_SIZE);
 
+      continue;
+    }
+    if (inpTokenMatches("ee:format:yes")) {
+      eepromFormat();
       continue;
     }
     char *inpToken=inpTokenGet();

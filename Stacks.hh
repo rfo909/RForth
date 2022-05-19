@@ -5,11 +5,14 @@
 
 typedef struct {
   byte type;
-  int val;
+  long val;
 } DStackValue;
 
-#define DS_TYPE_NUM     0
-#define DS_TYPE_WORD    1
+#define DS_TYPE_NUM      0     // default: signed int
+#define DS_TYPE_UINT     1
+#define DS_TYPE_BYTE     2
+#define DS_TYPE_LONG     3
+#define DS_TYPE_ULONG    4
 
 typedef struct {
   byte *code;

@@ -28,5 +28,13 @@ Changed memory allocations for persistent string and code depending on whether
 disassembler is enabled or not, as enabling it costs about 200 bytes of string 
 constants on the heap.
 
+2022-05-19 v0.1.2
+-----------------
+
+Adding EEPROM support, as we have 1Kb of permanent storage there. Will change
+the storage model into a sequence of string + code + string + code, as each
+is terminated by a single 0-byte.
+
+
 
 
