@@ -112,34 +112,30 @@ void setup() {
 
 void parseTokens();
 
-bool inComment=false;
-
 void loop() {
   // put your main code here, to run repeatedly:
   char c=Serial.read();
   if (c==-1) return;
-  if (c=='#') {
-    inComment=true;
-    return;
-  }
-  Serial.print(c);
+  //Serial.print(c);
 
   if (c==' ' || c=='\r' || c=='\n' || c=='\t') {
-    if (c=='\n' || c=='\r') {
-      inComment=false;
-    }
     if (!inpEmpty()) {
       char *str=inpChop();
       inpAddToken(str);
+      //Serial.print(F("Adding token "));
+      //Serial.println(str);
+      //for (int i=0; i<strlen(str); i++) {
+      //  Serial.print(str[i]);
+      //  Serial.print(" ");
+      //}
+      //Serial.println();
       if (!strcmp(str,";")) {
         parseTokens();
         reset();
       }
     }
   } else {
-    if (!inComment) {
-      inpAddChar(c);
-    }
+    inpAddChar(c);
   }
 }
 
