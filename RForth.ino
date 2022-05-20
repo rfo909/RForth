@@ -51,25 +51,100 @@ int getHeapSize() {
   return 0;
 }
 
-void err (char *s, long a) {
+static void printCode (int code) {
+  switch(code) {
+    case ERR_UNKNOWN_OP: {
+      Serial.print(F("ERR_UNKNOWN_OP"));
+      return;
+    }
+    case FUNC_csPop: {
+      Serial.print(F("FUNC_csPop"));
+      return;
+    }
+    case FUNC_csPeek: {
+      Serial.print(F("FUNC_csPeek"));
+      return;
+    }
+    case FUNC_inpLocalVariableAdd: {
+      Serial.print(F("FUNC_inpLocalVariableAdd"));
+      return;
+    }
+    case FUNC_csPush: {
+      Serial.print(F("FUNC_csPush"));
+      return;
+    }
+    case FUNC_mapAddPos: {
+      Serial.print(F("FUNC_mapAddPos"));
+      return;
+    }
+    case FUNC_pcAddByte: {
+      Serial.print(F("FUNC_pcAddByte"));
+      return;
+    }
+    case FUNC_psAddChar: {
+      Serial.print(F("FUNC_psAddChar"));
+      return;
+    }
+    case ERR_dsGet_not_number: {
+      Serial.print(F("ERR_dsGet_not_number"));
+      return;
+    }
+    case ERR_dsPop_not_number: {
+      Serial.print(F("ERR_dsPop_not_number"));
+      return;
+    }
+    case FUNC_dsPopValue: {
+      Serial.print(F("FUNC_dsPopValue"));
+      return;
+    }
+    case ERR_dsPeek_not_number: {
+      Serial.print(F("ERR_dsPeek_not_number"));
+      return;
+    }
+    case FUNC_inpAddToken: {
+      Serial.print(F("FUNC_inpAddToken"));
+      return;
+    }
+    case FUNC_inpAddChar: {
+      Serial.print(F("FUNC_inpAddChar"));
+      return;
+    }
+    case FUNC_dsPeekValue: {
+      Serial.print(F("FUNC_dsPeekValue"));
+      return;
+    }
+    case FUNC_dsPushValue: {
+      Serial.print(F("FUNC_dsPushValue"));
+      return;
+    }
+    case ERR_INVALID_TYPE_CAST: {
+      Serial.print(F("ERR_INVALID_TYPE_CAST"));
+      return;
+    }
+  }
+}
+
+
+
+void ERR1 (int code, long a) {
   Serial.print(F("ERROR: "));
-  Serial.print(s);
+  printCode(code);
   Serial.print(" ");
   Serial.println(a);
   halt();
 }
-void err2 (char *s, long a, long b) {
+void ERR2 (int code, long a, long b) {
   Serial.print(F("ERROR: "));
-  Serial.print(s);
+  printCode(code);
   Serial.print(" ");
   Serial.print(a);
   Serial.print(" ");
   Serial.println(b);
   halt();
 }
-void warn (char *s, long a, long b) {
+void WARN2 (int code, long a, long b) {
   Serial.print(F("WARN: "));
-  Serial.print(s);
+  printCode(code);
   Serial.print(" ");
   Serial.print(a);
   Serial.print(" ");
@@ -80,11 +155,13 @@ void halt() {
   for(;;) ;
 }
 
-void log (char *s, int i) {
+void LOG2 (int code, long a, long b) {
   Serial.print(F("**** LOG: "));
-  Serial.print(s);
+  printCode(code);
   Serial.print(" ");
-  Serial.println(i);
+  Serial.print(a);
+  Serial.print(" ");
+  Serial.println(b);
 }
 
 static void reset() {
@@ -652,16 +729,16 @@ void displayStackValue (DStackValue *x) {
       Serial.print(" 0x");
       ltoa(x->val, buf, 16);
       printPadded("0", 8, buf, " ", 0);
-      Serial.println("  LONG");
+      Serial.println(F("  LONG"));
       return;
     }
     case DS_TYPE_ULONG : {
-      ltoa((unsigned long) x->val, buf, 10);
+      ultoa((unsigned long) x->val, buf, 10);
       printPadded(" ", 10, buf, " ", 0);
       Serial.print(" 0x");
-      ltoa((unsigned long) x->val, buf, 16);
+      ultoa((unsigned long) x->val, buf, 16);
       printPadded("0", 8, buf, " ", 0);
-      Serial.println("  ULONG");
+      Serial.println(F("  ULONG"));
       return;
     }
   }
@@ -1197,18 +1274,7 @@ bool executeOneOp () {
       return true;
     }
 
-/*
-     if (dsEmpty()) {
-        Serial.println(F("OP_LSET - data stack empty"));
-        return false;
-      }
-      int value=dsPop();
-      
-      curr->localVariables[varNo]=value;
-      return true;
-*/
-    
   }   
-  err("Unknown OP", b);
+  ERR1(ERR_UNKNOWN_OP, b);
   return false;
 }

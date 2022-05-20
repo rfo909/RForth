@@ -5,7 +5,7 @@
 : M 5 mask ;
 
 : init DDRB read M | DDRB write ;
-: on PORTB read M | PORTB write ;
+: on init PORTB read M | PORTB write ;
 : off PORTB read M ! & PORTB write ;
 
 
@@ -13,6 +13,7 @@
 
 : blink loop{ on 1000 wait off 500 wait } ;
 
+	# Finally the blink implementation!
 
 # Testing speed
 # --
@@ -21,7 +22,16 @@
 
 # 9 ms #op=1112
 
-
+# Count iterations over 10 millis
+# About 100 or 10 per millisecond, and given that the code is about 10 op's,
+# we get 100 op's per millisecond, as the test above returned.
+# --
+millis 3 + =start 
+millis 13 + =stop
+loop{ millis start > break }
+0 =count
+loop{ count 1 + =count millis stop > break }
+count ;
 
 # -------------
 # Alternative
@@ -29,19 +39,8 @@
 
 # Modify register - change one or more bits at a time
 
-: SetReg =addr =mask =value
-	addr read mask ! &
-		value | addr write ;
-
-
-dis:SetReg ;
-
-
-: DDRB 0x24 ;
-: PORTB 0x25 ;
-
-: on 0xFF M DDRB SetReg 0xFF M PORTB SetReg ;
-
-: off 0 M PORTB SetReg ;
+: SetReg =addr =clearMask =valueMask
+	addr read clearMask ! &
+		valueMask | addr write ;
 
 

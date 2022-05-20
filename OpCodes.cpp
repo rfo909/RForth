@@ -49,7 +49,7 @@ char *getOp (byte b) {
 
     if (b==OP_AS_BYTE)  return "AS_BYTE";
     if (b==OP_AS_INT)   return "AS_INT";
-    if (b==OP_AS_UINT)  return "AS_UNIT";
+    if (b==OP_AS_UINT)  return "AS_UINT";
     if (b==OP_AS_LONG)  return "AS_LONG";
     if (b==OP_AS_ULONG) return "AS_ULONG";
 

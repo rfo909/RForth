@@ -8,7 +8,7 @@ static int psStart=0;
 static int psNext=0;
 
 void psAddChar (char c) {
-  if (psNext >= P_STRING_SIZE) err("psAddChar",psNext);
+  if (psNext >= P_STRING_SIZE) ERR1(FUNC_psAddChar,psNext);
   psData[psNext++]=c; 
 }
 
@@ -35,7 +35,7 @@ static int pcStart=0;
 static int pcNext=0;
 
 void pcAddByte (byte b) {
-  if (pcNext >= P_CODE_SIZE) err("pcAddByte", pcNext);
+  if (pcNext >= P_CODE_SIZE) ERR1(FUNC_pcAddByte, pcNext);
   pcData[pcNext++]=b;
 }
 
@@ -174,7 +174,7 @@ void mapAddPos (char *name, int codePos) {
     return;
   }
   // add new
-  if (mapNext >= MAP_SIZE) err("mapAddPos",mapNext);
+  if (mapNext >= MAP_SIZE) ERR1(FUNC_mapAddPos,mapNext);
   mapData[mapNext].name=name;
   mapData[mapNext].codePos=codePos;
   mapNext++;

@@ -24,7 +24,7 @@ void inpReset() {
 
 void inpAddChar (char c) {
   if (inpNext >= INPUT_BUF_SIZE) {
-    err("addChar",inpNext);
+    ERR1(FUNC_inpAddChar,inpNext);
   } else {
     inputBuf[inpNext++]=c;
   }
@@ -44,7 +44,7 @@ char *inpChop () {
 
 void inpAddToken (char *token) {
   if (nextToken >= INPUT_TOKEN_COUNT) {
-    err("addToken", nextToken);
+    ERR1(FUNC_inpAddToken, nextToken);
   } else {
     tokens[nextToken++]=token;
   }
@@ -83,7 +83,7 @@ bool inpLocalVariablesFull() {
 }
 
 int inpLocalVariableAdd (char *name) {
-  if (nextLocalVariable >= LOCAL_VARIABLE_COUNT) err("inpLocalVariableAdd",nextLocalVariable);
+  if (nextLocalVariable >= LOCAL_VARIABLE_COUNT) ERR1(FUNC_inpLocalVariableAdd,nextLocalVariable);
   localVariables[nextLocalVariable++]=name;
   return nextLocalVariable-1;
 }

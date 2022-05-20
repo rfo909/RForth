@@ -126,6 +126,63 @@ List( "+","ADD",
 	println('	return false;')
 	println("}")
 /c3
-		
 
+
+# Error codes
+# --
+<<<<<< EOF
+#define ERR_UNKNOWN_OP        1
+#define FUNC_csPop              2
+#define FUNC_csPeek            3
+#define FUNC_inpLocalVariableAdd 4
+#define FUNC_csPush   5
+#define FUNC_mapAddPos 6
+#define FUNC_pcAddByte 7
+#define FUNC_psAddChar 8
+#define ERR_dsGet_not_number 9
+#define ERR_dsPop_not_number  10
+#define FUNC_dsPopValue 11
+#define ERR_dsPeek_not_number 12
+#define FUNC_inpAddToken 13
+#define FUNC_inpAddChar 14
+#define FUNC_dsPeekValue 15
+#define FUNC_dsPushValue 16
+#define ERR_INVALID_TYPE_CAST 17
+>>>>>> EOF
+	->line
+		reject(line.trim.length==0)
+		out(line.after(" ").before(" "))
+/Strings
+
+
+Strings.concat.length + Strings.length*3 - Strings.length*2
+/space
+
+
+# Generate String data for error codes
+# --
+	longest=0
 	
+	dict=Dict
+	pos=0
+	Strings->s
+		pad=" ".times(40-s.length)
+		println("#define " + s + " " + pad + pos)
+	|
+	
+	println println println
+	
+	println("void printCode (int code) {")
+	println("  switch(code) {")
+	Strings->s
+		println("    case " + s + ": {")
+		println('      Serial.print(F("' + s + '"));')
+		println("      return;")
+		println("    }")
+	|
+	println("  }")
+	println("}")
+		
+	
+		
+/PS

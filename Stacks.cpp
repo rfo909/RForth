@@ -15,7 +15,7 @@ int dsCount() {
 
 void dsPushValue (byte type, long val) {
   if (dsNext >= DATA_STACK_SIZE) {
-    err("dsPushValue",dsNext);
+    ERR1(FUNC_dsPushValue,dsNext);
   } else {
     DStackValue *x=dataStack + dsNext;
     dsNext++;
@@ -32,7 +32,7 @@ void dsPush (long val) {
 
 DStackValue *dsPeekValue() {
   if (dsNext <= 0) {
-    err("dsPeekValue",dsNext);
+    ERR1(FUNC_dsPeekValue,dsNext);
   }
   return dataStack + (dsNext-1);;
 }
@@ -40,7 +40,7 @@ DStackValue *dsPeekValue() {
 long dsPeek () {
   DStackValue *x = dsPeekValue();
   if (x->type > DS_LAST_NUMBER_TYPE) {
-    err("dsPeek: not number", x->type);
+    ERR1(ERR_dsPeek_not_number, x->type);
   }
   return x->val;
 }
@@ -51,7 +51,7 @@ DStackValue *dsPopValue() {
   dsNext--;
   if (dsNext < 0) {
     dsNext=0;
-    err("dsPopValue",dsNext);
+    ERR1(FUNC_dsPopValue,dsNext);
   } 
   return dataStack + dsNext;
 }
@@ -59,7 +59,7 @@ DStackValue *dsPopValue() {
 long dsPop () {
   DStackValue *x = dsPopValue();
   if (x->type > DS_LAST_NUMBER_TYPE) {
-    err("dsPop: not number", x->type);
+    ERR1(ERR_dsPop_not_number, x->type);
   }
   return x->val; 
 }
@@ -72,7 +72,7 @@ DStackValue *dsGetValue (int pos) {
 long dsGet (int pos) {
   DStackValue *x=dsGetValue(pos);
   if (x->type != DS_TYPE_INT) {
-    err("dsGet: not number", pos);
+    ERR1(ERR_dsGet_not_number, pos);
   }
   return x->val;
 }
@@ -90,7 +90,7 @@ bool dsTypeCast (byte newType) {
     x->type=newType;
     return true;
   } else {
-    err2("Invalid type cast",x->type,newType);
+    ERR2(ERR_INVALID_TYPE_CAST,x->type,newType);
     halt();
   }
   return false;  
@@ -102,7 +102,7 @@ static int csNext=0;
 
 void csPush (byte *theCode) {
   if (csNext >= CALL_STACK_SIZE) {
-    err("csPush",csNext);
+    ERR1(FUNC_csPush,csNext);
   } else {
     CStackFrame *f=callStack+csNext;
     csNext++;
@@ -120,12 +120,12 @@ bool csEmpty () {
 }
 
 CStackFrame *csPeek () {
-  if (csEmpty()) err("csPeek",csNext);
+  if (csEmpty()) ERR1(FUNC_csPeek,csNext);
   return callStack+(csNext-1);
 }
 
 void csPop() {
-  if (csEmpty()) err("csPop", csNext);
+  if (csEmpty()) ERR1(FUNC_csPop, csNext);
   csNext--;
   if (csNext < 0) csNext=0;
 }

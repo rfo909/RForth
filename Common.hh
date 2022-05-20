@@ -34,13 +34,13 @@ typedef unsigned char byte;
 
 #ifdef ENABLE_DISASSEMBLER
  
-  #define P_STRING_SIZE     70
-  #define P_CODE_SIZE       170 
+  #define P_STRING_SIZE     100
+  #define P_CODE_SIZE       200 
 
 #else
 
-  #define P_STRING_SIZE     70
-  #define P_CODE_SIZE       200 
+  #define P_STRING_SIZE     150
+  #define P_CODE_SIZE       400 
 
 #endif
 
@@ -49,15 +49,32 @@ typedef unsigned char byte;
 
 
 
-void err (char *s, long a);
-void err2 (char *s, long a, long b);
-void warn (char *s, long a, long b);
+void ERR1 (int code, long a);
+void ERR2 (int code, long a, long b);
+void WARN2 (int code, long a, long b);
 void halt();
 
-#define LOG(a,b)  log(a,b)
-//#define LOG(a,b)
+void LOG2 (int code, long a, long b);
 
-void log (char *s, int i);
+
+#define ERR_UNKNOWN_OP        1
+#define FUNC_csPop              2
+#define FUNC_csPeek            3
+#define FUNC_inpLocalVariableAdd 4
+#define FUNC_csPush   5
+#define FUNC_mapAddPos 6
+#define FUNC_pcAddByte 7
+#define FUNC_psAddChar 8
+#define ERR_dsGet_not_number 9
+#define ERR_dsPop_not_number  10
+#define FUNC_dsPopValue 11
+#define ERR_dsPeek_not_number 12
+#define FUNC_inpAddToken 13
+#define FUNC_inpAddChar 14
+#define FUNC_dsPeekValue 15
+#define FUNC_dsPushValue 16
+#define ERR_INVALID_TYPE_CAST 17
+
 
 
 

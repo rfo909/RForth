@@ -1,17 +1,26 @@
-2022-05-17 v0.1 
+Development log
+---------------
+NEWEST FIRST
 
-2022-05-18 v0.1.1 Data Stack value types
-----------------------------------------
-Added support for types on stack. Keeping current functions
-dsPush() dsPeek() dsPop() dsGet() but added checks so they can
-only work on numeric data.
 
-The WORD type is for word literals (to be introduced)
+2022-05-20
+----------
 
-Fixed bug: names of local variables were not reset along with other Input resets
+Did some heap memory use reduction, by letting ERR* and WARN* take a code which 
+is ran through a switch doing Serial.println() with F(...) strings, using PROGMEM
+instead of the heap. Saved some 280 bytes this way. 
 
-Modified OP_DUP to call func in Stacks which handles the new struct type values
-on data stack.
+2022-05-19 v0.1.2
+-----------------
+
+Adding EEPROM support, as we have 1Kb of permanent storage there. Will change
+the storage model into a sequence of string + code + string + code, as each
+is terminated by a single 0-byte.
+
+Added types and extended stack to contain long values (4 bytes). Changed default 
+type from int to long.
+
+Added internal function millis for simple timing.
 
 2022-05-19
 ----------
@@ -28,19 +37,21 @@ Changed memory allocations for persistent string and code depending on whether
 disassembler is enabled or not, as enabling it costs about 200 bytes of string 
 constants on the heap.
 
-2022-05-19 v0.1.2
------------------
+2022-05-18 v0.1.1 Data Stack value types
+----------------------------------------
+Added support for types on stack. Keeping current functions
+dsPush() dsPeek() dsPop() dsGet() but added checks so they can
+only work on numeric data.
 
-Adding EEPROM support, as we have 1Kb of permanent storage there. Will change
-the storage model into a sequence of string + code + string + code, as each
-is terminated by a single 0-byte.
+The WORD type is for word literals (to be introduced)
 
-Added types and extended stack to contain long values (4 bytes). Changed default 
-type from int to long.
+Fixed bug: names of local variables were not reset along with other Input resets
 
-Added internal function millis for simple timing.
+Modified OP_DUP to call func in Stacks which handles the new struct type values
+on data stack.
 
 
+2022-05-17 v0.1 
 
 
 
