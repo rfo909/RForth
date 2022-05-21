@@ -13,13 +13,15 @@ typedef struct {
 #define DS_TYPE_BYTE     0x04
 #define DS_TYPE_LONG     0x08
 #define DS_TYPE_ULONG    0x10
-#define DS_TYPE_WORD     0x20
-#define DS_TYPE_STRUCT   0x40
-#define DS_TYPE_LIST     0x80
+#define DS_TYPE_SYM      0x20   // literal word 
+#define DS_TYPE_ADDR     0x40   // uses some bits for location and the rest for offset
+#define DS_TYPE_COMPLEX  0x80   // points to symbol (literal word)
+
+#define DS_TYPE_NULL     0xFF
+
 
 #define DS_TYPE_NUMBER_MASK   0x1F
 
-#define DS_TYPE_NULL     0xFF
 
 
 

@@ -56,6 +56,11 @@
 #define OP_EE_WRITE   47
 #define OP_EE_LENGTH  48
 
+#define OP_NULL       49
+#define OP_NOP        50
+
+#define OP_AS_SYM     51
+#define OP_AS_ADDR    52
 
 
 //bool executeOp (byte b);

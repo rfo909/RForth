@@ -46,6 +46,12 @@ static const char EE_READ[] PROGMEM = "ee:read";
 static const char EE_WRITE[] PROGMEM = "ee:write";
 static const char EE_LENGTH[] PROGMEM = "ee:length";
 
+static const char _NULL[] PROGMEM = "null";
+
+static const char T_SYM[] PROGMEM = ":sym";
+static const char T_ADDR[] PROGMEM = ":addr";
+
+
 int lookupSymbol (char *sym) {
   if (!strcmp_P(sym,ADD)) return OP_ADD;
   if (!strcmp_P(sym,SUB)) return OP_SUB;
@@ -85,5 +91,11 @@ int lookupSymbol (char *sym) {
   if (!strcmp_P(sym,EE_WRITE)) return OP_EE_WRITE;
   if (!strcmp_P(sym,EE_LENGTH)) return OP_EE_LENGTH;
   
+  if (!strcmp_P(sym,_NULL)) return OP_NULL;
+
+  if (!strcmp_P(sym,T_SYM)) return OP_AS_SYM;
+  if (!strcmp_P(sym,T_ADDR)) return OP_AS_ADDR;
+  
+
   return -1; 
 }

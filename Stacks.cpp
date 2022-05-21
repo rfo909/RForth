@@ -92,10 +92,18 @@ void dsDupValue() {
 // false if illegal
 bool dsTypeCast (byte newType) {
   DStackValue *x=dsPeekValue();
+  if (x->type==DS_TYPE_NULL) return true; 
+    // a null is a valid type of all types, and can not be type cast
+  
   if (x->type & DS_TYPE_NUMBER_MASK && newType & DS_TYPE_NUMBER_MASK) {
     x->type=newType;
     return true;
   } else {
+    if (x->type == newType) {
+      // no cast needed
+      return true;
+    }
+    
     ERR2(ERR_INVALID_TYPE_CAST,x->type,newType);
     halt();
   }

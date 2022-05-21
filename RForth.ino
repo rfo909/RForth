@@ -739,8 +739,24 @@ void displayStackValue (DStackValue *x) {
       Serial.println(F("  ULONG"));
       return;
     }
+    case DS_TYPE_SYM : {
+      Serial.println(F("Symbol    -- not implemented"));
+      return;
+    }
+    case DS_TYPE_ADDR : {
+      Serial.println(F("Address    -- not implemented"));
+      return;
+    }
+    case DS_TYPE_COMPLEX : {
+      Serial.println(F("Complex    -- not implemented"));
+      return;
+    }
+    case DS_TYPE_NULL : {
+      Serial.println(F("<null-value>       NULL"));
+      return;
+    }
   }
-  
+
   Serial.print(F("** Unknown type: "));
   Serial.println(x->type);
 
@@ -1298,13 +1314,48 @@ bool executeOneOp () {
       dsPushValue(DS_TYPE_INT, EEPROM.length());
       return true;
     }
+    case OP_NULL : {
+      dsPushValue(DS_TYPE_NULL, 0);
+      return true;
+    }
+    case OP_NOP : {
+      // do nothing
+      return true;
+    }
+    case OP_AS_SYM : {
+      if (dsEmpty()) {
+        Serial.println(F("OP_AS_SYM - data stack empty"));
+        return false;
+      }
+      DStackValue *x=dsPeekValue();
+      if (x->type != DS_TYPE_SYM && x->type != DS_TYPE_NULL) {
+        Serial.println(F("DS_TYPE_SYM: value not of type :sym or null"));
+        return false;
+      }
+      return true;
+    }
+    case OP_AS_ADDR : {
+      if (dsEmpty()) {
+        Serial.println(F("OP_AS_ADDR - data stack empty"));
+        return false;
+      }
+      DStackValue *x=dsPeekValue();
+      if (x->type != DS_TYPE_ADDR && x->type != DS_TYPE_NULL) {
+        Serial.println(F("DS_TYPE_ADDR: value not of type :addr or null"));
+        return false;
+      }
+      return true;
+    }
 
   }   
   ERR1(ERR_UNKNOWN_OP, b);
   return false;
 }
 
-const char OPNAMES[] PROGMEM = {"OP_EOF|OP_RET|OP_CALL|OP_JMP|OP_ZJMP|OP_CJMP|OP_POP|OP_DUP|OP_READ|OP_WRITE|OP_LSET|OP_LGET|OP_ADD|OP_SUB|OP_MUL|OP_DIV|OP_MOD|OP_NEG|OP_GT|OP_LT|OP_GE|OP_LE|OP_EQ|OP_NE|OP_L_AND|OP_L_OR|OP_L_NOT|OP_LSHIFT|OP_RSHIFT|OP_B_AND|OP_B_OR|OP_B_NOT|OP_LSET0|OP_LSET1|OP_LSET2|OP_LSET3|OP_LGET0|OP_LGET1|OP_LGET2|OP_LGET3|OP_AS_BYTE|OP_AS_INT|OP_AS_UINT|OP_AS_LONG|OP_AS_ULONG|OP_MILLIS|OP_EE_READ|OP_EE_WRITE|$"};
+
+const char OPNAMES[] PROGMEM = {"OP_EOF|OP_RET|OP_CALL|OP_JMP|OP_ZJMP|OP_CJMP|OP_POP|OP_DUP|OP_READ|OP_WRITE|OP_LSET|OP_LGET|OP_ADD|OP_SUB|OP_MUL|OP_DIV|OP_MOD|OP_NEG|OP_GT|OP_LT|OP_GE|OP_LE|OP_EQ|OP_NE|OP_L_AND|OP_L_OR|OP_L_NOT|OP_LSHIFT|OP_RSHIFT|OP_B_AND|OP_B_OR|OP_B_NOT|OP_LSET0|OP_LSET1|OP_LSET2|OP_LSET3|OP_LGET0|OP_LGET1|OP_LGET2|OP_LGET3|OP_AS_BYTE|OP_AS_INT|OP_AS_UINT|OP_AS_LONG|OP_AS_ULONG|OP_MILLIS|OP_EE_READ|OP_EE_WRITE|OP_EE_LENGTH|OP_NULL|OP_NOP|OP_AS_SYM|OP_AS_ADDR|$"};
+
+
 void printOpName (const int opCode) {
   int counter=opCode;
   int pos=0;

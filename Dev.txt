@@ -14,11 +14,74 @@ TODO:
 	- local variables must inhert type of values from stack, and push values back with type
 	- numeric types conversions for arithmetic ops? 
 	- enforce type where relevant (read, write, ee:read, ee:write)
-	- introduce NULL value
 	- implement ( ... -- ...) and stack sanity checks for word execution 
 	
 
+
 	
+2022-05-21 v0.1.5
+-----------------
+Created keyword "null" and corresponding type NULL. Also defined types SYM, ADDR
+and COMPLEX, with keywords ":sym" and ":addr" to verify value on stack is
+SYM or ADDR, respectively. The COMPLEX type has no such keyword. There also is
+no keyword ":null"
+
+The idea is that SYM is a word literal, to be created by 
+
+	' something
+	
+The literal words will need to be stored in the same space as word names.
+
+	
+The ADDR type will in turn be created by a target indicator, preferrably in
+the form of firmware functions RAM, EEPROM, FLASH and EXTERN(n) that supply 
+values understood by the C code, followed by an (uint) address inside that medium.
+
+The idea is that EXTERN(n), supporting multiple external devices, are routed via
+particular hook words, which handle details concerning off-MCU storage outside
+the C code.
+
+The last type, COMPLEX, is for defining structs and lists, which will be language
+constructs
+
+* Structs
+
+	1 =a 2 =b { a b } :struct:xxx =myStruct
+	
+The meta-keyword :struct:xxx must be recognized by the parser,  and checks
+or applies a subtype ("xxx") to the struct data. The :struct:xxx is a word literal
+stored somewhere. 
+
+* Lists
+
+Something like
+
+	[ 1 2 3 ] =x   # has type :list 
+	[ 1 2 3 ] :list:whatever =x  # has type :list:whatever
+	
+	A value of type :list:x can be modified to :list:x:y or :list but not
+	directly to :list:y ... or something. This hasn't been thought out yet.
+
+
+The bottom line is that we need data structures, not just a hierarchy of words
+calling each other. 
+	
+* (Strings)
+
+Possibly we can adopt the Forth standard of sequences of words as strings of sorts,
+letting  
+
+	." a b c "
+	
+become
+
+	[ ' a ' b ' c ] :list:words
+	
+At some point we will want to add a keyword that prints data to Serial from 
+RForth code
+
+
+
 
 2022-05-21 v0.1.4
 -----------------
