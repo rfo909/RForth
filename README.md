@@ -10,6 +10,19 @@ ended up with a pure C implementation.
 For fun, and for doing interactive programming on the tiny little Arduino
 Nano / Uno, with its 2Kb of SRAM. 
 
+But also because C, at least in the Arduino IDE, is hugely prone to
+pointer errors, as the compiler checks very little, for example if you
+forget returning something from a function. This gives "interesting" bugs
+that are hard to find.
+
+The first goal is to allow my little Nano to store RForth code in an external
+EEPROM chip (24FC256) of 32 KBytes, via I2C, and abstract this to reserved
+"hook" words, such as $save:func, $fetch:func and so on, which is to say that the
+details are written in RForth, not buried inside the C code.
+
+:-)
+
+
 # Examples?
 
 ```

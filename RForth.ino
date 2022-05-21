@@ -878,7 +878,7 @@ bool executeOneOp () {
       }
       long addr=dsPop();
       byte *ptr=(byte *) addr;
-      dsPush(*ptr);
+      dsPushValue(DS_TYPE_BYTE, *ptr);
       return true;
     }
     case OP_WRITE : {
@@ -1266,13 +1266,40 @@ bool executeOneOp () {
       dsPushValue(DS_TYPE_ULONG, millis());
       return true;
     }
+    case OP_EE_READ : {
+      if (dsEmpty()) {
+        Serial.println(F("OP_EE_READ - data stack empty"));
+        return false;
+      }
+      int addr=dsPop();
+      dsPushValue(DS_TYPE_BYTE, EEPROM.read(addr));
+      return true;
+    }
+    case OP_EE_WRITE : {
+      if (dsEmpty()) {
+        Serial.println(F("OP_EE_WRITE - data stack empty"));
+        return false;
+      }
+      int addr=dsPop();
+      if (dsEmpty()) {
+        Serial.println(F("OP_EE_WRITE - data stack empty"));
+        return false;
+      }
+      byte value=dsPop();
+      EEPROM.update(addr,value);
+      return true;
+    }
+    case OP_EE_LENGTH : {
+      dsPushValue(DS_TYPE_INT, EEPROM.length());
+      return true;
+    }
 
   }   
   ERR1(ERR_UNKNOWN_OP, b);
   return false;
 }
 
-const char OPNAMES[] PROGMEM = {"OP_EOF|OP_RET|OP_CALL|OP_JMP|OP_ZJMP|OP_CJMP|OP_POP|OP_DUP|OP_READ|OP_WRITE|OP_LSET|OP_LGET|OP_ADD|OP_SUB|OP_MUL|OP_DIV|OP_MOD|OP_NEG|OP_GT|OP_LT|OP_GE|OP_LE|OP_EQ|OP_NE|OP_L_AND|OP_L_OR|OP_L_NOT|OP_LSHIFT|OP_RSHIFT|OP_B_AND|OP_B_OR|OP_B_NOT|OP_LSET0|OP_LSET1|OP_LSET2|OP_LSET3|OP_LGET0|OP_LGET1|OP_LGET2|OP_LGET3|OP_AS_BYTE|OP_AS_INT|OP_AS_UINT|OP_AS_LONG|OP_AS_ULONG|OP_MILLIS|$"};
+const char OPNAMES[] PROGMEM = {"OP_EOF|OP_RET|OP_CALL|OP_JMP|OP_ZJMP|OP_CJMP|OP_POP|OP_DUP|OP_READ|OP_WRITE|OP_LSET|OP_LGET|OP_ADD|OP_SUB|OP_MUL|OP_DIV|OP_MOD|OP_NEG|OP_GT|OP_LT|OP_GE|OP_LE|OP_EQ|OP_NE|OP_L_AND|OP_L_OR|OP_L_NOT|OP_LSHIFT|OP_RSHIFT|OP_B_AND|OP_B_OR|OP_B_NOT|OP_LSET0|OP_LSET1|OP_LSET2|OP_LSET3|OP_LGET0|OP_LGET1|OP_LGET2|OP_LGET3|OP_AS_BYTE|OP_AS_INT|OP_AS_UINT|OP_AS_LONG|OP_AS_ULONG|OP_MILLIS|OP_EE_READ|OP_EE_WRITE|$"};
 void printOpName (const int opCode) {
   int counter=opCode;
   int pos=0;

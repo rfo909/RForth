@@ -52,6 +52,9 @@
 #define OP_AS_ULONG   44
 
 #define OP_MILLIS     45
+#define OP_EE_READ    46
+#define OP_EE_WRITE   47
+#define OP_EE_LENGTH  48
 
 
 

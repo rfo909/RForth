@@ -38,6 +38,9 @@ int lookupSymbol (char *sym) {
   if (!strcmp(sym,":ulong")) return OP_AS_ULONG;
 
   if (!strcmp(sym,"millis")) return OP_MILLIS;
+  if (!strcmp(sym,"ee:read")) return OP_EE_READ;
+  if (!strcmp(sym,"ee:write")) return OP_EE_WRITE;
+  if (!strcmp(sym,"ee:length")) return OP_EE_LENGTH;
   
   return -1; 
 }

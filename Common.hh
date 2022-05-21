@@ -10,15 +10,15 @@ typedef unsigned char byte;
 #define NULL    0
 
 
-#define VERSION "0.1.3"
+#define VERSION "0.1.4"
 
 
 // Input.cpp
 #define INPUT_BUF_SIZE      160
-#define INPUT_TOKEN_COUNT   30
+#define INPUT_TOKEN_COUNT   60
 
 // Stacks.hh / Input.cpp
-#define LOCAL_VARIABLE_COUNT    6
+#define LOCAL_VARIABLE_COUNT    4
 
 // Stacks.cpp
 #define DATA_STACK_SIZE     15

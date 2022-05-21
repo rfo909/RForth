@@ -1,25 +1,43 @@
+: PINB 0x23 ;
 : DDRB 0x24 ;
 : PORTB 0x25 ;
-
-: mask =count 1 count << ;
-: M 5 mask ;
-
-: init DDRB read M | DDRB write ;
-
-init ;
-
-: on PORTB read M | PORTB write ;
-: off PORTB read M ! & PORTB write ;
-
+: PINC 0x26 ;
+: DDRC 0x27 ;
+: PORTC 0x28 ;
+: PIND 0x29 ;
+: DDRD 0x2a ;
+: PORTD 0x2b ;
 
 : wait =ms millis ms + =ms loop{ millis ms > break  } ;
 
-: blink loop{ on 1000 wait off 500 wait } ;
+: Reg! =addr =valueMask =clearMask
+	addr read clearMask ! &
+		valueMask | addr write ;
 
-	# Finally the blink implementation!
 
-: N:blink =n loop{ on 1000 wait off 500 wait n 1 - =n n 0 <= break } ;
- 
+: blink
+	b0010_0000 =m
+	m m DDRB Reg!
+	loop{
+		m m PORTB Reg! 500 wait
+		m 0 PORTB Reg! 400 wait
+	}
+;
+
+
+: N-blink =n
+	b0010_0000 =m
+	m m DDRB Reg!
+	loop{
+		m m PORTB Reg! 1000 wait
+		m 0 PORTB Reg! 500 wait
+		n 1 - =n
+		n 0 <= break
+	}
+;
+
+
+
 
 # Testing speed
 # --
@@ -39,18 +57,5 @@ loop{ millis start > break }
 loop{ count 1 + =count millis stop > break }
 count ;
 
-# -------------
-# Alternative
-# -------------
-
-# Modify register - change one or more bits at a time
-
-: SetReg =addr =clearMask =valueMask
-	addr read clearMask ! &
-		valueMask | addr write ;
-
-
-: on2 M M PORTB SetReg ;
-: off2 0 M PORTB SetReg ;
-
+#
 
