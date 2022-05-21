@@ -45,7 +45,7 @@ DStackValue *dsPeekValue() {
 
 long dsPeek () {
   DStackValue *x = dsPeekValue();
-  if (x->type > DS_LAST_NUMBER_TYPE) {
+  if (!(x->type & DS_TYPE_NUMBER_MASK)) {
     ERR1(ERR_dsPeek_not_number, x->type);
   }
   return x->val;
@@ -64,7 +64,7 @@ DStackValue *dsPopValue() {
 
 long dsPop () {
   DStackValue *x = dsPopValue();
-  if (x->type > DS_LAST_NUMBER_TYPE) {
+  if (!(x->type & DS_TYPE_NUMBER_MASK)) {
     ERR1(ERR_dsPop_not_number, x->type);
   }
   return x->val; 
@@ -92,7 +92,7 @@ void dsDupValue() {
 // false if illegal
 bool dsTypeCast (byte newType) {
   DStackValue *x=dsPeekValue();
-  if (x->type <= DS_LAST_NUMBER_TYPE && newType <= DS_LAST_NUMBER_TYPE) {
+  if (x->type & DS_TYPE_NUMBER_MASK && newType & DS_TYPE_NUMBER_MASK) {
     x->type=newType;
     return true;
   } else {

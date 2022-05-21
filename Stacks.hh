@@ -8,16 +8,21 @@ typedef struct {
   long val;
 } DStackValue;
 
-#define DS_TYPE_INT      0     // default: signed int
-#define DS_TYPE_UINT     1
-#define DS_TYPE_BYTE     2
-#define DS_TYPE_LONG     3
-#define DS_TYPE_ULONG    4
+#define DS_TYPE_INT      0x01
+#define DS_TYPE_UINT     0x02
+#define DS_TYPE_BYTE     0x04
+#define DS_TYPE_LONG     0x08
+#define DS_TYPE_ULONG    0x10
+#define DS_TYPE_WORD     0x20
+#define DS_TYPE_STRUCT   0x40
+#define DS_TYPE_LIST     0x80
 
-#define DS_LAST_NUMBER_TYPE   9
-  // number types can be cast freely between each other
+#define DS_TYPE_NUMBER_MASK   0x1F
 
-#define DS_TYPE_WORD    10
+#define DS_TYPE_NULL     0xFF
+
+
+
 typedef struct {
   byte *code;
   int pc;

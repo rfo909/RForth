@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <Arduino.h>
 
 typedef unsigned char byte;
 
@@ -14,8 +15,8 @@ typedef unsigned char byte;
 
 
 // Input.cpp
-#define INPUT_BUF_SIZE      160
-#define INPUT_TOKEN_COUNT   60
+#define INPUT_BUF_SIZE      200
+#define INPUT_TOKEN_COUNT   100
 
 // Stacks.hh / Input.cpp
 #define LOCAL_VARIABLE_COUNT    4
