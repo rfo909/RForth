@@ -156,4 +156,60 @@ Then follow code to push 500 on the stack, before calling wait again, in
 instructions 16-17. Instruction 18-19 perform a jump back to instruction 0, repeating
 the loop forever.
 
+# Show status
+
+## List defined words
+
+```
+words ;
+
+   DDRB
+   PORTB
+   mask
+   M
+   init
+   on
+   off
+   wait
+   blink
+
+```
+
+## Display memory use
+
+```
+stats ;
+
+ps: 41 of 150
+pc: 78 of 400
+ps + pc: 119
+map:9 of 30
+
+```
+The words listed above consume a total of 119 bytes or memory, of which 41
+bytes represent the names (as strings) and 78 bytes the byte code.
+
+The map tells us that there are 9 words defined, out of a capacity of 30.
+
+## Saving
+
+Not implemented yet. Considering three different options:
+
+- export code in RAM as hex-string to be pasted into source code, stored in PROGMEM
+- saving code to the 1K EEPROM (often smaller on other Arduinos)
+- interfacing external FLASH or EEPROM via SPI / I2C.
+
+The first is a bit messy, as it requires recompiling, but for typical common firmware
+words, it may be ok.
+
+The second, writing to EEPROM, is easy to implement, but because different Arduino's
+have quite small EEPROM's, it is probably better suited for permanent data storage,
+under RForth control.
+
+The third, interfacing external persistent storage, is the most tempting, as long
+as it is done in a way that is handled within the RForth language, using hooks,
+so that we program the specifics of the interaction completely in RForth, not C. 
+
+
+
 
