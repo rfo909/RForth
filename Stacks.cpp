@@ -2,6 +2,7 @@
 
 static DStackValue dataStack[DATA_STACK_SIZE];
 static int dsNext=0;
+static int dsMaxStackSize=0;
 
 
 bool dsEmpty() {
@@ -12,8 +13,13 @@ int dsCount() {
   return dsNext;
 }
 
+int getDsMaxStackSize() {
+  return dsMaxStackSize;
+}
 
 void dsPushValue (byte type, long val) {
+  if (dsNext > dsMaxStackSize) dsMaxStackSize=dsNext;
+  
   if (dsNext >= DATA_STACK_SIZE) {
     ERR1(FUNC_dsPushValue,dsNext);
   } else {
@@ -99,8 +105,10 @@ bool dsTypeCast (byte newType) {
 
 static CStackFrame callStack[CALL_STACK_SIZE];
 static int csNext=0;
+static int csMaxStackSize=0;
 
 void csPush (byte *theCode) {
+  if (csNext > csMaxStackSize) csMaxStackSize=csNext;
   if (csNext >= CALL_STACK_SIZE) {
     ERR1(FUNC_csPush,csNext);
   } else {
@@ -118,6 +126,11 @@ void csPush (byte *theCode) {
 bool csEmpty () {
   return (csNext==0);
 }
+
+int getCsMaxStackSize() {
+  return csMaxStackSize;
+}
+
 
 CStackFrame *csPeek () {
   if (csEmpty()) ERR1(FUNC_csPeek,csNext);

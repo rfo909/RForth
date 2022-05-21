@@ -18,6 +18,9 @@ init ;
 
 	# Finally the blink implementation!
 
+: N:blink =n loop{ on 1000 wait off 500 wait n 1 - =n n 0 <= break } ;
+ 
+
 # Testing speed
 # --
 

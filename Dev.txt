@@ -2,6 +2,18 @@ Development log
 ---------------
 NEWEST FIRST
 
+
+2022-05-21
+----------
+Added monitoring for max stack depth (data and callstack), presented for stats
+command. 
+
+Reduced number of local variables from 8 to 6, and reduced data stack from
+20 to 15. The idea is that words pick data off the data stack, storing them
+in local variables, then possibly calling other words, and finally producing
+a result. 
+
+
 2022-05-21 v0.1.3
 -----------------
 Moved op-code names into PROGMEM, and so enabled the disassembler permanently as

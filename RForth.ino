@@ -346,22 +346,28 @@ bool parseImmediateCode() {
       continue;
     }
     if (inpTokenMatches("stats")) {
-      Serial.print("ps: ");
+      Serial.print(F("ps: "));
       Serial.print(psCount());
       Serial.print(" of ");
       Serial.println(P_STRING_SIZE);
       
-      Serial.print("pc: ");
+      Serial.print(F("pc: "));
       Serial.print(pcCount());
       Serial.print(" of ");
       Serial.println(P_CODE_SIZE);
-      Serial.print("ps + pc: ");
+      Serial.print(F("ps + pc: "));
       Serial.println(psCount()+pcCount());
       
-      Serial.print("map:");
+      Serial.print(F("map:"));
       Serial.print(mapCount());
       Serial.print(" of ");
       Serial.println(MAP_SIZE);
+
+      Serial.print(F("Max data stack depth: "));
+      Serial.println(getDsMaxStackSize());
+
+      Serial.print(F("Max call stack depth: "));
+      Serial.println(getCsMaxStackSize());
 
       continue;
     }

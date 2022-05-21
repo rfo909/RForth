@@ -28,6 +28,7 @@ typedef struct {
 
 bool dsEmpty();
 int dsCount();
+int getDsMaxStackSize();
 
 void dsPushValue (byte type, long val);
 void dsPush (long val);
@@ -48,6 +49,7 @@ bool dsTypeCast (byte newType);
 
 void csPush (byte *code);
 bool csEmpty ();
+int getCsMaxStackSize();
 CStackFrame *csPeek ();
 void csPop();
 int csCount();
