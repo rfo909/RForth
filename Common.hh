@@ -10,12 +10,7 @@ typedef unsigned char byte;
 #define NULL    0
 
 
-#define VERSION "0.1.1"
-
-// .ino
-// #define ENABLE_DISASSEMBLER 
-  // enabling costs us almost 200 bytes of SRAM due to 
-  // message strings on heap inside the disassemble() function.
+#define VERSION "0.1.3"
 
 
 // Input.cpp
@@ -32,17 +27,8 @@ typedef unsigned char byte;
 
 // Storage.hh
 
-#ifdef ENABLE_DISASSEMBLER
- 
-  #define P_STRING_SIZE     100
-  #define P_CODE_SIZE       200 
-
-#else
-
-  #define P_STRING_SIZE     150
-  #define P_CODE_SIZE       400 
-
-#endif
+#define P_STRING_SIZE     150
+#define P_CODE_SIZE       400 
 
 // Storage.cpp
 #define MAP_SIZE          30
@@ -56,6 +42,7 @@ void halt();
 
 void LOG2 (int code, long a, long b);
 
+void printOpName (int opCode);
 
 #define ERR_UNKNOWN_OP        1
 #define FUNC_csPop              2

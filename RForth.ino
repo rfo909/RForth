@@ -224,9 +224,6 @@ void loop() {
 // code MUST end with OP_EOF
 void disassemble (byte *code) {
 
-
-#ifdef ENABLE_DISASSEMBLER
-
   for (int pos=0; pos<128; pos++) {
     Serial.print("  ");
     Serial.print(pos);
@@ -240,19 +237,11 @@ void disassemble (byte *code) {
       Serial.print(" ");
       Serial.println(b & 0x7F);
     } else {
-      char *op=getOp(b);
-      if (op!=NULL) {
-        Serial.println(op);
-      } else {
-        Serial.println(b);
-      }
+      printOpName(b);
+      Serial.println();
     }
     if (b==OP_EOF) break;
   }
-
-#else
-    Serial.println(F("The disassemble functionality is turned off to save memory"));
-#endif
 
 }
 
@@ -436,9 +425,7 @@ bool parseImmediateCode() {
   //Serial.println(codePos);
   byte *code=pcGetPointer(codePos);
 
-#ifdef ENABLE_DISASSEMBLER
   disassemble(code);
-#endif
 
   executeCode(code);
   
@@ -757,7 +744,7 @@ void displayStackValue (DStackValue *x) {
 void executeCode (byte *initialCode) {
   csPush(initialCode);
 
-  int executeOpCount=0;
+  long executeOpCount=0;
   unsigned long startTime=millis();
   while(!csEmpty()) {
     if (!executeOneOp()) {
@@ -1277,4 +1264,35 @@ bool executeOneOp () {
   }   
   ERR1(ERR_UNKNOWN_OP, b);
   return false;
+}
+
+const char OPNAMES[] PROGMEM = {"OP_EOF|OP_RET|OP_CALL|OP_JMP|OP_ZJMP|OP_CJMP|OP_POP|OP_DUP|OP_READ|OP_WRITE|OP_LSET|OP_LGET|OP_ADD|OP_SUB|OP_MUL|OP_DIV|OP_MOD|OP_NEG|OP_GT|OP_LT|OP_GE|OP_LE|OP_EQ|OP_NE|OP_L_AND|OP_L_OR|OP_L_NOT|OP_LSHIFT|OP_RSHIFT|OP_B_AND|OP_B_OR|OP_B_NOT|OP_LSET0|OP_LSET1|OP_LSET2|OP_LSET3|OP_LGET0|OP_LGET1|OP_LGET2|OP_LGET3|OP_AS_BYTE|OP_AS_INT|OP_AS_UINT|OP_AS_LONG|OP_AS_ULONG|OP_MILLIS|$"};
+void printOpName (const int opCode) {
+  int counter=opCode;
+  int pos=0;
+  char buf[20];
+  int bufPos=0;
+
+  for (;;) {
+    char c=pgm_read_byte_near(OPNAMES+pos);
+    if (c=='$') {
+      Serial.println();
+      Serial.print(F("printOpName failed for opCode "));
+      Serial.println(opCode);
+      return;
+    }
+    if (c=='|') {
+      if (counter == 0) {
+        Serial.print(buf);
+        return;
+      }
+      counter--;
+      bufPos=0;
+    } else {
+      buf[bufPos]=c;
+      buf[bufPos+1]='\0';
+      bufPos++;
+    }
+    pos++;
+  }
 }

@@ -54,7 +54,6 @@
 #define OP_MILLIS     45
 
 
-char *getOp (byte b);
 
 //bool executeOp (byte b);
 

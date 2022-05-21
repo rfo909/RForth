@@ -5,7 +5,10 @@
 : M 5 mask ;
 
 : init DDRB read M | DDRB write ;
-: on init PORTB read M | PORTB write ;
+
+init ;
+
+: on PORTB read M | PORTB write ;
 : off PORTB read M ! & PORTB write ;
 
 
@@ -18,7 +21,7 @@
 # Testing speed
 # --
 
-0 =a loop{ a 1 + =a a 100 > break } ;
+0 =a loop{ a 1 + =a a 1000 > break } ;
 
 # 9 ms #op=1112
 
@@ -42,5 +45,9 @@ count ;
 : SetReg =addr =clearMask =valueMask
 	addr read clearMask ! &
 		valueMask | addr write ;
+
+
+: on2 M M PORTB SetReg ;
+: off2 0 M PORTB SetReg ;
 
 

@@ -2,6 +2,12 @@ Development log
 ---------------
 NEWEST FIRST
 
+2022-05-21 v0.1.3
+-----------------
+Moved op-code names into PROGMEM, and so enabled the disassembler permanently as
+it consumes no heap space any more. Extended the README.md with complete example
+code for "blink" and output from the disassember, with detailed description.
+
 
 2022-05-20
 ----------
