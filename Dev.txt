@@ -28,6 +28,12 @@ ee:write ( value addr -- )
 ee:read  ( addr -- :byte ) 
 ee:length ( -- :int ) 
 	(returns 1024 on the nano)
+	
+Also made lookupSymbol() in OpCodes.cpp use PROGMEM instead of heap strings, when
+mapping built-in functions like "+" and "-" to op-codes.
+
+Actually saved about 125 bytes!!
+
 
 
 2022-05-21

@@ -194,3 +194,11 @@ int mapCount () {
 char *mapGetName (int pos) {
   return mapData[pos].name;
 }
+
+int mapGetLength (int pos) {
+  if (pos < mapNext-1) {
+    return mapData[pos+1].codePos - mapData[pos].codePos;
+  } else {
+    return pcNext-mapData[pos].codePos;
+  }
+}

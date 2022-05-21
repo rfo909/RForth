@@ -30,6 +30,7 @@ void mapAddPos (char *name, int codePos);
 int mapLookupPos (char *name);
 int mapCount ();
 char *mapGetName (int pos);
+int mapGetLength (int pos);
 
 
 #endif

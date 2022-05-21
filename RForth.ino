@@ -340,33 +340,38 @@ bool parseImmediateCode() {
     if (inpTokenMatches("words")) {
       int cnt=mapCount();
       for (int i=0; i<cnt; i++) {
-        Serial.print("   ");
-        Serial.println(mapGetName(i));
+        char *fname=mapGetName(i);
+        int len=mapGetLength(i);
+        Serial.print(F("  "));
+        Serial.print(fname);
+        Serial.print(F("     - "));
+        Serial.print(len);
+        Serial.println(F(" bytes"));
       }
       continue;
     }
     if (inpTokenMatches("stats")) {
-      Serial.print(F("ps: "));
+      Serial.print(F("  ps: "));
       Serial.print(psCount());
       Serial.print(" of ");
       Serial.println(P_STRING_SIZE);
       
-      Serial.print(F("pc: "));
+      Serial.print(F("  pc: "));
       Serial.print(pcCount());
       Serial.print(" of ");
       Serial.println(P_CODE_SIZE);
-      Serial.print(F("ps + pc: "));
+      Serial.print(F("  ps + pc: "));
       Serial.println(psCount()+pcCount());
       
-      Serial.print(F("map:"));
+      Serial.print(F("  map:"));
       Serial.print(mapCount());
       Serial.print(" of ");
       Serial.println(MAP_SIZE);
 
-      Serial.print(F("Max data stack depth: "));
+      Serial.print(F("  Max data stack depth: "));
       Serial.println(getDsMaxStackSize());
 
-      Serial.print(F("Max call stack depth: "));
+      Serial.print(F("  Max call stack depth: "));
       Serial.println(getCsMaxStackSize());
 
       continue;
