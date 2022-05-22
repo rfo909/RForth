@@ -74,4 +74,6 @@
 
 int lookupSymbol (char *sym);
 
+void printOpName (int opCode);
+
 #endif

@@ -41,9 +41,13 @@ static int pcNext=0;
 
 void pcAddByte (byte b) {
   if (pcNext >= P_CODE_SIZE) {
-    Serial.println(F("psAddByte: no more space"));
+    Serial.println(F("psAddByte: no more space (P_CODE_SIZE)"));
     setAbortCodeExecution();
     return;
+  }
+  if (pcNext-pcStart >= P_CODE_MAX_SIZE) {
+    Serial.println(F("psAddByte: function too long (P_CODE_MAX_SIZE)"));
+    setAbortCodeExecution();
   }
   pcData[pcNext++]=b;
 }

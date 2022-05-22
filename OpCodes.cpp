@@ -104,3 +104,232 @@ int lookupSymbol (char *sym) {
 
   return -1; 
 }
+
+
+
+void printOpName (const int opCode) {
+  switch(opCode) {
+    case OP_EOF: {
+      Serial.print(F("OP_EOF"));
+      return;
+    }
+    case OP_RET: {
+      Serial.print(F("OP_RET"));
+      return;
+    }
+    case OP_CALL: {
+      Serial.print(F("OP_CALL"));
+      return;
+    }
+    case OP_JMP: {
+      Serial.print(F("OP_JMP"));
+      return;
+    }
+    case OP_ZJMP: {
+      Serial.print(F("OP_ZJMP"));
+      return;
+    }
+    case OP_CJMP: {
+      Serial.print(F("OP_CJMP"));
+      return;
+    }
+    case OP_POP: {
+      Serial.print(F("OP_POP"));
+      return;
+    }
+    case OP_DUP: {
+      Serial.print(F("OP_DUP"));
+      return;
+    }
+    case OP_READ: {
+      Serial.print(F("OP_READ"));
+      return;
+    }
+    case OP_WRITE: {
+      Serial.print(F("OP_WRITE"));
+      return;
+    }
+    case OP_LSET: {
+      Serial.print(F("OP_LSET"));
+      return;
+    }
+    case OP_LGET: {
+      Serial.print(F("OP_LGET"));
+      return;
+    }
+    case OP_ADD: {
+      Serial.print(F("OP_ADD"));
+      return;
+    }
+    case OP_SUB: {
+      Serial.print(F("OP_SUB"));
+      return;
+    }
+    case OP_MUL: {
+      Serial.print(F("OP_MUL"));
+      return;
+    }
+    case OP_DIV: {
+      Serial.print(F("OP_DIV"));
+      return;
+    }
+    case OP_MOD: {
+      Serial.print(F("OP_MOD"));
+      return;
+    }
+    case OP_NEG: {
+      Serial.print(F("OP_NEG"));
+      return;
+    }
+    case OP_GT: {
+      Serial.print(F("OP_GT"));
+      return;
+    }
+    case OP_LT: {
+      Serial.print(F("OP_LT"));
+      return;
+    }
+    case OP_GE: {
+      Serial.print(F("OP_GE"));
+      return;
+    }
+    case OP_LE: {
+      Serial.print(F("OP_LE"));
+      return;
+    }
+    case OP_EQ: {
+      Serial.print(F("OP_EQ"));
+      return;
+    }
+    case OP_NE: {
+      Serial.print(F("OP_NE"));
+      return;
+    }
+    case OP_L_AND: {
+      Serial.print(F("OP_L_AND"));
+      return;
+    }
+    case OP_L_OR: {
+      Serial.print(F("OP_L_OR"));
+      return;
+    }
+    case OP_L_NOT: {
+      Serial.print(F("OP_L_NOT"));
+      return;
+    }
+    case OP_LSHIFT: {
+      Serial.print(F("OP_LSHIFT"));
+      return;
+    }
+    case OP_RSHIFT: {
+      Serial.print(F("OP_RSHIFT"));
+      return;
+    }
+    case OP_B_AND: {
+      Serial.print(F("OP_B_AND"));
+      return;
+    }
+    case OP_B_OR: {
+      Serial.print(F("OP_B_OR"));
+      return;
+    }
+    case OP_B_NOT: {
+      Serial.print(F("OP_B_NOT"));
+      return;
+    }
+    case OP_LSET0: {
+      Serial.print(F("OP_LSET0"));
+      return;
+    }
+    case OP_LSET1: {
+      Serial.print(F("OP_LSET1"));
+      return;
+    }
+    case OP_LSET2: {
+      Serial.print(F("OP_LSET2"));
+      return;
+    }
+    case OP_LSET3: {
+      Serial.print(F("OP_LSET3"));
+      return;
+    }
+    case OP_LGET0: {
+      Serial.print(F("OP_LGET0"));
+      return;
+    }
+    case OP_LGET1: {
+      Serial.print(F("OP_LGET1"));
+      return;
+    }
+    case OP_LGET2: {
+      Serial.print(F("OP_LGET2"));
+      return;
+    }
+    case OP_LGET3: {
+      Serial.print(F("OP_LGET3"));
+      return;
+    }
+    case OP_AS_BYTE: {
+      Serial.print(F("OP_AS_BYTE"));
+      return;
+    }
+    case OP_AS_INT: {
+      Serial.print(F("OP_AS_INT"));
+      return;
+    }
+    case OP_AS_UINT: {
+      Serial.print(F("OP_AS_UINT"));
+      return;
+    }
+    case OP_AS_LONG: {
+      Serial.print(F("OP_AS_LONG"));
+      return;
+    }
+    case OP_AS_ULONG: {
+      Serial.print(F("OP_AS_ULONG"));
+      return;
+    }
+    case OP_MILLIS: {
+      Serial.print(F("OP_MILLIS"));
+      return;
+    }
+    case OP_EE_READ: {
+      Serial.print(F("OP_EE_READ"));
+      return;
+    }
+    case OP_EE_WRITE: {
+      Serial.print(F("OP_EE_WRITE"));
+      return;
+    }
+    case OP_EE_LENGTH: {
+      Serial.print(F("OP_EE_LENGTH"));
+      return;
+    }
+    case OP_NULL: {
+      Serial.print(F("OP_NULL"));
+      return;
+    }
+    case OP_NOP: {
+      Serial.print(F("OP_NOP"));
+      return;
+    }
+    case OP_AS_SYM: {
+      Serial.print(F("OP_AS_SYM"));
+      return;
+    }
+    case OP_AS_ADDR: {
+      Serial.print(F("OP_AS_ADDR"));
+      return;
+    }
+    case OP_ABORT: {
+      Serial.print(F("OP_ABORT"));
+      return;
+    }
+    case OP_AS_BOOL: {
+      Serial.print(F("OP_AS_BOOL"));
+      return;
+    }
+  }
+  Serial.print(F("Unknown OP "));
+  Serial.print(opCode);
+}

@@ -31,9 +31,10 @@ typedef unsigned char byte;
 #define P_STRING_SIZE     300
 #define P_CODE_SIZE       400 
 
+
 // Storage.cpp
 #define MAP_SIZE          40
-
+#define P_CODE_MAX_SIZE   127
 
 
 void ERR1 (int code, long a);
@@ -45,7 +46,7 @@ void LOG2 (int code, long a, long b);
 
 void setAbortCodeExecution ();
 
-void printOpName (int opCode);
+
 
 
 #endif

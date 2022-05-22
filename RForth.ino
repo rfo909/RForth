@@ -98,7 +98,12 @@ void setup() {
 void parseTokens();
 
 void loop() {
-  // put your main code here, to run repeatedly:
+
+  if (abortCodeExecution) {
+    reset();
+    return;
+  }
+
   char c=Serial.read();
   if (c==-1) return;
   //Serial.print(c);
@@ -1299,38 +1304,4 @@ bool executeOneOp () {
   Serial.print(F("Unknown OP "));
   Serial.println(b);   
   return false;
-}
-
-
-const char OPNAMES[] PROGMEM = {"OP_EOF|OP_RET|OP_CALL|OP_JMP|OP_ZJMP|OP_CJMP|OP_POP|OP_DUP|OP_READ|OP_WRITE|OP_LSET|OP_LGET|OP_ADD|OP_SUB|OP_MUL|OP_DIV|OP_MOD|OP_NEG|OP_GT|OP_LT|OP_GE|OP_LE|OP_EQ|OP_NE|OP_L_AND|OP_L_OR|OP_L_NOT|OP_LSHIFT|OP_RSHIFT|OP_B_AND|OP_B_OR|OP_B_NOT|OP_LSET0|OP_LSET1|OP_LSET2|OP_LSET3|OP_LGET0|OP_LGET1|OP_LGET2|OP_LGET3|OP_AS_BYTE|OP_AS_INT|OP_AS_UINT|OP_AS_LONG|OP_AS_ULONG|OP_MILLIS|OP_EE_READ|OP_EE_WRITE|OP_EE_LENGTH|OP_NULL|OP_NOP|OP_AS_SYM|OP_AS_ADDR|OP_ABORT|OP_AS_BOOL|$"};
-
-
-void printOpName (const int opCode) {
-  int counter=opCode;
-  int pos=0;
-  char buf[20];
-  int bufPos=0;
-
-  for (;;) {
-    char c=pgm_read_byte_near(OPNAMES+pos);
-    if (c=='$') {
-      Serial.println();
-      Serial.print(F("printOpName failed for opCode "));
-      Serial.println(opCode);
-      return;
-    }
-    if (c=='|') {
-      if (counter == 0) {
-        Serial.print(buf);
-        return;
-      }
-      counter--;
-      bufPos=0;
-    } else {
-      buf[bufPos]=c;
-      buf[bufPos+1]='\0';
-      bufPos++;
-    }
-    pos++;
-  }
 }
