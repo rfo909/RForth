@@ -136,4 +136,12 @@ Strings.concat.length + Strings.length*3 - Strings.length*2
 /OPM	 
 
 
+# Source bytes
+# --
+	Sys.savefile.dir.files->f
+		type=f.name.afterLast(".")
+		assert(type=="cpp" || type=="hh" || type=="ino")
+		out (f.length)
+	| _.sum
+/sb
 
