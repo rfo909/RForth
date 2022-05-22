@@ -21,7 +21,8 @@ void dsPushValue (byte type, long val) {
   if (dsNext > dsMaxStackSize) dsMaxStackSize=dsNext;
   
   if (dsNext >= DATA_STACK_SIZE) {
-    ERR1(FUNC_dsPushValue,dsNext);
+    Serial.println(F("dsPushValue, stack overflow"));
+    setAbortCodeExecution();
   } else {
     DStackValue *x=dataStack + dsNext;
     dsNext++;
@@ -38,15 +39,18 @@ void dsPush (long val) {
 
 DStackValue *dsPeekValue() {
   if (dsNext <= 0) {
-    ERR1(FUNC_dsPeekValue,dsNext);
+    Serial.println(F("dsPeekValue: stack empty"));
+    setAbortCodeExecution();
   }
   return dataStack + (dsNext-1);;
 }
 
 long dsPeek () {
   DStackValue *x = dsPeekValue();
-  if (!(x->type & DS_TYPE_NUMBER_MASK)) {
-    ERR1(ERR_dsPeek_not_number, x->type);
+  if (!(x->type & DS_TYPE_NUMBER_MASK) && !(x->type == DS_TYPE_NULL)) {
+    Serial.println(F("dsPeek: not a number"));
+    setAbortCodeExecution();
+    return 0L;
   }
   return x->val;
 }
@@ -57,7 +61,9 @@ DStackValue *dsPopValue() {
   dsNext--;
   if (dsNext < 0) {
     dsNext=0;
-    ERR1(FUNC_dsPopValue,dsNext);
+    Serial.println(F("dsPop: stack empty"));
+    setAbortCodeExecution();
+    return dataStack;
   } 
   return dataStack + dsNext;
 }
@@ -65,7 +71,9 @@ DStackValue *dsPopValue() {
 long dsPop () {
   DStackValue *x = dsPopValue();
   if (!(x->type & DS_TYPE_NUMBER_MASK)) {
-    ERR1(ERR_dsPop_not_number, x->type);
+    Serial.println(F("dsPop: not a number"));
+    setAbortCodeExecution();
+    return 0L;
   }
   return x->val; 
 }
@@ -78,7 +86,9 @@ DStackValue *dsGetValue (int pos) {
 long dsGet (int pos) {
   DStackValue *x=dsGetValue(pos);
   if (x->type != DS_TYPE_INT) {
-    ERR1(ERR_dsGet_not_number, pos);
+    Serial.println(F("dsGet: not a number"));
+    setAbortCodeExecution();
+    return 0L;
   }
   return x->val;
 }
@@ -92,23 +102,45 @@ void dsDupValue() {
 // false if illegal
 bool dsTypeCast (byte newType) {
   DStackValue *x=dsPeekValue();
-  if (x->type==DS_TYPE_NULL) return true; 
-    // a null is a valid type of all types, and can not be type cast
+  if (x->type == newType) {
+    return true;
+  }
+
+  // a null is a valid value of all types, but can not be type cast to anything else
+  if (x->type==DS_TYPE_NULL) {
+    return false; 
+  }
   
   if (x->type & DS_TYPE_NUMBER_MASK && newType & DS_TYPE_NUMBER_MASK) {
     x->type=newType;
     return true;
-  } else {
-    if (x->type == newType) {
-      // no cast needed
-      return true;
-    }
-    
-    ERR2(ERR_INVALID_TYPE_CAST,x->type,newType);
-    halt();
   }
+
+  if (x->type & DS_TYPE_NUMBER_MASK && (newType==DS_TYPE_BYTE || newType==DS_TYPE_CHAR || newType==DS_TYPE_BOOL)) {
+    x->type=newType;
+    return true;
+  }
+  if (x->type == DS_TYPE_BYTE && newType==DS_TYPE_CHAR) {
+    x->type=newType;
+    return true;
+  }
+  if (x->type == DS_TYPE_CHAR && newType==DS_TYPE_BYTE) {
+    x->type=newType;
+    return true;
+  }
+  if ((x->type & DS_TYPE_NUMBER_MASK || x->type==DS_TYPE_BYTE) && newType==DS_TYPE_BOOL) {
+    x->type=newType;
+    return true;
+  }
+
+  Serial.print(F("Invalid type cast "));
+  Serial.print(x->type);
+  Serial.print(F(" to "));
+  Serial.println(newType);
+
   return false;  
 }
+
 // ------------------
 
 static CStackFrame callStack[CALL_STACK_SIZE];
@@ -118,7 +150,8 @@ static int csMaxStackSize=0;
 void csPush (byte *theCode) {
   if (csNext > csMaxStackSize) csMaxStackSize=csNext;
   if (csNext >= CALL_STACK_SIZE) {
-    ERR1(FUNC_csPush,csNext);
+    Serial.println(F("csPush: stack overflow"));
+    setAbortCodeExecution();
   } else {
     CStackFrame *f=callStack+csNext;
     csNext++;
@@ -141,12 +174,20 @@ int getCsMaxStackSize() {
 
 
 CStackFrame *csPeek () {
-  if (csEmpty()) ERR1(FUNC_csPeek,csNext);
+  if (csEmpty()) {
+    Serial.println(F("csPeek: stack empty"));
+    setAbortCodeExecution();
+    return callStack;
+  }
   return callStack+(csNext-1);
 }
 
 void csPop() {
-  if (csEmpty()) ERR1(FUNC_csPop, csNext);
+  if (csEmpty()) {
+    Serial.println(F("csPop: stack empty"));
+    setAbortCodeExecution();
+    return;
+  }
   csNext--;
   if (csNext < 0) csNext=0;
 }

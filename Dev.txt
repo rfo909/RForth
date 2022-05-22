@@ -5,19 +5,40 @@ NEWEST FIRST
 
 TODO: 
 	- enforce max length function (text / tokens),
-			(as warnings, not as "halt" type errors)
 			Max number of op-codes is 128, as this is the largest
 			single 7-bit PUSH value, which is used by the JMP ops,
 			but RAM dictates limits on input-string, and token pointers,
 			when parsing. A stateful parser receiving single tokens one
 			at a time, could reduce memory needs.
-	- local variables must inhert type of values from stack, and push values back with type
+			
+	- local variables must inhert type of values from stack,
+			and push values back with type
+	
 	- numeric types conversions for arithmetic ops? 
 	- enforce type where relevant (read, write, ee:read, ee:write)
 	- implement ( ... -- ...) and stack sanity checks for word execution 
 	
+LOWER PRI
+
+	- consider changing the PUSH op to a two-bit prefix saying that either
+	  there is a six-bit value integrated, or the six bits contain number of
+	  bytes following, getting rid of the LSHIFT and OR. Big number literals
+	  can result in 17 bytes of code ... Pushing 1000 from code, results in
+	  five bytes ...
+	  
+	
 
 
+2022-05-22 v0.1.6
+-----------------
+Added :bool type and :char type. Modified type casts. After getting the
+#include <Arduino.h> into Common.hh, we can Serial.print and use F("sdf") in
+all source files. Simplified error logging, and introduced abort function,
+which is also invoked from code with
+
+	void setAbortCodeExecution ()
+	
+Error messages are better, and no more freeze whenever there are errors.
 	
 2022-05-21 v0.1.5
 -----------------

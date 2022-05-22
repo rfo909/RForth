@@ -51,122 +51,30 @@ int getHeapSize() {
   return 0;
 }
 
-static void printCode (int code) {
-  switch(code) {
-    case ERR_UNKNOWN_OP: {
-      Serial.print(F("ERR_UNKNOWN_OP"));
-      return;
-    }
-    case FUNC_csPop: {
-      Serial.print(F("FUNC_csPop"));
-      return;
-    }
-    case FUNC_csPeek: {
-      Serial.print(F("FUNC_csPeek"));
-      return;
-    }
-    case FUNC_inpLocalVariableAdd: {
-      Serial.print(F("FUNC_inpLocalVariableAdd"));
-      return;
-    }
-    case FUNC_csPush: {
-      Serial.print(F("FUNC_csPush"));
-      return;
-    }
-    case FUNC_mapAddPos: {
-      Serial.print(F("FUNC_mapAddPos"));
-      return;
-    }
-    case FUNC_pcAddByte: {
-      Serial.print(F("FUNC_pcAddByte"));
-      return;
-    }
-    case FUNC_psAddChar: {
-      Serial.print(F("FUNC_psAddChar"));
-      return;
-    }
-    case ERR_dsGet_not_number: {
-      Serial.print(F("ERR_dsGet_not_number"));
-      return;
-    }
-    case ERR_dsPop_not_number: {
-      Serial.print(F("ERR_dsPop_not_number"));
-      return;
-    }
-    case FUNC_dsPopValue: {
-      Serial.print(F("FUNC_dsPopValue"));
-      return;
-    }
-    case ERR_dsPeek_not_number: {
-      Serial.print(F("ERR_dsPeek_not_number"));
-      return;
-    }
-    case FUNC_inpAddToken: {
-      Serial.print(F("FUNC_inpAddToken"));
-      return;
-    }
-    case FUNC_inpAddChar: {
-      Serial.print(F("FUNC_inpAddChar"));
-      return;
-    }
-    case FUNC_dsPeekValue: {
-      Serial.print(F("FUNC_dsPeekValue"));
-      return;
-    }
-    case FUNC_dsPushValue: {
-      Serial.print(F("FUNC_dsPushValue"));
-      return;
-    }
-    case ERR_INVALID_TYPE_CAST: {
-      Serial.print(F("ERR_INVALID_TYPE_CAST"));
-      return;
-    }
-  }
+
+
+bool abortCodeExecution=false;
+
+void setAbortCodeExecution () {
+  abortCodeExecution=true;
 }
 
 
-
-void ERR1 (int code, long a) {
-  Serial.print(F("ERROR: "));
-  printCode(code);
-  Serial.print(" ");
-  Serial.println(a);
-  halt();
-}
-void ERR2 (int code, long a, long b) {
-  Serial.print(F("ERROR: "));
-  printCode(code);
-  Serial.print(" ");
-  Serial.print(a);
-  Serial.print(" ");
-  Serial.println(b);
-  halt();
-}
-void WARN2 (int code, long a, long b) {
-  Serial.print(F("WARN: "));
-  printCode(code);
-  Serial.print(" ");
-  Serial.print(a);
-  Serial.print(" ");
-  Serial.println(b);
-}
 
 void halt() {
   for(;;) ;
 }
 
-void LOG2 (int code, long a, long b) {
-  Serial.print(F("**** LOG: "));
-  printCode(code);
-  Serial.print(" ");
-  Serial.print(a);
-  Serial.print(" ");
-  Serial.println(b);
-}
+
+
 
 static void reset() {
   inpReset();
   //stacksReset();
+  if (abortCodeExecution)  {
+    Serial.println(F("[Abort]"));
+  }
+  abortCodeExecution=false;
   
   Serial.println(F("Ok."));
 }
@@ -752,8 +660,16 @@ void displayStackValue (DStackValue *x) {
       return;
     }
     case DS_TYPE_NULL : {
-      Serial.println(F("<null-value>       NULL"));
+      Serial.println(F("null"));
       return;
+    }
+    case DS_TYPE_BOOL : {
+      if (x->val) {
+        Serial.println(F("true"));
+      } else {
+        Serial.println(F("false"));
+      }
+      return true;
     }
   }
 
@@ -768,14 +684,28 @@ void displayStackValue (DStackValue *x) {
   Serial.println();
 }
 
+
+void showDataStack() {
+   // Show data stack
+  int count = dsCount();
+
+  Serial.println("--");
+  for (int i=count-1; i>=0; i--) {
+    Serial.print("  ");
+    DStackValue *x=dsGetValue(i);
+    displayStackValue(x);
+  }
+}
+
 void executeCode (byte *initialCode) {
   csPush(initialCode);
 
   long executeOpCount=0;
   unsigned long startTime=millis();
-  while(!csEmpty()) {
+  while(!csEmpty() && !abortCodeExecution) {
     if (!executeOneOp()) {
-      return;
+      abortCodeExecution=true;
+      break;
     }
     executeOpCount++;
   }
@@ -784,17 +714,7 @@ void executeCode (byte *initialCode) {
   Serial.print(F(" ms #op="));
   Serial.println(executeOpCount);
   
-  // Show data stack
-  int count = dsCount();
-  //Serial.print(F("Number of values on stack: "));
-  //Serial.println(count);
-
-  Serial.println("--");
-  for (int i=count-1; i>=0; i--) {
-    Serial.print("  ");
-    DStackValue *x=dsGetValue(i);
-    displayStackValue(x);
-  }
+  showDataStack();
   
 }
 
@@ -818,7 +738,10 @@ bool executeOneOp () {
   switch (b) {
     case OP_EOF:
     case OP_RET: {
-      //Serial.println(F("EOF / RET: csPop()"));
+      if (csEmpty()) {
+        Serial.println(F("Call stack underflow"));
+        return false;
+      }
       csPop();
       return true;
     }
@@ -1264,24 +1187,44 @@ bool executeOneOp () {
       return true;
     }
     case OP_AS_BYTE : {
-      dsTypeCast(DS_TYPE_BYTE);
-      return true;
+      if (!dsTypeCast(DS_TYPE_BYTE)) {
+        Serial.println(F(":byte failed"));
+        return false;
+      } else {
+        return true;
+      }
     }
     case OP_AS_INT : {
-      dsTypeCast(DS_TYPE_INT);
-      return true;
+      if (!dsTypeCast(DS_TYPE_INT)) {
+        Serial.println(F(":int failed"));
+        return false;
+      } else {
+        return true;
+      }
     }
     case OP_AS_UINT : {
-      dsTypeCast(DS_TYPE_UINT);
-      return true;
+      if (!dsTypeCast(DS_TYPE_UINT)) {
+        Serial.println(F(":uint failed"));
+        return false;
+      } else {
+        return true;
+      }
     }
     case OP_AS_LONG : {
-      dsTypeCast(DS_TYPE_LONG);
-      return true;
+      if (!dsTypeCast(DS_TYPE_LONG)) {
+        Serial.println(F(":long failed"));
+        return false;
+      } else {
+        return true;
+      }
     }
     case OP_AS_ULONG : {
-      dsTypeCast(DS_TYPE_ULONG);
-      return true;
+      if (!dsTypeCast(DS_TYPE_ULONG)) {
+        Serial.println(F(":ulong failed"));
+        return false;
+      } else {
+        return true;
+      }
     }
     case OP_MILLIS : {
       dsPushValue(DS_TYPE_ULONG, millis());
@@ -1323,37 +1266,43 @@ bool executeOneOp () {
       return true;
     }
     case OP_AS_SYM : {
-      if (dsEmpty()) {
-        Serial.println(F("OP_AS_SYM - data stack empty"));
+      if (!dsTypeCast(DS_TYPE_SYM)) {
+        Serial.println(F(":sym failed"));
         return false;
+      } else {
+        return true;
       }
-      DStackValue *x=dsPeekValue();
-      if (x->type != DS_TYPE_SYM && x->type != DS_TYPE_NULL) {
-        Serial.println(F("DS_TYPE_SYM: value not of type :sym or null"));
-        return false;
-      }
-      return true;
     }
     case OP_AS_ADDR : {
-      if (dsEmpty()) {
-        Serial.println(F("OP_AS_ADDR - data stack empty"));
+      if (!dsTypeCast(DS_TYPE_ADDR)) {
+        Serial.println(F(":addr failed"));
         return false;
+      } else {
+        return true;
       }
-      DStackValue *x=dsPeekValue();
-      if (x->type != DS_TYPE_ADDR && x->type != DS_TYPE_NULL) {
-        Serial.println(F("DS_TYPE_ADDR: value not of type :addr or null"));
-        return false;
-      }
+    }
+    case OP_ABORT : {
+      Serial.println(F("OP_ABORT: listing stack, and terminating"));
+      abortCodeExecution=true;
       return true;
     }
+    case OP_AS_BOOL : {
+      if (!dsTypeCast(DS_TYPE_BOOL)) {
+        Serial.println(F(":bool failed"));
+        return false;
+      } else {
+        return true;
+      }
+    }
 
-  }   
-  ERR1(ERR_UNKNOWN_OP, b);
+  }
+  Serial.print(F("Unknown OP "));
+  Serial.println(b);   
   return false;
 }
 
 
-const char OPNAMES[] PROGMEM = {"OP_EOF|OP_RET|OP_CALL|OP_JMP|OP_ZJMP|OP_CJMP|OP_POP|OP_DUP|OP_READ|OP_WRITE|OP_LSET|OP_LGET|OP_ADD|OP_SUB|OP_MUL|OP_DIV|OP_MOD|OP_NEG|OP_GT|OP_LT|OP_GE|OP_LE|OP_EQ|OP_NE|OP_L_AND|OP_L_OR|OP_L_NOT|OP_LSHIFT|OP_RSHIFT|OP_B_AND|OP_B_OR|OP_B_NOT|OP_LSET0|OP_LSET1|OP_LSET2|OP_LSET3|OP_LGET0|OP_LGET1|OP_LGET2|OP_LGET3|OP_AS_BYTE|OP_AS_INT|OP_AS_UINT|OP_AS_LONG|OP_AS_ULONG|OP_MILLIS|OP_EE_READ|OP_EE_WRITE|OP_EE_LENGTH|OP_NULL|OP_NOP|OP_AS_SYM|OP_AS_ADDR|$"};
+const char OPNAMES[] PROGMEM = {"OP_EOF|OP_RET|OP_CALL|OP_JMP|OP_ZJMP|OP_CJMP|OP_POP|OP_DUP|OP_READ|OP_WRITE|OP_LSET|OP_LGET|OP_ADD|OP_SUB|OP_MUL|OP_DIV|OP_MOD|OP_NEG|OP_GT|OP_LT|OP_GE|OP_LE|OP_EQ|OP_NE|OP_L_AND|OP_L_OR|OP_L_NOT|OP_LSHIFT|OP_RSHIFT|OP_B_AND|OP_B_OR|OP_B_NOT|OP_LSET0|OP_LSET1|OP_LSET2|OP_LSET3|OP_LGET0|OP_LGET1|OP_LGET2|OP_LGET3|OP_AS_BYTE|OP_AS_INT|OP_AS_UINT|OP_AS_LONG|OP_AS_ULONG|OP_MILLIS|OP_EE_READ|OP_EE_WRITE|OP_EE_LENGTH|OP_NULL|OP_NOP|OP_AS_SYM|OP_AS_ADDR|OP_ABORT|OP_AS_BOOL|$"};
 
 
 void printOpName (const int opCode) {

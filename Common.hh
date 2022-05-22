@@ -28,11 +28,11 @@ typedef unsigned char byte;
 
 // Storage.hh
 
-#define P_STRING_SIZE     200
+#define P_STRING_SIZE     300
 #define P_CODE_SIZE       400 
 
 // Storage.cpp
-#define MAP_SIZE          60
+#define MAP_SIZE          40
 
 
 
@@ -43,27 +43,9 @@ void halt();
 
 void LOG2 (int code, long a, long b);
 
+void setAbortCodeExecution ();
+
 void printOpName (int opCode);
-
-#define ERR_UNKNOWN_OP        1
-#define FUNC_csPop              2
-#define FUNC_csPeek            3
-#define FUNC_inpLocalVariableAdd 4
-#define FUNC_csPush   5
-#define FUNC_mapAddPos 6
-#define FUNC_pcAddByte 7
-#define FUNC_psAddChar 8
-#define ERR_dsGet_not_number 9
-#define ERR_dsPop_not_number  10
-#define FUNC_dsPopValue 11
-#define ERR_dsPeek_not_number 12
-#define FUNC_inpAddToken 13
-#define FUNC_inpAddChar 14
-#define FUNC_dsPeekValue 15
-#define FUNC_dsPushValue 16
-#define ERR_INVALID_TYPE_CAST 17
-
-
 
 
 #endif

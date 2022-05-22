@@ -51,6 +51,9 @@ static const char _NULL[] PROGMEM = "null";
 static const char T_SYM[] PROGMEM = ":sym";
 static const char T_ADDR[] PROGMEM = ":addr";
 
+static const char ABORT[] PROGMEM = "abort";
+static const char T_BOOL[] PROGMEM = ":bool";
+
 
 int lookupSymbol (char *sym) {
   if (!strcmp_P(sym,ADD)) return OP_ADD;
@@ -95,6 +98,8 @@ int lookupSymbol (char *sym) {
 
   if (!strcmp_P(sym,T_SYM)) return OP_AS_SYM;
   if (!strcmp_P(sym,T_ADDR)) return OP_AS_ADDR;
+  if (!strcmp_P(sym,ABORT)) return OP_ABORT;
+  if (!strcmp_P(sym,T_BOOL)) return OP_AS_BOOL;
   
 
   return -1; 

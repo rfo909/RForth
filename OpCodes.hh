@@ -3,6 +3,10 @@
 
 #include "Common.hh"
 
+// Need library functions:
+// : true 1 :boolean ;
+// : false 0 :boolean ;
+
 #define OP_EOF    0
 #define OP_RET    1
 #define OP_CALL    2
@@ -61,6 +65,9 @@
 
 #define OP_AS_SYM     51
 #define OP_AS_ADDR    52
+
+#define OP_ABORT      53
+#define OP_AS_BOOL    54
 
 
 //bool executeOp (byte b);

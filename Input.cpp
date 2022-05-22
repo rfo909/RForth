@@ -24,7 +24,8 @@ void inpReset() {
 
 void inpAddChar (char c) {
   if (inpNext >= INPUT_BUF_SIZE) {
-    ERR1(FUNC_inpAddChar,inpNext);
+    Serial.println(F("inpAddChar: buffer full"));
+    setAbortCodeExecution();
   } else {
     inputBuf[inpNext++]=c;
   }
@@ -44,7 +45,8 @@ char *inpChop () {
 
 void inpAddToken (char *token) {
   if (nextToken >= INPUT_TOKEN_COUNT) {
-    ERR1(FUNC_inpAddToken, nextToken);
+    Serial.println(F("inpAddToken: out of space"));
+    setAbortCodeExecution();
   } else {
     tokens[nextToken++]=token;
   }
@@ -83,7 +85,11 @@ bool inpLocalVariablesFull() {
 }
 
 int inpLocalVariableAdd (char *name) {
-  if (nextLocalVariable >= LOCAL_VARIABLE_COUNT) ERR1(FUNC_inpLocalVariableAdd,nextLocalVariable);
+  if (nextLocalVariable >= LOCAL_VARIABLE_COUNT) {
+    Serial.println(F("inpLocalVariableAdd: out of space"));
+    setAbortCodeExecution();
+    return 0;
+  }
   localVariables[nextLocalVariable++]=name;
   return nextLocalVariable-1;
 }
