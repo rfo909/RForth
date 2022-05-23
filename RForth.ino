@@ -867,9 +867,12 @@ bool executeOneOp () {
         Serial.println(F("OP_LSET - data stack empty"));
         return false;
       }
-      long value=dsPop();
+      DStackValue *value=dsPopValue();
       
-      curr->localVariables[varNo]=value;
+      DStackValue *lv = curr->localVars+varNo;
+      lv->type=value->type;
+      lv->val=value->val;
+
       return true;
     }
     case OP_LGET : {
@@ -878,8 +881,9 @@ bool executeOneOp () {
         return false;
       }
       long varNo=dsPop();
-      
-      dsPush(curr->localVariables[varNo]);
+
+      DStackValue *lv = curr->localVars+varNo;
+      dsPushValueCopy(lv);
       return true;
     }
     case OP_ADD : {
@@ -1152,9 +1156,11 @@ bool executeOneOp () {
         Serial.println(F("OP_LSET0 - data stack empty"));
         return false;
       }
-      long value=dsPop();
+      DStackValue *value=dsPopValue();
       
-      curr->localVariables[0]=value;
+      DStackValue *lv = curr->localVars;
+      lv->type=value->type;
+      lv->val=value->val;
       return true;
     }
     case OP_LSET1 : {
@@ -1162,9 +1168,11 @@ bool executeOneOp () {
         Serial.println(F("OP_LSET1 - data stack empty"));
         return false;
       }
-      long value=dsPop();
+      DStackValue *value=dsPopValue();
       
-      curr->localVariables[1]=value;
+      DStackValue *lv = curr->localVars+1;
+      lv->type=value->type;
+      lv->val=value->val;
       return true;
     }
     case OP_LSET2 : {
@@ -1172,9 +1180,11 @@ bool executeOneOp () {
         Serial.println(F("OP_LSET2 - data stack empty"));
         return false;
       }
-      long value=dsPop();
+      DStackValue *value=dsPopValue();
       
-      curr->localVariables[2]=value;
+      DStackValue *lv = curr->localVars+2;
+      lv->type=value->type;
+      lv->val=value->val;
       return true;
     }
     case OP_LSET3 : {
@@ -1182,25 +1192,27 @@ bool executeOneOp () {
         Serial.println(F("OP_LSET3 - data stack empty"));
         return false;
       }
-      long value=dsPop();
+      DStackValue *value=dsPopValue();
       
-      curr->localVariables[3]=value;
+      DStackValue *lv = curr->localVars+3;
+      lv->type=value->type;
+      lv->val=value->val;
       return true;
     }
     case OP_LGET0 : {
-      dsPush(curr->localVariables[0]);
+      dsPushValueCopy(curr->localVars);
       return true;
     }
     case OP_LGET1 : {
-      dsPush(curr->localVariables[1]);
+      dsPushValueCopy(curr->localVars+1);
       return true;      
     }
     case OP_LGET2 : {
-      dsPush(curr->localVariables[2]);
+      dsPushValueCopy(curr->localVars+2);
       return true;
     }
     case OP_LGET3 : {
-      dsPush(curr->localVariables[3]);
+      dsPushValueCopy(curr->localVars+3);
       return true;
     }
     case OP_AS_BYTE : {

@@ -11,12 +11,12 @@ typedef unsigned char byte;
 #define NULL    0
 
 
-#define VERSION "0.1.5"
+#define VERSION "v0.1.7"
 
 
 // Input.cpp
 #define INPUT_BUF_SIZE      200
-#define INPUT_TOKEN_COUNT   100
+#define INPUT_TOKEN_COUNT   80
 
 // Stacks.hh / Input.cpp
 #define LOCAL_VARIABLE_COUNT    4
@@ -28,7 +28,7 @@ typedef unsigned char byte;
 
 // Storage.hh
 
-#define P_STRING_SIZE     300
+#define P_STRING_SIZE     250
 #define P_CODE_SIZE       400 
 
 

@@ -31,7 +31,7 @@ typedef struct {
 typedef struct {
   byte *code;
   int pc;
-  long localVariables[LOCAL_VARIABLE_COUNT];
+  DStackValue localVars[LOCAL_VARIABLE_COUNT];
 } CStackFrame;
 
 
@@ -41,6 +41,7 @@ int dsCount();
 int getDsMaxStackSize();
 
 void dsPushValue (byte type, long val);
+void dsPushValueCopy (DStackValue *value);
 void dsPush (long val);
 
 DStackValue *dsPeekValue();

@@ -31,6 +31,11 @@ void dsPushValue (byte type, long val) {
   }
 }
 
+void dsPushValueCopy (DStackValue *value) {
+  dsPushValue(value->type, value->val);
+}
+
+
 void dsPush (long val) {
   dsPushValue(DS_TYPE_LONG, val);
 }
@@ -158,8 +163,9 @@ void csPush (byte *theCode) {
     f->code=theCode;
     f->pc=0;
     for (int i=0; i<LOCAL_VARIABLE_COUNT; i++) {
-      long *ptr=f->localVariables;
-      *(ptr+i)=0;
+      DStackValue *ptr=f->localVars;
+      (ptr+i)->type=DS_TYPE_LONG;
+      (ptr+i)->val=0L;
     }
   }
 }

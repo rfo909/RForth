@@ -4,10 +4,13 @@ NEWEST FIRST
 
 
 TODO: 
-	- local variables must inhert type of values from stack,
-			and push values back with type
-	
 	- implement ( ... -- ...) and stack sanity checks for word execution 
+	
+	- create word by word parser. This only requires us to keep a buffer
+	for the longest word (limit to 20 chars isn't unreasonable). 
+		- This will save us 180 bytes for input buffer, and 160 bytes
+		  for the max 80 token pointers.
+
 	
 LOWER PRI
 
@@ -20,6 +23,20 @@ LOWER PRI
 	- extend if{ with }else{
 	
 	
+
+2022-05-23 v0.1.7
+-----------------
+Fixed so local variable assign includes type, and likewise, that this gets
+pushed back on the stack when referring variable.
+
+Also modified input loop, so that backspace is honoured, which makes using
+minicom easier. Created readme file for minicom. It allows us to paste in
+greater amounts of text. Added support for comments on format # ...
+
+The # must not be part of a word.
+
+Also created a Doc.md file with all functionality briefly summed up.
+
 
 
 2022-05-22 v0.1.6
