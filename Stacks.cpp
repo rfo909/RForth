@@ -103,40 +103,67 @@ void dsDupValue() {
   dsPushValue(x->type, x->val);
 }
 
-// change type of top value on stack, return true if ok, 
-// false if illegal
+
+// This function has a two-fold purpose. It is both a check and a type cast.
+// These two are normally one, except for the case of the null value, which is
+// a valid value for all types, but can not be cast into anything else.
+// 
+// This means a word can return null, and have it pass through some
+//
+//     ( .... -- :byte )
+//
+// This states the result to be byte, but a null must pass through. 
+//
+// Returns true if type check ok. For most cases this will also mean
+// modifying the type of the value (on top of stack)
+
 bool dsTypeCast (byte newType) {
   DStackValue *x=dsPeekValue();
   if (x->type == newType) {
     return true;
   }
 
-  // a null is a valid value of all types, but can not be type cast to anything else
+  // a null is a valid value of all types, but can not be type cast to anything else, so
+  // we don't change the type of the value, but return true to affirm the type check
   if (x->type==DS_TYPE_NULL) {
-    return false; 
+    return true; 
   }
+
+  bool ok=false;
   
   if (x->type & DS_TYPE_NUMBER_MASK && newType & DS_TYPE_NUMBER_MASK) {
-    x->type=newType;
-    return true;
+    ok=true;
   }
 
   if (x->type & DS_TYPE_NUMBER_MASK && (newType==DS_TYPE_BYTE || newType==DS_TYPE_CHAR || newType==DS_TYPE_BOOL)) {
+    ok=true;
+  }
+
+  if (x->type & DS_TYPE_NUMBER_MASK && newType==DS_TYPE_BOOL) {
+    ok=true;
+  }
+
+  if (ok) {
+    // perform type cast, which means stripping bits if moving down
+    if (newType==DS_TYPE_LONG) {
+     x->val=(long) x->val;
+    } else if (newType==DS_TYPE_ULONG) {
+     x->val=(unsigned long) x->val;
+    } else if (newType==DS_TYPE_INT) {
+      x->val=(int) x->val;
+    } else if (newType==DS_TYPE_UINT) {
+      x->val=(unsigned int) x->val;
+    } else if (newType==DS_TYPE_BYTE) {
+      x->val=(byte) x->val;
+    } else if (newType==DS_TYPE_CHAR) {
+      x->val=(char) x->val;
+    } else if (newType==DS_TYPE_BOOL) {
+      x->val=(x->val == 0 ? 0 : 1);
+    }
     x->type=newType;
     return true;
   }
-  if (x->type == DS_TYPE_BYTE && newType==DS_TYPE_CHAR) {
-    x->type=newType;
-    return true;
-  }
-  if (x->type == DS_TYPE_CHAR && newType==DS_TYPE_BYTE) {
-    x->type=newType;
-    return true;
-  }
-  if ((x->type & DS_TYPE_NUMBER_MASK || x->type==DS_TYPE_BYTE) && newType==DS_TYPE_BOOL) {
-    x->type=newType;
-    return true;
-  }
+  
 
   Serial.print(F("Invalid type cast "));
   Serial.print(x->type);

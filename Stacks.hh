@@ -14,11 +14,11 @@ typedef struct {
 #define DS_TYPE_UINT     0x04
 #define DS_TYPE_BYTE     0x05
 #define DS_TYPE_CHAR     0x06
+#define DS_TYPE_BOOL     0x07
 
-#define DS_TYPE_BOOL     0x10
-#define DS_TYPE_SYM      0x20   // literal word 
-#define DS_TYPE_ADDR     0x30   // uses some bits for location and the rest for offset
-#define DS_TYPE_COMPLEX  0x40   // points to symbol (literal word)
+#define DS_TYPE_SYM      0x10   // literal word 
+#define DS_TYPE_ADDR     0x20   // uses some bits for location and the rest for offset
+#define DS_TYPE_COMPLEX  0x30   // points to symbol (literal word)
 
 #define DS_TYPE_NULL     0xFF
 

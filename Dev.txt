@@ -37,6 +37,10 @@ The # must not be part of a word.
 
 Also created a Doc.md file with all functionality briefly summed up.
 
+Type casts now strip bits, so that if converting int 0x1234 to byte,
+the value becomes 0x34. Converting back to int shows that those bits
+are lost: 0x0034
+
 
 
 2022-05-22 v0.1.6
