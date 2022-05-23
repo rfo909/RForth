@@ -159,22 +159,21 @@
 	loop{ TWCR read 1 TWINT << & break }
 	
 	0x00 transmitData
-	checkMDSlaveAck ! if { 999 ERROR }
+	checkMDSlaveAck ! if { 999 abort }
 ;
 
 # Enable pins
 
-: i2c_main
+: i2c_main =devAddress
 	0xFF DDRC write
 	0x30 PORTC write
 	0xFF DDRD write
 	
 	100 setClock
 	sendStart
-	checkStartStatus not if{ ERROR }
+	checkStartStatus not if{ 998 abort }
 	
 	devAddress 0 sendAddress
 
-	checkMTSlaveAck ! if { ERROR }
-	0
+	checkMTSlaveAck ! if{ 997 abort }
 ;

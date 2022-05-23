@@ -31,6 +31,10 @@ void inpAddChar (char c) {
   }
 }
 
+void inpUngetChar () {
+  if (inpNext > inpStart) inpNext--;
+}
+
 bool inpEmpty() {
   return (inpNext==inpStart);
 }

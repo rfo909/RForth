@@ -37,10 +37,6 @@ typedef unsigned char byte;
 #define P_CODE_MAX_SIZE   127
 
 
-void ERR1 (int code, long a);
-void ERR2 (int code, long a, long b);
-void WARN2 (int code, long a, long b);
-void halt();
 
 void LOG2 (int code, long a, long b);
 

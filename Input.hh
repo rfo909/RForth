@@ -6,6 +6,7 @@
 
 void inpReset();
 void inpAddChar (char c);
+void inpUngetChar ();
 bool inpEmpty();
 char *inpChop ();
 void inpAddToken (char *token);

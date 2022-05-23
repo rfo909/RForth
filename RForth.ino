@@ -61,9 +61,6 @@ void setAbortCodeExecution () {
 
 
 
-void halt() {
-  for(;;) ;
-}
 
 
 
@@ -97,6 +94,8 @@ void setup() {
 
 void parseTokens();
 
+static bool inComment=false;
+
 void loop() {
 
   if (abortCodeExecution) {
@@ -106,26 +105,39 @@ void loop() {
 
   char c=Serial.read();
   if (c==-1) return;
+
+  // echo input - disabled (better with local echo (minicom))
   //Serial.print(c);
 
-  if (c==' ' || c=='\r' || c=='\n' || c=='\t') {
-    if (!inpEmpty()) {
-      char *str=inpChop();
-      inpAddToken(str);
-      //Serial.print(F("Adding token "));
-      //Serial.println(str);
-      //for (int i=0; i<strlen(str); i++) {
-      //  Serial.print(str[i]);
-      //  Serial.print(" ");
-      //}
-      //Serial.println();
-      if (!strcmp(str,";")) {
-        parseTokens();
-        reset();
+  if (c=='\b') {
+    inpUngetChar();
+    return;
+  }
+
+  // if no current word, and char is '#' then it is considered a comment
+  
+  if (inpEmpty() && c=='#') {
+    inComment=true;
+    return;
+  }
+  if (inComment && (c=='\r' || c=='\n')) {
+    inComment=false;
+    return;
+  }
+
+  if (!inComment) {
+    if (c==' ' || c=='\r' || c=='\n' || c=='\t') {
+      if (!inpEmpty()) {
+        char *str=inpChop();
+        inpAddToken(str);
+        if (!strcmp(str,";")) {
+          parseTokens();
+          reset();
+        }
       }
+    } else {
+      if (!inComment) inpAddChar(c);
     }
-  } else {
-    inpAddChar(c);
   }
 }
 
