@@ -135,7 +135,7 @@
 ;
 
 : checkStartStatus
-	TWSR read 0xF8 & START ==
+	TWSR read 0xF8 & START == :bool
 ;
 
 : sendAddress =addr =wbit
@@ -145,11 +145,11 @@
 ;
 
 : checkMTSlaveAck
-	TWSR read 0xF8 & MT_SLA_ACK == 
+	TWSR read 0xF8 & MT_SLA_ACK == :bool
 ;
 
 : checkMTSlaveNack 
-	TWSR read 0xF8 MT_SLA_NACK == 
+	TWSR read 0xF8 MT_SLA_NACK == :bool
 ;
 
 
