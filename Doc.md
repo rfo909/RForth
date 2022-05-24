@@ -1,6 +1,6 @@
 # Introduction
 
-*2022-05-23 v0.1.5*
+*2022-05-24 v0.1.8*
 
 *RForth* is a compact programming language inspired by Forth. It is stack based,
 but does not depend on stack manipulations, as it introduces local variables
@@ -200,18 +200,22 @@ Having introdued local variables, it made sense using the ( ... ) notation
 to assign local variables, and using types for extra information about those, 
 as well as basic type checking.
 
-*As of v0.1.5 this is not yet implemented*
+*As of v0.1.8 this is partially implemented* : the input parameters part
+is implemented but anything following "--" is ignored, and the "--" is not
+mandatory either.
 
 
 ```
-: SetBit ( :byte =mask, :int =addr -- )
+: SetBit ( :byte =mask :int =addr -- )
 	addr read 
 		mask |
 			addr write ;
 ```
 
 As with normal Forth, the order of the parameters inside ( ... ), from left to 
-right, is the call order, not the pop order. 
+right, is the call order, not the pop order.
+
+ 
 The compiler reverses the order, first processing the addr value, then mask.
 
 For words returning data, these are specified following the "--", for example.

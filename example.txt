@@ -8,7 +8,8 @@
 : DDRD 0x2a ;
 : PORTD 0x2b ;
 
-: wait =ms millis ms + =ms loop{ millis ms > break  } ;
+: wait ( :ulong =ms )
+	 millis ms + =ms loop{ millis ms > break  } ;
 
 : Reg! ( :byte =clearMask :byte =valueMask :int =addr -- )
 	addr read clearMask ! &
@@ -25,7 +26,7 @@
 ;
 
 
-: N-blink =n
+: N-blink ( :int =n )
 	b0010_0000 =m
 	m m DDRB Reg!
 	loop{
