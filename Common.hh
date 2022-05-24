@@ -11,7 +11,7 @@ typedef unsigned char byte;
 #define NULL    0
 
 
-#define VERSION "v0.1.7"
+#define VERSION "v0.1.8"
 
 
 // Input.cpp
@@ -19,21 +19,21 @@ typedef unsigned char byte;
 #define INPUT_TOKEN_COUNT   80
 
 // Stacks.hh / Input.cpp
-#define LOCAL_VARIABLE_COUNT    4
+#define LOCAL_VARIABLE_COUNT    8
 
 // Stacks.cpp
-#define DATA_STACK_SIZE     15
-#define CALL_STACK_SIZE     10
+#define DATA_STACK_SIZE     30
+#define CALL_STACK_SIZE     8
 
 
 // Storage.hh
 
-#define P_STRING_SIZE     250
-#define P_CODE_SIZE       400 
+#define P_STRING_SIZE     200
+#define P_CODE_SIZE       300 
 
 
 // Storage.cpp
-#define MAP_SIZE          40
+#define MAP_SIZE          30
 #define P_CODE_MAX_SIZE   127
 
 

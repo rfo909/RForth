@@ -23,6 +23,30 @@ LOWER PRI
 	- extend if{ with }else{
 	
 	
+2022-05-24 v0.1.8
+-----------------
+Added support for stack description on the following format:
+
+: funcName ( :byte =a :int =b ) ... ;
+
+The order is the same as when doing the call. The byte code run these
+in the following order
+
+	:int 
+	=b
+	:byte
+	=a
+
+The stack description for results is not functional, but is allowed. 
+
+The "--" and all following up to the ")" is ignored.
+
+: func ( :byte =a :byte =b -- :int ) ... ;
+
+	# the "-- :int" part is ignored for now, as it needs to
+	# generate code when calling return and at EOF
+	
+	
 
 2022-05-23 v0.1.7
 -----------------

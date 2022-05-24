@@ -72,10 +72,18 @@ void inpTokenAdvance () {
   tokenParsePos++;
 }
 
+
 char *inpTokenGet() {
   return tokens[tokenParsePos];
 }
 
+int inpTokenStreamPos() {
+  return tokenParsePos;
+}
+
+void inpTokenStreamSetPos (int pos) {
+  tokenParsePos=pos;
+}
 
 int inpLocalVariablePos (char *name) {
   for (int i=0; i<nextLocalVariable; i++) {

@@ -66,6 +66,7 @@ void setAbortCodeExecution () {
 
 
 static void reset() {
+
   inpReset();
   //stacksReset();
   if (abortCodeExecution)  {
@@ -203,6 +204,58 @@ bool parseWordDef() {
   }
   char *name=inpTokenGet();
   inpTokenAdvance();
+
+  if (inpTokenMatches("(")) {
+    bool dash=false;
+    bool done=false;
+
+    int pos[LOCAL_VARIABLE_COUNT]; // max number of parameters 
+    int count=0;
+
+    bool matchAssign=false;
+    for(;;) {
+      if (inpTokenMatches("--")) { dash=true; break; }
+      if (inpTokenMatches(")")) { done=true; break; }
+      char *tok=inpTokenGet();
+      if (!matchAssign) {
+        if (!tok[0]==':') {
+          Serial.println(F("word def: ( inputs -- outputs ) : input must be sequence of :type =var"));
+          return false;
+        } else {
+          inpTokenAdvance();
+        }
+      } else {
+        if (tok[0]!='=') {
+          Serial.println(F("word def: ( inputs -- outputs ) : input must be sequence of :type =var"));
+          return false;
+        } else {
+          pos[count++]=inpTokenStreamPos();
+          inpTokenAdvance();
+        }
+      }
+      matchAssign=!matchAssign;
+    }
+    
+    int afterInputPos=inpTokenStreamPos();
+
+    for (int i=count-1; i >= 0; i--) {
+      inpTokenStreamSetPos(pos[i]-1);
+      if (!parseWord()) return false; // the type check
+      if (!parseWord()) return false; // assignment
+    }
+    
+    inpTokenStreamSetPos(afterInputPos); // after input and either "--" or ")"
+    if (dash) {
+      // skip output part for now
+      for (;;) {
+        if (inpTokenMatches(")")) break;
+        inpTokenAdvance();
+      }
+    }
+  }
+
+
+  
   
   while (!inpTokenMatches(";")) {
     char *tok=inpTokenGet();

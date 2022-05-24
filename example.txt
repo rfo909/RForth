@@ -10,7 +10,7 @@
 
 : wait =ms millis ms + =ms loop{ millis ms > break  } ;
 
-: Reg! :int =addr :byte =valueMask :byte =clearMask
+: Reg! ( :byte =clearMask :byte =valueMask :int =addr -- )
 	addr read clearMask ! &
 		valueMask | addr write ;
 

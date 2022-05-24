@@ -13,6 +13,9 @@ void inpAddToken (char *token);
 bool inpTokenMatches (char *s);
 void inpTokenAdvance ();
 char *inpTokenGet();
+int inpTokenStreamPos();
+void inpTokenStreamSetPos (int pos);
+
 int inpLocalVariablePos (char *name);
 bool inpLocalVariablesFull();
 int inpLocalVariableAdd (char *name);
