@@ -36,23 +36,6 @@
 
 
 
-
-int getHeapSize() {
-  int maxSize=2000;
-  for(int size=maxSize; size>0; size-=10) {
-    byte *ptr=malloc(size);
-    if (ptr != NULL) {
-      free(ptr);
-      Serial.print(F("Heap size: "));
-      Serial.println(size);
-      return size;
-    }
-  }
-  return 0;
-}
-
-
-
 bool abortCodeExecution=false;
 
 void setAbortCodeExecution () {
@@ -86,7 +69,6 @@ void setup() {
   Serial.print(F("RForth "));
   Serial.println(VERSION);
   Serial.println(F("-----------------"));
-  getHeapSize();
 
   reset();
 }

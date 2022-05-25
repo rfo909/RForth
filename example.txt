@@ -1,12 +1,16 @@
-: PINB 0x23 ;
-: DDRB 0x24 ;
+# Atmega2560
+
+: PORTA 0x22 ;
+: DDRA 0x21 ;
+: PINA 0x20 ;
+
 : PORTB 0x25 ;
-: PINC 0x26 ;
-: DDRC 0x27 ;
-: PORTC 0x28 ;
-: PIND 0x29 ;
-: DDRD 0x2a ;
-: PORTD 0x2b ;
+: DDRB 0x24 ;
+: PINB 0x23 ;
+
+# Note mask differs for 2560 vs 328p
+# b1000_0000 vs b0010_0000 (pin 13 in port B)
+
 
 : wait ( :ulong =ms )
 	 millis ms + =ms loop{ millis ms > break  } ;
@@ -17,7 +21,7 @@
 
 
 : blink
-	b0010_0000 =m
+	b1000_0000 =m
 	m m DDRB Reg!
 	loop{
 		m m PORTB Reg! 500 wait
@@ -27,7 +31,7 @@
 
 
 : N-blink ( :int =n )
-	b0010_0000 =m
+	b1000_0000 =m
 	m m DDRB Reg!
 	loop{
 		m m PORTB Reg! 1000 wait
@@ -37,37 +41,9 @@
 	}
 ;
 
-# Integrate DStackValue with local variables!
-# 
 
-# Must serialize data types, not using bitmasks.
 
-## Data types
-# :bool
-# :number -> :bool ok
-# :byte
-# :char
-# :long :ulong
-# :struct:xxx
-# :list:yyy
-# 
-# element list .add
-# element struct 'x .set
-# 
-# !! = write
-# ?? = read
-#
-# Malloc for storing shared data in RAM, with managed pointers (GC)
-# Malloc is synchronized, and may reallocate data 
-# Threads?
-
-# Defines for constants instead of words?
-#
-# Create linear storage drivers for readonly Flash storage
-#
-# Use SRAM to cache serialized functions from such storage.
-# 
-# Use linear storage driver on on-chip EEPROM. 
+### --- old atmega328p ---
 
 # TWI (i2c) directly via register manipulation
 # (Arduino <Wire.h> consumed 200+ bytes of ram, probably for buffers etc)

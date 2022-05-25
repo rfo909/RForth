@@ -13,7 +13,8 @@ this.
 
 # Defining words
 
-As in regular Forth, functions are defined with ":" colon and ";" semicolon.
+As in regular Forth, functions (or "words") are defined with ":" colon 
+and ";" semicolon.
 
 Ex.
 

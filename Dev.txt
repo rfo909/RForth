@@ -22,6 +22,12 @@ LOWER PRI
 	  
 	- extend if{ with }else{
 	
+2022-05-25
+----------
+Switching to atmega2560. 8 Kb SRAM and 4K EEPROM! 
+
+http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-2549-8-bit-AVR-Microcontroller-ATmega640-1280-1281-2560-2561_datasheet.pdf
+
 	
 2022-05-24 v0.1.8
 -----------------
