@@ -11,16 +11,7 @@ For fun, and for doing interactive programming on the tiny little Arduino
 Nano / Uno, with its 2Kb of SRAM. 
 
 But also because C, at least in the Arduino IDE, is hugely prone to
-pointer errors, as the compiler checks very little, for example if you
-forget returning something from a function. This gives "interesting" bugs
-that are hard to find.
-
-The first goal is to allow my little Nano to store RForth code in an external
-EEPROM chip (24FC256) of 32 KBytes, via I2C, and abstract this to reserved
-"hook" words, such as $save:func, $fetch:func and so on, which is to say that the
-details are written in RForth, not buried inside the C code.
-
-:-)
+pointer errors.
 
 
 # Examples?
@@ -36,18 +27,15 @@ details are written in RForth, not buried inside the C code.
 
 With these four words, we can test turning on and off the LED on pin 13.
 
-Note that the parser waits until it sees a semicolon even in interactive mode,
-before parsing:
-
 ```
 # set pin as output (DDR = data direction register)
 # then write high to pin 5 in port B (led on)
 # and 0 to port B (led off). Note that this nulls
 # all the other pins on port B as well.
 
-M DDRB write ;  
-M PORTB write ; 
-0 PORTB write ; 
+M DDRB write  
+M PORTB write
+0 PORTB write 
 
 # An improvement, to affect only the desired bit, creating
 # two words, on and off:
@@ -56,10 +44,10 @@ M PORTB write ;
 : off PORTB read M ! & PORTB write ;
 
 
-on ;
-off ;
-on ;
-off ;
+on
+off
+on
+off
 
 (endless fun)
 
@@ -69,7 +57,7 @@ The =x define up to 8 differently named local variables inside
 each word function. After entering a function, or immediate code, 
 the compiled byte-code is displayed.
 
-When the stack gets too big, type "clear" followed by semicolon.
+When the stack gets too big, type "clear" and press ENTER
 
 # Conditionals and loops
 
@@ -84,10 +72,12 @@ When the stack gets too big, type "clear" followed by semicolon.
 0 set
 
 # Looping
-0 =a loop{ a 1 + =a a 10 > break a } ;
+0 =a loop{ a 1 + =a a 10 > break a }
 
 # Puts values 1-10 on stack. Remember to clear
 # stack after, because max data stack depth is limited.
+
+clear
 
 ```
 
@@ -96,16 +86,13 @@ When the stack gets too big, type "clear" followed by semicolon.
 
 Mainly due to space considerations, but possibly also speed, all input is 
 compiled to byte code, both when we define new words and when we enter code
-for immediate exeution.
+to be executed immediately.
 
-
-When entering immedate code (that does not start with colon) the code is compiled,
-then disassembled to screen, before being run.
 
 To disassemble a word, use the "dis:xxx" command:
 
 ```
-dis:TheWord ; 
+dis:TheWord
 ```
 
 ## Blink 
@@ -118,11 +105,12 @@ pin 13, or as the MCU knows it, on bit 5 of PORTB.
 : PORTB 0x25 ;
 
 : mask =count 1 count << ;
-: M 5 mask ;
+: M 5 mask ;   # atmega328 mask for Arduino Pin 13
 
 : init DDRB read M | DDRB write ;
 
-init ;
+# Run init word, to set up Data Direction Register to output
+init 
 
 : on PORTB read M | PORTB write ;
 : off PORTB read M ! & PORTB write ;
@@ -137,7 +125,7 @@ Entering the blink word starts an infinite loop that blinks the LED.
 But before doing that, we may want to inspect the compiled code,
 by typing 
 ```
-dis:blink ;
+dis:blink
 
   0  151  PUSH 23
   1  2  OP_CALL
@@ -174,7 +162,7 @@ the loop forever.
 ## List defined words
 
 ```
-words ;
+words
 
    DDRB
    PORTB
@@ -191,7 +179,7 @@ words ;
 ## Display memory use
 
 ```
-stats ;
+stats
 
 ps: 41 of 150
 pc: 78 of 400
@@ -222,6 +210,10 @@ under RForth control.
 The third, interfacing external persistent storage, is the most tempting, as long
 as it is done in a way that is handled within the RForth language, using hooks,
 so that we program the specifics of the interaction completely in RForth, not C. 
+
+# Detailed docs
+
+See Docs.md for summary of internal functions.
 
 
 
