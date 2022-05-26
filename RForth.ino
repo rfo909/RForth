@@ -1435,13 +1435,8 @@ bool executeOneOp () {
         Serial.println(F("OP_EE_READ - data stack empty"));
         return false;
       }
-      DStackValue *addr=dsPopValue();
-      if (addr->type != DS_TYPE_LONG) {
-        Serial.println(F("OP_EE_READ - address must be long"));
-      }
-      unsigned long uaddr=(unsigned long) addr->val;
-
-      dsPushValue(DS_TYPE_BYTE, EEPROM.read(uaddr));
+      long addr=dsPop();
+      dsPushValue(DS_TYPE_BYTE, EEPROM.read(addr));
       return true;
     }
     case OP_EE_WRITE : {
@@ -1449,23 +1444,13 @@ bool executeOneOp () {
         Serial.println(F("OP_EE_WRITE - data stack empty"));
         return false;
       }
-      DStackValue *addr=dsPopValue();
-      if (addr->type != DS_TYPE_LONG) {
-        Serial.println(F("OP_EE_WRITE - address must be long"));
-      }
-      unsigned long uaddr=(unsigned long) addr->val;
-
+      long addr=dsPop();
       if (dsEmpty()) {
         Serial.println(F("OP_EE_WRITE - data stack empty"));
         return false;
       }
-      DStackValue *val=dsPopValue();
-      if (addr->type != DS_TYPE_BYTE) {
-        Serial.println(F("OP_EE_WRITE - value must be byte"));
-      }
-      byte bval=(byte) val->val;
-
-      EEPROM.update(uaddr,bval);
+      long value=dsPop();
+      EEPROM.update(addr,value);
       return true;
     }
     case OP_EE_LENGTH : {

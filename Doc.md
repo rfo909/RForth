@@ -1,6 +1,6 @@
 # Introduction
 
-*2022-05-26 v0.2.1*
+*2022-05-25 v0.2.0*
 
 *RForth* is a compact programming language inspired by Forth. It is stack based,
 but does not depend on stack manipulations, as it introduces local variables
@@ -151,6 +151,9 @@ sys:pop
 
 ```
 sys:millis           # millis since program start (ulong)
+
+address ee:read
+value address ee:write
 ```
 
 
