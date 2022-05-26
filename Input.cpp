@@ -77,6 +77,14 @@ char *inpTokenGet() {
   return tokens[tokenParsePos];
 }
 
+int inpTokenCount() {
+  return nextToken;
+}
+
+char *inpTokenAtPos (int pos) {
+  return tokens[pos];
+}
+
 int inpTokenStreamPos() {
   return tokenParsePos;
 }

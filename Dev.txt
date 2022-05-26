@@ -17,10 +17,22 @@ LOWER PRI
 	- consider changing the PUSH op to a two-bit prefix saying that either
 	  there is a six-bit value integrated, or the six bits contain number of
 	  bytes following, getting rid of the LSHIFT and OR. Big number literals
-	  can result in 17 bytes of code ... Pushing 1000 from code, results in
-	  five bytes ...
+	  can result in 17 bytes of code, as each push op (one byte) pushes a 7-bit
+	  number, and those then have to be left-shifted and OR'ed together ... 
+	  
+	  Pushing 1000 from code, results in five bytes ...
 	  
 	- extend if{ with }else{
+	
+	
+2022-05-26 v0.2.0
+-----------------
+Modified the input processing so that in interactive mode we can press ENTER
+without having to supply a semicolon. Tested this in both Arduino Serial Terminal
+and minicom.
+
+Updated doc.
+
 	
 2022-05-25
 ----------

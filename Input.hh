@@ -13,6 +13,8 @@ void inpAddToken (char *token);
 bool inpTokenMatches (char *s);
 void inpTokenAdvance ();
 char *inpTokenGet();
+int inpTokenCount();
+char *inpTokenAtPos (int pos);
 int inpTokenStreamPos();
 void inpTokenStreamSetPos (int pos);
 

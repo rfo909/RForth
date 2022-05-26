@@ -105,18 +105,31 @@ void loop() {
   }
   if (inComment && (c=='\r' || c=='\n')) {
     inComment=false;
-    return;
   }
-
   if (!inComment) {
     if (c==' ' || c=='\r' || c=='\n' || c=='\t') {
       if (!inpEmpty()) {
         char *str=inpChop();
         inpAddToken(str);
+        
         if (!strcmp(str,";")) {
           parseTokens();
           reset();
         }
+      }
+      
+      // If first token not colon, we are in interactive mode.
+      // Serial Monitor sends newlines only, while minicom for some
+      // reason sends CR only ...
+      //
+      // Since the parser requires a semicolon at the end of input,
+      // we add one before calling parser. 
+      // --
+      if ((c=='\r' || c=='\n') && inpTokenCount() > 0 && strcmp(inpTokenAtPos(0),":")) {  // no colon means interactive mode
+        inpAddChar(';');
+        inpAddToken(inpChop());
+        parseTokens();
+        reset();
       }
     } else {
       if (!inComment) inpAddChar(c);
@@ -396,7 +409,7 @@ bool parseImmediateCode() {
   //Serial.println(codePos);
   byte *code=pcGetPointer(codePos);
 
-  disassemble(code);
+  //disassemble(code);
 
   executeCode(code);
   

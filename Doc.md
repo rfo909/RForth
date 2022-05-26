@@ -1,6 +1,6 @@
 # Introduction
 
-*2022-05-24 v0.1.8*
+*2022-05-26 v0.2.0*
 
 *RForth* is a compact programming language inspired by Forth. It is stack based,
 but does not depend on stack manipulations, as it introduces local variables
@@ -11,7 +11,7 @@ atmega328p and 2Kbytes SRAM. This is sufficient for running the compiler, which
 reduces input text (via Serial monitor) to a binary byte format, and then execute
 this.
 
-# Defining words
+# Defining words ("compile mode")
 
 As in regular Forth, functions (or "words") are defined with ":" colon 
 and ";" semicolon.
@@ -25,10 +25,12 @@ Ex.
 
 This defines two words DDRB and PORTB, which puts different values on the stack.
 
-# Immediate code
+# Interactive code
 
-The interpreter also accepts "immediate" code, which simply does not start with
-a colon. It still must end with ";" to signal that the code should be compiled.
+The interpreter also accepts "interactive" code, which simply is code
+that does not start with
+a colon. It gets compiled and executed when pressing ENTER. 
+
 
 Ex.
 
@@ -36,10 +38,6 @@ Ex.
 2 3 + ;
 ```
 
-The explicit terminator ";" even on immediate code, allowed for a 
-a very simple recursive-descent parser / compiler, 
-but at the cost of an input buffer, so it will eventually have to be 
-rewritten, parsing each word individually.
 
 
 # Local variables
@@ -66,8 +64,8 @@ perhaps up to 8. It is a trade off, as it costs a bit or memory.
 Once compiled we can call the word:
 
 ```
-b0010_0000 DDRB SetBit ;
-b0010_0000 PORTB SetBit ;
+b0010_0000 DDRB SetBit
+b0010_0000 PORTB SetBit
 ```
 
 The first sets Arduino Pin 13 as output, and the second turns on the LED on this 
@@ -113,7 +111,7 @@ not              # Logical not
 ## Flow control
 
 ```
-return
+return           # return to where current word was called
 abort            # terminates execution
 ```
 
@@ -146,13 +144,6 @@ pop
 :bool
 ```
 
-## EEPROM
-
-```
-ee:read
-ee:write
-ee:length
-```
 
 ## Misc
 
@@ -228,7 +219,7 @@ For words returning data, these are specified following the "--", for example.
 
 # Interactive commands
 
-The following are commands that are executed directly when seen as part of an immediate
+The following are commands that are executed directly when seen as part of an interactive
 sequence of tokens, that is, not part of a word definition (starting with colon).
 
 ```

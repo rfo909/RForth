@@ -15,8 +15,8 @@ typedef unsigned char byte;
 
 
 /// Input.cpp
-#define INPUT_BUF_SIZE      200
-#define INPUT_TOKEN_COUNT   80
+#define INPUT_BUF_SIZE      400
+#define INPUT_TOKEN_COUNT   100
 
 // Stacks.hh / Input.cpp
 #define LOCAL_VARIABLE_COUNT    8
