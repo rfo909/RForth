@@ -35,8 +35,10 @@ a colon. It gets compiled and executed when pressing ENTER.
 Ex.
 
 ```
-2 3 + ;
+2 3 + 
+DDRB
 ```
+
 
 
 
