@@ -36,6 +36,17 @@ typedef unsigned char byte;
 #define MAP_SIZE          200
 #define P_CODE_MAX_SIZE   127
 
+// ADDR locations
+#define ALOC_OC_ASP      1   // address space (pcData / psData)
+#define ALOC_OC_EE       2   // EEPROM
+#define ALOC_OC_PROGMEM  3   // static progmem binary array
+
+// ADDR types
+#define ATYP_BYTE       1
+#define ATYP_UINT       2
+#define ATYP_BLOB       3  // length encoded as three bytes in start
+#define ATYP FUNC       4
+#define ATYP_SYMBOL     5
 
 
 

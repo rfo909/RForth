@@ -27,13 +27,13 @@ static const char OR[] PROGMEM = "or";
 static const char NOT[] PROGMEM = "not";
 
 
-static const char RETURN[] PROGMEM = "return";
-static const char READ[] PROGMEM = "read";
-static const char WRITE[] PROGMEM = "write";
+static const char SYS_RETURN[] PROGMEM = "sys:return";
+static const char SYS_READ[] PROGMEM = "sys:read";
+static const char SYS_WRITE[] PROGMEM = "sys:write";
 
-static const char DUP[] PROGMEM = "dup";
-static const char POP[] PROGMEM = "pop";
-static const char NEG[] PROGMEM = "neg";
+static const char SYS_DUP[] PROGMEM = "sys:dup";
+static const char SYS_POP[] PROGMEM = "sys:pop";
+static const char SYS_NEG[] PROGMEM = "sys:neg";
 
 static const char T_BYTE[] PROGMEM = ":byte";
 static const char T_INT[] PROGMEM = ":int";
@@ -41,18 +41,21 @@ static const char T_UINT[] PROGMEM = ":uint";
 static const char T_LONG[] PROGMEM = ":long";
 static const char T_ULONG[] PROGMEM = ":ulong";
 
-static const char MILLIS[] PROGMEM = "millis";
+static const char SYS_MILLIS[] PROGMEM = "sys:millis";
 static const char EE_READ[] PROGMEM = "ee:read";
 static const char EE_WRITE[] PROGMEM = "ee:write";
 static const char EE_LENGTH[] PROGMEM = "ee:length";
 
-static const char _NULL[] PROGMEM = "null";
+static const char _NULL[] PROGMEM = "$null";
 
 static const char T_SYM[] PROGMEM = ":sym";
 static const char T_ADDR[] PROGMEM = ":addr";
 
-static const char ABORT[] PROGMEM = "abort";
+static const char SYS_ABORT[] PROGMEM = "sys:abort";
 static const char T_BOOL[] PROGMEM = ":bool";
+
+static const char SYS_ADDR[] PROGMEM = "sys:addr";
+
 
 
 int lookupSymbol (char *sym) {
@@ -76,12 +79,12 @@ int lookupSymbol (char *sym) {
   if (!strcmp_P(sym,OR)) return OP_L_OR;
   if (!strcmp_P(sym,NOT)) return OP_L_NOT;
   
-  if (!strcmp_P(sym,RETURN)) return OP_RET;
-  if (!strcmp_P(sym,READ)) return OP_READ;
-  if (!strcmp_P(sym,WRITE)) return OP_WRITE;
-  if (!strcmp_P(sym,DUP)) return OP_DUP;
-  if (!strcmp_P(sym,POP)) return OP_POP;
-  if (!strcmp_P(sym,NEG)) return OP_NEG;
+  if (!strcmp_P(sym,SYS_RETURN)) return OP_RET;
+  if (!strcmp_P(sym,SYS_READ)) return OP_READ;
+  if (!strcmp_P(sym,SYS_WRITE)) return OP_WRITE;
+  if (!strcmp_P(sym,SYS_DUP)) return OP_DUP;
+  if (!strcmp_P(sym,SYS_POP)) return OP_POP;
+  if (!strcmp_P(sym,SYS_NEG)) return OP_NEG;
 
   if (!strcmp_P(sym,T_BYTE)) return OP_AS_BYTE;
   if (!strcmp_P(sym,T_INT)) return OP_AS_INT;
@@ -89,7 +92,7 @@ int lookupSymbol (char *sym) {
   if (!strcmp_P(sym,T_LONG)) return OP_AS_LONG;
   if (!strcmp_P(sym,T_ULONG)) return OP_AS_ULONG;
 
-  if (!strcmp_P(sym,MILLIS)) return OP_MILLIS;
+  if (!strcmp_P(sym,SYS_MILLIS)) return OP_MILLIS;
   if (!strcmp_P(sym,EE_READ)) return OP_EE_READ;
   if (!strcmp_P(sym,EE_WRITE)) return OP_EE_WRITE;
   if (!strcmp_P(sym,EE_LENGTH)) return OP_EE_LENGTH;
@@ -98,9 +101,10 @@ int lookupSymbol (char *sym) {
 
   if (!strcmp_P(sym,T_SYM)) return OP_AS_SYM;
   if (!strcmp_P(sym,T_ADDR)) return OP_AS_ADDR;
-  if (!strcmp_P(sym,ABORT)) return OP_ABORT;
+  if (!strcmp_P(sym,SYS_ABORT)) return OP_ABORT;
   if (!strcmp_P(sym,T_BOOL)) return OP_AS_BOOL;
   
+  if (!strcmp_P(sym,SYS_ADDR)) return OP_ADDR;
 
   return -1; 
 }
@@ -329,6 +333,12 @@ void printOpName (const int opCode) {
       Serial.print(F("OP_AS_BOOL"));
       return;
     }
+    case OP_ADDR: {
+       Serial.print(F("OP_ADDR"));
+       return;
+    }
+
+    // Can not include OP_SYMBOL as it is not a single byte
   }
   Serial.print(F("Unknown OP "));
   Serial.print(opCode);

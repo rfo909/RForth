@@ -1,6 +1,6 @@
 # Introduction
 
-*2022-05-26 v0.2.0*
+*2022-05-26 v0.2.1*
 
 *RForth* is a compact programming language inspired by Forth. It is stack based,
 but does not depend on stack manipulations, as it introduces local variables
@@ -52,9 +52,9 @@ Ex.
 
 ```
 : SetBit =addr =mask  # pop values off stack
-	addr read 
+	addr sys:read 
 		mask |
-			addr write ;
+			addr sys:write ;
 ```
 
 Here we read an address, then logically OR the mask into that value, and write
@@ -113,23 +113,23 @@ not              # Logical not
 ## Flow control
 
 ```
-return           # return to where current word was called
-abort            # terminates execution
+sys:return           # return to where current word was called
+sys:abort            # terminates execution
 ```
 
 
 ## Access to memory (registers)
 
 ```
-address read 
-value address write
+address sys:read 
+value address sys:write
 ```
 
 ## Stack manipulation
 
 ```
-dup 
-pop
+sys:dup 
+sys:pop
 ```
 
 
@@ -150,17 +150,18 @@ pop
 ## Misc
 
 ```
-millis           # millis since program start (ulong)
+sys:millis           # millis since program start (ulong)
 ```
 
 
 # Literal values in code
 
 ```
-null
+$null
 3
 0x03
-b1001
+b0011
+b0000_0011
 ```
 
 # Flow control
@@ -201,9 +202,9 @@ mandatory either.
 
 ```
 : SetBit ( :byte =mask :int =addr -- )
-	addr read 
+	addr sys:read 
 		mask |
-			addr write ;
+			addr sys:write ;
 ```
 
 As with normal Forth, the order of the parameters inside ( ... ), from left to 

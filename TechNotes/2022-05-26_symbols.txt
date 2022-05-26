@@ -1,0 +1,157 @@
+Making literal tokens a valid value
+------------------------------------
+
+
+
+Symbols / OP_SYMBOL
+-------------------
+
+In code: 
+	OP_SYMBOL
+	ControlByte
+	data ... (NO ZERO-BYTES)
+	
+ControlByte
+	3 bits: type = 001
+	5 bits: length
+	
+	Type: 
+		001 symbol		# only valid value, ensures control byte never zero
+	
+	Length:
+		max 31, 0 not allowed, nor possible to express in code
+		
+On stack
+--------
+	type=DS_TYPE_ADDR
+	value=
+		(loc=...)
+		(type=symbol)
+		(offset=...)
+
+Executing OP_SYMBOL means looking up the symbol across available devices, and
+if it exists, generate an ADDR value for it. If it does not exist, it has to be
+added to the current device, which also returns an ADDR.
+
+Symbols should be stored into binary storage, as NOP-functions, that is they are
+valid functions, but contain one instruction NOP before EOF. This ensures
+proper separation between name (null terminated) and EOF, with non-null byte
+between (OP_NOP).
+
+
+The ADDR data type
+------------------
+:addr data can not be casted, only checked. The value for an ADDR type is
+organized into three parts:
+
+	- control: 1 byte
+	- data: 3 bytes
+	
+The "control" byte is split in two parts:
+
+	4 bits = locationId
+	4 bits = typeId
+	
+** LocationId:
+
+The locationId tells where the address is pointing, and this falls into
+two categories:
+
+	b0xxx = on-chip devices (ram, eeprom, progmem)
+	b1xxx = virtual devices managed completely via RForth code
+
+	#define ALOC_OC_ASP			0x00   // address space
+	#define ALOC_OC_EE			0x01   // EEPROM
+	#define ALOC_OC_PROGMEM		0x02   // static progmem binary array
+
+		
+	The PROGMEM location is readonly. It refers to one specific sequence of
+	bytes stored in PROGMEM, and contains data on the following format:
+	
+	name \0
+	data EOF
+	 :
+	
+	Symbols that are not functions are encoded as NOP-functions:
+	
+	name \0
+	OP_NOP EOF
+	
+	Terminated by extra 0-byte
+
+** TypeId:
+
+The type identifies what the address refers to
+
+	#define ATYP_BYTE			0
+	#define ATYP_UINT			1
+	#define ATYP_BLOB			2  // length encoded as three bytes in start
+	#define ATYP FUNC			3
+	#define ATYP_SYMBOL			4
+
+
+Conclusion
+----------
+This means that the OP_AS_SYM operator is really a refined version :addr, adding
+a check that the :addr has type symbol
+
+
+
+
+Consequences I - storage model
+--------------
+
+The runtime code for OP_SYMBOL is not completed yet, as it depends on
+a different storage model, where both word names and compiled code exists in 
+a single sequential array (per addressable device). We will also need to set up
+a prioritized "path" of devices that are enabled by default, with an option to
+extend this programmatically.
+
+This means we will scan a PROGMEM binary array for word defs, then perhaps EEPROM, 
+and finally SRAM.
+
+
+Consequences II - linker problem
+--------------------------------
+
+The idea is to compile to SRAM, and when we are satisfied, all code up to a certain word,
+in sequential order, is moved to another device. 
+
+Compiled code for jumps uses local addressing, where 0 is the first byte of the compiled code.
+
+Today we also do the same when compiling calls to other words, since all exists in the same
+address space. When moving code to a different address space, the absolute positions of
+other words changes.
+
+For this reason, the OP_CALL instruction must be compiled differently, requiring an ADDR 
+on the stack, instead of just a number. 
+
+
+ 
+
+Consequences III - extended code size
+-------------------------------------
+
+- the hard limit of 127 bytes of code for a word must be extended, which also means
+  we need bigger JMP* target addresses (currently 7 bits). Possibly just create
+  a new op that takes two 7-bit numbers, shifts one and add them together with OR, 
+  changing from 
+  
+  	PUSH 7-bit-upper
+  	7
+  	LEFTSHIFT
+  	PUSH 7-bit-lower
+  	OR
+
+  to
+  
+  	PUSH 7-bit-upper
+  	PUSH 7-bit-lower
+  	CREATE_14BIT
+  	
+  This format enables a 14 bit (8k) address space for binary code, which allows for plenty
+  of literal symbols and still should be more than enough. The idea is to use literal tokens
+  as a way of reporting errors, by putting a symbol on the stack before calling sys:abort
+  
+  ' something_went_shit sys:abort
+

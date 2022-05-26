@@ -33,15 +33,15 @@ With these four words, we can test turning on and off the LED on pin 13.
 # and 0 to port B (led off). Note that this nulls
 # all the other pins on port B as well.
 
-M DDRB write  
-M PORTB write
-0 PORTB write 
+M DDRB sys:write  
+M PORTB sys:write
+0 PORTB sys:write 
 
 # An improvement, to affect only the desired bit, creating
 # two words, on and off:
 
-: on PORTB read M | PORTB write ;
-: off PORTB read M ! & PORTB write ;
+: on PORTB sys:read M | PORTB sys:write ;
+: off PORTB sys:read M ! & PORTB sys:write ;
 
 
 on
@@ -105,17 +105,17 @@ pin 13, or as the MCU knows it, on bit 5 of PORTB.
 : PORTB 0x25 ;
 
 : mask =count 1 count << ;
-: M 5 mask ;   # atmega328 mask for Arduino Pin 13
+: M 7 mask ;   # atmega328 mask for Arduino Pin 13
 
-: init DDRB read M | DDRB write ;
+: init DDRB sys:read M | DDRB sys:write ;
 
 # Run init word, to set up Data Direction Register to output
 init 
 
-: on PORTB read M | PORTB write ;
-: off PORTB read M ! & PORTB write ;
+: on PORTB sys:read M | PORTB sys:write ;
+: off PORTB sys:read M ! & PORTB sys:write ;
 
-: wait =ms millis ms + =ms loop{ millis ms > break  } ;
+: wait =ms sys:millis ms + =ms loop{ sys:millis ms > break  } ;
 
 : blink loop{ on 1000 wait off 500 wait } ;
 ```

@@ -25,6 +25,61 @@ LOWER PRI
 	- extend if{ with }else{
 	
 	
+2022-05-26 v0.2.1
+-----------------
+Added sys:addr and OP_ADDR which creates :addr type value, consisting of the
+following, fitted inside an unsigned long.
+
+	locationId : 4 bits
+	typeId : 4 bits
+	offset : 24 bits
+	
+The goal for ADDR is to let read and write functions (now renamed to sys:read and sys:write)
+manage data for internal locations (address space, eeprom and progmem), while leaving external
+locations to be defined in RForth.
+
+Renamed various global functions to avoid polluting global name space:
+
+	sys:return
+	sys:read
+	sys:write
+	sys:dup
+	sys:pop
+	sys:neg
+	sys:millis
+	
+and now
+
+	sys:addr 
+		( :byte locationId :byte =typeId :long =offset -- :addr )
+	
+	Implemented as OP_ADDR
+
+Also renamed function null to $null.
+
+------
+
+Added OP_SYMBOL and created code to parse the syntax
+
+	' someToken
+	
+Also updated the disassembler, and verified by creating functions with literal
+tokens, and disassembling the code.
+	
+The text of the token, up to a max of 31 characters, is encoded directly in the 
+binary code. This is described in TechNotes/2022-05-26_symbols.txt
+
+A symbol in the source gets converted to a symbol value on the stack, which is
+really an ADDR (type :addr) that has typeId set to ATYP_SYMBOL.
+
+The execution of symbols is incomplete, which is also described in detail in the 
+TechNotes document. 
+
+Since the ADDR data type hasn't matured yet, it has not been added to the doc.
+
+
+
+  
 2022-05-26 v0.2.0
 -----------------
 Modified the input processing so that in interactive mode we can press ENTER
@@ -32,6 +87,9 @@ without having to supply a semicolon. Tested this in both Arduino Serial Termina
 and minicom.
 
 Updated doc.
+
+Felt like a "major" 0.x version :-)
+
 
 	
 2022-05-25

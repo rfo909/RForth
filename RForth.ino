@@ -145,7 +145,8 @@ void loop() {
 // code MUST end with OP_EOF
 void disassemble (byte *code) {
 
-  for (int pos=0; pos<128; pos++) {
+  int pos=0;
+  for (;;) {
     Serial.print("  ");
     Serial.print(pos);
     Serial.print("  ");
@@ -154,14 +155,31 @@ void disassemble (byte *code) {
     Serial.print("  ");
     if (b & 0x80) {
       // PUSH
-      Serial.print("PUSH");
-      Serial.print(" ");
+      Serial.print(F("PUSH "));
       Serial.println(b & 0x7F);
+    } else if (b==OP_SYMBOL) {
+      pos++;
+      byte controlByte=code[pos];
+      if ((controlByte & B11100000) != B00100000) {
+        Serial.println(F("OP_SYMBOL: invalid controlByte"));
+        return;      
+      }
+      int len=controlByte & B00011111;
+      Serial.print(F("     SYMBOL "));
+      for (int i=0; i<len; i++) {
+        pos++;
+        Serial.print((char) code[pos]);
+      }
+      Serial.println();
     } else {
       printOpName(b);
       Serial.println();
     }
     if (b==OP_EOF) break;
+
+
+    pos++;
+    if (pos>P_CODE_MAX_SIZE) return;
   }
 
 }
@@ -422,6 +440,7 @@ bool isDigit(char c) {
 
 bool parseIf();
 bool parseLoop();
+bool parseSymbol();
 
 unsigned long parseHex (char *s) {
   unsigned long val=0;
@@ -454,6 +473,9 @@ bool parseWord() {
   } 
   if (inpTokenMatches("loop{")) {
     return parseLoop();
+  }
+  if (inpTokenMatches("'")) {
+    return parseSymbol();
   }
   
   char *word=inpTokenGet();
@@ -642,6 +664,28 @@ bool parseLoop() {
   return true;
 }
 
+bool parseSymbol() {
+  // just matched the apostrophe
+  
+  char *token=inpTokenGet();
+  
+  inpTokenAdvance();
+  
+  pcAddByte(OP_SYMBOL);
+  
+  int len=strlen(token);
+  if (len > 31) {
+    Serial.println(F("Invalid literal token, max length 31"));
+    return false;
+  }
+  int controlByte=B00100000 | (len & B00011111);
+  
+  pcAddByte(controlByte);
+  for (int i=0; i<len; i++) {
+    pcAddByte((byte) token[i]);
+  }
+  return true;
+}
 
 // -------------------------------------
 // execute code
@@ -717,7 +761,19 @@ void displayStackValue (DStackValue *x) {
       return;
     }
     case DS_TYPE_ADDR : {
-      Serial.println(F("Address    -- not implemented"));
+      unsigned long val=(unsigned long) x->val;
+      unsigned long offset=(val & 0x0FFFFFF);
+      byte content = (byte) (val >> 24);   
+        // content splits into deviceId (4 bits) and typeId (4 bits)
+        // showing as byte in hex here
+      itoa((byte) content, buf, 16);
+      Serial.print("      0x");
+      printPadded("0", 2, buf, " ", 1);
+      
+      itoa((unsigned long) offset, buf, 16);
+      Serial.print(F(" 0x"));
+      printPadded("0", 8, buf, " ", 2);
+      Serial.println(F("  ADDR"));
       return;
     }
     case DS_TYPE_COMPLEX : {
@@ -767,12 +823,30 @@ void executeCode (byte *initialCode) {
 
   long executeOpCount=0;
   unsigned long startTime=millis();
+  
   while(!csEmpty() && !abortCodeExecution) {
-    if (!executeOneOp()) {
-      abortCodeExecution=true;
-      break;
+
+    // peek at current op
+    
+    CStackFrame *curr=csPeek();
+    byte *code=curr->code;
+    int pos=curr->pc;
+    byte b=code[pos];
+    
+    if (b==OP_SYMBOL) {
+      if (!executeOpSymbol()) {
+        abortCodeExecution=true;
+        break;
+      }
+      executeOpCount++;
+    } else {
+      // all other ops
+      if (!executeOneOp()) {
+        abortCodeExecution=true;
+        break;
+      }
+      executeOpCount++;
     }
-    executeOpCount++;
   }
   unsigned long endTime=millis();
   Serial.print(endTime-startTime);
@@ -783,6 +857,50 @@ void executeCode (byte *initialCode) {
   
 }
 
+
+bool executeOpSymbol () {
+  char buf[32]; // 31 + null
+  
+  CStackFrame *curr=csPeek();
+  byte *code=curr->code;
+
+  int pos=curr->pc;
+  curr->pc=curr->pc+1; // may also be modified by JMP-instructions
+ 
+  byte b=code[pos];
+  if (b != OP_SYMBOL) {
+    Serial.println(F("Internal error / executeOpSymbol"));
+    return false;
+  }
+
+
+  pos=curr->pc;
+  curr->pc=pos+1;
+  byte controlByte=code[pos];
+  if ((controlByte & B11100000) != B00100000) {
+    Serial.print(F("executeOpSymbol: invalid controlByte "));
+    Serial.println(controlByte);
+    return false;
+  }
+
+  int len=(controlByte & B00011111);
+  for (int i=0; i<len; i++) {
+    pos=curr->pc;
+    curr->pc=pos+1;
+    byte b=code[pos];
+    buf[i]=(char) b;
+  }
+  buf[len]='\0';
+
+  Serial.println(F("ERR: executeOpSymbol"));
+  // Need somewhere to store it, in order to create a
+  // reference of type :addr
+
+  return false;
+  
+}
+
+
 bool executeOneOp () {
   CStackFrame *curr=csPeek();
   byte *code=curr->code;
@@ -791,6 +909,11 @@ bool executeOneOp () {
   curr->pc=curr->pc+1; // may also be modified by JMP-instructions
  
   byte b=code[pos];
+
+  if (b==OP_SYMBOL) {
+    Serial.println(F("executeOnOp: OP_SYMBOL can not be executed here"));
+    return false;
+  }
 
   if (b & 0x80) {
     // PUSH
@@ -1312,8 +1435,13 @@ bool executeOneOp () {
         Serial.println(F("OP_EE_READ - data stack empty"));
         return false;
       }
-      int addr=dsPop();
-      dsPushValue(DS_TYPE_BYTE, EEPROM.read(addr));
+      DStackValue *addr=dsPopValue();
+      if (addr->type != DS_TYPE_LONG) {
+        Serial.println(F("OP_EE_READ - address must be long"));
+      }
+      unsigned long uaddr=(unsigned long) addr->val;
+
+      dsPushValue(DS_TYPE_BYTE, EEPROM.read(uaddr));
       return true;
     }
     case OP_EE_WRITE : {
@@ -1321,13 +1449,23 @@ bool executeOneOp () {
         Serial.println(F("OP_EE_WRITE - data stack empty"));
         return false;
       }
-      int addr=dsPop();
+      DStackValue *addr=dsPopValue();
+      if (addr->type != DS_TYPE_LONG) {
+        Serial.println(F("OP_EE_WRITE - address must be long"));
+      }
+      unsigned long uaddr=(unsigned long) addr->val;
+
       if (dsEmpty()) {
         Serial.println(F("OP_EE_WRITE - data stack empty"));
         return false;
       }
-      byte value=dsPop();
-      EEPROM.update(addr,value);
+      DStackValue *val=dsPopValue();
+      if (addr->type != DS_TYPE_BYTE) {
+        Serial.println(F("OP_EE_WRITE - value must be byte"));
+      }
+      byte bval=(byte) val->val;
+
+      EEPROM.update(uaddr,bval);
       return true;
     }
     case OP_EE_LENGTH : {
@@ -1343,12 +1481,17 @@ bool executeOneOp () {
       return true;
     }
     case OP_AS_SYM : {
-      if (!dsTypeCast(DS_TYPE_SYM)) {
+      if (!dsTypeCast(DS_TYPE_ADDR)) {
         Serial.println(F(":sym failed"));
         return false;
-      } else {
-        return true;
-      }
+      } 
+      DStackValue *val=dsPeekValue();
+      int controlByte = (val->val >> 24);
+      int typeId=controlByte & B1111;
+      if (typeId==ATYP_SYMBOL) return true;
+
+      Serial.println(F(":sym invalid ADDR - not referring to symbol"));
+      return false;
     }
     case OP_AS_ADDR : {
       if (!dsTypeCast(DS_TYPE_ADDR)) {
@@ -1371,6 +1514,33 @@ bool executeOneOp () {
         return true;
       }
     }
+    case OP_ADDR : { // Create ADDR value
+      if (dsEmpty()) {
+        Serial.println(F("OP_ADDR - data stack empty"));
+        return false;
+      }
+      unsigned long offset=(unsigned long) dsPop();
+
+      if (dsEmpty()) {
+        Serial.println(F("OP_ADDR - data stack empty"));
+        return false;
+      }
+      int typeId=dsPop();
+      
+      if (dsEmpty()) {
+        Serial.println(F("OP_ADDR - data stack empty"));
+        return false;
+      }
+      int locationId=dsPop();
+ 
+      unsigned long content= (( locationId & 0x0F ) << 4) | ( typeId & 0x0F );
+      Serial.println(content);
+      unsigned long result=(content << 24) | ( offset & 0x00FFFFFF );
+
+      dsPushValue (DS_TYPE_ADDR, result);
+      return true;
+    }
+ 
 
   }
   Serial.print(F("Unknown OP "));

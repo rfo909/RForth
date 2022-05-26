@@ -69,11 +69,12 @@
 #define OP_ABORT      53
 #define OP_AS_BOOL    54
 
+#define OP_ADDR       55
 
-//bool executeOp (byte b);
+#define OP_SYMBOL     99
+
 
 int lookupSymbol (char *sym);
-
 void printOpName (int opCode);
 
 #endif
