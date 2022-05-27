@@ -17,7 +17,7 @@ typedef unsigned char byte;
 #endif
 
 
-#define VERSION "v0.1.8"
+#define VERSION "v0.2.3"
 
 
 #ifdef ARDUINO_AVR_MEGA
@@ -57,7 +57,7 @@ typedef unsigned char byte;
 #endif
 
 
-#define P_CODE_MAX_SIZE   127
+#define P_CODE_MAX_SIZE   256
 
 
 // ADDR locations (4 bits, up to 0x0F)

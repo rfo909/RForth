@@ -24,6 +24,21 @@ LOWER PRI
 	  
 	- extend if{ with }else{
 	
+	
+2022-05-27 v0.2.3
+-----------------
+Added new instruction OP_U14, which pops low 7 bits, then high 7 bits, shifts and OR's them together
+to a 14 bit number, max 8192 unsigned. 
+
+Changed processing of JMP-instructions used for if{ ... } and loop{ ... } to use OP_U14, which means
+patching in two 7-bit pushes.
+
+Increased max code size to 256 bytes, but will soon need to do something about the parser, which
+buffers all tokens before processing. Given that tokens are usually 2-6 characters plus terminating null,
+our inp-buffer will soon enough overflow.
+
+
+	
 
 2022-05-27 v0.2.2
 -----------------

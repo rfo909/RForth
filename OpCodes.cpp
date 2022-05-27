@@ -334,8 +334,12 @@ void printOpName (const int opCode) {
       return;
     }
     case OP_ADDR: {
-       Serial.print(F("OP_ADDR"));
-       return;
+      Serial.print(F("OP_ADDR"));
+      return;
+    }
+    case OP_U14: {
+      Serial.print(F("OP_U14"));
+      return;
     }
 
     // Can not include OP_SYMBOL as it is not a single byte

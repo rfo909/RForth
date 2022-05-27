@@ -643,7 +643,7 @@ bool parseWord() {
 
 bool parseIf() {
   int jmpToEndAddr=pcGetLocalPos();
-  pcInt7bit(0);
+  pcInt14bit(0);
   pcAddByte(OP_ZJMP);
 
   while (!inpTokenMatches("}")) {
@@ -656,7 +656,7 @@ bool parseIf() {
 
   int endLoc=pcGetLocalPos();
   // insert endLoc into the 
-  pcSetByteLocal(jmpToEndAddr,to7BitPush(endLoc));
+  pcSetBytesLocalU14(jmpToEndAddr,endLoc);
 
   return true;
 }
@@ -677,7 +677,7 @@ bool parseLoop() {
         return false;
       }
       breakJmpAddr=pcGetLocalPos();
-      pcInt7bit(0);
+      pcInt14bit(0);
       pcAddByte(OP_CJMP);
       continue;
     }
@@ -685,13 +685,13 @@ bool parseLoop() {
   }
 
   // jump back to start
-  pcInt7bit(startPos);
+  pcInt14bit(startPos);
   pcAddByte(OP_JMP);
 
   // after loop
   if (breakJmpAddr >= 0) {
     int endLoc=pcGetLocalPos();
-    pcSetByteLocal(breakJmpAddr, to7BitPush(endLoc));
+    pcSetBytesLocalU14(breakJmpAddr, endLoc);
   }
 
   return true;
@@ -1578,6 +1578,22 @@ bool executeOneOp () {
       unsigned long result=(content << 24) | ( offset & 0x00FFFFFF );
 
       dsPushValue (DS_TYPE_ADDR, result);
+      return true;
+    }
+    case OP_U14: { // create int from two 7 bits push (high + low)
+     if (dsEmpty()) {
+        Serial.println(F("OP_U14 - data stack empty"));
+        return false;
+      }
+      unsigned int low = dsPop();
+
+     if (dsEmpty()) {
+        Serial.println(F("OP_U14 - data stack empty"));
+        return false;
+      }
+      unsigned int high = dsPop();
+
+      dsPushValue(DS_TYPE_LONG, (high<<7) | low);
       return true;
     }
  

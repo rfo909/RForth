@@ -10,8 +10,8 @@ char *psStringAtPos (int pos);
 
 // binary data (in RAM) - session persistent
 
-int to7BitPush (int b);
 void pcInt7bit (int b);
+void pcInt14bit (unsigned int i);
 void pcInt (long i);
 
 
@@ -21,7 +21,8 @@ void pcResetToMark(int mark);
 int pcChopInt ();
 byte *pcGetPointer (int pos);
 int pcGetLocalPos();
-void pcSetByteLocal (int pos, byte b);
+
+void pcSetBytesLocalU14 (int localPos, unsigned int value);
 int pcCount();
 
 // maps (in RAM) - session persistent

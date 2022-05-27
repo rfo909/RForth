@@ -82,20 +82,33 @@ int pcGetLocalPos() {
   return pcNext-pcStart;
 }
 
-// patch address relative to pcStart - used for forward JMP's (if, loop)
-void pcSetByteLocal (int localPos, byte b) {
-  pcData[pcStart+localPos]=b;
-}
 
 
 
-
-int to7BitPush (int b) {
+static int to7BitPush (int b) {
   return 0x80 | (b & 0x7f);
 }
 
 void pcInt7bit (int b) {
-  return pcAddByte(to7BitPush(b));
+  pcAddByte(to7BitPush(b));
+}
+
+void pcInt14bit (unsigned int b) {
+  // high bits
+  unsigned int high=(b>>7) & B01111111;
+  unsigned int low=b & B01111111;
+
+  pcInt7bit(high);
+  pcInt7bit(low);
+  pcAddByte(OP_U14);
+}
+
+
+// patch 14 bit address relative to pcStart, for forward JMP's (if, loop)
+void pcSetBytesLocalU14 (int localPos, unsigned int value) {
+  
+  pcData[pcStart+localPos] = to7BitPush((value >> 7) & B01111111);
+  pcData[pcStart+localPos+1] = to7BitPush(value & B01111111);
 }
 
 
@@ -107,13 +120,7 @@ void pcInt (long i) {
   if(i<127) {
     pcInt7bit(i);
   } else if (i < 16384) { // 14 bits
-    pcInt7bit( (i & 0x1fc0) >> 7);
-    
-    pcInt7bit(7); // arg for LSHIFT
-    pcAddByte(OP_LSHIFT);
-    
-    pcInt7bit(i & 0x7fff);
-    pcAddByte(OP_B_OR);  
+    pcInt14bit( (unsigned int) i);
   } else if (i < 32700) {
     pcInt7bit( i & 0x7F);
     pcInt7bit( (i >> 7) & 0x7F);

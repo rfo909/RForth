@@ -70,6 +70,7 @@
 #define OP_AS_BOOL    54
 
 #define OP_ADDR       55
+#define OP_U14        56
 
 #define OP_SYMBOL     99
 
