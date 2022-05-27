@@ -37,6 +37,15 @@ Increased max code size to 256 bytes, but will soon need to do something about t
 buffers all tokens before processing. Given that tokens are usually 2-6 characters plus terminating null,
 our inp-buffer will soon enough overflow.
 
+** Did a failed attempt at modifying OP_CALL to expect a SYMBOL on the stack instead of a position. 
+
+Described it in the file
+	TechNotes/2022-05-26_dictionaries.txt
+	
+The OP_CALL *will* have to be modified to expect an ADDR, which must be extended to handle dictionaries 
+stored on different devices.
+
+
 
 	
 
