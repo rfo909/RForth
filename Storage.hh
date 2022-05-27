@@ -3,12 +3,12 @@
 
 #include "Common.hh"
 
+// string data (in RAM) - session persistent
 
-void psAddChar (char c);
-void psAddStr (char *str);
-char *psChop ();
 int psCount();
+char *psStringAtPos (int pos);
 
+// binary data (in RAM) - session persistent
 
 int to7BitPush (int b);
 void pcInt7bit (int b);
@@ -18,19 +18,22 @@ void pcInt (long i);
 void pcAddByte (byte b);
 int pcGetMark();
 void pcResetToMark(int mark);
-byte *pcChop ();
 int pcChopInt ();
-byte *pcGetPointer (long pos);
+byte *pcGetPointer (int pos);
 int pcGetLocalPos();
-void setLocalPosByte (int pos, byte b);
+void pcSetByteLocal (int pos, byte b);
 int pcCount();
 
+// maps (in RAM) - session persistent
 
-void mapAddPos (char *name, int codePos);
-int mapLookupPos (char *name);
-int mapCount ();
-char *mapGetName (int pos);
-int mapGetLength (int pos);
+//void mapAddStringPos (char *str, int strPos);
+int  mapGetStringPos (char *str);
+int  mapGetOrAddString (char *str);
+
+void mapAddCompiledWord (char *name, int codePos);
+int mapLookupCodePos (char *name);
+int mapGetWordCount ();
+char *mapGetWordName (int pos);
 
 
 #endif

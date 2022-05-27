@@ -24,7 +24,15 @@ LOWER PRI
 	  
 	- extend if{ with }else{
 	
-	
+
+2022-05-27 v0.2.2
+-----------------
+Added code that executes OP_SYMBOL, pushing the symbol on the "persistent string storage". Added
+a separate map for this purpose, to reuse symbols, independently of whether used only as symbols
+(:sym) or word names or both.
+
+
+
 2022-05-26 v0.2.1
 -----------------
 Added sys:addr and OP_ADDR which creates :addr type value, consisting of the

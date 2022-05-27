@@ -5,9 +5,13 @@
 
 
 void inpReset();
+int inpSetMark ();
+void inpResetToMark (int mark);
 void inpAddChar (char c);
 void inpUngetChar ();
 bool inpEmpty();
+int  inpGetStartPos(); // of current string - before chop()
+
 char *inpChop ();
 void inpAddToken (char *token);
 bool inpTokenMatches (char *s);

@@ -7,7 +7,7 @@ static char psData[P_STRING_SIZE];
 static int psStart=0;
 static int psNext=0;
 
-void psAddChar (char c) {
+static void psAddChar (char c) {
   if (psNext >= P_STRING_SIZE) {
     Serial.println(F("psAddChar: no more space"));
     setAbortCodeExecution();
@@ -17,20 +17,26 @@ void psAddChar (char c) {
   psData[psNext++]=c; 
 }
 
-void psAddStr (char *str) {
+static void psAddStr (char *str) {
   for (int i=0; i<strlen(str); i++) psAddChar(str[i]);
 }
 
-char *psChop () {
+static int psChopInt() {
   psAddChar('\0');
-  char *s=psData+psStart;
+  int pos = psStart;
   psStart=psNext;
-  return s;
+  return pos;
 }
+
 
 int psCount() {
   return psNext;
 }
+
+char *psStringAtPos (int strPos) {
+  return psData+strPos;
+}
+
 
 
 // pc = persistent code data 
@@ -67,7 +73,7 @@ int pcChopInt () {
   return i;
 }
 
-byte *pcGetPointer (long pos) {
+byte *pcGetPointer (int pos) {
   return pcData+pos;
 }
 
@@ -76,8 +82,9 @@ int pcGetLocalPos() {
   return pcNext-pcStart;
 }
 
-void setLocalPosByte (int pos, byte b) {
-  pcData[pcStart+pos]=b;
+// patch address relative to pcStart - used for forward JMP's (if, loop)
+void pcSetByteLocal (int localPos, byte b) {
+  pcData[pcStart+localPos]=b;
 }
 
 
@@ -162,8 +169,58 @@ int pcCount() {
 
 // ---
 
+// Indexing the strings in temporary string store (above)
+
 typedef struct {
-  char *name;
+  char *str;
+  int strPos;
+} StrValue;
+
+static StrValue strData[MAP_SIZE];
+static int strMapNext = 0;
+
+static void mapAddStringPos (int strPos) {
+  char *str=psData + strPos;
+  
+  if (strMapNext >= MAP_SIZE) {
+    Serial.println(F("mapAddStringPos: out of space"));
+    setAbortCodeExecution();
+    return;
+  }
+  (strData+strMapNext)->str=str;
+  (strData+strMapNext)->strPos=strPos;
+  strMapNext++;
+}
+
+int mapGetOrAddString (char *str) {
+  int strPos=mapGetStringPos(str);
+  if (strPos < 0) {
+    psAddStr(str);
+    strPos=psChopInt();
+
+    mapAddStringPos(strPos);
+  }
+  return strPos;
+}
+
+
+int mapGetStringPos (char *str) {
+  
+  for (int i=0; i<strMapNext; i++) {
+    
+    if (!strcmp((strData+i)->str, str)) {
+      return (strData+i)->strPos;
+    }
+  }
+
+  return -1;
+}
+
+
+
+
+typedef struct {
+  int strPos;
   int codePos;
 } MapValue;
 
@@ -171,51 +228,53 @@ typedef struct {
 static MapValue mapData[MAP_SIZE];
 static int mapNext=0;
 
-int mapLookupMapIndex (char *name) {
+static int mapGetCompiledWordIndex (int strPos) {
   for (int i=0; i<mapNext; i++) {
-    if (!strcmp(mapData[i].name, name)) return i;
+    if ((mapData+i)->strPos==strPos) return i;
   }
   return -1;
 }
 
-void mapAddPos (char *name, int codePos) {
-  int mapIndex=mapLookupMapIndex(name);
+void mapAddCompiledWord (char *name, int codePos) {
+
+  int strPos=mapGetOrAddString(name);
+
+  // check if already defined
+  int mapIndex=mapGetCompiledWordIndex(strPos);
+  
   if (mapIndex >= 0) {
-    //LOG("mapAddPos: overwriting mapIndex",mapIndex);
     // overwrite existing def
     (mapData+mapIndex)->codePos=codePos;
     return;
   }
   // add new
   if (mapNext >= MAP_SIZE) {
-    Serial.println(F("mapAddPos: no more space"));
+    Serial.println(F("mapAddCompiledWord: out of space"));
     setAbortCodeExecution();
     return ;
   }
-  mapData[mapNext].name=name;
-  mapData[mapNext].codePos=codePos;
+  (mapData+mapNext)->strPos=strPos;
+  (mapData+mapNext)->codePos=codePos;
   mapNext++;
 }
 
-int mapLookupPos (char *name) {
+int mapLookupCodePos (char *name) {
+  
+  int strPos=mapGetStringPos(name);
+
+  if (strPos < 0) return -1;
+  
   for (int i=0; i<mapNext; i++) {
-    if (!strcmp(mapData[i].name, name)) return mapData[i].codePos;
+    if ((mapData+i)->strPos==strPos) return (mapData+i)->codePos;
   }
   return -1;
 }
 
-int mapCount () {
+int mapGetWordCount () {
   return mapNext;
 }
 
-char *mapGetName (int pos) {
-  return mapData[pos].name;
-}
-
-int mapGetLength (int pos) {
-  if (pos < mapNext-1) {
-    return mapData[pos+1].codePos - mapData[pos].codePos;
-  } else {
-    return pcNext-mapData[pos].codePos;
-  }
+char *mapGetWordName (int mapDataPos) {
+   int strPos = (mapData+mapDataPos)->strPos;
+   return psData+strPos;
 }

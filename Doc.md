@@ -141,7 +141,7 @@ sys:pop
 :uint
 :long
 :ulong
-:sym
+:sym                 # literal tokens: 'something
 :addr
 :bool
 ```
@@ -165,6 +165,7 @@ $null
 0x03
 b0011
 b0000_0011
+'literal-token
 ```
 
 # Flow control

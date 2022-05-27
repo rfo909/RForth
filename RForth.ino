@@ -43,7 +43,47 @@ void setAbortCodeExecution () {
 }
 
 
+static bool logSrcOk (int logSrcId) {
+  return logSrcId==LOG_SRC_STORAGE;
+}
 
+
+
+void LOG (int logSrcId, const __FlashStringHelper *str) {
+  if (logSrcOk(logSrcId)) Serial.print(str);
+}
+
+void LOG (int logSrcId, char *s) {
+  if (logSrcOk(logSrcId)) Serial.print(s);
+}
+
+void LOG (int logSrcId, char c) {
+  if (logSrcOk(logSrcId)) Serial.print(c);
+}
+
+void LOG (int logSrcId, byte i) {
+  if (logSrcOk(logSrcId)) Serial.print(i);
+}
+
+void LOG (int logSrcId, int i) {
+  if (logSrcOk(logSrcId)) Serial.print(i);
+}
+
+void LOG (int logSrcId, unsigned int i) {
+  if (logSrcOk(logSrcId)) Serial.print(i);
+}
+
+void LOG (int logSrcId, long i) {
+  if (logSrcOk(logSrcId)) Serial.print(i);
+}
+
+void LOG (int logSrcId, unsigned long i) {
+  if (logSrcOk(logSrcId)) Serial.print(i);
+}
+
+void LOG_newline (int logSrcId) {
+  if (logSrcOk(logSrcId)) Serial.println();
+}
 
 
 
@@ -267,9 +307,7 @@ bool parseWordDef() {
     }
   }
 
-
-  
-  
+  // rest of word code
   while (!inpTokenMatches(";")) {
     char *tok=inpTokenGet();
     if (!parseWord()) {
@@ -279,18 +317,15 @@ bool parseWordDef() {
   pcAddByte(OP_EOF);
 
   int codePos=pcChopInt();
-  byte *code=pcGetPointer(codePos);
   
-  // disassemble(code);
+  //disassemble(code);
   
   Serial.print(F("Saving word '"));
   Serial.print(name);
-  Serial.print(F("' at position "));
+  Serial.print(F("' with code position "));
   Serial.println(codePos);
   
-  psAddStr(name);
-  name=psChop();
-  mapAddPos(name,codePos);
+  mapAddCompiledWord(name,codePos);
   return true;
 }
 
@@ -329,15 +364,11 @@ bool parseImmediateCode() {
       continue;
     }
     if (inpTokenMatches("words")) {
-      int cnt=mapCount();
+      int cnt=mapGetWordCount();
       for (int i=0; i<cnt; i++) {
-        char *fname=mapGetName(i);
-        int len=mapGetLength(i);
+        char *fname=mapGetWordName(i);
         Serial.print(F("  "));
-        Serial.print(fname);
-        Serial.print(F("     - "));
-        Serial.print(len);
-        Serial.println(F(" bytes"));
+        Serial.println(fname);
       }
       continue;
     }
@@ -355,7 +386,7 @@ bool parseImmediateCode() {
       Serial.println(psCount()+pcCount());
       
       Serial.print(F("  map:"));
-      Serial.print(mapCount());
+      Serial.print(mapGetWordCount());
       Serial.print(" of ");
       Serial.println(MAP_SIZE);
 
@@ -374,7 +405,7 @@ bool parseImmediateCode() {
     char *inpToken=inpTokenGet();
     if (strlen(inpToken) > 4 && inpToken[0]=='d' && inpToken[1]=='i' && inpToken[2]=='s' && inpToken[3]==':') {
       char *word=inpToken+4; 
-      int codePos=mapLookupPos(word);
+      int codePos=mapLookupCodePos(word);
       if (codePos < 0) {
         Serial.println(F("Undefined word"));
       } else {
@@ -387,7 +418,7 @@ bool parseImmediateCode() {
       continue;
     }
     if (inpTokenMatches("clear")) {
-      while (!dsEmpty()) dsPop();
+      while (!dsEmpty()) dsPopValue();
       continue;
     }
     if (inpTokenMatches("hex")) {
@@ -474,11 +505,13 @@ bool parseWord() {
   if (inpTokenMatches("loop{")) {
     return parseLoop();
   }
-  if (inpTokenMatches("'")) {
+  
+  char *word=inpTokenGet();
+
+  if (word[0]=='\'' && strlen(word)>1) {
     return parseSymbol();
   }
   
-  char *word=inpTokenGet();
 
   // built-in symbols mapping to opcodes
   int code=lookupSymbol(word);
@@ -590,8 +623,8 @@ bool parseWord() {
     return true;
   }
 
-  // call word function
-  int codePos=mapLookupPos(word);
+  // call word function?
+  int codePos=mapLookupCodePos(word);
   if (codePos >= 0) {
     pcInt(codePos);
     pcAddByte(OP_CALL);
@@ -623,7 +656,7 @@ bool parseIf() {
 
   int endLoc=pcGetLocalPos();
   // insert endLoc into the 
-  setLocalPosByte(jmpToEndAddr,to7BitPush(endLoc));
+  pcSetByteLocal(jmpToEndAddr,to7BitPush(endLoc));
 
   return true;
 }
@@ -658,16 +691,16 @@ bool parseLoop() {
   // after loop
   if (breakJmpAddr >= 0) {
     int endLoc=pcGetLocalPos();
-    setLocalPosByte(breakJmpAddr, to7BitPush(endLoc));
+    pcSetByteLocal(breakJmpAddr, to7BitPush(endLoc));
   }
 
   return true;
 }
 
 bool parseSymbol() {
-  // just matched the apostrophe
+  // just identified token starting with apostrophe
   
-  char *token=inpTokenGet();
+  char *token=inpTokenGet()+1; // skip the apos
   
   inpTokenAdvance();
   
@@ -769,7 +802,15 @@ void displayStackValue (DStackValue *x) {
       itoa((unsigned long) offset, buf, 16);
       Serial.print(F(" 0x"));
       printPadded("0", 8, buf, " ", 2);
-      Serial.println(F("  ADDR"));
+      Serial.print(F("  ADDR"));
+      if ((controlByte & 0x0F)==ATYP_SYMBOL) {
+        Serial.print(F(" ATYP_SYMBOL "));
+        if ( ((controlByte & 0xF0) >> 4 ) == ALOC_OC_STR) {
+          Serial.print(F(" ALOC_OC_STR "));
+          Serial.print(psStringAtPos(offset));
+        }
+      }
+      Serial.println();
       return;
     }
     case DS_TYPE_NULL : {
@@ -824,17 +865,20 @@ void executeCode (byte *initialCode) {
     byte *code=curr->code;
     int pos=curr->pc;
     byte b=code[pos];
+
+    // the execute* functions called must advance curr->pc past the
+    // instruction (or instruction + data), so it refers to next instr.
     
     if (b==OP_SYMBOL) {
       if (!executeOpSymbol()) {
-        abortCodeExecution=true;
+        setAbortCodeExecution();
         break;
       }
       executeOpCount++;
     } else {
       // all other ops
       if (!executeOneOp()) {
-        abortCodeExecution=true;
+        setAbortCodeExecution();
         break;
       }
       executeOpCount++;
@@ -849,15 +893,16 @@ void executeCode (byte *initialCode) {
   
 }
 
-
+// Execute OP_SYMBOL, which is followed by
+//    controlByte: type=001 (3 bits), len=000xxxxx (5 bits)
+//    <len> bytes of data
+      
 bool executeOpSymbol () {
-  char buf[32]; // 31 + null
   
   CStackFrame *curr=csPeek();
   byte *code=curr->code;
 
   int pos=curr->pc;
-  curr->pc=curr->pc+1; // may also be modified by JMP-instructions
  
   byte b=code[pos];
   if (b != OP_SYMBOL) {
@@ -865,30 +910,45 @@ bool executeOpSymbol () {
     return false;
   }
 
+  curr->pc=curr->pc+1;  // advance past OP_SYMBOL
 
-  pos=curr->pc;
+  pos=curr->pc;     // pos of control byte
   curr->pc=pos+1;
-  byte controlByte=code[pos];
-  if ((controlByte & B11100000) != B00100000) {
+  
+  byte opControlByte=code[pos];
+  if ((opControlByte & B11100000) != B00100000) {
     Serial.print(F("executeOpSymbol: invalid controlByte "));
-    Serial.println(controlByte);
+    Serial.println(opControlByte);
     return false;
   }
 
-  int len=(controlByte & B00011111);
+  int len=(opControlByte & B00011111);
+
+  int MARK=inpSetMark();
+  
   for (int i=0; i<len; i++) {
-    pos=curr->pc;
-    curr->pc=pos+1;
+    pos=curr->pc; // pos of data byte
     byte b=code[pos];
-    buf[i]=(char) b;
+    inpAddChar((char) b);
+    curr->pc=pos+1;
+    //Serial.print(F("Advancing pc to "));
+    //Serial.println(curr->pc);
   }
-  buf[len]='\0';
+  char *s=inpChop();
+  
+  int startPos=mapGetOrAddString(s);
+  
+  inpResetToMark(MARK); // undo adding of symbol to temp space, it is now stored on psData (Storage)
+  
+  
+  // create ADDR value
+  unsigned long markControlByte = (ALOC_OC_STR << 4) | (ATYP_SYMBOL);
+  unsigned long addrVal=(unsigned long) startPos;
+  unsigned long value=(markControlByte << 24) | addrVal;
 
-  Serial.println(F("ERR: executeOpSymbol"));
-  // Need somewhere to store it, in order to create a
-  // reference of type :addr
+  dsPushValue (DS_TYPE_ADDR, (long) value);
 
-  return false;
+  return true;
   
 }
 
@@ -1464,8 +1524,11 @@ bool executeOneOp () {
       } 
       DStackValue *val=dsPeekValue();
       int controlByte = (val->val >> 24);
-      int typeId=controlByte & B1111;
-      if (typeId==ATYP_SYMBOL) return true;
+      int locationId=(controlByte & B11110000) >> 4;
+      int typeId=controlByte & B00001111;
+      if (typeId==ATYP_SYMBOL) {
+        return true;
+      }
 
       Serial.println(F(":sym invalid ADDR - not referring to symbol"));
       return false;
@@ -1480,7 +1543,7 @@ bool executeOneOp () {
     }
     case OP_ABORT : {
       Serial.println(F("OP_ABORT: listing stack, and terminating"));
-      abortCodeExecution=true;
+      setAbortCodeExecution();
       return true;
     }
     case OP_AS_BOOL : {
@@ -1524,3 +1587,25 @@ bool executeOneOp () {
   Serial.println(b);   
   return false;
 }
+
+
+
+
+# define PROGMEM_DATA_TERMINATOR    0x00
+
+// Serialized save format for firmware code on format
+//
+// name \0
+// instructions EOF (also 0)
+//
+// terminated by additional 0
+
+byte *lookupProgmemCode (char *name) {
+  return NULL;
+}
+
+const byte PROGMEM_DATA[] PROGMEM = {
+  
+  PROGMEM_DATA_TERMINATOR,
+  PROGMEM_DATA_TERMINATOR,
+};

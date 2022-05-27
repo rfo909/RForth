@@ -60,9 +60,12 @@ two categories:
 	b0xxx = on-chip devices (ram, eeprom, progmem)
 	b1xxx = virtual devices managed completely via RForth code
 
-	#define ALOC_OC_ASP			0x00   // address space
-	#define ALOC_OC_EE			0x01   // EEPROM
-	#define ALOC_OC_PROGMEM		0x02   // static progmem binary array
+	// ADDR locations (4 bits, up to 0x0F)
+	#define ALOC_OC_ASP       0x01   // address space
+	#define ALOC_OC_STR       0x02   // (Storage.c) session persistent string storage in RAM
+	#define ALOC_OC_BIN       0x03   // (Storage.c) session persistent binary storage in RAM
+	#define ALOC_OC_PROGMEM   0x04   // static progmem binary array
+	#define ALOC_OC_EEPROM    0x05
 
 		
 	The PROGMEM location is readonly. It refers to one specific sequence of
@@ -83,11 +86,12 @@ two categories:
 
 The type identifies what the address refers to
 
-	#define ATYP_BYTE			0
-	#define ATYP_UINT			1
-	#define ATYP_BLOB			2  // length encoded as three bytes in start
-	#define ATYP FUNC			3
-	#define ATYP_SYMBOL			4
+	// ADDR types (4 bits, up to 0x0F
+	#define ATYP_BYTE       0x01
+	#define ATYP_UINT       0x02
+	#define ATYP_BLOB       0x03  // length encoded as three bytes in start
+	#define ATYP FUNC       0x04
+	#define ATYP_SYMBOL     0x05
 
 
 Conclusion

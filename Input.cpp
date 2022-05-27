@@ -12,6 +12,9 @@ static int tokenParsePos=0;
 static char *localVariables[LOCAL_VARIABLE_COUNT];
 static int nextLocalVariable=0;
 
+// Should rename from inpXxx to tmpXxx as that is what these data
+// are, containing tokens and other temporary string data during
+// execution
 
 void inpReset() {
   inpStart=0;
@@ -21,6 +24,16 @@ void inpReset() {
   tokenParsePos=0;
   nextLocalVariable=0;
 }
+
+int inpSetMark () {
+  return inpStart;
+}
+
+void inpResetToMark (int mark) {
+ inpStart=mark;
+ inpNext=mark;
+}
+
 
 void inpAddChar (char c) {
   if (inpNext >= INPUT_BUF_SIZE) {
@@ -37,6 +50,10 @@ void inpUngetChar () {
 
 bool inpEmpty() {
   return (inpNext==inpStart);
+}
+
+int inpGetStartPos() {
+  return inpStart;
 }
 
 char *inpChop () {
