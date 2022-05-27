@@ -16,7 +16,7 @@ ControlByte
 	5 bits: length
 	
 	Type: 
-		001 symbol		# only valid value, ensures control byte never zero
+		001 = symbol		# only valid value, ensures control byte never zero
 	
 	Length:
 		max 31, 0 not allowed, nor possible to express in code

@@ -756,17 +756,13 @@ void displayStackValue (DStackValue *x) {
       Serial.println(F("  ULONG"));
       return;
     }
-    case DS_TYPE_SYM : {
-      Serial.println(F("Symbol    -- not implemented"));
-      return;
-    }
     case DS_TYPE_ADDR : {
       unsigned long val=(unsigned long) x->val;
-      unsigned long offset=(val & 0x0FFFFFF);
-      byte content = (byte) (val >> 24);   
-        // content splits into deviceId (4 bits) and typeId (4 bits)
+      unsigned long offset=(val & 0x00FFFFFF);
+      byte controlByte = (byte) (val >> 24);   
+        // splits into locationId (4 bits) and typeId (4 bits)
         // showing as byte in hex here
-      itoa((byte) content, buf, 16);
+      itoa(controlByte, buf, 16);
       Serial.print("      0x");
       printPadded("0", 2, buf, " ", 1);
       
@@ -774,10 +770,6 @@ void displayStackValue (DStackValue *x) {
       Serial.print(F(" 0x"));
       printPadded("0", 8, buf, " ", 2);
       Serial.println(F("  ADDR"));
-      return;
-    }
-    case DS_TYPE_COMPLEX : {
-      Serial.println(F("Complex    -- not implemented"));
       return;
     }
     case DS_TYPE_NULL : {
