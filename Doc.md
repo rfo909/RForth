@@ -225,12 +225,19 @@ in the loop body, or it will not be recognized.
 # Types
 
 RForth has a type system. The data stack is based on 4 byte longs, which can be mapped
-to other numeric types. The check is mostly cosmetic, and the higher bits are *not* nulled,
-so that if an int is type cast to :byte then back to :int, the original value remains.
+to other numeric types. 
 
-The point of types is that CForth has an extended ( ... ) notation which in regular Forth
-is used to describe stack movements of functions, but functioning almost (always?) like
-a comment.
+The point of types is that CForth has an extended version of (...) notation, that in
+regular Forth is used to describe stack inputs and outputs from a word, but seemingly (?)
+mostly just a comment.
+
+```
+: someWord ( ... -- ...)
+```
+
+In RForth, the (...) notation has a strict syntax, that both functions as documentation
+and useful code.
+
 
 # Word functions - stack description
 
@@ -240,7 +247,7 @@ as well as basic type checking.
 
 *As of v0.1.8 this is partially implemented* : the input parameters part
 is implemented but anything following the optional "--" is ignored, and so 
-is purely informational in the source.
+is now purely of informational value in the source code.
 
 ```
 : SetBit ( :byte =mask :int =addr -- )
@@ -258,9 +265,10 @@ The compiler reverses the order, first processing the addr value, then mask.
 For words returning data, these are specified following the "--", for example.
 
 ```
-: HasBit ( :byte =mask, :int =addr -- :byte ) ... ;
+: HasBit ( :byte =mask :int =addr -- :byte ) ... ;
 ```
 
+The compiler verifies that the content inside is on the format :something =something ...
 
 # Interactive commands
 
