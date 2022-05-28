@@ -72,6 +72,11 @@
 #define OP_ADDR       55
 #define OP_U14        56
 
+#define OP_SPI_BEGIN   57
+#define OP_SPI_TRANSFER  58
+#define OP_SPI_END    59
+
+// not an ordinary one-byte instruction
 #define OP_SYMBOL     99
 
 

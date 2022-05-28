@@ -56,6 +56,9 @@ static const char T_BOOL[] PROGMEM = ":bool";
 
 static const char SYS_ADDR[] PROGMEM = "sys:addr";
 
+static const char SPI_BEGIN[] PROGMEM = "spi:begin";
+static const char SPI_TRANSFER[] PROGMEM = "spi:transfer";
+static const char SPI_END[] PROGMEM = "spi:end";
 
 
 int lookupSymbol (char *sym) {
@@ -105,6 +108,10 @@ int lookupSymbol (char *sym) {
   if (!strcmp_P(sym,T_BOOL)) return OP_AS_BOOL;
   
   if (!strcmp_P(sym,SYS_ADDR)) return OP_ADDR;
+
+  if (!strcmp_P(sym,SPI_BEGIN)) return OP_SPI_BEGIN;
+  if (!strcmp_P(sym,SPI_TRANSFER)) return OP_SPI_TRANSFER;
+  if (!strcmp_P(sym,SPI_END)) return OP_SPI_END;
 
   return -1; 
 }
@@ -339,6 +346,18 @@ void printOpName (const int opCode) {
     }
     case OP_U14: {
       Serial.print(F("OP_U14"));
+      return;
+    }
+    case OP_SPI_BEGIN: {
+      Serial.print(F("OP_SPI_BEGIN"));
+      return;
+    }
+    case OP_SPI_TRANSFER: {
+      Serial.print(F("OP_SPI_TRANSFER"));
+      return;
+    }
+    case OP_SPI_END: {
+      Serial.print(F("OP_SPI_END"));
       return;
     }
 

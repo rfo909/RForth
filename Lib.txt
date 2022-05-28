@@ -2,7 +2,10 @@
 
 : Reg! ( :byte =clearMask :byte =valueMask :int =addr -- )
 	addr sys:read clearMask ! &
-		valueMask | addr sys:write ;
+		valueMask clearMask & | addr sys:write ;
+
+: wait ( :ulong =ms )
+	 sys:millis ms + =ms loop{ sys:millis ms > break  } ;
 
 
 # ADDR constants, corresponding to defines in Common (oc=on-chip)

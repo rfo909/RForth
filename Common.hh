@@ -24,7 +24,7 @@ typedef unsigned char byte;
   #define INPUT_BUF_SIZE      400
   #define INPUT_TOKEN_COUNT   100
 #else
-  #define INPUT_BUF_SIZE      100
+  #define INPUT_BUF_SIZE      150
   #define INPUT_TOKEN_COUNT   80
 #endif
 

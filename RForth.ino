@@ -1,5 +1,5 @@
 #include "EEPROM.h"
-
+#include <SPI.h>
 
 #include "Common.hh"
 #include "Input.hh"
@@ -1596,6 +1596,42 @@ bool executeOneOp () {
       unsigned int high = dsPop();
 
       dsPushValue(DS_TYPE_LONG, (high<<7) | low);
+      return true;
+    }
+    case OP_SPI_BEGIN : { // ( :bool =MSBFIRST :byte =SPIMODE )
+     if (dsEmpty()) {
+       Serial.println(F("OP_SPI_BEGIN - data stack empty"));
+       return false;
+     }
+     int spiMode=dsPop();
+     if (dsEmpty()) {
+       Serial.println(F("OP_SPI_BEGIN - data stack empty"));
+       return false;
+     }
+     byte msbFirst=dsPop();
+     
+     SPI.begin();
+     if (msbFirst) {
+       SPI.setBitOrder(MSBFIRST);
+     } else {
+       SPI.setBitOrder(LSBFIRST);
+     }
+     
+     SPI.setDataMode(spiMode);
+     return true;
+    }
+    case OP_SPI_TRANSFER : {  // ( :byte =in -- :byte )
+     if (dsEmpty()) {
+       Serial.println(F("OP_SPI_TRANSFER - data stack empty"));
+       return false;
+     }
+     byte val=dsPop();
+     dsPush(SPI.transfer(val));
+     
+     return true;
+    }
+    case OP_SPI_END : {
+      SPI.end();
       return true;
     }
  

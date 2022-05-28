@@ -25,6 +25,12 @@ LOWER PRI
 	- extend if{ with }else{
 	
 	
+2022-05-28 v0.2.4 SPI
+---------------------
+Added spi:begin, spi:transfer and spi:end to the language, and implemented a demo, file 23LCV512.txt, 
+demonstrating writing and reading from that SPI SRAM chip!
+
+
 2022-05-27 v0.2.3
 -----------------
 Added new instruction OP_U14, which pops low 7 bits, then high 7 bits, shifts and OR's them together
