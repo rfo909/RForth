@@ -146,6 +146,35 @@ sys:pop
 :bool
 ```
 
+Note that type casts also strip bits from the value, except the :bool, which converts the value to 0 or 1,
+based on whether the number on the stack is equal to zero or not. 
+
+Ex.
+
+```
+1024 :byte
+	# returns 0 as the lower 8 bits of 1024 are all zeroes
+	
+1024 :bool :byte
+	# returns 1, as :bool sees a value that is non-zero as boolean true, which is in turn cast
+	# as a byte to value 1
+```
+
+In addition to type casting, the type cast functions are also checks, which may fail if the cast is
+invalid.
+
+Currently only :sym and :addr can not be converted to any of the int types, nor vice-versa. Note however
+that :sym values *are a subtype* of :addr values.
+
+The :addr type is, as of v0.2.4, still undergoing development.
+
+
+### Default value type :long
+
+The default value type, for example after adding or subtracting, is signed long, which for the Arduino (Nano) means a
+4 byte, 32-bit value. This can be cast to other integer types, ranging from :ulong down to :bool. 
+
+
 
 ## Misc
 
@@ -175,7 +204,8 @@ b0000_0011
 null
 
 true
-false```
+false
+```
 
 # Flow control
 
@@ -202,16 +232,15 @@ The point of types is that CForth has an extended ( ... ) notation which in regu
 is used to describe stack movements of functions, but functioning almost (always?) like
 a comment.
 
-# Stack movement 
+# Word functions - stack description
 
 Having introdued local variables, it made sense using the ( ... ) notation 
 to assign local variables, and using types for extra information about those, 
 as well as basic type checking.
 
 *As of v0.1.8 this is partially implemented* : the input parameters part
-is implemented but anything following "--" is ignored, and the "--" is not
-mandatory either.
-
+is implemented but anything following the optional "--" is ignored, and so 
+is purely informational in the source.
 
 ```
 : SetBit ( :byte =mask :int =addr -- )
