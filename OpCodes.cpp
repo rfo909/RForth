@@ -46,7 +46,7 @@ static const char EE_READ[] PROGMEM = "ee:read";
 static const char EE_WRITE[] PROGMEM = "ee:write";
 static const char EE_LENGTH[] PROGMEM = "ee:length";
 
-static const char _NULL[] PROGMEM = "$null";
+static const char _NULL[] PROGMEM = "null";
 
 static const char T_SYM[] PROGMEM = ":sym";
 static const char T_ADDR[] PROGMEM = ":addr";

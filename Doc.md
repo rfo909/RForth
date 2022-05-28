@@ -1,6 +1,6 @@
 # Introduction
 
-*2022-05-25 v0.2.0*
+*2022-05-28 v0.2.4*
 
 *RForth* is a compact programming language inspired by Forth. It is stack based,
 but does not depend on stack manipulations, as it introduces local variables
@@ -99,12 +99,12 @@ value count >>   # right-shift
 ```
 
 
-## Logical expressions
+## Logical expressions (returns :bool)
 
 ```
 > < >= <= == !=
 
-and              # Logical and (0 or 1)
+and              # Logical and 
 or               # Logical or
 not              # Logical not
 ```
@@ -121,8 +121,8 @@ sys:abort            # terminates execution
 ## Access to memory (registers)
 
 ```
-address sys:read 
-value address sys:write
+address(int) sys:read 
+value address(int) sys:write
 ```
 
 ## Stack manipulation
@@ -150,23 +150,32 @@ sys:pop
 ## Misc
 
 ```
-sys:millis           # millis since program start (ulong)
+sys:millis    ( -- :ulong )                       # millis since program start
 
-address ee:read
-value address ee:write
+ee:read       ( :uint =addr -- :byte )
+ee:write      ( :byte =value :uint =addr -- )
+
+spi:begin     ( :bool =msbFirst :uint =addr -- )
+spi:transfer  ( :byte =value -- :byte )
+spi:end       ( -- )
+
 ```
 
 
 # Literal values in code
 
 ```
-$null
 3
 0x03
 b0011
 b0000_0011
+
 'literal-token
-```
+
+null
+
+true
+false```
 
 # Flow control
 

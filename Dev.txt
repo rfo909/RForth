@@ -27,8 +27,15 @@ LOWER PRI
 	
 2022-05-28 v0.2.4 SPI
 ---------------------
-Added spi:begin, spi:transfer and spi:end to the language, and implemented a demo, file 23LCV512.txt, 
-demonstrating writing and reading from that SPI SRAM chip!
+Added the following internal functions to the language:
+
+	spi:begin
+	spi:transfer
+	spi:end
+
+Also implemented a demo / test, in the file 23LCV512.txt exercising that SPI SRAM chip.
+
+The new functions are documented in Doc.md 
 
 
 2022-05-27 v0.2.3

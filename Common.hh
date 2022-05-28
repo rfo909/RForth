@@ -17,7 +17,7 @@ typedef unsigned char byte;
 #endif
 
 
-#define VERSION "v0.2.3"
+#define VERSION "v0.2.4"
 
 
 #ifdef ARDUINO_AVR_MEGA

@@ -18,7 +18,6 @@ int getDsMaxStackSize() {
 }
 
 void dsPushValue (byte type, long val) {
-  if (dsNext > dsMaxStackSize) dsMaxStackSize=dsNext;
   
   if (dsNext >= DATA_STACK_SIZE) {
     Serial.println(F("dsPushValue, stack overflow"));
@@ -29,6 +28,8 @@ void dsPushValue (byte type, long val) {
     x->type=type;
     x->val=val;
   }
+
+  if (dsNext > dsMaxStackSize) dsMaxStackSize=dsNext;
 }
 
 void dsPushValueCopy (DStackValue *value) {
@@ -180,7 +181,6 @@ static int csNext=0;
 static int csMaxStackSize=0;
 
 void csPush (byte *theCode) {
-  if (csNext > csMaxStackSize) csMaxStackSize=csNext;
   if (csNext >= CALL_STACK_SIZE) {
     Serial.println(F("csPush: stack overflow"));
     setAbortCodeExecution();
@@ -195,6 +195,7 @@ void csPush (byte *theCode) {
       (ptr+i)->val=0L;
     }
   }
+  if (csNext > csMaxStackSize) csMaxStackSize=csNext;
 }
 
 bool csEmpty () {
@@ -231,7 +232,14 @@ int csCount() {
 
 // ---------
 
-void stacksReset() {
-  dsNext=0;
+void stacksReset () {
+  // Cleaning up unwanted content on the call stack, which
+  // may follow if there is a sys:abort or internal errors.
+ 
   csNext=0;
+
+  // The data stack is monitored in manual mode, and in non-manual mode,
+  // there will be some infinite loop, and this function will
+  // not be invoked.
+
 }

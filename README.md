@@ -53,7 +53,7 @@ off
 
 ```
 
-The =x define up to 8 differently named local variables inside 
+The =x define up to 6 differently named local variables inside 
 each word function. After entering a function, or immediate code, 
 the compiled byte-code is displayed.
 

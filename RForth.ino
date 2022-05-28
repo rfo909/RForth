@@ -91,7 +91,7 @@ void LOG_newline (int logSrcId) {
 static void reset() {
 
   inpReset();
-  //stacksReset();
+  stacksReset();
   if (abortCodeExecution)  {
     Serial.println(F("[Abort]"));
   }
@@ -506,6 +506,16 @@ bool parseWord() {
   } 
   if (inpTokenMatches("loop{")) {
     return parseLoop();
+  }
+  if (inpTokenMatches("true")) {
+    pcInt(1);
+    pcAddByte(OP_AS_BOOL);
+    return true;
+  }
+  if (inpTokenMatches("false")) {
+    pcInt(0);
+    pcAddByte(OP_AS_BOOL);
+    return true;
   }
   
   char *word=inpTokenGet();
@@ -1201,7 +1211,7 @@ bool executeOneOp () {
         return false;
       }
       long a = dsPop();
-      dsPush(a > b);
+      dsPushValue(DS_TYPE_BOOL, a > b);
       return true;
     }
     case OP_LT : {
@@ -1215,7 +1225,7 @@ bool executeOneOp () {
         return false;
       }
       long a = dsPop();
-      dsPush(a < b);
+      dsPushValue(DS_TYPE_BOOL, a < b);
       return true;
     }
     case OP_GE : {
@@ -1229,7 +1239,7 @@ bool executeOneOp () {
         return false;
       }
       long a = dsPop();
-      dsPush(a >= b);
+      dsPushValue(DS_TYPE_BOOL, a >= b);
       return true;
     }
     case OP_LE : {
@@ -1243,7 +1253,7 @@ bool executeOneOp () {
         return false;
       }
       long a = dsPop();
-      dsPush(a <= b);
+      dsPushValue(DS_TYPE_BOOL,a <= b);
       return true;
     }
     case OP_EQ : {
@@ -1257,7 +1267,7 @@ bool executeOneOp () {
         return false;
       }
       long a = dsPop();
-      dsPush(a == b);
+      dsPushValue(DS_TYPE_BOOL, a == b);
       return true;
     }
     case OP_NE : {
@@ -1271,7 +1281,7 @@ bool executeOneOp () {
         return false;
       }
       long a = dsPop();
-      dsPush(a != b);
+      dsPushValue(DS_TYPE_BOOL, a != b);
       return true;
     }
     case OP_L_AND : {
@@ -1285,7 +1295,7 @@ bool executeOneOp () {
         return false;
       }
       long a = dsPop();
-      dsPush(a && b);
+      dsPushValue(DS_TYPE_BOOL, a && b);
       return true;
     }
     case OP_L_OR : {
@@ -1299,7 +1309,7 @@ bool executeOneOp () {
         return false;
       }
       long a = dsPop();
-      dsPush(a || b);
+      dsPushValue(DS_TYPE_BOOL, a || b);
       return true;
     }
     case OP_L_NOT : {
@@ -1308,7 +1318,7 @@ bool executeOneOp () {
         return false;
       }
       long val = dsPop();
-      dsPush(!val);
+      dsPushValue(DS_TYPE_BOOL, !val);
       return true;
     }
     case OP_LSHIFT : {
@@ -1618,6 +1628,7 @@ bool executeOneOp () {
      }
      
      SPI.setDataMode(spiMode);
+     SPI.setClockDivider(SPI_CLOCK_DIV4);
      return true;
     }
     case OP_SPI_TRANSFER : {  // ( :byte =in -- :byte )
