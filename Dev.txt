@@ -30,14 +30,21 @@ LOWER PRI
 Added new instruction OP_U14, which pops low 7 bits, then high 7 bits, shifts and OR's them together
 to a 14 bit number, max 8192 unsigned. 
 
-Changed processing of JMP-instructions used for if{ ... } and loop{ ... } to use OP_U14, which means
-patching in two 7-bit pushes.
+Changed processing of JMP-instructions used for if{ ... } and loop{ ... } to use OP_U14, where patching
+of address at a later point is needed, which means patching in two 7-bit pushes. This allows compiled function
+jump targets can be in the range 0-8291, instead of 0-127. 
 
-Increased max code size to 256 bytes, but will soon need to do something about the parser, which
+There was no change to runtime execution of the JMP instructions, as they just read a numeric value off the stack.
+
+Increased max code size to 256 bytes, but may soon need to do something about the parser, which
 buffers all tokens before processing. Given that tokens are usually 2-6 characters plus terminating null,
 our inp-buffer will soon enough overflow.
 
-** Did a failed attempt at modifying OP_CALL to expect a SYMBOL on the stack instead of a position. 
+** Still: the increase in code size is not meant to encourage monster words, but rather to allow 
+use of symbols / literal tokens, so no real hurry to modify the parser.
+
+
+** Also did a failed attempt at modifying OP_CALL to expect a SYMBOL on the stack instead of a position. 
 
 Described it in the file
 	TechNotes/2022-05-26_dictionaries.txt

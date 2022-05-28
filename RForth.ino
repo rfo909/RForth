@@ -108,6 +108,8 @@ void setup() {
   Serial.println(F("-----------------"));
   Serial.print(F("RForth "));
   Serial.println(VERSION);
+  Serial.print(F("F_CPU="));
+  Serial.println(F_CPU);
   Serial.println(F("-----------------"));
 
   reset();
@@ -602,7 +604,7 @@ bool parseWord() {
   }
 
   // enter binary number as b001001, plus support underscore _ for readability
-  if (word[0]=='b' && (word[1]=='1' || word[1]=='0')) {
+  if ((word[0]=='b' || word[0]=='B') && (word[1]=='1' || word[1]=='0')) {
     int val=0;
     for (int i=1; i<strlen(word); i++) {
       if (word[i]=='_') continue;
@@ -685,7 +687,7 @@ bool parseLoop() {
   }
 
   // jump back to start
-  pcInt14bit(startPos);
+  pcInt(startPos);  // don't need to use U14 here, because this jump address will not be patched later
   pcAddByte(OP_JMP);
 
   // after loop
