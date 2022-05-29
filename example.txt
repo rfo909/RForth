@@ -42,6 +42,22 @@
 
 
 
+
+
+
+# Literal words
+
+: assert ( :sym =context :bool =ok -- )
+	ok not if{ context sys:abort }
+;
+ 
+: test1 'SANITY-CHECK 3 2 != assert ;
+: test2 'INSANITY-CHECK 3 2 == assert ;
+
+
+
+
+
 ### --- old atmega328p ---
 
 # TWI (i2c) directly via register manipulation

@@ -10,14 +10,12 @@
 
 # ADDR constants, corresponding to defines in Common (oc=on-chip)
 
-: $aloc:oc:asp		    1 ;  # address space
-: $aloc:oc:ee		    2 ;	 # eeprom
-: $aloc:oc:progmem	    3 ;  # progmem
+: $aloc:oc:str		    1 ;  
+: $aloc:oc:bin		    2 ;
+: $aloc:oc:progmem	    3 ;
+: $aloc:oc:ee		    4 ;
 
+: $atyp:symbol			1 ;
+: $atyp:blob			2 ;
 
-: $atyp:byte			1 ;
-: $atyp:uint			2 ;
-: $atyp:blob			3 ;
-: $atyp:func			4 ;
-: $atyp:symbol			5 ;
 
