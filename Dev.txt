@@ -25,6 +25,23 @@ LOWER PRI
 	- extend if{ with }else{
 	
 	
+	
+2022-05-29 v0.2.5 Symbols (again)
+---------------------------------
+Changed compilation of symbols to storing the index into psData (persistent string)
+on stack, then followed by OP_SYMBOL, and changed execution, plus disassembler. 
+
+Changed a bit around how words are identified, by the strPos (index into psData).
+To call a word we first lookup the name with psSearch() which returns a strPos, which
+is then the key to look up the word code.
+
+This means we can move the word code around, as long as we update the map in Storage.cpp
+
+Eliminated representing symbols as bytes in the code. 
+
+Various cleanup and renaming.
+
+	
 2022-05-28 v0.2.4 SPI
 ---------------------
 Added the following internal functions to the language:

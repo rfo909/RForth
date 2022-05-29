@@ -364,8 +364,10 @@ void printOpName (const int opCode) {
       Serial.print(F("OP_SPI_END"));
       return;
     }
-
-    // Can not include OP_SYMBOL as it is not a single byte
+    case OP_SYMBOL: {
+      Serial.print(F("OP_SYMBOL"));
+      return;
+    }
   }
   Serial.print(F("Unknown OP "));
   Serial.print(opCode);

@@ -17,7 +17,7 @@ typedef unsigned char byte;
 #endif
 
 
-#define VERSION "v0.2.4"
+#define VERSION "v0.2.5"
 
 
 #ifdef ARDUINO_AVR_MEGA
@@ -42,11 +42,11 @@ typedef unsigned char byte;
 
 // Storage.hh
 #ifdef ARDUINO_AVR_MEGA
-  #define P_STRING_SIZE     1500
-  #define P_CODE_SIZE       3000
+  #define PSDATA_SIZE       1500
+  #define PCDATA_SIZE       3500
 #else
-  #define P_STRING_SIZE     150
-  #define P_CODE_SIZE       300
+  #define PSDATA_SIZE       250
+  #define PCDATA_SIZE       350
 #endif
 
 // Storage.cpp
@@ -57,36 +57,20 @@ typedef unsigned char byte;
 #endif
 
 
-#define P_CODE_MAX_SIZE   256
+#define P_CODE_MAX_SIZE   127
 
 
 // ADDR locations (4 bits, up to 0x0F)
-#define ALOC_OC_ASP       0x01   // address space
-#define ALOC_OC_STR       0x02   // (Storage.c) session persistent string storage in RAM
-#define ALOC_OC_BIN       0x03   // (Storage.c) session persistent binary storage in RAM
-#define ALOC_OC_PROGMEM   0x04   // static progmem binary array PROGMEM_DATA
-#define ALOC_OC_EEPROM    0x05
+#define ALOC_OC_STR       0x01   // (Storage.c) session persistent string storage in RAM
+#define ALOC_OC_BIN       0x02   // (Storage.c) session persistent binary storage in RAM
+#define ALOC_OC_PROGMEM   0x03   // static progmem binary array PROGMEM_DATA
+#define ALOC_OC_EEPROM    0x04
 
 // ADDR types (4 bits, up to 0x0F
-#define ATYP_BYTE       0x01
-#define ATYP_UINT       0x02
-#define ATYP_BLOB       0x03  // length encoded as three bytes in start
-#define ATYP FUNC       0x04
-#define ATYP_SYMBOL     0x05
+#define ATYP_SYMBOL     0x01
+#define ATYP_BLOB       0x02  // length encoded as three bytes in start
 
 
-#define LOG_SRC_STORAGE     1
-
-
-void LOG (int logSrcId, const __FlashStringHelper *str);
-void LOG (int logSrcId, char *s);
-void LOG (int logSrcId, char c);
-void LOG (int logSrcId, byte i);
-void LOG (int logSrcId, int i);
-void LOG (int logSrcId, unsigned int i);
-void LOG (int logSrcId, long i);
-void LOG (int logSrcId, unsigned long i);
-void LOG_newline (int logSrcId);
 
 void setAbortCodeExecution ();
 

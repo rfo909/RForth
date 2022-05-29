@@ -76,8 +76,7 @@
 #define OP_SPI_TRANSFER  58
 #define OP_SPI_END    59
 
-// not an ordinary one-byte instruction
-#define OP_SYMBOL     99
+#define OP_SYMBOL   60
 
 
 int lookupSymbol (char *sym);

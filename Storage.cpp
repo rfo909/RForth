@@ -3,37 +3,40 @@
 
 // ps = persistent string data
 
-static char psData[P_STRING_SIZE];
-static int psStart=0;
+static char psData[PSDATA_SIZE];
 static int psNext=0;
 
-static void psAddChar (char c) {
-  if (psNext >= P_STRING_SIZE) {
-    Serial.println(F("psAddChar: no more space"));
-    setAbortCodeExecution();
-
-    return;
+// traverse psData looking for string, returns index if found, otherwise -1
+int  psSearch (char *str) {
+  int pos=0;
+  while (pos < psNext) {    
+    if (!strcmp(psData+pos, str)) return pos;
+    int chars=strlen(psData+pos);
+    pos=pos+chars+1; // past NULL
   }
-  psData[psNext++]=c; 
+  return -1;
 }
 
-static void psAddStr (char *str) {
-  for (int i=0; i<strlen(str); i++) psAddChar(str[i]);
-}
-
-static int psChopInt() {
-  psAddChar('\0');
-  int pos = psStart;
-  psStart=psNext;
+int  psGetOrAddString (char *str) {
+  int pos=psSearch(str);
+  if (pos >= 0) return pos;
+  int len=strlen(str);
+  if (PSDATA_SIZE - psNext < len+1) {
+    Serial.println(F("psGetOrAddString: out of space"));
+    return -1; 
+  }
+  pos=psNext;
+  strcpy((psData+psNext), str);
+  psNext+=len;
+  psData[psNext++]='\0';
   return pos;
 }
-
 
 int psCount() {
   return psNext;
 }
 
-char *psStringAtPos (int strPos) {
+char *psGetStringPointer (int strPos) {
   return psData+strPos;
 }
 
@@ -41,13 +44,13 @@ char *psStringAtPos (int strPos) {
 
 // pc = persistent code data 
 
-static byte pcData[P_CODE_SIZE];
+static byte pcData[PCDATA_SIZE];
 static int pcStart=0;
 static int pcNext=0;
 
 void pcAddByte (byte b) {
-  if (pcNext >= P_CODE_SIZE) {
-    Serial.println(F("psAddByte: no more space (P_CODE_SIZE)"));
+  if (pcNext >= PCDATA_SIZE) {
+    Serial.println(F("psAddByte: no more space (PCDATA_SIZE)"));
     setAbortCodeExecution();
     return;
   }
@@ -73,7 +76,7 @@ int pcChopInt () {
   return i;
 }
 
-byte *pcGetPointer (int pos) {
+byte *pcGetCodePointer (int pos) {
   return pcData+pos;
 }
 
@@ -117,11 +120,11 @@ void pcInt (long i) {
   bool neg=(i<0);
   if (neg) i=-i;
   
-  if(i<127) {
+  if(i<128) { // 7 bits
     pcInt7bit(i);
   } else if (i < 16384) { // 14 bits
     pcInt14bit( (unsigned int) i);
-  } else if (i < 32700) {
+  } else if (i < 2097152L) { // 21 bits
     pcInt7bit( i & 0x7F);
     pcInt7bit( (i >> 7) & 0x7F);
     
@@ -176,53 +179,7 @@ int pcCount() {
 
 // ---
 
-// Indexing the strings in temporary string store (above)
-
-typedef struct {
-  char *str;
-  int strPos;
-} StrValue;
-
-static StrValue strData[MAP_SIZE];
-static int strMapNext = 0;
-
-static void mapAddStringPos (int strPos) {
-  char *str=psData + strPos;
-  
-  if (strMapNext >= MAP_SIZE) {
-    Serial.println(F("mapAddStringPos: out of space"));
-    setAbortCodeExecution();
-    return;
-  }
-  (strData+strMapNext)->str=str;
-  (strData+strMapNext)->strPos=strPos;
-  strMapNext++;
-}
-
-int mapGetOrAddString (char *str) {
-  int strPos=mapGetStringPos(str);
-  if (strPos < 0) {
-    psAddStr(str);
-    strPos=psChopInt();
-
-    mapAddStringPos(strPos);
-  }
-  return strPos;
-}
-
-
-int mapGetStringPos (char *str) {
-  
-  for (int i=0; i<strMapNext; i++) {
-    
-    if (!strcmp((strData+i)->str, str)) {
-      return (strData+i)->strPos;
-    }
-  }
-
-  return -1;
-}
-
+// Map over compiled words
 
 
 
@@ -242,15 +199,13 @@ static int mapGetCompiledWordIndex (int strPos) {
   return -1;
 }
 
-void mapAddCompiledWord (char *name, int codePos) {
-
-  int strPos=mapGetOrAddString(name);
+void mapAddCompiledWord (int strPos, int codePos) {
 
   // check if already defined
   int mapIndex=mapGetCompiledWordIndex(strPos);
   
   if (mapIndex >= 0) {
-    // overwrite existing def
+    // overwrite existing def in map
     (mapData+mapIndex)->codePos=codePos;
     return;
   }
@@ -265,11 +220,13 @@ void mapAddCompiledWord (char *name, int codePos) {
   mapNext++;
 }
 
-int mapLookupCodePos (char *name) {
+int mapLookupCodePos (int strPos) {
   
-  int strPos=mapGetStringPos(name);
-
-  if (strPos < 0) return -1;
+  if (strPos < 0) {
+    Serial.print(F("mapLookupCodePos: fails for name "));
+    Serial.println(psData+strPos);
+    return -1;
+  }
   
   for (int i=0; i<mapNext; i++) {
     if ((mapData+i)->strPos==strPos) return (mapData+i)->codePos;
