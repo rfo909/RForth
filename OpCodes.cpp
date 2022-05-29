@@ -60,6 +60,8 @@ static const char SPI_BEGIN[] PROGMEM = "spi:begin";
 static const char SPI_TRANSFER[] PROGMEM = "spi:transfer";
 static const char SPI_END[] PROGMEM = "spi:end";
 
+static const char NOP[] PROGMEM = "nop";
+
 
 int lookupSymbol (char *sym) {
   if (!strcmp_P(sym,ADD)) return OP_ADD;
@@ -112,6 +114,8 @@ int lookupSymbol (char *sym) {
   if (!strcmp_P(sym,SPI_BEGIN)) return OP_SPI_BEGIN;
   if (!strcmp_P(sym,SPI_TRANSFER)) return OP_SPI_TRANSFER;
   if (!strcmp_P(sym,SPI_END)) return OP_SPI_END;
+
+  if (!strcmp_P(sym,NOP)) return OP_NOP; // for testing
 
   return -1; 
 }

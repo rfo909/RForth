@@ -189,10 +189,11 @@ void csPush (byte *theCode) {
     csNext++;
     f->code=theCode;
     f->pc=0;
-    for (int i=0; i<LOCAL_VARIABLE_COUNT; i++) {
+    for (register int i=0; i<LOCAL_VARIABLE_COUNT; i++) {
       DStackValue *ptr=f->localVars;
-      (ptr+i)->type=DS_TYPE_LONG;
-      (ptr+i)->val=0L;
+      ptr=ptr+i;
+      ptr->type=DS_TYPE_LONG;
+      ptr->val=0L;
     }
   }
   if (csNext > csMaxStackSize) csMaxStackSize=csNext;

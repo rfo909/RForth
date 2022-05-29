@@ -5,12 +5,17 @@
 # Note mask differs for 2560 vs 328p
 # b1000_0000 vs b0010_0000 (pin 13 in port B)
 
+: PORTB 0x25 ;
+: DDRB 0x24 ;
+
+
 : Reg! ( :byte =clearMask :byte =valueMask :int =addr -- )
 	addr sys:read clearMask ! &
 		valueMask clearMask & | addr sys:write ;
 
 : wait ( :ulong =ms )
 	 sys:millis ms + =ms loop{ sys:millis ms > break  } ;
+	 
 : M b0010_0000 ;
 
 
