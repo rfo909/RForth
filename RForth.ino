@@ -308,6 +308,7 @@ bool parseImmediateCode() {
       Serial.println(F("bin            - show value from stack in binary"));
       Serial.println(F("dis:xxx        - disassemble word function xxx"));
       Serial.println(F("ee:format:yes  - format EEPROM storage"));
+      Serial.println(F("dump           - dump code as hex"));
       continue;
     }
     if (inpTokenMatches("words")) {
@@ -392,6 +393,10 @@ bool parseImmediateCode() {
       ltoa(dsPeek(),buf,2);
       Serial.print(F("--> b"));
       Serial.println(buf);
+      continue;
+    }
+    if (inpTokenMatches("dump")) {
+      dumpHex();
       continue;
     }
     
@@ -1541,16 +1546,56 @@ bool executeOneOp () {
 
 // Serialized save format for firmware code on format
 //
-// name \0
-// instructions EOF (also 0)
-//
-// terminated by additional 0
+// symbol \0
+// symbol \0
+// 0
+// int7bit (high)
+// int7bit (low)
+// instructions ... EOF
+// 0
 
 byte *lookupProgmemCode (char *name) {
   return NULL;
 }
 
 const byte PROGMEM_DATA[] PROGMEM = {
+  // ps
+  82,101,103,33,0,
+  119,97,105,116,0,
+  36,97,108,111,99,58,111,99,58,115,116,114,0,
+  36,97,108,111,99,58,111,99,58,98,105,110,0,
+  36,97,108,111,99,58,111,99,58,112,114,111,103,109,101,109,0,
+  36,97,108,111,99,58,111,99,58,101,101,0,
+  36,97,116,121,112,58,115,121,109,98,111,108,0,
+  36,97,116,121,112,58,98,108,111,98,0,
+  0,
+  
+  // code
+  // Reg!
+  128,128, // strPos
+  41,32,40,33,40,34,36,8,38,31,29,37,38,29,30,36,9,0,
+  // wait
+  128,133, // strPos
+  44,32,45,36,12,32,45,36,18,128,143,56,5,134,3,0,
+  // $aloc:oc:str
+  128,138, // strPos
+  129,0,
+  // $aloc:oc:bin
+  128,151, // strPos
+  130,0,
+  // $aloc:oc:progmem
+  128,164, // strPos
+  131,0,
+  // $aloc:oc:ee
+  128,181, // strPos
+  132,0,
+  // $atyp:symbol
+  128,193, // strPos
+  129,0,
+  // $atyp:blob
+  128,206, // strPos
+  130,0,
+  0,
   
   PROGMEM_DATA_TERMINATOR,
   PROGMEM_DATA_TERMINATOR,

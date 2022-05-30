@@ -242,3 +242,44 @@ char *mapGetWordName (int mapDataPos) {
    int strPos = (mapData+mapDataPos)->strPos;
    return psData+strPos;
 }
+
+
+
+
+// DUMP HEX
+
+
+
+void dumpHex () {
+  Serial.println("// ps");
+  for (int i=0; i<psNext; i++) {
+    byte b=psData[i];
+    Serial.print(b);
+    Serial.print(",");
+    if (b==0) Serial.println();
+  }
+  Serial.println("0,");
+  
+  Serial.println();
+  Serial.println("// code");
+  for (int i=0; i<mapNext; i++) {
+    MapValue *ptr=mapData+i;
+    int strPos=ptr->strPos;
+    Serial.print("// ");
+    Serial.println(psData+strPos);
+    int codePos=ptr->codePos;
+    int a=( ((strPos>>7) & 0x7F) | 0x80 );
+    int b=( (strPos & 0x7F) | 0x80 );
+    Serial.print(a);
+    Serial.print(",");
+    Serial.print(b);
+    Serial.println(", // strPos");
+    for (int j=codePos; true; j++) {
+      Serial.print(pcData[j]);
+      Serial.print(",");
+      if (pcData[j]==0) break;
+    }
+    Serial.println();
+  }
+  Serial.println("0,");
+}

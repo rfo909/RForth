@@ -110,17 +110,19 @@
   0 SRAM.w0
   101 SRAM.w
   202 SRAM.w
+  203 SRAM.w
   SRAM.rwdone
   0 SRAM.r0
   SRAM.r 
+  SRAM.r
   SRAM.r
   SRAM.rwdone
   SRAM.end
   ;
   
 # stats
-# ps: 147 of 150
-# pc: 207 of 300
+# ps: 147 of 250
+# pc: 193 of 350
 
 
 

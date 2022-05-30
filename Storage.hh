@@ -34,5 +34,7 @@ int mapLookupCodePos (int strPos);
 int mapGetWordCount ();
 char *mapGetWordName (int pos);
 
+void dumpHex ();
+
 
 #endif
