@@ -248,38 +248,43 @@ char *mapGetWordName (int mapDataPos) {
 
 // DUMP HEX
 
+int outCounter=0;
+
+void out (int i) {
+  Serial.print("0x");
+  if (i < 16) {
+    Serial.print("0");
+  }
+  Serial.print(i,HEX);
+  Serial.print(",");
+  outCounter++;
+  if (outCounter % 16 == 0) Serial.println();
+}
 
 
 void dumpHex () {
-  Serial.println("// ps");
+  outCounter=0;
+  
   for (int i=0; i<psNext; i++) {
     byte b=psData[i];
-    Serial.print(b);
-    Serial.print(",");
-    if (b==0) Serial.println();
+    out(b);
   }
-  Serial.println("0,");
+  out(0);
   
-  Serial.println();
-  Serial.println("// code");
   for (int i=0; i<mapNext; i++) {
     MapValue *ptr=mapData+i;
     int strPos=ptr->strPos;
-    Serial.print("// ");
-    Serial.println(psData+strPos);
     int codePos=ptr->codePos;
     int a=( ((strPos>>7) & 0x7F) | 0x80 );
     int b=( (strPos & 0x7F) | 0x80 );
-    Serial.print(a);
-    Serial.print(",");
-    Serial.print(b);
-    Serial.println(", // strPos");
+    out(a);
+    out(b);
+
     for (int j=codePos; true; j++) {
-      Serial.print(pcData[j]);
-      Serial.print(",");
+      out(pcData[j]);
       if (pcData[j]==0) break;
     }
-    Serial.println();
   }
-  Serial.println("0,");
+  out(0);
+  Serial.println();
 }
