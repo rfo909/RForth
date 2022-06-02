@@ -54,6 +54,11 @@ Also implemented a demo / test, in the file 23LCV512.txt exercising that SPI SRA
 
 The new functions are documented in Doc.md 
 
+2022-06-02 
+----------
+Reverted to single 7-bit PUSH for JMP instructions, as max code length is 127, and symbols
+are not inline any more.
+
 
 2022-05-27 v0.2.3
 -----------------

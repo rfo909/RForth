@@ -613,7 +613,7 @@ bool parseWord() {
 
 bool parseIf() {
   int jmpToEndAddr=pcGetLocalPos();
-  pcInt14bit(0);
+  pcInt7bit(0);
   pcAddByte(OP_ZJMP);
 
   while (!inpTokenMatches("}")) {
@@ -626,7 +626,7 @@ bool parseIf() {
 
   int endLoc=pcGetLocalPos();
   // insert endLoc into the 
-  pcSetBytesLocalU14(jmpToEndAddr,endLoc);
+  pcSetByteLocal7bit(jmpToEndAddr,endLoc);
 
   return true;
 }
@@ -647,7 +647,7 @@ bool parseLoop() {
         return false;
       }
       breakJmpAddr=pcGetLocalPos();
-      pcInt14bit(0);
+      pcInt7bit(0);
       pcAddByte(OP_CJMP);
       continue;
     }
@@ -661,7 +661,7 @@ bool parseLoop() {
   // after loop
   if (breakJmpAddr >= 0) {
     int endLoc=pcGetLocalPos();
-    pcSetBytesLocalU14(breakJmpAddr, endLoc);
+    pcSetByteLocal7bit(breakJmpAddr, endLoc);
   }
 
   return true;

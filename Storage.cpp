@@ -107,11 +107,9 @@ void pcInt14bit (unsigned int b) {
 }
 
 
-// patch 14 bit address relative to pcStart, for forward JMP's (if, loop)
-void pcSetBytesLocalU14 (int localPos, unsigned int value) {
-  
-  pcData[pcStart+localPos] = to7BitPush((value >> 7) & B01111111);
-  pcData[pcStart+localPos+1] = to7BitPush(value & B01111111);
+// patch 7 bit address relative to pcStart, for forward JMP's (if, loop)
+void pcSetByteLocal7bit (int localPos, byte value) {
+  pcData[pcStart+localPos] = to7BitPush(value & B01111111);
 }
 
 

@@ -24,7 +24,7 @@ int pcChopInt ();
 byte *pcGetCodePointer (int pos);
 int pcGetLocalPos();
 
-void pcSetBytesLocalU14 (int localPos, unsigned int value);
+void pcSetByteLocal7bit (int localPos, byte value);
 int pcCount();
 
 // word map (in RAM) - session persistent
