@@ -10,35 +10,38 @@
 	addr sys:read clearMask ! &
 		valueMask clearMask & | addr sys:write ;
 
-: PORTB 0x25 ;
-: DDRB 0x24 ;
+const PORTB 0x25 ;
+const DDRB 0x24 ;
 
-: $high ( :uint =val )  val 8 >> 0xFF & ;
-: $low  ( :uint =val )  val 0xFF & ;
+: $high ( :uint =val )  val 8 >> ;
+: $low  :byte ;
+
+const MASK b0000_0010 ;
 
 # slave select enable / disable
 : SRAM.SS! ( :bool =enable ) 
-	b0000_0010 =mask
-	0xFF =value
-	mask =value
-	enable if{ 0 =value }
-	mask 0xFF DDRB Reg!
-	mask value PORTB Reg!
+	#
+	MASK =value
+	enable if{ 0 =value } # SS low = enable
+	MASK MASK DDRB Reg!
+	MASK value PORTB Reg!
 	;
 
-: SRAM.mw B00000001 ;   # mode write op
-: SRAM.mr B00000101 ;   # mode read op
-: SRAM.mseq B01000000 ;  # mode sequential
 
-: SRAM.opw  B00000010 ; # write op
-: SRAM.opr  B00000011 ; # read op
+const SRAM.mw B00000001 ;   # mode write op
+const SRAM.mr B00000101 ;   # mode read op
+const SRAM.mseq B01000000 ;  # mode sequential
+
+const SRAM.opw  B00000010 ; # write op
+const SRAM.opr  B00000011 ; # read op
 
 : SRAM.start 
 	0 SRAM.SS!
-	1 =msbFirst
-	0 =spiMode 
-	msbFirst spiMode spi:begin
+
+	# 1=msbFirst 0=spiMode 
+	1 0 spi:begin
  
+ 	# program mseq
 	1 SRAM.SS! 
 	  SRAM.mw   spi:transfer =
 	  SRAM.mseq spi:transfer =
@@ -122,7 +125,7 @@
   
 # stats
 # ps: 147 of 250
-# pc: 193 of 350
+# pc: 178 of 350
 
 
 

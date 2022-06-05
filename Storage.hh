@@ -36,5 +36,7 @@ char *mapGetWordName (int pos);
 
 void dumpHex ();
 
+char *constLookup (char *name);
+void constAdd (char *name, char *value);
 
 #endif

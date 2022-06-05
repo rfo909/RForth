@@ -25,6 +25,24 @@ LOWER PRI
 	- extend if{ with }else{
 	
 	
+2022-06-05 v0.2.6 const
+-----------------------
+Now support syntax
+
+	const name value ;
+	
+The value must be a number, on one of the three number formats:
+
+	222 # decimal
+	0x22 # hex
+	b0010_0000  # binary
+	
+Both names and values are stored on ps (permanent string) storage. Results in slightly
+smaller code, but a bit more efficient, as it involves fewer calls. Const values are
+textually replaced then compiled, when used in code. 
+
+
+
 	
 2022-05-29 v0.2.5 Symbols (again)
 ---------------------------------

@@ -174,6 +174,9 @@ void disassemble (byte *code) {
 // parseTokens()
 // ---------------------------------------------
 
+bool parseWordDef();
+void parseConst();
+bool parseImmediateCode();
 
 void parseTokens() {
   if (inpTokenMatches(":")) {
@@ -185,6 +188,8 @@ void parseTokens() {
       Serial.println(mark);
       pcResetToMark(mark);
     }
+  } else if (inpTokenMatches("const")) {
+    parseConst();
   } else {
     int mark=pcGetMark();
     parseImmediateCode();
@@ -274,6 +279,31 @@ bool parseWordDef() {
   
   mapAddCompiledWord(strPos,codePos);
   return true;
+}
+
+
+void parseConst () {
+  if (inpTokenMatches(";")) {
+    Serial.println(F("Invalid const"));
+    return;
+  }
+  char *name=inpTokenGet();
+  inpTokenAdvance();
+
+  if (inpTokenMatches(";")) {
+    Serial.println(F("Invalid const"));
+    return;
+  }
+  char *value=inpTokenGet();
+  inpTokenAdvance();
+
+  if (!inpTokenMatches(";")) {
+    Serial.println(F("Invalid const, expected ';'"));
+    return;
+  }
+
+  constAdd(name, value);
+  
 }
 
 void eepromFormat () {
@@ -452,6 +482,37 @@ unsigned long parseHex (char *s) {
   return val;
 }
 
+
+bool processInteger (char *word) {
+  
+  // enter hex number as 0x...
+  if (word[0]=='0' && word[1]=='x') {
+    long val=parseHex(word+2);
+    pcInt(val);
+    return true;
+  }
+
+  // enter binary number as b001001, plus support underscore _ for readability
+  if ((word[0]=='b' || word[0]=='B') && (word[1]=='1' || word[1]=='0')) {
+    int val=0;
+    for (int i=1; i<strlen(word); i++) {
+      if (word[i]=='_') continue;
+      val = val << 1;
+      if (word[i]=='1') val++;
+    }
+    pcInt(val);
+    return true;
+  }  
+
+  // decimal numbers
+  if (isDigit(word[0])) {
+    pcInt(atol(word));
+    return true;
+  }
+  
+  return false;
+}
+
 bool parseWord() {
 
   if (inpTokenMatches("if{")) {
@@ -557,37 +618,23 @@ bool parseWord() {
     return true;
   }
 
-  // enter hex number as 0x...
-  if (word[0]=='0' && word[1]=='x') {
-    long val=parseHex(word+2);
-    pcInt(val);
-
-    inpTokenAdvance();
-    return true;
-  }
-
-  // enter binary number as b001001, plus support underscore _ for readability
-  if ((word[0]=='b' || word[0]=='B') && (word[1]=='1' || word[1]=='0')) {
-    int val=0;
-    for (int i=1; i<strlen(word); i++) {
-      if (word[i]=='_') continue;
-      val = val << 1;
-      if (word[i]=='1') val++;
+  // const
+  char *constValue=constLookup(word);
+  if (constValue != NULL) {
+    if (processInteger(constValue)) {
+      inpTokenAdvance();
+      return true;
+    } else {
+      Serial.println(F("Invalid constant, must be hex number"));
+      return false;
     }
-    pcInt(val);
+  }
 
-    inpTokenAdvance();
-    return true;
-  }  
-
-  // decimal numbers
-  if (isDigit(word[0])) {
-    pcInt(atol(word));
-    
+  if (processInteger(word)) {
     inpTokenAdvance();
     return true;
   }
-
+  
   // call word function?
   int strPos=psSearch(word);
   if (strPos >= 0) {
@@ -655,7 +702,7 @@ bool parseLoop() {
   }
 
   // jump back to start
-  pcInt(startPos);  // don't need to use U14 here, because this jump address will not be patched later
+  pcInt(startPos); 
   pcAddByte(OP_JMP);
 
   // after loop

@@ -17,7 +17,7 @@ typedef unsigned char byte;
 #endif
 
 
-#define VERSION "v0.2.5"
+#define VERSION "v0.2.6"
 
 
 #ifdef ARDUINO_AVR_MEGA
@@ -52,8 +52,10 @@ typedef unsigned char byte;
 // Storage.cpp
 #ifdef ARDUINO_AVR_MEGA
   #define MAP_SIZE          200
+  #define CONST_MAP_SIZE    30
 #else
-  #define MAP_SIZE          50
+  #define MAP_SIZE          40
+  #define CONST_MAP_SIZE    20
 #endif
 
 

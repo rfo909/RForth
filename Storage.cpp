@@ -244,6 +244,39 @@ char *mapGetWordName (int mapDataPos) {
 
 
 
+typedef struct {
+  int nameStrPos;
+  int valueStrPos;
+} MapConst;
+
+static MapConst constData[CONST_MAP_SIZE];
+static int constNext=0;
+
+char *constLookup (char *name) {
+  for (int i=0; i<constNext; i++) {
+    char *s=psGetStringPointer((constData+i)->nameStrPos);
+    if (!strcmp(name,s)) {
+      return psGetStringPointer((constData+i)->valueStrPos);
+    }
+  }
+  return NULL;
+}
+
+void constAdd (char *name, char *value) {
+  int n=psGetOrAddString(name);
+  int v=psGetOrAddString(value);
+  if (constNext >= CONST_MAP_SIZE) {
+    Serial.println(F("Const map overflow"));
+    return;
+  }
+  MapConst *x=constData+constNext;
+  x->nameStrPos=n;
+  x->valueStrPos=v;
+  constNext++;
+}
+
+
+
 // DUMP HEX
 
 int outCounter=0;

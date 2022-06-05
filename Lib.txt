@@ -1,3 +1,6 @@
+: true 1 :bool ;
+: false 0 :bool ;
+
 # Utility
 
 : Reg! ( :byte =clearMask :byte =valueMask :int =addr -- )
