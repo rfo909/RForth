@@ -1,0 +1,46 @@
+# Demonstration of interfacing the 24LC256 I2C EEPROM (32 KBytes) over I2C
+# via built-in functions twi:*
+#
+# --
+
+
+const ADDR 0x50 
+
+# Wait for device ready, by verifying twi:tr:end returns 0 
+: Ready! loop{ ADDR twi:tr:begin twi:tr:end 0 == break } ;
+
+: loc! ( :uint =loc ) 
+	loc 8 >> 0xFF & twi:write
+	loc 0xFF & twi:write
+;
+
+: W ( :byte =value :uint =loc )
+	Ready!
+	ADDR twi:tr:begin
+	loc loc!
+	value twi:write
+	twi:tr:end =
+;
+
+: R ( :uint =loc )
+	Ready!
+	ADDR twi:tr:begin
+	loc loc!
+	twi:tr:end =
+	ADDR 1 twi:request
+	twi:read
+;
+
+: test 
+	0 =loc
+	twi:begin
+	33 loc W
+	35 loc 1 + W
+	loc R
+	loc 1 + R
+	twi:end
+;
+
+#  ps: 31 of 150
+#  pc: 82 of 200
+

@@ -1,11 +1,17 @@
-const true 1 :bool ;
-const false 0 :bool ;
 
 # Utility
 
-: Reg! ( :byte =clearMask :byte =valueMask :int =addr -- )
-	addr sys:read clearMask ! &
-		valueMask clearMask & | addr sys:write ;
+: Set! ( :byte =mask :uint =addr )
+	addr sys:read 
+		mask |
+			addr sys:write
+;
+
+: Clr! ( :byte =mask :uint =addr )
+	addr sys:read
+		mask ! &
+			addr sys:write
+;
 
 : wait ( :ulong =ms )
 	 sys:millis ms + =ms loop{ sys:millis ms > break  } ;
@@ -13,12 +19,17 @@ const false 0 :bool ;
 
 # ADDR constants, corresponding to defines in Common (oc=on-chip)
 
-const $aloc:oc:str		    1 ;  
-const $aloc:oc:bin		    2 ;
-const $aloc:oc:progmem	    3 ;
-const $aloc:oc:ee		    4 ;
+const aloc:oc:str		    1 ;  
+const aloc:oc:bin		    2 ;
+const aloc:oc:progmem	    3 ;
+const aloc:oc:ee		    4 ;
 
-const $atyp:symbol			1 ;
-const $atyp:blob			2 ;
+: aloc:ext ( :byte =id )
+	id 7 > if{ 'INVALIDVALUE_$aloc:ext sys:abort }
+	B1000 id | :byte
+;
+	
+const atyp:symbol		1 ;
+const atyp:code			2 ;
 
 

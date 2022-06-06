@@ -1,118 +1,89 @@
 
-# TWI (i2c) directly via register manipulation
-# (Arduino <Wire.h> consumed 200+ bytes of ram, probably for buffers etc)
+# Trying to do i2c directly via register manipulation. So far no success!
+# 
+# Added TWI functionality to RForth. Working demo in i2c_op.txt
+#
+#
+# Reason for trying this is for fun and that Wire.h consumes 200+ bytes of SRAM.
 
-: Set ( :byte =mask :uint =addr )
-	addr sys:read 
-		mask |
-			addr sys:write
-;
-
-: Clr ( :byte =mask :uint =addr )
-	addr sys:read
-		mask ! &
-			addr sys:write
-;
-
-const TWBR 0xb8 ;
-const TWSR 0xb9 ;
-const TWAR 0xba ;
-const TWDR 0xbb ;
-const TWCR 0xbc ;
-const TWAMR 0xbd ;
 
 
 #######
 ### https://electronics.stackexchange.com/questions/309135/i2c-atmega328p-as-master-and-24lc256-as-slave
 ---------------------------
 
-# TWCR bits
+const FOSC	16000000
+const KHZ   100
 
-const TWINT 7 ;
-const TWEA 6 ;
-const TWSTA 5 ;
-const TWSTO 4 ;
-const TWWC 3 ;
-const TWEN 2 ;
-const TWIE 0 ;
+const TWBR 0xb8 ;
+const TWSR 0xb9 ;
+#const TWAR 0xba ;
+const TWDR 0xbb ;
+const TWCR 0xbc ;
+#const TWAMR 0xbd ;
+const START        0x08 ;
 
-# TWSR bits
-
-const TWPS1 1 ;
-const TWPS0 0 ;
+const ACKNACK   0x18 ;
 
 
-# Clock speed
-
-const FOSC 16000000 ;
-
-const START 0x08 ;
-const MT_SLA_ACK 0x18 ;
-const MT_SLA_NACK 0x18 ;
-const DEV_ADDR 0x50 ;
-
-
-: setClock =khz 
-	1 TWEN <<  
+# set_clock
+: clk! 
+	b0000_0100 # TWEN
 		TWCR sys:write
-	1 TWPS0 << 
-		TWSR Set
-	FOSC khz / 
-		16 - 
-			6 / 
-				TWBR sys:write
-;
+	b0000_0001 =m # TWPS0 - prescaler 4
+		TWSR sys:read m | TWSR sys:write
+	FOSC KHZ / 16 - 8 / TWBR sys:write
+	;
 	
-: sendStart
-	1 TWINT << 1 TWEN << 1 | TWSTA << | TWCR sys:write
-	loop{ TWCR sys:read 1 TWINT << & break }
+# send_start
+: start
+	b1010_0100 # TWINT TWEN TWSTA  # send start
+		TWCR sys:write
+	loop{ TWCR sys:read B1000_0000 & break }
+	;
+
+# send stop
+: stop
+	b1001_0100 # TWINT TWEN TWSTO
+		TWCR sys:write
+	loop{ TWCR sys:read B1000_0000 & break }
+	;
+
+
+# check_start_status
+: Rdy! TWSR sys:read 0xf8 & START != if{ 40 sys:neg sys:abort } ;
+
+# send_address
+: addr! =addr
+	addr TWDR sys:write
+	b1000_0100  # TWINT TWEN
+		TWCR sys:write
+	loop{ TWCR sys:read B1000_0000 & break }
+	;
+
+# check_MT_slave_ack
+: ack! TWSR sys:read 0xf8 & ACKNACK != if{ 50 sys:neg sys:abort } ;
+
+# check MT_slave_nack
+#: nack! TWSR sys:read 0xf8 & ACKNACK != if{ 60 sys:neg sys:abort } ;
+
+# transmit_data
+: data! =data
+	data TWDR sys:write
+	b1000_0100 # TWINT TWEN
+		TWCR sys:write
+	loop{ TWCR sys:read B1000_0000 & break }
+	;
+
+# main
+: main 
+	100 clk!
+	start
+	Rdy!
+	0x50 addr!
+	ack!
+	0x00 data!
+	ack!
+	stop
 ;
 
-: sendStop 
-	1 TWINT << 1 TWEN << 1 TWSTO << | | TWCR sys:write
-	loop{ TWCR sys:read 1 << TWINT & break }
-;
-
-: checkStartStatus
-	TWSR sys:read 0xF8 & START == :bool
-;
-
-: sendAddress =addr =wbit
-	addr 0x7F & 1 << wbit 0x01 & | TWDR write
-	1 TWINT << 1 TWEN << | TWCR write
-	loop{ TWCR read 1 TWINT << & break }
-;
-
-: checkMTSlaveAck
-	TWSR read 0xF8 & MT_SLA_ACK == :bool
-;
-
-: checkMTSlaveNack 
-	TWSR read 0xF8 MT_SLA_NACK == :bool
-;
-
-
-: transmitData =data
-	data TWDR write
-	1 TWINT << 1 TWEN << | TWCR write
-	loop{ TWCR read 1 TWINT << & break }
-	
-	0x00 transmitData
-	checkMDSlaveAck ! if { 999 abort }
-;
-
-# Enable pins
-
-: i2c_main =devAddress
-	0xFF DDRC write
-	0x30 PORTC write
-	0xFF DDRD write
-	
-	100 setClock
-	sendStart
-	checkStartStatus not if{ 998 abort }
-	
-	devAddress 0 sendAddress
-
-	checkMTSlaveAck ! if{ 997 abort }
-;

@@ -62,6 +62,15 @@ static const char SPI_END[] PROGMEM = "spi:end";
 
 static const char NOP[] PROGMEM = "nop";
 
+static const char TWI_BEGIN[] PROGMEM = "twi:begin";
+static const char TWI_END[] PROGMEM = "twi:end";
+static const char TWI_SETCLOCK[] PROGMEM = "twi:setclock";
+static const char TWI_BEGIN_TR[] PROGMEM = "twi:tr:begin";
+static const char TWI_END_TR[] PROGMEM = "twi:tr:end";
+static const char TWI_WRITE[] PROGMEM = "twi:write";
+static const char TWI_REQUEST[] PROGMEM = "twi:request";
+static const char TWI_READ[] PROGMEM = "twi:read";
+
 
 int lookupSymbol (char *sym) {
   if (!strcmp_P(sym,ADD)) return OP_ADD;
@@ -116,6 +125,15 @@ int lookupSymbol (char *sym) {
   if (!strcmp_P(sym,SPI_END)) return OP_SPI_END;
 
   if (!strcmp_P(sym,NOP)) return OP_NOP; // for testing
+
+  if (!strcmp_P(sym,TWI_BEGIN)) return OP_TWI_BEGIN; 
+  if (!strcmp_P(sym,TWI_END)) return OP_TWI_END; 
+  if (!strcmp_P(sym,TWI_SETCLOCK)) return OP_TWI_SETCLOCK; 
+  if (!strcmp_P(sym,TWI_BEGIN_TR)) return OP_TWI_BEGIN_TR; 
+  if (!strcmp_P(sym,TWI_END_TR)) return OP_TWI_END_TR; 
+  if (!strcmp_P(sym,TWI_WRITE)) return OP_TWI_WRITE; 
+  if (!strcmp_P(sym,TWI_REQUEST)) return OP_TWI_REQUEST; 
+  if (!strcmp_P(sym,TWI_READ)) return OP_TWI_READ;
 
   return -1; 
 }
@@ -366,6 +384,38 @@ void printOpName (const int opCode) {
     }
     case OP_SYMBOL: {
       Serial.print(F("OP_SYMBOL"));
+      return;
+    }
+    case OP_TWI_BEGIN: {
+      Serial.print(F("OP_TWI_BEGIN"));
+      return;
+    }
+    case OP_TWI_END: {
+      Serial.print(F("OP_TWI_END"));
+      return;
+    }
+    case OP_TWI_SETCLOCK: {
+      Serial.print(F("OP_TWI_SETCLOCK"));
+      return;
+    }
+    case OP_TWI_BEGIN_TR: {
+      Serial.print(F("OP_TWI_BEGIN_TR"));
+      return;
+    }
+    case OP_TWI_END_TR: {
+      Serial.print(F("OP_TWI_END_TR"));
+      return;
+    }
+    case OP_TWI_WRITE: {
+      Serial.print(F("OP_TWI_WRITE"));
+      return;
+    }
+    case OP_TWI_REQUEST: {
+      Serial.print(F("OP_TWI_REQUEST"));
+      return;
+    }
+    case OP_TWI_READ: {
+      Serial.print(F("OP_TWI_READ"));
       return;
     }
   }

@@ -78,6 +78,17 @@
 
 #define OP_SYMBOL   60
 
+#define OP_TWI_BEGIN     61
+#define OP_TWI_END       62
+#define OP_TWI_SETCLOCK  63
+#define OP_TWI_BEGIN_TR  64
+#define OP_TWI_END_TR    65
+#define OP_TWI_WRITE     66
+#define OP_TWI_REQUEST   67
+#define OP_TWI_READ      68
+
+
+
 
 int lookupSymbol (char *sym);
 void printOpName (int opCode);

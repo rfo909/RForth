@@ -1,5 +1,6 @@
 #include "EEPROM.h"
 #include <SPI.h>
+#include <Wire.h>
 
 #include "Common.hh"
 #include "Input.hh"
@@ -836,12 +837,25 @@ void displayStackValue (DStackValue *x) {
       Serial.print(F(" 0x"));
       printPadded("0", 8, buf, " ", 2);
       Serial.print(F("  ADDR"));
-      if ((controlByte & 0x0F)==ATYP_SYMBOL) {
-        Serial.print(F(" ATYP_SYMBOL "));
-        if ( ((controlByte & 0xF0) >> 4 ) == ALOC_OC_STR) {
-          Serial.print(F(" ALOC_OC_STR "));
-          Serial.print(psGetStringPointer(offset));
-        }
+      int aloc=(controlByte >> 4) & 0x0F;
+      int atyp=(controlByte & 0x0F);
+
+      Serial.print(F(" aloc="));
+      if (aloc & ALOC_EXT_BIT) {
+        int id=aloc & 0x07;
+        Serial.print("ext:");
+        Serial.print(id);
+      } else {
+        int id=aloc & 0x07;
+        Serial.print("oc:");
+        Serial.print(id);
+      }
+      Serial.print(F(" atyp="));
+      Serial.print(atyp);
+
+      if (aloc==ALOC_OC_STR && atyp==ATYP_SYMBOL) {
+        Serial.print(F(" SYMBOL: "));
+        Serial.print(psGetStringPointer(offset));
       }
       Serial.println();
       return;
@@ -1551,6 +1565,7 @@ bool executeOneOp () {
       dsPushValue(DS_TYPE_LONG, (high<<7) | low);
       return true;
     }
+    
     case OP_SPI_BEGIN : { // ( :bool =MSBFIRST :byte =SPIMODE )
      if (dsEmpty()) {
        Serial.println(F("OP_SPI_BEGIN - data stack empty"));
@@ -1589,22 +1604,66 @@ bool executeOneOp () {
       return true;
     }
     case OP_SYMBOL : {
-      if (dsEmpty()) {
-        Serial.println(F("OP_SYMBOL - data stack empty"));
-        return false;
-      }
-      int strPos=dsPop();
-     
-      // create ADDR value
-      unsigned long markControlByte = (ALOC_OC_STR << 4) | (ATYP_SYMBOL);
-      unsigned long addrVal=(unsigned long) strPos;
-      unsigned long value=(markControlByte << 24) | addrVal;
-  
-      dsPushValue (DS_TYPE_ADDR, (long) value);
-      return true;     
     }
- 
-
+    
+    case OP_TWI_BEGIN : {
+      Wire.begin();
+      return true;
+    }
+    case OP_TWI_END : {
+      Wire.end();
+      return true;
+    }
+    case OP_TWI_SETCLOCK : {
+     if (dsEmpty()) {
+       Serial.println(F("OP_TWI_SETCLOCK - data stack empty"));
+       return false;
+     }
+     unsigned long freq = dsPop();
+     Wire.setClock(freq);
+     return true;
+    }
+    case OP_TWI_BEGIN_TR : {
+     if (dsEmpty()) {
+       Serial.println(F("OP_TWI_BEGIN_TR - data stack empty"));
+       return false;
+     }
+     byte address = dsPop();
+     Wire.beginTransmission(address);
+     return true;
+    }
+    case OP_TWI_END_TR : {
+      dsPush(Wire.endTransmission());
+      return true;
+    }
+    case OP_TWI_WRITE : {
+     if (dsEmpty()) {
+       Serial.println(F("OP_TWI_WRITE - data stack empty"));
+       return false;
+     }
+     byte value = dsPop();
+     Wire.write(value);
+     return;
+    }
+    case OP_TWI_REQUEST : {
+     if (dsEmpty()) {
+       Serial.println(F("OP_TWI_REQUEST - data stack empty"));
+       return false;
+     }
+     int count = dsPop();
+     if (dsEmpty()) {
+       Serial.println(F("OP_TWI_REQUEST - data stack empty"));
+       return false;
+     }
+     int address = dsPop();
+     Wire.requestFrom(address, count);
+     return true;
+    }
+    case OP_TWI_READ : {
+      dsPush(Wire.read());
+      return true;
+    }
+    
   }
   Serial.print(F("Unknown OP "));
   Serial.println(b);   

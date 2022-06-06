@@ -25,6 +25,26 @@ LOWER PRI
 	- extend if{ with }else{
 	
 	
+	
+
+2022-06-06 v0.2.7 TWI
+---------------------
+Added support for i2c via twi:* internal functions.
+Created i2c_op.txt as proof of concept.
+Also tried getting i2c.txt (using registers) to work, but no luck.
+
+Because the Wire.h library consumes 200+ bytes of SRAM. 
+
+For Arduino Nano Every with 6 Kb of SRAM it may not be an issue, so leaving
+the code for the new twi:* functions in.
+
+* Immediate goal: create a way for storing symbol table and compiled code to EEPROM,
+  where it can be read back later.
+  
+
+	
+
+
 2022-06-05 v0.2.6 const
 -----------------------
 Now support syntax
@@ -104,7 +124,6 @@ Described it in the file
 	
 The OP_CALL *will* have to be modified to expect an ADDR, which must be extended to handle dictionaries 
 stored on different devices.
-
 
 
 	

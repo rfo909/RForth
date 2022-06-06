@@ -17,7 +17,7 @@ typedef unsigned char byte;
 #endif
 
 
-#define VERSION "v0.2.6"
+#define VERSION "v0.2.7"
 
 
 #ifdef ARDUINO_AVR_MEGA
@@ -45,8 +45,8 @@ typedef unsigned char byte;
   #define PSDATA_SIZE       1500
   #define PCDATA_SIZE       3500
 #else
-  #define PSDATA_SIZE       250
-  #define PCDATA_SIZE       350
+  #define PSDATA_SIZE       150
+  #define PCDATA_SIZE       200
 #endif
 
 // Storage.cpp
@@ -72,6 +72,7 @@ typedef unsigned char byte;
 #define ATYP_SYMBOL     0x01
 #define ATYP_BLOB       0x02  // length encoded as three bytes in start
 
+#define ALOC_EXT_BIT    B00001000
 
 
 void setAbortCodeExecution ();
