@@ -1604,8 +1604,20 @@ bool executeOneOp () {
       return true;
     }
     case OP_SYMBOL : {
+      if (dsEmpty()) {
+        Serial.println(F("OP_SYMBOL - data stack empty"));
+        return false;
+      }
+      int strPos=dsPop();
+
+      // create ADDR value
+      unsigned long markControlByte = (ALOC_OC_STR << 4) | (ATYP_SYMBOL);
+      unsigned long addrVal=(unsigned long) strPos;
+      unsigned long value=(markControlByte << 24) | addrVal;
+
+      dsPushValue (DS_TYPE_ADDR, (long) value);
+      return true;     
     }
-    
     case OP_TWI_BEGIN : {
       Wire.begin();
       return true;

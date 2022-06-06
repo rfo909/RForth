@@ -51,7 +51,7 @@ const ACKNACK   0x18 ;
 
 
 # check_start_status
-: Rdy! TWSR sys:read 0xf8 & START != if{ 40 sys:neg sys:abort } ;
+: Rdy! TWSR sys:read 0xf8 & START != if{ 'Rdy! sys:abort } ;
 
 # send_address
 : addr! =addr
@@ -62,10 +62,10 @@ const ACKNACK   0x18 ;
 	;
 
 # check_MT_slave_ack
-: ack! TWSR sys:read 0xf8 & ACKNACK != if{ 50 sys:neg sys:abort } ;
+: ack! TWSR sys:read 0xf8 & ACKNACK != if{ 'ack! sys:abort } ;
 
 # check MT_slave_nack
-#: nack! TWSR sys:read 0xf8 & ACKNACK != if{ 60 sys:neg sys:abort } ;
+#: nack! TWSR sys:read 0xf8 & ACKNACK != if{ 'nack! sys:abort } ;
 
 # transmit_data
 : data! =data
