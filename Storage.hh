@@ -38,5 +38,8 @@ void dumpHex ();
 
 char *constLookup (char *name);
 void constAdd (char *name, char *value);
+int constGetCount();
+char *constGetName (int pos);
+char *constGetValue (int pos);
 
 #endif

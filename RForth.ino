@@ -326,6 +326,22 @@ void eepromFormat () {
   Serial.println(F("EEPROM format completed"));
 }
 
+
+// Helper for 'words' command
+
+int outWordLineLength=0;
+
+void outWord(char *word) {
+  if (outWordLineLength > 60) {
+    Serial.println();
+    outWordLineLength=0;
+  }
+  outWordLineLength += strlen(word)+1;
+  Serial.print(" ");
+  Serial.print(word);
+}
+
+
 bool parseImmediateCode() {
   while (!inpTokenMatches(";")) {
     if (inpTokenMatches("help")) {
@@ -341,13 +357,22 @@ bool parseImmediateCode() {
       Serial.println(F("dump           - dump code as hex"));
       continue;
     }
-    if (inpTokenMatches("words")) {
+    if (inpTokenMatches("words") || inpTokenMatches("?")) {
+      outWordLineLength=0;
+      
       int cnt=mapGetWordCount();
       for (int i=0; i<cnt; i++) {
         char *fname=mapGetWordName(i);
-        Serial.print(F("  "));
-        Serial.println(fname);
+        outWord(fname);
       }
+      cnt=constGetCount();
+      for (int i=0; i<cnt; i++) {
+        char *cname=constGetName(i);
+        if (cname != NULL) {
+          outWord(cname);
+        }
+      }
+      Serial.println();
       continue;
     }
     if (inpTokenMatches("stats")) {

@@ -51,8 +51,8 @@ typedef unsigned char byte;
 
 // Storage.cpp
 #ifdef ARDUINO_AVR_MEGA
-  #define MAP_SIZE          200
-  #define CONST_MAP_SIZE    30
+  #define MAP_SIZE          150
+  #define CONST_MAP_SIZE    50
 #else
   #define MAP_SIZE          40
   #define CONST_MAP_SIZE    20

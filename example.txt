@@ -8,10 +8,18 @@
 const PORTB 0x25 ;
 const DDRB 0x24 ;
 
+		
+: Set! ( :byte =mask :uint =addr )
+	addr sys:read 
+		mask |
+			addr sys:write
+;
 
-: Reg! ( :byte =clearMask :byte =valueMask :int =addr -- )
-	addr sys:read clearMask ! &
-		valueMask clearMask & | addr sys:write ;
+: Clr! ( :byte =mask :uint =addr )
+	addr sys:read
+		mask ! &
+			addr sys:write
+;		
 
 : wait ( :ulong =ms )
 	 sys:millis ms + =ms loop{ sys:millis ms > break  } ;
@@ -21,20 +29,20 @@ const M b0010_0000 ;
 
 : blink
 	M =m
-	m m DDRB Reg!
+	m DDRB Set!
 	loop{
-		m m PORTB Reg! 500 wait
-		m 0 PORTB Reg! 400 wait
+		m PORTB Set! 500 wait
+		m PORTB Clr! 400 wait
 	}
 ;
 
 
 : N-blink ( :int =n )
 	M =m
-	m m DDRB Reg!
+	m DDRB Set!
 	loop{
-		m m PORTB Reg! 1000 wait
-		m 0 PORTB Reg! 500 wait
+		m PORTB Set! 1000 wait
+		m PORTB Clr! 500 wait
 		n 1 - =n
 		n 0 <= break
 	}
@@ -62,114 +70,4 @@ const M b0010_0000 ;
 
 
 
-### --- old atmega328p ---
 
-# TWI (i2c) directly via register manipulation
-# (Arduino <Wire.h> consumed 200+ bytes of ram, probably for buffers etc)
-
-: Reg! =addr =valueMask =clearMask
-	addr read clearMask ! &
-		valueMask | addr write ;
-
-: TWBR 0xb8 ;
-: TWSR 0xb9 ;
-: TWAR 0xba ;
-: TWDR 0xbb ;
-: TWCR 0xbc ;
-: TWAMR 0xbd ;
-
-
-#######
-### https://electronics.stackexchange.com/questions/309135/i2c-atmega328p-as-master-and-24lc256-as-slave
----------------------------
-
-# TWCR bits
-
-: TWINT 7 ;
-: TWEA 6 ;
-: TWSTA 5 ;
-: TWSTO 4 ;
-: TWWC 3 ;
-: TWEN 2 ;
-: TWIE 0 ;
-
-# TWSR bits
-
-: TWPS1 1 ;
-: TWPS0 0 ;
-
-
-# Clock speed
-: FOSC 16000000 :ulong ;
-: START 0x08 ;
-: MT_SLA_ACK 0x18 ;
-: MT_SLA_NACK 0x18 ;
-: DEV_ADDR 0x50 ;
-
-
-: setClock =khz 
-	1 TWEN << 
-		TWCR write
-	1 TWPS0 << 
-		TWSR Reg!
-	FOSC khz / 
-		TWBR write
-	TWBR read 16 - 
-		TWBR write
-	TWBR read 8 / 
-		TWBR write
-;
-	
-: sendStart
-	1 TWINT << 1 TWEN << 1 | TWSTA << | TWCR write
-	loop{ TWCR read 1 TWINT << & break }
-;
-
-: sendStop 
-	1 TWINT << 1 TWEN << 1 TWSTO << | | TWCR write
-	loop{ TWCR read 1 << TWINT & break }
-;
-
-: checkStartStatus
-	TWSR read 0xF8 & START == :bool
-;
-
-: sendAddress =addr =wbit
-	addr & 0x7F 1 << wbit 0x01 & | TWDR write
-	1 TWINT << 1 TWEN << | TWCR write
-	loop{ TWCR read 1 TWINT << & break }
-;
-
-: checkMTSlaveAck
-	TWSR read 0xF8 & MT_SLA_ACK == :bool
-;
-
-: checkMTSlaveNack 
-	TWSR read 0xF8 MT_SLA_NACK == :bool
-;
-
-
-: transmitData =data
-	data TWDR write
-	1 TWINT << 1 TWEN << | TWCR write
-	loop{ TWCR read 1 TWINT << & break }
-	
-	0x00 transmitData
-	checkMDSlaveAck ! if { 999 abort }
-;
-
-# Enable pins
-
-: i2c_main =devAddress
-	0xFF DDRC write
-	0x30 PORTC write
-	0xFF DDRD write
-	
-	100 setClock
-	sendStart
-	checkStartStatus not if{ 998 abort }
-	
-	devAddress 0 sendAddress
-
-	checkMTSlaveAck ! if{ 997 abort }
-;

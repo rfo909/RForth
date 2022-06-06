@@ -1,0 +1,118 @@
+
+# TWI (i2c) directly via register manipulation
+# (Arduino <Wire.h> consumed 200+ bytes of ram, probably for buffers etc)
+
+: Set ( :byte =mask :uint =addr )
+	addr sys:read 
+		mask |
+			addr sys:write
+;
+
+: Clr ( :byte =mask :uint =addr )
+	addr sys:read
+		mask ! &
+			addr sys:write
+;
+
+const TWBR 0xb8 ;
+const TWSR 0xb9 ;
+const TWAR 0xba ;
+const TWDR 0xbb ;
+const TWCR 0xbc ;
+const TWAMR 0xbd ;
+
+
+#######
+### https://electronics.stackexchange.com/questions/309135/i2c-atmega328p-as-master-and-24lc256-as-slave
+---------------------------
+
+# TWCR bits
+
+const TWINT 7 ;
+const TWEA 6 ;
+const TWSTA 5 ;
+const TWSTO 4 ;
+const TWWC 3 ;
+const TWEN 2 ;
+const TWIE 0 ;
+
+# TWSR bits
+
+const TWPS1 1 ;
+const TWPS0 0 ;
+
+
+# Clock speed
+
+const FOSC 16000000 ;
+
+const START 0x08 ;
+const MT_SLA_ACK 0x18 ;
+const MT_SLA_NACK 0x18 ;
+const DEV_ADDR 0x50 ;
+
+
+: setClock =khz 
+	1 TWEN <<  
+		TWCR sys:write
+	1 TWPS0 << 
+		TWSR Set
+	FOSC khz / 
+		16 - 
+			6 / 
+				TWBR sys:write
+;
+	
+: sendStart
+	1 TWINT << 1 TWEN << 1 | TWSTA << | TWCR sys:write
+	loop{ TWCR sys:read 1 TWINT << & break }
+;
+
+: sendStop 
+	1 TWINT << 1 TWEN << 1 TWSTO << | | TWCR sys:write
+	loop{ TWCR sys:read 1 << TWINT & break }
+;
+
+: checkStartStatus
+	TWSR sys:read 0xF8 & START == :bool
+;
+
+: sendAddress =addr =wbit
+	addr 0x7F & 1 << wbit 0x01 & | TWDR write
+	1 TWINT << 1 TWEN << | TWCR write
+	loop{ TWCR read 1 TWINT << & break }
+;
+
+: checkMTSlaveAck
+	TWSR read 0xF8 & MT_SLA_ACK == :bool
+;
+
+: checkMTSlaveNack 
+	TWSR read 0xF8 MT_SLA_NACK == :bool
+;
+
+
+: transmitData =data
+	data TWDR write
+	1 TWINT << 1 TWEN << | TWCR write
+	loop{ TWCR read 1 TWINT << & break }
+	
+	0x00 transmitData
+	checkMDSlaveAck ! if { 999 abort }
+;
+
+# Enable pins
+
+: i2c_main =devAddress
+	0xFF DDRC write
+	0x30 PORTC write
+	0xFF DDRD write
+	
+	100 setClock
+	sendStart
+	checkStartStatus not if{ 998 abort }
+	
+	devAddress 0 sendAddress
+
+	checkMTSlaveAck ! if{ 997 abort }
+;

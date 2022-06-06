@@ -275,6 +275,20 @@ void constAdd (char *name, char *value) {
   constNext++;
 }
 
+int constGetCount() {
+  return constNext;
+}
+
+char *constGetName (int pos) {
+  MapConst *x=constData+pos;
+  return psGetStringPointer(x->nameStrPos);
+}
+
+char *constGetValue (int pos) {
+  MapConst *x=constData+pos;
+  return psGetStringPointer(x->valueStrPos);
+}
+
 
 
 // DUMP HEX
