@@ -2,19 +2,19 @@
 # Utility
 
 : Set! ( :byte =mask :uint =addr )
-	addr sys:read 
+	addr read 
 		mask |
-			addr sys:write
+			addr write
 ;
 
 : Clr! ( :byte =mask :uint =addr )
-	addr sys:read
+	addr read
 		mask ! &
-			addr sys:write
+			addr write
 ;
 
 : wait ( :ulong =ms )
-	 sys:millis ms + =ms loop{ sys:millis ms > break  } ;
+	 millis ms + =ms loop{ millis ms > break  } ;
 
 
 # ADDR constants, corresponding to defines in Common (oc=on-chip)
@@ -25,7 +25,7 @@ const aloc:oc:progmem	    3 ;
 const aloc:oc:ee		    4 ;
 
 : aloc:ext ( :byte =id )
-	id 7 > if{ 'INVALIDVALUE_$aloc:ext sys:abort }
+	id 7 > if{ 'INVALIDVALUE_$aloc:ext abort }
 	B1000 id | :byte
 ;
 	

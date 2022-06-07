@@ -8,82 +8,93 @@
 
 
 
+
+
+
+
 #######
 ### https://electronics.stackexchange.com/questions/309135/i2c-atmega328p-as-master-and-24lc256-as-slave
 ---------------------------
 
-const FOSC	16000000
-const KHZ   100
+: TWSR 0xb9 ;
+: TWDR 0xbb ;
+: TWCR 0xbc ;
 
-const TWBR 0xb8 ;
-const TWSR 0xb9 ;
-#const TWAR 0xba ;
-const TWDR 0xbb ;
-const TWCR 0xbc ;
-#const TWAMR 0xbd ;
-const START        0x08 ;
+: ADDR		0x50 ;
 
-const ACKNACK   0x18 ;
+: START        0x08 ;
+: MS_ACK		0x18 ;       # master start ack
+: MD_ACK		0x29 ;       # master data ack
+
+: TWINT b1000_0000 ;
+: TWSTA b0010_0000 ;
+: TWSTO b0001_0000 ;
+: TWEN  b0000_0100 ;
+
+: WBIT 0 ;
+: RBIT 1 ;
 
 
-# set_clock
-: clk! 
-	b0000_0100 # TWEN
-		TWCR sys:write
-	b0000_0001 =m # TWPS0 - prescaler 4
-		TWSR sys:read m | TWSR sys:write
-	FOSC KHZ / 16 - 8 / TWBR sys:write
-	;
+
+# (2)(4)(6) Wait for TWINT flag in TWCR
+: w millis 5000 + =m
+	loop{ millis m > if{ 'w abort } TWCR read TWINT & break } ;
 	
-# send_start
-: start
-	b1010_0100 # TWINT TWEN TWSTA  # send start
-		TWCR sys:write
-	loop{ TWCR sys:read B1000_0000 & break }
+	
+# (1) send_start
+: start!
+	TWINT TWEN TWSTA | | 
+		TWCR write
 	;
 
-# send stop
-: stop
-	b1001_0100 # TWINT TWEN TWSTO
-		TWCR sys:write
-	loop{ TWCR sys:read B1000_0000 & break }
+# (2) wait for TWINT flag in TWCR
+# w
+
+
+# (3a) Check status register for START ok
+: start? TWSR read 0xF8 & START != if{ 'start? abort } ;
+
+
+# (3b) send device address
+    
+: addr! 
+	ADDR 1 << WBIT | TWDR write 
+	TWINT TWEN | TWCR write
 	;
 
+# (4) wait for TWINT flag in TWCR
+# w
 
-# check_start_status
-: Rdy! TWSR sys:read 0xf8 & START != if{ 'Rdy! sys:abort } ;
 
-# send_address
-: addr! =addr
-	addr TWDR sys:write
-	b1000_0100  # TWINT TWEN
-		TWCR sys:write
-	loop{ TWCR sys:read B1000_0000 & break }
+# (5a) Check TWI status register for ACK ok
+: ack? TWSR read 0xF8 & MS_ACK != if{ 'ack? abort } ;
+
+# (5b) Send data
+: data! =data 
+	data TWDR write
+	TWINT TWEN | TWCR write
 	;
 
-# check_MT_slave_ack
-: ack! TWSR sys:read 0xf8 & ACKNACK != if{ 'ack! sys:abort } ;
+# (6) wait for TWINT flag in TWCR
+# w
+	
+	
+# (7a) Check TWI status for DATA_ACK
+: data? TWSR read 0xF8 & MD_ACK != if{ 'dack? abort } ;
 
-# check MT_slave_nack
-#: nack! TWSR sys:read 0xf8 & ACKNACK != if{ 'nack! sys:abort } ;
+# (7b) Send STOP
+: stop! TWINT TWEN TWSTO | | TWCR write ;
 
-# transmit_data
-: data! =data
-	data TWDR sys:write
-	b1000_0100 # TWINT TWEN
-		TWCR sys:write
-	loop{ TWCR sys:read B1000_0000 & break }
-	;
 
-# main
-: main 
-	100 clk!
-	start
-	Rdy!
-	0x50 addr!
-	ack!
-	0x00 data!
-	ack!
-	stop
-;
 
+# Test
+: t1 
+  start! w start?
+  addr! w ack?
+  # --- EEPROM address
+  0 data! w data? 
+  0 data! w data?
+  # --- write byte
+  43 data! w dack?    
+  stop!
+  ;

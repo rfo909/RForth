@@ -1,6 +1,6 @@
 # Introduction
 
-*2022-05-28 v0.2.4*
+*2022-06-07 v0.2.7*
 
 *RForth* is a compact programming language inspired by Forth. It is stack based,
 but does not depend on stack manipulations, as it introduces local variables
@@ -36,9 +36,15 @@ Ex.
 
 ```
 2 3 + 
+```
+
+Puts 5 on the data stack.
+
+```
 DDRB
 ```
 
+Runs word DDRB and puts value 0x24 on data stack.
 
 
 
@@ -52,9 +58,9 @@ Ex.
 
 ```
 : SetBit =addr =mask  # pop values off stack
-	addr sys:read 
+	addr read 
 		mask |
-			addr sys:write ;
+			addr write ;
 ```
 
 Here we read an address, then logically OR the mask into that value, and write
@@ -113,23 +119,22 @@ not              # Logical not
 ## Flow control
 
 ```
-sys:return           # return to where current word was called
-sys:abort            # terminates execution
+return           # return to where current word was called
+abort            # terminates execution
 ```
 
 
 ## Access to memory (registers)
 
 ```
-address(int) sys:read 
-value address(int) sys:write
+write            ( :byte =value :int =address -- )
 ```
 
 ## Stack manipulation
 
 ```
-sys:dup 
-sys:pop
+dup 
+pop
 ```
 
 
@@ -179,7 +184,7 @@ The default value type, for example after adding or subtracting, is signed long,
 ## Misc
 
 ```
-sys:millis    ( -- :ulong )                       # millis since program start
+millis        ( -- :ulong )                       # millis since program start
 
 ee:read       ( :uint =addr -- :byte )
 ee:write      ( :byte =value :uint =addr -- )
@@ -187,6 +192,15 @@ ee:write      ( :byte =value :uint =addr -- )
 spi:begin     ( :bool =msbFirst :uint =addr -- )
 spi:transfer  ( :byte =value -- :byte )
 spi:end       ( -- )
+
+twi:begin     ( -- )
+twi:tr:begin  ( :long =addr -- )
+twi:write     ( :byte =value -- )
+twi:tr:end    ( -- :byte )
+twi:request   ( :uint =count -- )
+twi:read      ( -- :byte )
+
+
 
 ```
 
@@ -222,6 +236,15 @@ loop{ ...  <bool> break ... }
 The loop may contain maximum one break, and it must be located directly
 in the loop body, or it will not be recognized. 
 
+Also, to abort execution completely, use the abort function. In order to
+provide info about what failed, it may be nice to but a literal word on
+the stack, such as the name of the word:
+
+```
+: sanityCheck 1 2 > if{ 'sanityCheck abort } ;
+```
+
+
 # Types
 
 RForth has a type system. The data stack is based on 4 byte longs, which can be mapped
@@ -251,9 +274,9 @@ is now purely of informational value in the source code.
 
 ```
 : SetBit ( :byte =mask :int =addr -- )
-	addr sys:read 
+	addr read 
 		mask |
-			addr sys:write ;
+			addr write ;
 ```
 
 As with normal Forth, the order of the parameters inside ( ... ), from left to 

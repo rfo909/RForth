@@ -28,12 +28,13 @@ static const char NOT[] PROGMEM = "not";
 
 
 static const char SYS_RETURN[] PROGMEM = "sys:return";
-static const char SYS_READ[] PROGMEM = "sys:read";
-static const char SYS_WRITE[] PROGMEM = "sys:write";
+static const char SYS_READ[] PROGMEM = "read";
+static const char SYS_WRITE[] PROGMEM = "write";
 
-static const char SYS_DUP[] PROGMEM = "sys:dup";
-static const char SYS_POP[] PROGMEM = "sys:pop";
-static const char SYS_NEG[] PROGMEM = "sys:neg";
+
+static const char SYS_DUP[] PROGMEM = "dup";
+static const char SYS_POP[] PROGMEM = "pop";
+static const char SYS_NEG[] PROGMEM = "neg";
 
 static const char T_BYTE[] PROGMEM = ":byte";
 static const char T_INT[] PROGMEM = ":int";
@@ -41,7 +42,7 @@ static const char T_UINT[] PROGMEM = ":uint";
 static const char T_LONG[] PROGMEM = ":long";
 static const char T_ULONG[] PROGMEM = ":ulong";
 
-static const char SYS_MILLIS[] PROGMEM = "sys:millis";
+static const char SYS_MILLIS[] PROGMEM = "millis";
 static const char EE_READ[] PROGMEM = "ee:read";
 static const char EE_WRITE[] PROGMEM = "ee:write";
 static const char EE_LENGTH[] PROGMEM = "ee:length";
@@ -51,7 +52,7 @@ static const char _NULL[] PROGMEM = "null";
 static const char T_SYM[] PROGMEM = ":sym";
 static const char T_ADDR[] PROGMEM = ":addr";
 
-static const char SYS_ABORT[] PROGMEM = "sys:abort";
+static const char SYS_ABORT[] PROGMEM = "abort";
 static const char T_BOOL[] PROGMEM = ":bool";
 
 static const char SYS_ADDR[] PROGMEM = "sys:addr";

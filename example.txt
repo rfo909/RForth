@@ -10,19 +10,19 @@ const DDRB 0x24 ;
 
 		
 : Set! ( :byte =mask :uint =addr )
-	addr sys:read 
+	addr read 
 		mask |
-			addr sys:write
+			addr write
 ;
 
 : Clr! ( :byte =mask :uint =addr )
-	addr sys:read
+	addr read
 		mask ! &
-			addr sys:write
+			addr write
 ;		
 
 : wait ( :ulong =ms )
-	 sys:millis ms + =ms loop{ sys:millis ms > break  } ;
+	 millis ms + =ms loop{ millis ms > break  } ;
 	 
 const M b0010_0000 ;
 
@@ -60,7 +60,7 @@ const M b0010_0000 ;
 # Literal words
 
 : assert ( :sym =context :bool =ok -- )
-	ok not if{ context sys:abort }
+	ok not if{ context abort }
 ;
  
 : test1 'SANITY-CHECK 3 2 != assert ;

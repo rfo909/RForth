@@ -4,7 +4,7 @@
 # --
 
 
-const ADDR 0x50 
+: ADDR 0x50 ; 
 
 # Wait for device ready, by verifying twi:tr:end returns 0 
 : Ready! loop{ ADDR twi:tr:begin twi:tr:end 0 == break } ;
