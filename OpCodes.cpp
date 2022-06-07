@@ -66,8 +66,8 @@ static const char NOP[] PROGMEM = "nop";
 static const char TWI_BEGIN[] PROGMEM = "twi:begin";
 static const char TWI_END[] PROGMEM = "twi:end";
 static const char TWI_SETCLOCK[] PROGMEM = "twi:setclock";
-static const char TWI_BEGIN_TR[] PROGMEM = "twi:tr:begin";
-static const char TWI_END_TR[] PROGMEM = "twi:tr:end";
+static const char TWI_TR_BEGIN[] PROGMEM = "twi:tr:begin";
+static const char TWI_TR_END[] PROGMEM = "twi:tr:end";
 static const char TWI_WRITE[] PROGMEM = "twi:write";
 static const char TWI_REQUEST[] PROGMEM = "twi:request";
 static const char TWI_READ[] PROGMEM = "twi:read";
@@ -130,8 +130,8 @@ int lookupSymbol (char *sym) {
   if (!strcmp_P(sym,TWI_BEGIN)) return OP_TWI_BEGIN; 
   if (!strcmp_P(sym,TWI_END)) return OP_TWI_END; 
   if (!strcmp_P(sym,TWI_SETCLOCK)) return OP_TWI_SETCLOCK; 
-  if (!strcmp_P(sym,TWI_BEGIN_TR)) return OP_TWI_BEGIN_TR; 
-  if (!strcmp_P(sym,TWI_END_TR)) return OP_TWI_END_TR; 
+  if (!strcmp_P(sym,TWI_TR_BEGIN)) return OP_TWI_TR_BEGIN; 
+  if (!strcmp_P(sym,TWI_TR_END)) return OP_TWI_TR_END; 
   if (!strcmp_P(sym,TWI_WRITE)) return OP_TWI_WRITE; 
   if (!strcmp_P(sym,TWI_REQUEST)) return OP_TWI_REQUEST; 
   if (!strcmp_P(sym,TWI_READ)) return OP_TWI_READ;
@@ -399,12 +399,12 @@ void printOpName (const int opCode) {
       Serial.print(F("OP_TWI_SETCLOCK"));
       return;
     }
-    case OP_TWI_BEGIN_TR: {
-      Serial.print(F("OP_TWI_BEGIN_TR"));
+    case OP_TWI_TR_BEGIN: {
+      Serial.print(F("OP_TWI_TR_BEGIN"));
       return;
     }
-    case OP_TWI_END_TR: {
-      Serial.print(F("OP_TWI_END_TR"));
+    case OP_TWI_TR_END: {
+      Serial.print(F("OP_TWI_TR_END"));
       return;
     }
     case OP_TWI_WRITE: {

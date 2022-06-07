@@ -185,23 +185,32 @@ The default value type, for example after adding or subtracting, is signed long,
 
 ```
 millis        ( -- :ulong )                       # millis since program start
+```
 
+## AVR On-chip EEPROM
+
+```
 ee:read       ( :uint =addr -- :byte )
 ee:write      ( :byte =value :uint =addr -- )
+```
 
+## SPI
+
+```
 spi:begin     ( :bool =msbFirst :uint =addr -- )
 spi:transfer  ( :byte =value -- :byte )
 spi:end       ( -- )
+```
+## I2C / TWI
 
+```
 twi:begin     ( -- )
 twi:tr:begin  ( :long =addr -- )
 twi:write     ( :byte =value -- )
 twi:tr:end    ( -- :byte )
 twi:request   ( :uint =count -- )
 twi:read      ( -- :byte )
-
-
-
+twi:setclock  ( :ulong =freq -- )
 ```
 
 

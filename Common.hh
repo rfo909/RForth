@@ -25,7 +25,7 @@ typedef unsigned char byte;
   #define INPUT_TOKEN_COUNT   100
 #else
   #define INPUT_BUF_SIZE      150
-  #define INPUT_TOKEN_COUNT   80
+  #define INPUT_TOKEN_COUNT   60
 #endif
 
 
@@ -46,7 +46,7 @@ typedef unsigned char byte;
   #define PCDATA_SIZE       3500
 #else
   #define PSDATA_SIZE       150
-  #define PCDATA_SIZE       200
+  #define PCDATA_SIZE       250
 #endif
 
 // Storage.cpp
