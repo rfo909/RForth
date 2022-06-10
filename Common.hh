@@ -25,11 +25,11 @@ typedef unsigned char byte;
   #define INPUT_TOKEN_COUNT   100
 #else
   #define INPUT_BUF_SIZE      150
-  #define INPUT_TOKEN_COUNT   60
+  #define INPUT_TOKEN_COUNT   50
 #endif
 
 
-#define LOCAL_VARIABLE_COUNT    6
+#define LOCAL_VARIABLE_COUNT    4
 
 
 #ifdef ARDUINO_AVR_MEGA
@@ -37,7 +37,7 @@ typedef unsigned char byte;
   #define CALL_STACK_SIZE     20
 #else
   #define DATA_STACK_SIZE     10
-  #define CALL_STACK_SIZE     8
+  #define CALL_STACK_SIZE     10
 #endif
 
 // Storage.hh
@@ -46,7 +46,7 @@ typedef unsigned char byte;
   #define PCDATA_SIZE       3500
 #else
   #define PSDATA_SIZE       150
-  #define PCDATA_SIZE       250
+  #define PCDATA_SIZE       370
 #endif
 
 // Storage.cpp

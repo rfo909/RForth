@@ -87,6 +87,9 @@
 #define OP_TWI_REQUEST   67
 #define OP_TWI_READ      68
 
+#define OP_KEEP_ALIVE    69  // execution times out 3 seconds since start or last call to this
+
+
 
 
 

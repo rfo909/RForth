@@ -904,11 +904,16 @@ void showDataStack() {
   }
 }
 
+unsigned long executeStartTime = 0L;
+ 
 void executeCode (byte *initialCode) {
   csPush(initialCode);
 
   long executeOpCount = 0;
   unsigned long startTime = millis();
+  executeStartTime=millis();
+    // can be modified by OP_KEEP_ALIVE, otherwise ensures execution timeout
+    // after 10 seconds
 
   while (!csEmpty() && !abortCodeExecution) {
 
@@ -920,6 +925,12 @@ void executeCode (byte *initialCode) {
       break;
     }
     executeOpCount++;
+
+    if (millis() - executeStartTime > 10000L) {
+      Serial.println(F("Aborting after 10 seconds since executeStartTime"));
+      Serial.println(F("- to prevent this, call keep-alive function regularly"));
+      break;
+    }
   }
   unsigned long endTime = millis();
   Serial.print(endTime - startTime);
@@ -1677,8 +1688,12 @@ bool executeOneOp () {
         Wire.requestFrom(address, count);
         return true;
       }
-    case OP_TWI_READ : {
+      case OP_TWI_READ : {
         dsPush(Wire.read());
+        return true;
+      }
+      case OP_KEEP_ALIVE : {
+        executeStartTime=millis();
         return true;
       }
 

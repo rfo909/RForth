@@ -7,11 +7,6 @@
 # Reason for trying this is for fun and that Wire.h consumes 200+ bytes of SRAM.
 
 
-
-
-
-
-
 #######
 ### https://electronics.stackexchange.com/questions/309135/i2c-atmega328p-as-master-and-24lc256-as-slave
 ---------------------------
@@ -19,8 +14,6 @@
 : TWSR 0xb9 ;
 : TWDR 0xbb ;
 : TWCR 0xbc ;
-
-: ADDR		0x50 ;
 
 : START        0x08 ;
 : MS_ACK		0x18 ;       # master start ack
@@ -57,8 +50,8 @@
 
 # (3b) send device address
     
-: addr! 
-	ADDR 1 << WBIT | TWDR write 
+: addr! =addr
+	addr 1 << WBIT | TWDR write 
 	TWINT TWEN | TWCR write
 	;
 
@@ -67,7 +60,7 @@
 
 
 # (5a) Check TWI status register for ACK ok
-: ack? TWSR read 0xF8 & MS_ACK != if{ 'ack? abort } ;
+: addr? TWSR read 0xF8 & MS_ACK != if{ 'addr? abort } ;
 
 # (5b) Send data
 : data! =data 
@@ -80,7 +73,7 @@
 	
 	
 # (7a) Check TWI status for DATA_ACK
-: data? TWSR read 0xF8 & MD_ACK != if{ 'dack? abort } ;
+: data? TWSR read 0xF8 & MD_ACK != if{ 'data? abort } ;
 
 # (7b) Send STOP
 : stop! TWINT TWEN TWSTO | | TWCR write ;
@@ -90,11 +83,48 @@
 # Test
 : t1 
   start! w start?
-  addr! w ack?
+  0x50 addr! w addr?
   # --- EEPROM address
   0 data! w data? 
   0 data! w data?
   # --- write byte
-  43 data! w dack?    
+  43 data! w data?    
   stop!
   ;
+  
+# Wait for EEPROM to be ready
+# --
+: eewait
+	millis 5000 + =m
+	loop{ millis m > if{ 'eewait abort } 0x50 twi:tr:begin twi:tr:end 0 == break }
+;
+
+# Write 55 into address 0
+# --
+: t2 
+	twi:begin
+	eewait
+	0x50 twi:tr:begin
+	0 twi:write
+	0 twi:write
+	55 twi:write
+	twi:tr:end pop
+	twi:end
+;
+
+# Read address 0
+# --
+: t3
+	twi:begin
+	eewait
+	0x50 twi:tr:begin
+	0 twi:write
+	0 twi:write
+	twi:tr:end pop
+	0x50 1 twi:request
+	twi:read =result
+	twi:end
+	result
+;
+
+

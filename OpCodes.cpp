@@ -72,6 +72,7 @@ static const char TWI_WRITE[] PROGMEM = "twi:write";
 static const char TWI_REQUEST[] PROGMEM = "twi:request";
 static const char TWI_READ[] PROGMEM = "twi:read";
 
+static const char KEEP_ALIVE[] PROGMEM = "keep-alive";
 
 int lookupSymbol (char *sym) {
   if (!strcmp_P(sym,ADD)) return OP_ADD;
@@ -135,6 +136,8 @@ int lookupSymbol (char *sym) {
   if (!strcmp_P(sym,TWI_WRITE)) return OP_TWI_WRITE; 
   if (!strcmp_P(sym,TWI_REQUEST)) return OP_TWI_REQUEST; 
   if (!strcmp_P(sym,TWI_READ)) return OP_TWI_READ;
+
+  if (!strcmp_P(sym,KEEP_ALIVE)) return OP_KEEP_ALIVE;
 
   return -1; 
 }
@@ -417,6 +420,10 @@ void printOpName (const int opCode) {
     }
     case OP_TWI_READ: {
       Serial.print(F("OP_TWI_READ"));
+      return;
+    }
+    case OP_KEEP_ALIVE: {
+      Serial.print(F("OP_KEEP_ALIVE"));
       return;
     }
   }

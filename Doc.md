@@ -208,7 +208,7 @@ twi:begin     ( -- )
 twi:tr:begin  ( :long =addr -- )
 twi:write     ( :byte =value -- )
 twi:tr:end    ( -- :byte )
-twi:request   ( :uint =count -- )
+twi:request   ( :byte =addr :uint =count -- )
 twi:read      ( -- :byte )
 twi:setclock  ( :ulong =freq -- )
 ```
