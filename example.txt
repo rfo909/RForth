@@ -5,8 +5,27 @@
 # Note mask differs for 2560 vs 328p
 # b1000_0000 vs b0010_0000 (pin 13 in port B)
 
-const PORTB 0x25 ;
-const DDRB 0x24 ;
+#const PORTB 0x25 ;
+#const DDRB 0x24 ;
+
+
+# nano every (atmega4809)
+# pin 13 is PE2
+
+
+# 8.1 Peripheral Module Address Map
+
+# 0x0000 VPORTA Virtual Port A X X X X
+# 0x0004 VPORTB Virtual Port B X
+# 0x0008 VPORTC Virtual Port C X X X X
+# 0x000C VPORTD Virtual Port D X X X X
+# 0x0010 VPORTE Virtual Port E X X
+# 0x0014 VPORTF Virtual Port F
+
+# 16.4 Register Summary - PORTx
+
+: VPORTE.DIR  0x10 0 + ;
+: VPORTE.OUT  0x10 1 + ;
 
 		
 : Set! ( :byte =mask :uint =addr )
@@ -24,27 +43,28 @@ const DDRB 0x24 ;
 : wait ( :ulong =ms )
 	 millis ms + =ms loop{ millis ms > break  } ;
 	 
-const M b0010_0000 ;
+	 
+const M b0000_0100 ;
 
 
 : blink
 	M =m
-	m DDRB Set!
+	m VPORTE.DIR Set!
 	loop{
 		keep-alive
-		m PORTB Set! 500 wait
-		m PORTB Clr! 400 wait
+		m VPORTE.OUT Set! 500 wait
+		m VPORTE.OUT Clr! 400 wait
 	}
 ;
 
 
 : N-blink ( :int =n )
 	M =m
-	m DDRB Set!
+	m VPORTE.DIR Set!
 	loop{
 		keep-alive
-		m PORTB Set! 1000 wait
-		m PORTB Clr! 500 wait
+		m VPORTE.OUT Set! 500 wait
+		m VPORTE.OUT Clr! 400 wait
 		n 1 - =n
 		n 0 <= break
 	}
