@@ -42,6 +42,7 @@ const M b0010_0000 ;
 	M =m
 	m DDRB Set!
 	loop{
+		keep-alive
 		m PORTB Set! 1000 wait
 		m PORTB Clr! 500 wait
 		n 1 - =n

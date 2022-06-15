@@ -10,17 +10,26 @@ typedef unsigned char byte;
 
 #define NULL    0
 
-#ifndef ARDUINO_AVR_MEGA
-  #ifdef ARDUINO_AVR_MEGA2560
-    #define ARDUINO_AVR_MEGA
+// Will be using NANO_EVERY for RForth, as NANO CLASSIC is too small SRAM,
+// and MEGA 2560 isn't breadboard friendly.
+
+#ifndef AVR_NANO_EVERY
+  #ifdef ARDUINO_AVR_NANO_EVERY
+    #define AVR_NANO_EVERY
   #endif
 #endif
 
+//#ifndef AVR_NANO_EVERY
+//  #ifdef AVR_NANO_EVERY2560
+//    #define AVR_NANO_EVERY
+//  #endif
+//#endif
 
-#define VERSION "v0.2.7"
+
+#define VERSION "v0.2.8"
 
 
-#ifdef ARDUINO_AVR_MEGA
+#ifdef AVR_NANO_EVERY
   #define INPUT_BUF_SIZE      400
   #define INPUT_TOKEN_COUNT   100
 #else
@@ -32,7 +41,7 @@ typedef unsigned char byte;
 #define LOCAL_VARIABLE_COUNT    4
 
 
-#ifdef ARDUINO_AVR_MEGA
+#ifdef AVR_NANO_EVERY
   #define DATA_STACK_SIZE     30
   #define CALL_STACK_SIZE     20
 #else
@@ -41,16 +50,16 @@ typedef unsigned char byte;
 #endif
 
 // Storage.hh
-#ifdef ARDUINO_AVR_MEGA
-  #define PSDATA_SIZE       1500
-  #define PCDATA_SIZE       3500
+#ifdef AVR_NANO_EVERY
+  #define PSDATA_SIZE       1200
+  #define PCDATA_SIZE       2000
 #else
   #define PSDATA_SIZE       150
   #define PCDATA_SIZE       370
 #endif
 
 // Storage.cpp
-#ifdef ARDUINO_AVR_MEGA
+#ifdef AVR_NANO_EVERY
   #define MAP_SIZE          150
   #define CONST_MAP_SIZE    50
 #else

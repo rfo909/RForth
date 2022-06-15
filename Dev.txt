@@ -25,6 +25,10 @@ LOWER PRI
 	- extend if{ with }else{
 	
 	
+2022-06-16 v0.2.8 Nano Every
+----------------------------
+Updated Common.hh to use the 6 Kb of SRAM of Nano Every. 
+	
 
 2022-06-06 v0.2.7 TWI
 ---------------------

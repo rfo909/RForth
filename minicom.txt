@@ -2,7 +2,7 @@ Using minicom instead of Serial Monitor, each character is sent as it is pressed
 allows us to process input one token at a time (will rewrite the input handling and parser
 to save some 400 bytes of RAM!!!
 
-minicom -b 9600 -o -D /dev/ttyUSB0 
+minicom -b 9600 -o -D /dev/ttyACM0
 
 ^A E    # turn on local echo
 ^A Q    # quit
