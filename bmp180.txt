@@ -1,0 +1,79 @@
+# Interfacing bmp180 over i2c
+# Barometric pressure sensor
+# https://cdn-shop.adafruit.com/datasheets/BST-BMP180-DS000-09.pdf
+# --
+
+# Not tested
+
+
+: ADDR B1110111 ; 
+
+# Wait for device ready, by verifying twi:tr:end returns 0 
+
+: Ready! loop{ ADDR twi:tr:begin twi:tr:end 0 == break } ;
+
+: delay ( :uint =ms ) 
+	millis ms + =ms loop{ millis ms > break }
+	;
+
+: REG_CTRL 0xf4 ;
+: REG_OUT_MSB 0xF6 ;
+: REG_OUT_LSB 0xF7 ;
+: REG_ID 0xD0 ;     # should return 0x55
+: REG_RESET 0xE0 ;  # write 0xB6 to reset device
+
+# CTRL values
+
+: ctrlTemp 0x2E ;
+: ctrlP0 0x34 ;  # pressure over-sampling 0 - fastest
+: ctrlP1 0x74 ;
+: ctrlP2 0x84 ;
+: ctrlP3 0xF4 ;
+
+: reg-write ( :byte =reg :byte =val )
+	Ready!
+	ADDR twi:tr:begin
+	reg twi:write
+	val twi:write
+	twi:tr:end pop
+;
+
+: reg-read ( :byte =reg ) 
+	Ready!
+	ADDR twi:tr:begin
+	reg twi:write
+	twi:tr:end pop
+	ADDR 1 twi:request
+	twi:read
+;
+
+: soft-reset
+	REG_RESET 0xB6 reg-write
+;
+
+: verify-connect
+	REG_ID reg-read 0x55 ==
+;
+
+
+# The control register ctrl_meas sco-bit (start conversion)
+# remains 1 until conversion complete
+
+: wait-conversion
+	loop{
+		REG_CTRL reg-read 
+			B00100000 &
+				break
+	}
+;
+	
+
+: get-sample
+	REG_CTRL ctrlP0 reg-write
+	25 delay
+	
+	REG_OUT_MSB reg-read 8 <<
+		REG_OUT_LSB reg-read |
+;
+
+
