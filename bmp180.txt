@@ -1,12 +1,10 @@
 # Interfacing bmp180 over i2c
 # Barometric pressure sensor
+#
 # https://cdn-shop.adafruit.com/datasheets/BST-BMP180-DS000-09.pdf
 # --
 
-# Not tested
-
-
-: ADDR B1110111 ; 
+: ADDR 0x77 ; 
 
 # Wait for device ready, by verifying twi:tr:end returns 0 
 
@@ -16,21 +14,21 @@
 	millis ms + =ms loop{ millis ms > break }
 	;
 
-: REG_CTRL 0xf4 ;
-: REG_OUT_MSB 0xF6 ;
-: REG_OUT_LSB 0xF7 ;
-: REG_ID 0xD0 ;     # should return 0x55
-: REG_RESET 0xE0 ;  # write 0xB6 to reset device
+: CTRL 0xf4 ;
+: OUT_MSB 0xF6 ;
+: OUT_LSB 0xF7 ;
+: ID 0xD0 ;     # should return 0x55
+: RESET 0xE0 ;  # write 0xB6 to reset device
 
-# CTRL values
+# CTRL mode values
 
-: ctrlTemp 0x2E ;
-: ctrlP0 0x34 ;  # pressure over-sampling 0 - fastest
-: ctrlP1 0x74 ;
-: ctrlP2 0x84 ;
-: ctrlP3 0xF4 ;
+: T 0x2E ;  # temp
+: P0 0x34 ;  # pressure over-sampling 0 - fastest
+: P1 0x74 ;
+: P2 0x84 ;
+: P3 0xF4 ;
 
-: reg-write ( :byte =reg :byte =val )
+: W ( :byte =reg :byte =val )
 	Ready!
 	ADDR twi:tr:begin
 	reg twi:write
@@ -38,7 +36,7 @@
 	twi:tr:end pop
 ;
 
-: reg-read ( :byte =reg ) 
+: R ( :byte =reg ) 
 	Ready!
 	ADDR twi:tr:begin
 	reg twi:write
@@ -47,33 +45,61 @@
 	twi:read
 ;
 
-: soft-reset
-	REG_RESET 0xB6 reg-write
+: reset
+	RESET 0xB6 W
 ;
 
-: verify-connect
-	REG_ID reg-read 0x55 ==
+# Verify connection
+
+: check
+	twi:begin
+	ID R 0x55 ==
+	twi:end
 ;
 
 
 # The control register ctrl_meas sco-bit (start conversion)
 # remains 1 until conversion complete
+#
+# Does not seem to work!
 
-: wait-conversion
+: wc
 	loop{
-		REG_CTRL reg-read 
+		CTRL R 
 			B00100000 &
 				break
 	}
 ;
 	
-
-: get-sample
-	REG_CTRL ctrlP0 reg-write
+# Get uncalibrated temp
+: T!
+	twi:begin
+	CTRL T W
+	#wc
 	25 delay
-	
-	REG_OUT_MSB reg-read 8 <<
-		REG_OUT_LSB reg-read |
-;
+	OUT_MSB R 8 <<
+		OUT_LSB R |
+ 	=result
+	twi:end
+	result
+	;
+
+
+
+# Get uncalibrated pressure
+: P!
+	twi:begin
+	CTRL P3 W
+	#wc
+	25 delay
+	OUT_MSB R 8 <<
+		OUT_LSB R |
+ 	=result
+	twi:end
+	result
+	;
+		
+# Calculating millibars
+
 
 
