@@ -189,12 +189,15 @@ void csPush (byte *theCode) {
     csNext++;
     f->code=theCode;
     f->pc=0;
-    for (register int i=0; i<LOCAL_VARIABLE_COUNT; i++) {
+    // The compiler only uses a local variable slot after it has been
+    // assigned the first time, so no need to null them
+ /*   for (register int i=0; i<LOCAL_VARIABLE_COUNT; i++) {
       DStackValue *ptr=f->localVars;
       ptr=ptr+i;
       ptr->type=DS_TYPE_LONG;
       ptr->val=0L;
     }
+*/
   }
   if (csNext > csMaxStackSize) csMaxStackSize=csNext;
 }

@@ -70,11 +70,24 @@ const M b0000_0100 ;
 	}
 ;
 
-# Before const
-# ps: 37 / pc: 117
 
-# After const
-# ps: 58 / pc: 103
+: test 10000 =a loop{ a 1 - =a a 0 == break } ;
+
+
+: xx ;
+: test2 10000 =a loop{ a 1 - =a a 0 == break xx } ;
+ 
+# 5 N-blink
+# 4510 ms #op=319333 
+
+
+# test
+# 1536 ms, #op=110006
+
+# test2
+# 2019 ms #op=140003
+
+
 
 
 
