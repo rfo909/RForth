@@ -59,7 +59,7 @@ static void reset() {
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(38400);
   while (!Serial) ; // wait for connect
   Serial.setTimeout(10);
 
@@ -857,12 +857,25 @@ void displayStackValue (DStackValue *x) {
           Serial.print(id);
         }
         Serial.print(F(" atyp="));
+        
         Serial.print(atyp);
+        if (atyp==ATYP_SYMBOL) {
+           Serial.print(" SYMBOL");
+        } else 
+        if (atyp==ATYP_BLOB) {
+          Serial.print(F(" BLOB"));
+        } else 
+        if (atyp==ATYP_CONS) {
+          Serial.print(F(" CONS"));
+        } else {
+          Serial.print(F(" ???"));
+        }
 
         if (aloc == ALOC_OC_STR && atyp == ATYP_SYMBOL) {
-          Serial.print(F(" SYMBOL: "));
+          Serial.print(F(" (ps) : "));
           Serial.print(psGetStringPointer(offset));
         }
+
         Serial.println();
         return;
       }
@@ -1713,7 +1726,7 @@ bool executeOneOp () {
 // symbol \0
 // symbol \0
 // 0
-// int7bit (high)
+// int7bit (high)  (strpos)
 // int7bit (low)
 // instructions ... EOF
 // 0

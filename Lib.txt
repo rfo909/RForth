@@ -30,6 +30,9 @@ const aloc:oc:ee		    4 ;
 ;
 	
 const atyp:symbol		1 ;
-const atyp:code			2 ;
+const atyp:blob			2 ;
+const atyp:cons         3 ;
+
+
 
 

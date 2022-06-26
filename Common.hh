@@ -77,9 +77,10 @@ typedef unsigned char byte;
 #define ALOC_OC_PROGMEM   0x03   // static progmem binary array PROGMEM_DATA
 #define ALOC_OC_EEPROM    0x04
 
-// ADDR types (4 bits, up to 0x0F
+// ADDR types (4 bits, up to 0x0F)
 #define ATYP_SYMBOL     0x01
-#define ATYP_BLOB       0x02  // length encoded as three bytes in start
+#define ATYP_BLOB       0x02  // length encoded as single byte in start, data length is P_CODE_MAX_SIZE
+#define ATYP_CONS       0x03  // cons cell
 
 #define ALOC_EXT_BIT    B00001000
 
