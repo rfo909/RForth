@@ -339,7 +339,7 @@ def _CB_bytes				@{ mul 1 256 }
 
 :CREATE						# Calls 'DE_create after obtaining 'NextWord 
 	'NextWord CALL 'DE_create CALL
-	DROP
+	DROP								# drop return value from 'DE_create
 	RETURN
 
 :NextWord 					# ( -- wordRef )
