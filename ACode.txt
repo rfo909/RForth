@@ -84,7 +84,7 @@ def _'TRUE		LITERAL4  0xff 0xff 0xff 0xff
 #		code				Ref			2
 #		tempStackBase		byte		1
 #		tempStackNext		byte		1
-#		pc 					byte		1
+#		pc 					Ref			2
 #	]
 
 def _'CSF.code
@@ -94,7 +94,7 @@ def _'CSF.pc				LITERAL1 4 ADD
 
 # Sizes
 
-def _*CSF.n?				5
+def _*CSF.n?				6
 def _'CSF.n?				LITERAL1 _*CSF.n?		# Size of call stack frame, to navigate the call stack
 
 def _*CS_maxDepth			30
@@ -145,6 +145,22 @@ def INCR					LITERAL1 1 ADD
 def DECR					LITERAL1 1 SUBTRACT
 def INCR2					LITERAL1 2 ADD
 
+
+
+					
+# local variables used in defines
+ 
+def =$a		'SYM_a SETLOCAL
+def =$b		'SYM_b SETLOCAL
+def =$c		'SYM_c SETLOCAL
+def =$d		'SYM_d SETLOCAL
+
+def $a		'SYM_a GETLOCAL
+def $b		'SYM_b GETLOCAL
+def $c		'SYM_c GETLOCAL
+def $d		'SYM_d GETLOCAL
+
+
 # Op-codes for generating code
 
 def OP:LITERAL1				99
@@ -193,6 +209,7 @@ def OP:GETLOCAL				99
 
 :HERE               'END_MARKER			# two byte Ref to next free byte on heap
 :HERE_SHADOW		'END_MARKER			# used by main loop, to rollback heap if panic
+
 
 
 
@@ -514,7 +531,7 @@ def Regular		0
 
 
 :MainSetup   				# Call first time after boot or after hard Reset
-
+	
 	# Set HERE to byte following this memory map
 	
 	'END_MARKER 'HERE WRITE2
@@ -581,12 +598,16 @@ def Regular		0
 		'xML_SymPurgeOk
 	
 	:xML_Here_ok
-
-	# The actual ain loop
+	
+	# The actual main loop
 	
 	:xML_Loop
-		# Invoke one word at a time
-		'NextWord CALL 'CompileWord CALL
+		# Locate word, then compile it
+		'NextWord CALL 
+			'CompileWord CALL
+		
+		# Run code in CompileBuf
+		'CompileBuf CALL
 		
 		# If there was a panic, we never reach this line, so getting here means
 		# the word was ok. We commit the heap changes before repeating the loop
@@ -608,6 +629,10 @@ def Regular		0
 	*SYM_5					NEXT	
 	*SYM_6					NEXT	
 	*SYM_7					NEXT	
+	*SYM_a					NEXT	
+	*SYM_b					NEXT	
+	*SYM_c					NEXT	
+	*SYM_d					NEXT	
 	
 	*SYM_COLON				NEXT
 	*SYM_SEMICOLON			NEXT
@@ -636,6 +661,10 @@ def Regular		0
 :SYM_5 %5 0
 :SYM_6 %6 0
 :SYM_7 %7 0
+:SYM_a %a 0
+:SYM_b %b 0
+:SYM_c %c 0
+:SYM_d %d 0
 :SYM_COLON %: 0
 :SYM_SEMICOLON %; 0
 :SYM_IMMEDIATE %I %M %M %E %D %I %A %T %E 0

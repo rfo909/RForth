@@ -1,0 +1,154 @@
+:JMP
+	Ref addr = dsPopRef();
+	
+	Ref currCSF = getCurrCSF();   // may create if none found
+	writeRef(currCSF + CSF_pc, addr);
+	
+:COND_JMP
+	Ref addr = dsPopRef();
+	Long cond = dsPopValue();
+	if (cond != null) {
+		Ref currCSF = getCurrCSF();   // may create if none found
+		writeRef(currCSF + CSF_pc, addr);
+	}
+
+:CALL
+	Ref addr=dsPopRef();
+	
+	Ref currCSF = getCurrCSF();
+	
+	byte nextFrame = readByte(CS_NEXT_FRAME);
+	writeByte(CS_NEXT_FRAME, nextFrame+1);
+	
+	Ref newCSF = getCurrCSF();
+	byte tsNext = readByte(currCSF + CSF_tempStackNext);
+	
+	writeRef(newCSF + CSF_code, addr);
+	writeByte(newCSF + CSF_tempStackBase, tsNext);
+	writeByte(newCSF + CSF_tempStackNext, tsNext);
+	writeRef(newCSF + CSF_pc, 0);
+	
+:RETURN
+	byte x = readByte(CS_NEXT_FRAME);
+	writeByte(CS_NEXT_FRAME, x-1);
+	
+:PANIC
+	Ref word = dsPopRef();
+	....
+	
+:HEAP_MAX
+:TIBs
+:TIBr
+:TIBr_ADD
+:TIBs_ADD
+:TIBr_BACK
+:TIBs_FWD
+:TIBW
+:EMIT
+:EMITWORD
+:ADD
+	Long b=dsPopValue();
+	Long a=dsPopValue();
+	dsPushValue(a+b);
+	
+:SUBTRACT
+	Long b=dsPopValue();
+	Long a=dsPopValue();
+	dsPushValue(a-b);
+
+:MUL
+	Long b=dsPopValue();
+	Long a=dsPopValue();
+	dsPushValue(a*b);
+:DIV
+	Long b=dsPopValue();
+	Long a=dsPopValue();
+	dsPushValue(a/b);
+
+:MOD
+	Long b=dsPopValue();
+	Long a=dsPopValue();
+	dsPushValue(a%b);
+
+:RIGHTSHIFT
+	Long n=dsPopValue();
+	Long val=dsPopValue();
+	dsPushValue(val >> n);
+
+:LEFTSHIFT
+	Long n=dsPopValue();
+	Long val=dsPopValue();
+	dsPushValue(val << n);
+
+:AND
+	Long b=dsPopValue();
+	Long a=dsPopValue();
+	if (a & b != 0) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+
+:OR
+	Long b=dsPopValue();
+	Long a=dsPopValue();
+	if (a | b != 0) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+
+:NOT
+	Long val=dsPopValue();
+	dsPushValue( ~val );
+	
+:EQ
+	Long b=dsPopValue();
+	Long a=dsPopValue();
+	if (a == b) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+
+:NE
+	Long b=dsPopValue();
+	Long a=dsPopValue();
+	if (a != b) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+	
+:GT
+	Long b=dsPopValue();
+	Long a=dsPopValue();
+	if (a > b) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+	
+:LT
+	Long b=dsPopValue();
+	Long a=dsPopValue();
+	if (a < b) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+
+:GE
+	Long b=dsPopValue();
+	Long a=dsPopValue();
+	if (a >= b) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+
+:LE
+	Long b=dsPopValue();
+	Long a=dsPopValue();
+	if (a <= b) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+
+:DROP
+	dsPopValue();
+	
+:SETLOCAL
+:GETLOCAL
+:WORD
+:WRITE1
+:WRITE2
+:WRITE4
+:READ1
+:READ2
+:READ4
+:READ1g
+:WRITE1g
+:LITERAL1
+:LITERAL2
+:LITERAL4
+
+:CHECK_PARSE
+	Ref symRef=dsPopRef();
+	char *str = safeGetString(symRef);
+	if (checkParseInt(str)) ds.pushValue(F_TRUE); else ds.pushValue(F_FALSE);
+	
+:PARSE
+	Ref symRef=dsPopRef();
+	char *str = safeGetString(symRef);
+	dsPushValue(parseInt(str));
+

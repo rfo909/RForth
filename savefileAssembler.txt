@@ -53,16 +53,19 @@
 		| ->line println(line)
 	}
 	
+	self.lineCounter=0
 	self.Main=Lambda{
 		P(1)=>lines
 		
 		words=self.Words(lines)
 		
-		Lib:Header("defs")
-		Util:ShowDict(self.defs,true)
+		#Lib:Header("defs")
+		#Util:ShowDict(self.defs,true)
 		
-		Lib:Header("PASS 1")
-		words->word
+		#Lib:Header("PASS 1")
+		lines->line
+			self.lineCounter = self.lineCounter+1
+			self.Words(line)->word
 			self.processWord(word,true)
 		|
 
@@ -70,9 +73,12 @@
 		self.buf=List
 		self.comments=Dict
 		self.tagComments=Dict
+		self.lineCounter=0
 	
-		Lib:Header("PASS 2")
-		words->word
+		#Lib:Header("PASS 2")
+		lines->line
+			self.lineCounter = self.lineCounter+1
+			self.Words(line)->word
 			self.processWord(word,false)
 	}
 	
@@ -185,7 +191,15 @@
 		if (word.startsWith(":")) {
 			tag=word.after(":")
 			val=self.here
-			error (self.tags.has(tag) && self.tags.get(tag) != val, "Tag redefined: " + tag)
+			if (self.tags.has(tag) && self.tags.get(tag) != val) { 
+				error("Tag redefined: " 
+				+ tag 
+				+ " from " 
+				+ self.tags.get(tag)
+				+ " to " 
+				+ val
+				)
+			}
 			self.tags.set(tag,val)
 		} else
 		if (word.startsWith("*")) {   # inline tag as two bytes
@@ -210,6 +224,7 @@
 		} else
 		if (self.defs.has(word)) {
 			w=self.defs.get(word).trim
+			w=w.replace("@@",""+self.lineCounter)
 			if (w != "") Inner {
 				w.trim.split->w2
 					self.processWord(w2.trim,acceptMissingTags)
@@ -306,36 +321,22 @@
 /Compile
 
 
-# Show unique op-codes
-# --
-	Compile ->x
-		reject(getType(x)=="int")
-		out(x)
-	| _.unique.sort
-/OpCodes
-
-
-
-# Word list
-# --
-	P(1,Example)=>lines
-/Words	
-
-
 
 
 
 # Reserved words 
 # --
-<<<< EOF
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< EOF
 
 # Control flow
 
 JMP
 COND_JMP
-
 CALL # ( ref -- )		# push frame on call stack (CS)
 RETURN					# pop frame off call stack
+
+
+
 
 
 PANIC	# reset input buffer, clear data- and call stacks, invoke :MainLoop   
@@ -441,17 +442,20 @@ PARSE  # ( word -- number )  - recognizes decimal, 0x0a, b1010
 
 
 
->>>> EOF
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> EOF
 	->line 
-		s=line.before("#")
-		reject(s.trim=="")
+		s=line.before("#").trim
+		reject(s=="")
 		out(s.split.first.trim)
-	| _.sort
 /ReservedWords
 
 
 
 
 
-
-
+ReservedWords->w 
+	println(
+		":" + 
+		w.replace("+","_ADD").replace("-","_SUB").replace("<","_BACK").replace(">","_FWD") 
+	)
+/RW
