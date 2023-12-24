@@ -1,0 +1,564 @@
+# Tags
+# ####
+
+#  :xxx = create tag
+#  'xxx = insert tag address as LITERAL
+#  *xxx = insert tag address as two bytes
+
+# ASCII strings
+# #############
+
+#   %t %r %u %e 0
+
+# Macros
+# ######
+
+# defines are named _' for literal (code) and _* for inline bytes
+
+
+def _'CELL 			LITERAL1 2		# defines cell size (Ref size) = 2
+def _'REF_NULL		LITERAL1 0
+def _*REF_NULL		0 0
+
+def _'ASCII_SPACE	LITERAL1 32
+def _*ASCII_SPACE	32
+def _'ZERO			LITERAL1 0
+
+# Dictionary entry (DE)
+
+def _'DE.name
+def _'DE.code  LITERAL1 2 ADD
+def _'DE.flags LITERAL1 4 ADD
+def _'DE.next  LITERAL1 5 ADD
+
+def _'DE.n?    LITERAL1 7 
+
+# Status byte for DE's
+
+def _'DE_Status_bit_immediate			LITERAL1 0x01
+
+# Boolean constants
+
+def _'FALSE		LITERAL1 0
+def _'TRUE		LITERAL4  0xff 0xff 0xff 0xff
+
+
+# Op-codes for generating code
+
+def OP:LITERAL1				99
+def OP:LITERAL2				99
+def OP:LITERAL4				99
+def OP:CALL					99
+def OP:RETURN				99
+
+
+# Call Stack Frame (CSF)
+# ######################
+
+
+#	[ 
+#		code				Ref			2
+#		tempStackBase		byte		1
+#		tempStackNext		byte		1
+#		pc 					byte		1
+#	]
+
+def _'CSF.code
+def _'CSF.tempStackBase		LITERAL1 2 ADD
+def _'CSF.tempStackNext		LITERAL1 3 ADD
+def _'CSF.pc				LITERAL1 4 ADD
+
+# CS size
+
+def _*CSF.n?				5
+def _'CSF.n?				LITERAL1 _*CSF.n?		# Size of call stack frame, to navigate the call stack
+def _*CS_maxDepth			30
+def _'CS_maxDepth			LITERAL1 _*CS_maxDepth		# max call depth	
+
+# TS size
+
+def _*TS_maxDepth			100
+def _'TS_maxDepth			LITERAL1 _*TS_maxDepth   # number of Temp Stack Frames (TSF)
+def _*TSF.n?				6
+def _'TSF.n?				LITERAL1 _*TSF.n?
+
+
+def =$0		'SYM_0 SETLOCAL
+def =$1		'SYM_1 SETLOCAL
+def =$2		'SYM_2 SETLOCAL
+def =$3		'SYM_3 SETLOCAL
+def =$4		'SYM_4 SETLOCAL
+def =$5		'SYM_5 SETLOCAL
+def =$6		'SYM_6 SETLOCAL
+def =$7		'SYM_7 SETLOCAL
+
+def $0		'SYM_0 GETLOCAL
+def $1		'SYM_1 GETLOCAL
+def $2		'SYM_2 GETLOCAL
+def $3		'SYM_3 GETLOCAL
+def $4		'SYM_4 GETLOCAL
+def $5		'SYM_5 GETLOCAL
+def $6		'SYM_6 GETLOCAL
+def $7		'SYM_7 GETLOCAL
+
+
+# Memory layout
+# ###############################################################################
+# From this point we create tags and refer them, in order to do 
+# function calls.
+# ###############################################################################
+
+0 				 # this position is the null-pointer address (not used)
+
+:MAIN_SETUP			*MainSetup			# call this first
+:MAIN_LOOP			*MainLoop			# then this, also after runtime PANIC
+
+# Call stack
+
+:CS_BASE_REF		*CS_DATA			# call stack base on heap
+:CS_NEXT_FRAME		0					# index of next callstack frame (0-based)
+
+# Symbol stack
+
+:SYM_TOP_REF		*SYM_Cons_List 		# symbol table has initial hard coded content
+
+# Temp stack
+
+:TS_BASE_REF		*TEMP_STACK_DATA	# a 6 bytes wide stack [ nameRef 2 value 4 ]
+:TS_NEXT_FRAME		0					# single byte
+
+
+
+
+# HERE (heap next free pointer)
+
+:HERE               _*REF_NULL			# two byte Ref to next free byte on heap
+:HERE_SHADOW		_*REF_NULL			# rollback if
+
+:DICT_TOP			_*REF_NULL			# ref to first CONS
+
+
+
+# Forth primitives
+# --
+
+
+
+:Malloc 					# n -- ptr # Sets all allocated bytes to zero
+	=$0  # n
+	'HERE READ2 =$1  			# ptr
+	$1 $0 ADD 'HERE WRITE2 		# HERE = HERE + n
+	
+	# zero all bytes in allocated memory
+	# --
+	$1 =$2                      # copy pointer, for loop
+	:xMalloc_clear_loop
+		$2 'HERE READ2 EQ 'xMalloc_clear_end COND_JMP
+		LITERAL1 0 $2 WRITE1
+		$2 LITERAL1 ADD =$2
+		'xMalloc_clear_loop JMP
+	:xMalloc_clear_end
+	$1							# return ptr
+	RETURN
+	
+:Memcpy 					# ( targetRef srcRef count -- )
+	=$1 # count
+	=$2 # srcRef
+	=$3 # targetRef
+	
+	:xMemcpy_loop
+		$1 LITERAL1 0 LE 'xMemcpy_complete COND_JMP   # if count==0 goto complete
+		$2 $1 ADD READ1  # source byte
+			$3 $1 ADD WRITE1    # target write
+		$1 LITERAL1 1 SUBTRACT =$1
+		'xMemcpy_loop JMP
+	:xMemcpy_complete
+	RETURN
+	
+
+
+	
+:HereCommit					# update HERE_SHADOW to HERE
+	'HERE READ2 'HERE_SHADOW WRITE2
+	RETURN
+	
+
+:CSF_current 				# returns pointer to current CSF (call stack frame)
+	'CS_NEXT_FRAME READ1 
+		LITERAL1 0 EQ 
+			'xCSFc_underflow COND_JMP
+	'CS_BASE_REF READ2 
+		'CS_NEXT_FRAME READ1 _'CSF.n? MUL 
+			ADD
+	RETURN 
+	
+	:xCSFc_underflow
+	'SYM_CSF_Underflow 'PANIC CALL
+	
+	
+# ----------------------------------------------
+# Statically allocated buffers
+# ----------------------------------------------
+
+def _CS_bytes				@{ mul _*CSF.n? _*CS_maxDepth }
+def _TS_bytes				@{ mul _*TSF.n? _*TS_maxDepth }
+def _CB_bytes				@{ mul 1 256 }
+
+:CS_DATA					_CS_bytes			# call stack data
+
+:TEMP_STACK_DATA			_TS_bytes			# temp stack data
+		
+:CompileBuf  				_CB_bytes			# Compile buffer (256 bytes)
+
+
+
+:CompileBufPos				0					# Single byte
+	
+:OutByte					# (byte -- ) write to CompileBuf
+	=$0								# byte
+	'CompileBufPos READ1 =$1		# 
+	$1 LITERAL1 254 GE 'xOutByte_fail COND_JMP
+	
+	$0 'CompileBuf $1 ADD WRITE1
+	$1 INCR 'CompileBufPos WRITE1
+	RETURN
+
+	:xOutByte_fail
+	'SYM_OutByte-Overflow 'PANIC CALL
+	RETURN
+	
+:OutRef 					# ( Ref -- ) write to CompileBuf
+	=$0
+	OP:LITERAL2 'OutByte CALL
+	$0 LITERAL1 8 RIGHTSHIFT 'OutByte CALL
+	$0 'OutByte CALL
+	RETURN	
+
+:FirstNonSpace 				# move TIBs to first non-space character
+	:xFNS_loop
+		TIBs _'ASCII_SPACE NE COND_JMP 'xFNS_ok 
+		TIBs+
+		JMP 'xFNS_loop 
+	:xFNS_ok
+	RETURN
+	
+:FirstSpace 				# Move TIBr ahead to first space character
+	TIBr<
+	:xFS_loop
+		TIBr _'ASCII_SPACE EQ 'xFS_ok COND_JMP
+		TIBr+
+		JMP 'xFS_loop
+	:xFS_ok
+	RETURN
+	
+
+:DE_create  				# name -- dictEntry # Create DE and push on dictionary stack
+
+	=$0													# $0 = name
+	_'DE.n? 'Malloc CALL =$1								# $1 = ptr to DE
+	$0 $1 _'DE.name WRITE2								# DE.name=name
+	'DICT_TOP READ2 $1 _'DE.next WRITE2					# DE.next=Dict_top
+	$1 'DICT_TOP WRITE2									# Dict_top=DE
+	$1													# return ptr
+	RETURN
+
+
+:CREATE						# Calls 'DE_create after obtaining 'NextWord 
+	'NextWord CALL 'DE_create CALL
+	DROP
+	RETURN
+
+:NextWord 					# ( -- wordRef )
+	'FirstNonSpace CALL					# set TIBs
+	'FirstSpace CALL					# advance TIBr
+	TIBW =$0							# create word from TIBs up to byte before TIBr
+	TIBs>								# advance TIBs to TIBr
+	$0									# return word
+	RETURN
+
+:COLON						# The colon compiler
+	# Reset CompileBuf
+	LITERAL1 0 'CompileBufPos WRITE1
+	
+	'NextWord CALL 'DE_create CALL =$1	# dictionary entry
+	
+	:xCOLON_LOOP
+		'FirstNonSpace CALL
+		'FirstSpace CALL
+		TIBW =$2						# next word
+		
+		$2 'SYM_SEMICOLON EQ 'xCOLON_end COND_JMP		# if semicolon, end loop
+		$2 'CompileWord CALL
+	:xCOLON_end
+		OP:RETURN 'OutByte CALL
+		RETURN
+
+
+:Immediate					# Set immediate flag on newest dictionary entry
+	'DICT_TOP READ2 =$1					# ptr to topmost DE
+	$1 LITERAL1 0 NE 'xImmediate_ok COND_JMP
+		'SYM_Immediate_no_word 'PANIC CALL
+	:xImmediate_ok
+	
+	$1 _'DE.flags READ1 =$2				# flags byte
+	$2 _'DE_Status_bit_immediate OR =$2 # update flags value
+	$2 $1 _'DE.flags WRITE1				# write updated flags to DE.flags
+	RETURN	
+	
+	
+
+
+
+:CompileWord 					# ( word -- )
+	=$0
+	$0 'DictLookup CALL =$1				# $1 = DE or NULL
+	$1 _'REF_NULL EQ 'xCOMP_notInDict COND_JMP
+
+		# Dictionary word found
+			
+		$1 _'DE.code =$2				# code pointer
+
+		$1 _'DE.flags READ1 _'DE_Status_bit_immediate OR NOT 'xCOMP_regular COND_JMP
+
+			# immediate word, call it right now
+
+			$2 CALL
+			RETURN
+
+		:xCOMP_regular
+
+			# Generate code for call
+			
+			$2 'OutRef CALL
+			OP:CALL 'OutByte CALL
+		
+		:xCOMP_notInDict
+
+			# number formats
+			$0 PARSE 					# will panic if not a number
+				'CompileNumber CALL      
+			RETURN
+
+
+:CompileNumber 				# ( number -- )  
+	=$0							# the number
+	$0 LITERAL4 0xff 0xff 0x00 0x00 AND 'xCN_4 COND_JMP
+	$0 LITERAL4 0x00 0x00 0xff 0x00 AND 'xCN_2 COND_JMP
+		# 1 byte literal
+		OP:LITERAL1 'OutByte CALL
+		$0 'OutByte CALL
+		RETURN
+	:xCN_2
+		# 2 byte literal
+		OP:LITERAL2 'OutByte CALL
+		$0 LITERAL1 8 RIGHTSHIFT 'OutByte CALL
+		$0 'OutByte CALL
+		RETURN
+	:xCN_4
+		# 4 byte literal
+		OP:LITERAL4 'OutByte CALL
+		$0 LITERAL1 24 RIGHTSHIFT 'OutByte CALL
+		$0 LITERAL1 16 RIGHTSHIFT 'OutByte CALL	
+		$0 LITERAL1 8 RIGHTSHIFT 'OutByte CALL
+		$0 'OutByte CALL
+		RETURN
+
+
+
+:IsInt						# ( word -- bool )
+	CHECK_PARSE
+	RETURN
+	
+
+:ParseInt					# ( word -- number )		
+	PARSE												# OP:PARSE may PANIC - check with IsInt first if in doubt
+	RETURN
+	
+
+	
+:DictLookup    				# ( wordRef -- ref ) returns _'REF_NULL or pointer to dict entry
+	=$0  												# name we are looking for
+	'DICT_TOP READ2 =$1 								# ptr = top dictionary entry (or null) 
+	:xDL_loop
+		$1 _'REF_NULL EQ 'xDL_fail COND_JMP				# if ptr == REF_NULL goto 'DL_fail
+		$1 _'DE.name READ2 $0 EQ 'xDL_ok COND_JMP		# if $0.name == name GOTO 'DL_ok
+		$1 _'DE.next READ2 =$1							# ptr = ptr.next
+		'xDL_loop JMP									# repeat
+	:xDL_fail
+		_'REF_NULL
+		RETURN
+	:xDL_ok
+		$1												# return ptr (to dictionary entry)
+		RETURN
+		
+
+
+
+	
+:PANIC        				# ( errorSymbol -- )
+	
+	RESET						
+		# reset input buffer
+		# clear data- and call stack
+		# then call :MainLoop
+		
+		
+:DictAdd  					# ( name flags code -- )
+	=$2										# code					    
+	=$1										# flags
+	=$0										# name
+	$0 'DE_create CALL =$7					# ptr to DE
+	$1 $7 _'DE.flags WRITE1					# DE.flags=flags
+	$2 $7 _'DE.code WRITE2					# DE.code=code
+	RETURN 	
+
+
+def Immediate	_'DE_Status_bit_immediate
+def Regular		0
+
+
+
+:MainSetup   				# Call first time after boot or after hard Reset
+
+	# Set HERE to byte following this memory map
+	
+	'END_MARKER 'HERE WRITE2
+	'HereCommit CALL				# Update HERE_SHADOW to match HERE
+
+	
+	# Initial dictionary with words that can be called from Forth
+	# mainly during compilation, hence immediate
+	
+	# name				Flags				Code			
+	# -------------------------------------------------
+	'SYM_COLON 			Immediate 			'COLON			'DictAdd CALL
+	'SYM_IMMEDIATE		Immediate			'Immediate		'DictAdd CALL
+	'SYM_HERE			Regular				'HERE			'DictAdd CALL
+	'SYM_MALLOC			Regular				'Malloc			'DictAdd CALL
+	'SYM_CREATE			Immediate			'CREATE			'DictAdd CALL
+	'SYM_DictLookup		Regular				'DictLookup		'DictAdd CALL
+	'SYM_OutByte		Regular				'OutByte		'DictAdd CALL
+	'SYM_OutRef			Regular				'OutRef			'DictAdd CALL
+	'SYM_Compile		Immediate			'CompileWord	'DictAdd CALL
+	'SYM_NextWord		Regular				'NextWord		'DictAdd CALL
+	'SYM_IsInt			Regular				'IsInt			'DictAdd CALL
+	'SYM_ParseInt		Regular				'ParseInt		'DictAdd CALL
+	'SYM_PANIC			Regular				'PANIC			'DictAdd CALL	
+
+	# Commit the memory allocated for the above
+	
+	'HereCommit CALL
+	
+	RETURN
+
+# Main loop is called after MainSetup, and again on PANIC, as it contains
+# code to clean up after a panic (when HERE_SHADOW < HERE)
+
+:MainLoop
+	# If HERE_SHADOW != HERE, then we have arrived here
+	# as a restart after a PANIC. 
+
+	'HERE_SHADOW READ2 =$0										# $0 = HERE-shadow
+	'HERE READ2 =$1												# $1 = HERE
+	
+	$1 $0 EQ 'xML_Here_ok COND_JMP								# if HERE == HERE-shadow, goto ok
+		# remove entries from dictionary until DE ref 
+		# smaller than HERE-shadow, which means they were
+		# allocated by code that now has panicked
+		
+		'DICT_TOP READ2 =$2										# $2 = DE pointer
+		:xML_DictPurge
+			$2 $0 LT 'xML_DictPurgeOk COND_JMP					# includes NULL
+			$2 _'DE.next READ2 =$2								# ptr=ptr.next
+			'xML_DictPurge JMP
+		:xML_DictPurgeOk
+		$2 'DICT_TOP WRITE2										# update DICT_TOP
+
+		# doing the same for symbol table
+		
+		'SYM_TOP_REF READ2 =$2									# $2 = Cons pointer
+		:xML_SymPurge
+			$0 $0 LT 'xML_SymPurgeOk COND_JMP
+			$2 LITERAL1 2 ADD READ2 =$2							# read next pointer from cons 
+			'xML_SymPurge JMP									
+		:xML_SymPurgeOk
+		
+		'xML_SymPurgeOk
+	
+	:xML_Here_ok
+
+	# Main loop
+	:xML_Loop
+		# process input
+		'NextWord CALL 'CompileWord CALL
+		'xML_Loop JMP
+
+		
+		
+:SYM_Cons_List
+	*SYM_0					NEXT	
+	*SYM_1					NEXT	
+	*SYM_2					NEXT	
+	*SYM_3					NEXT	
+	*SYM_4					NEXT	
+	*SYM_5					NEXT	
+	*SYM_6					NEXT	
+	*SYM_7					NEXT	
+	
+	*SYM_COLON				NEXT
+	*SYM_SEMICOLON			NEXT
+	*SYM_IMMEDIATE			NEXT
+	*SYM_HERE				NEXT
+	*SYM_MALLOC				NEXT
+	*SYM_CREATE				NEXT
+	*SYM_DictLookup			NEXT
+	*SYM_OutByte			NEXT
+	*SYM_OutRef				NEXT
+	*SYM_Compile			NEXT
+	*SYM_NextWord			NEXT
+	*SYM_PANIC				NEXT
+	*SYM_ParseInt			NEXT
+	*SYM_IsInt				NEXT
+	*SYM_CSF_Underflow		NEXT
+	*SYM_Immediate_no_word	NEXT
+	*SYM_Unknown-Word		NEXT
+	*SYM_OutByte-Overflow	NO_NEXT
+	
+:SYM_0 %0 0
+:SYM_1 %1 0
+:SYM_2 %2 0
+:SYM_3 %3 0
+:SYM_4 %4 0
+:SYM_5 %5 0
+:SYM_6 %6 0
+:SYM_7 %7 0
+:SYM_COLON %: 0
+:SYM_SEMICOLON %; 0
+:SYM_IMMEDIATE %I %M %M %E %D %I %A %T %E 0
+:SYM_HERE %H %E %R %E 0
+:SYM_MALLOC %M %A %L %L %O %C 0
+:SYM_CREATE %C %R %E %A %T %E 0
+:SYM_DictLookup %? %? 0
+:SYM_OutByte %O %u %t %B %y %t %e 0
+:SYM_OutRef %O %u %t %R %e %f 0
+:SYM_Compile %C %o %m %p %i %l %e 0
+:SYM_NextWord %N %e %x %t %W %o %r %d 0
+:SYM_PANIC %P %A %N %I %C 0
+:SYM_IsInt %I %s %I %n %t 0
+:SYM_ParseInt %P %a %r %s %e %I %n %t 0
+:SYM_CSF_Underflow %C %a %l %l %- %s %t %a %c %k %- %u %n %d %e %r %f %l %o %w 0
+:SYM_Immediate_no_word %I %m %m %e %d %i %a %t %e %- %n %o %- %w %o %r %d 0
+# --
+:SYM_Unknown-Word %U %n %k %n %o %w %n %- %W %o %r %d 0
+:SYM_OutByte-Overflow %O %u %t %B %y %t %e %- %O %v %e %r %f %l %o %w 0
+
+
+# This is the initial value of HERE
+
+:END_MARKER
+
+
+
+
+
+

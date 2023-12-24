@@ -1,0 +1,469 @@
+
+
+
+# First pass, calculate tag values
+# --
+	tags = Dict
+	
+	HERE=0
+	Inner {
+		Words->w
+			if (w.startsWith(":")) {
+				tags.set(w.sub(1),HERE)
+			} else if (w.startsWith(">") || w=="HERE" || w=="NEXT" || w=="NO_NEXT" || w=="NO_REF") {
+				HERE = HERE + 2   # tag lookup
+			} else if (w.startsWith("*")) {
+				HERE = HERE + 3   # LITERAL Ref
+			} else if (w.startsWith("'") || w=="NULL") {
+				HERE = HERE + 1   # character byte
+			} else {
+				error(!w.?parseInt, "Unknown word: " + w) 
+				HERE = HERE + 1   # number byte
+			} 
+		
+	}
+	tags
+//Tags
+
+
+# Assembler
+# --
+	self.buf=List
+	self.comments=Dict  # HERE as string + comment
+	self.tagComments=Dict  # ...
+	self.reservedWords=ReservedWords
+	
+	self.addComment=Lambda{
+		P(1)=>comment
+		
+		key=""+self.here
+		if (comment.startsWith(":")) {
+			s=self.tagComments.get(key,"")
+			s=s+" "+comment
+			self.tagComments.set(key,s.trim)
+		} else {
+			if (!self.comments.has(key)) self.comments.set(key,comment)
+		}
+	}
+	self.show=Lambda{
+		pos=0
+		self.buf->val
+			comment=""
+			key=""+pos
+			
+			# also represent pos as two bytes
+			a=pos.shiftRight(8)
+			b=pos.bitwiseAnd(255)
+			report(("    " + pos).last(4), 
+				""+a+" "+b,
+				self.tagComments.get(key,""),
+				val, 
+				self.comments.get(key,""))
+			pos=pos+1
+		| ->line println(line)
+	}
+	self.showDefs=Lambda{
+		self.defs.keys-> key
+			report(key, self.defs.get(key))
+		| ->line println(line)
+	}
+	self.showTags=Lambda{
+		# by letting jump tags inside functions start with 'x', we can exclude those here,
+		# showing relevant tags only
+		prev=0
+		self.tags.keys->key
+			reject(key.startsWith("x"))
+			report(key, self.tags.get(key))
+		| ->line println(line)
+	}
+	
+	self.Main=Lambda{
+		P(1)=>lines
+		
+		words=self.Words(lines)
+		
+		Lib:Header("defs")
+		Util:ShowDict(self.defs,true)
+		
+		Lib:Header("PASS 1")
+		words->word
+			self.processWord(word,true)
+		|
+
+		# reset 		
+		self.buf=List
+		self.comments=Dict
+		self.tagComments=Dict
+	
+		Lib:Header("PASS 2")
+		words->word
+			self.processWord(word,false)
+	}
+	
+	self.Words=Lambda{
+		P(1) => lines	
+		lines-> line
+			s=line.replace("^t".unEsc," ").trim
+			s=s.before("#")
+
+			if (s.startsWith("def ")) {
+				s=s.after(" ").trim
+				name=s.before(" ").trim
+				value=s.after(" ").trim
+				if (value.startsWith("@{")) {
+					value=self.processDefByteCalc(value)
+				}
+				self.defs.set(name,value)
+			} else {
+				s.split->word 
+					out(word.trim)
+			}
+	}
+	
+	self.processDefByteCalc = Lambda{
+		P(1) => value
+		
+		
+		parts = value.trim.split
+		parts = parts.keep(1,parts.length-2)   ## keep in inclusive!
+		
+		addDebug("parts = " + parts)
+
+		op=parts.nth(0)
+		a=parts.nth(1)
+		b=parts.nth(2)
+		
+		
+		a=self.resolveDefNumber(a)
+		b=self.resolveDefNumber(b)
+
+		addDebug("a="+a)
+		addDebug("b="+b)
+		
+		result=0
+		if (op=="mul") {
+			result=a*b
+		}
+		addDebug("result=" + result)
+		
+		# return value - a sequence of 0-bytes
+		"0 ".times(result)
+	}
+	
+	self.resolveDefNumber = Lambda{
+		P(1)=>value
+		loop
+			break(value.?parseInt)
+			x=self.defs.get(value)
+			error(x.trim=="","self.defs.get() key=" + value + " -> '"+x+"'")
+			value=self.defs.get(value)
+		|
+		value.parseInt
+	}
+	
+	
+	self.tags=Dict
+	self.defs=Dict
+	self.cell=2
+	
+	self.NEXT = Lambda{  # generate inline reference to HERE + sizeof(Ref), for linked lists with NEXT-pointer last
+		self.emitRef(self.here+self.cell)
+	}
+	self.NO_NEXT = Lambda{
+		self.emitRef(0)
+	}
+	self.here=Lambda{
+		self.buf.length
+	}
+	self.emitByte=Lambda{
+		self.buf.add(P(1).bitwiseAnd(255))
+	}
+	self.emitRef=Lambda{
+		P(1)=>ref
+		self.emitByte(ref.shiftRight(8).bitwiseAnd(255))
+		self.emitByte(ref.bitwiseAnd(255))
+	}
+	self.emitOp=Lambda{
+		P(1)=>op
+		self.buf.add(op)
+	}
+	self.emitLiteralRef=Lambda{
+		self.emitOp("LITERAL2")
+		self.emitRef(P(1))
+	}
+	self.emitTag=Lambda{
+		P(1)=>tag
+		if (self.tags.has(tag)) self.emitRef(self.tags.get(tag)) else self.emitRef(0)
+	}
+	self.emitLiteralTag=Lambda{
+		P(1)=>tag
+		if (self.tags.has(tag)) self.emitLiteralRef(self.tags.get(tag)) else self.emitLiteralRef(0)
+	}
+	self.processWord=Lambda{
+		P(1)=>word
+		P(2)=>acceptMissingTags
+
+		self.addComment(word)
+
+		#println(word)
+		if (word.startsWith(":")) {
+			tag=word.after(":")
+			val=self.here
+			error (self.tags.has(tag) && self.tags.get(tag) != val, "Tag redefined: " + tag)
+			self.tags.set(tag,val)
+		} else
+		if (word.startsWith("*")) {   # inline tag as two bytes
+			tag=word.after("*")
+			error (!self.tags.has(tag) && !acceptMissingTags, "Unknown tag: " + word)
+			self.emitTag(tag)
+		} else
+		if (word.startsWith("'")) {   # create literal tag (code)
+			tag=word.after("'")
+			error (!self.tags.has(tag) && !acceptMissingTags, "Unknown tag: " + word)
+			self.emitLiteralTag(tag)
+		} else
+		if (word.startsWith('%')) {
+			char=word.sub(1)
+			self.emitByte(char.getBytes("ISO_8859_1").getList.first)
+		} else
+		if (self.reservedWords.contains(word)) {
+			self.emitOp(word)
+		} else
+		if (word.startsWith("0x")) {
+			self.emitByte(word.sub(2).parseInt(16))
+		} else
+		if (self.defs.has(word)) {
+			w=self.defs.get(word).trim
+			if (w != "") Inner {
+				w.trim.split->w2
+					self.processWord(w2.trim,acceptMissingTags)
+			}
+		} else
+		if (self.has(word)) {
+			self.get(word).call
+		} else 
+		if (word.?parseInt) {
+			self.emitByte(word.parseInt)
+		} else {
+			println("Invalid word: '" + word + "'")
+			error("Oops")
+		}
+	}
+/class Assembler
+
+
+# Test file
+# --
+	Sys.savefile.dir.file("ACode.txt")
+/SourceFile	 			
+
+
+# Detect forbidden characters, after pasting text (received in mail etc)
+# --
+	count=1
+	SourceFile.read->line
+		if (line.printable != line) report(count, line)
+		count=count+1
+/DetectNoise
+
+
+
+# Assemble from SourceFile
+# --
+	P(1,SourceFile.read) => lines
+	a=Assembler
+	
+	a.Main(lines)
+	a.show
+	
+	Lib:Header("Defs")
+	a.showDefs
+	
+	
+	Lib:Header("Tag positions")
+	a.showTags
+	
+	Lib:Header("Tag lines")
+	SourceFile.read->line
+		assert(line.startsWith(":") && !line.startsWith(":x"))
+		println(line)
+	|
+	
+	
+	true
+/t
+		
+# Calculate LITERAL2 reference
+# --
+	result=0
+	Input("Enter sequence of bytes").get.split->val
+		result=result*256 + val.parseInt
+	|
+	result
+/ref
+
+
+# Create symbol string
+# --
+	Input("Enter symbol string").get =>str
+	str.chars->c
+		if (c==" ") out("_*ASCII_SPACE") else out("%"+c)
+	| _.concat(" ") + " 0"
+/sym
+		
+# Assemble from SourceFile
+# --
+	P(1,SourceFile.read) => lines
+	a=Assembler
+	
+	a.Main(lines)
+	line=""
+	a.buf->x
+		if (getType(x)=="String") line=line+"'" + x + "'" else line=line+x
+		line=line+","
+		if (line.length>80) {
+			println(line)
+			line=""
+		}
+	|
+	if (line.length>0) println(line)
+/Compile
+
+
+# Show unique op-codes
+# --
+	Compile ->x
+		reject(getType(x)=="int")
+		out(x)
+	| _.unique.sort
+/OpCodes
+
+
+
+# Word list
+# --
+	P(1,Example)=>lines
+/Words	
+
+
+
+
+
+# Reserved words 
+# --
+<<<< EOF
+
+
+@mul(
+)
+
+HEAP_MAX		# return two byte value for number of bytes on heap
+CS_MAX			# fixed number of call stack frames statically allocated
+
+TIBs	# Start index - returns start character
+TIBr    # read index - returns character
+TIBr+   # advance TIBr
+TIBs+   # advance TIBc - if TIBr==TIBc it gets advanced too
+TIBr<   # move TIBr back to TIBs
+TIBs>   # move TIBs forward to TIBr
+	# TIBr is the pointer we use to examine input
+	# TIBs is the pointer we use to remember the start
+	# The system write pointer can advance to TIBs-1 (modulo TIB_SIZE)
+	# Advancing TIBs/TIBr past last character from serial blocks the interpreter (in Forth)
+TIBW	# Get symbol reference for string [TIBs - TIBr> return Ref
+
+
+EMIT # (char --)
+EMITWORD  # (ref -- )
+
+ADD
+SUBTRACT
+MUL
+DIV
+MOD
+
+INCR
+DECR
+
+DROP
+
+RIGHTSHIFT
+LEFTSHIFT
+
+AND   # Bitwise, so that false=0, true=0xffffffff (-1 signed long)
+OR
+NOT
+
+EQ
+NE
+GT
+LT
+GE
+LE
+
+
+SETLOCAL		# ( value nameRef -- )
+GETLOCAL		# ( nameRef -- value )
+
+JMP
+COND_JMP
+
+# Read and write different number of bytes
+# --
+
+WRITE1 # ( value addr -- )
+WRITE2 
+WRITE4 
+
+READ1  # ( addr -- value )
+READ2
+READ4 
+
+# Global read and write, outside of Forth heap
+# -----
+
+READ1g		
+WRITE1g 
+
+#DUP     # replaced by the local variables $n
+#SWAP
+#DROP
+
+
+LITERAL1  # followed by 1, 2 or 4 bytes
+LITERAL2
+LITERAL4
+
+CALL # ( ref -- )
+RETURN					# Calls code at 'RETURN_IMPL 
+PANIC # ( Ref -- )
+RESTART_MAINLOOP		# in a PANIC, we clean up memory used, then call this to reset
+						# call stack and data stack, then calling main loop anew
+
+
+CHECK_PARSE	# ( word -- bool )
+PARSE  # ( word -- number )  - recognizes decimal, 0x0a, b1010
+
+
+
+RESET	# reset input buffer, clear data- and call stacks, invoke :MainLoop vi  
+		# reset input buffer
+		# clear data- and call stack
+		# call code at :MAIN_LOOP_REF (fixed address on HEAP)
+
+
+
+>>>> EOF
+	->line 
+		s=line.before("#")
+		reject(s.trim=="")
+		out(s.split.first.trim)
+	| _.sort
+/ReservedWords
+
+
+
+
+
+
+
