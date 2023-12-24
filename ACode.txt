@@ -24,8 +24,8 @@ def _'CELL 			LITERAL1 2		# defines cell size (Ref size) = 2
 def _'REF_NULL		LITERAL1 0
 def _*REF_NULL		0 0
 
-def _'ASCII_SPACE	LITERAL1 32
 def _*ASCII_SPACE	32
+def _'ASCII_SPACE	LITERAL1 _*ASCII_SPACE
 
 # Symbol Stack Entry (SSE)
 # ########################
@@ -487,8 +487,12 @@ def _CB_bytes				@{ mul 1 256 }
 
 	
 :PANIC        				# ( errorSymbol -- )
+	=$0
+	'SYM_PANIC		EMITWORD
+	_'ASCII_SPACE 	EMIT
+	$0 				EMITWORD
 	
-	RESET						
+	PANIC						
 		# reset input buffer
 		# clear data- and call stack
 		# then call :MainLoop
@@ -578,10 +582,17 @@ def Regular		0
 	
 	:xML_Here_ok
 
-	# Main loop
+	# The actual ain loop
+	
 	:xML_Loop
-		# process input
+		# Invoke one word at a time
 		'NextWord CALL 'CompileWord CALL
+		
+		# If there was a panic, we never reach this line, so getting here means
+		# the word was ok. We commit the heap changes before repeating the loop
+		
+		'HereCommit CALL
+		
 		'xML_Loop JMP
 
 		
