@@ -373,17 +373,18 @@ TIBs>   # move TIBs forward to TIBr
 TIBW	# Get symbol reference for string [TIBs - TIBr> return Ref
 
 
+# print to stdout
+
 EMIT # (char --)
 EMITWORD  # (ref -- )
+
+# math
 
 ADD
 SUBTRACT
 MUL
 DIV
 MOD
-
-INCR
-DECR
 
 DROP
 
@@ -404,6 +405,9 @@ LE
 
 SETLOCAL		# ( value nameRef -- )
 GETLOCAL		# ( nameRef -- value )
+
+WORD			# ( Ref -- )
+	# for making new word from substring of existing word
 
 JMP
 COND_JMP

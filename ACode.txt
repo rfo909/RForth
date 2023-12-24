@@ -4,16 +4,20 @@
 #  :xxx = create tag
 #  'xxx = insert tag address as LITERAL
 #  *xxx = insert tag address as two bytes
+#
+
+# Defines 
+# #######
+#
+#  _'xxx for literal (code) 
+#  _*xxx for inline bytes
+#
 
 # ASCII strings
 # #############
-
+#
 #   %t %r %u %e 0
 
-# Macros
-# ######
-
-# defines are named _' for literal (code) and _* for inline bytes
 
 
 def _'CELL 			LITERAL1 2		# defines cell size (Ref size) = 2
@@ -22,14 +26,42 @@ def _*REF_NULL		0 0
 
 def _'ASCII_SPACE	LITERAL1 32
 def _*ASCII_SPACE	32
-def _'ZERO			LITERAL1 0
+
+# Symbol Stack Entry (SSE)
+# ########################
+
+# 	[
+#		value		Ref			2
+#		next		Ref			2
+#	]
+
+# Basically a CONS cell (from Lisp)
+# Allocated dynamically, linked via next ref
+
+def _'SSE.value
+def _'SSE.next				LITERAL1 2 ADD
+
+def _'SSE.n?				LITERAL1	4
+
 
 # Dictionary entry (DE)
+# #####################
+
+#	[ 
+#		name				Ref			2
+#		code				Ref			2
+#		flags				byte		1
+#		next 				Ref			2
+#	]
+
+# Allocated from the heap (next pointer)
+
 
 def _'DE.name
 def _'DE.code  LITERAL1 2 ADD
 def _'DE.flags LITERAL1 4 ADD
 def _'DE.next  LITERAL1 5 ADD
+
 
 def _'DE.n?    LITERAL1 7 
 
@@ -43,18 +75,10 @@ def _'FALSE		LITERAL1 0
 def _'TRUE		LITERAL4  0xff 0xff 0xff 0xff
 
 
-# Op-codes for generating code
-
-def OP:LITERAL1				99
-def OP:LITERAL2				99
-def OP:LITERAL4				99
-def OP:CALL					99
-def OP:RETURN				99
 
 
 # Call Stack Frame (CSF)
 # ######################
-
 
 #	[ 
 #		code				Ref			2
@@ -68,20 +92,36 @@ def _'CSF.tempStackBase		LITERAL1 2 ADD
 def _'CSF.tempStackNext		LITERAL1 3 ADD
 def _'CSF.pc				LITERAL1 4 ADD
 
-# CS size
+# Sizes
 
 def _*CSF.n?				5
 def _'CSF.n?				LITERAL1 _*CSF.n?		# Size of call stack frame, to navigate the call stack
+
 def _*CS_maxDepth			30
 def _'CS_maxDepth			LITERAL1 _*CS_maxDepth		# max call depth	
 
-# TS size
+# Temp Stack Frame (TSF)
+# ######################
 
-def _*TS_maxDepth			100
-def _'TS_maxDepth			LITERAL1 _*TS_maxDepth   # number of Temp Stack Frames (TSF)
+#	[ 
+#		name				Ref			2
+#		value				Long		4
+#	]
+
+def _'TSF.name
+def _'TSF.value				LITERAL1 2 ADD
+
+# Sizes
+
 def _*TSF.n?				6
 def _'TSF.n?				LITERAL1 _*TSF.n?
 
+def _*TS_maxDepth			100
+def _'TS_maxDepth			LITERAL1 _*TS_maxDepth   # number of Temp Stack Frames (TSF)
+
+
+# Some pseudo instructions
+# ########################
 
 def =$0		'SYM_0 SETLOCAL
 def =$1		'SYM_1 SETLOCAL
@@ -101,11 +141,29 @@ def $5		'SYM_5 GETLOCAL
 def $6		'SYM_6 GETLOCAL
 def $7		'SYM_7 GETLOCAL
 
+def INCR					LITERAL1 1 ADD
+def DECR					LITERAL1 1 SUBTRACT
+def INCR2					LITERAL1 2 ADD
+
+# Op-codes for generating code
+
+def OP:LITERAL1				99
+def OP:LITERAL2				99
+def OP:LITERAL4				99
+def OP:CALL					99
+def OP:RETURN				99
+def OP:SETLOCAL				99
+def OP:GETLOCAL				99
+
+
+
+
 
 # Memory layout
-# ###############################################################################
+#
 # From this point we create tags and refer them, in order to do 
-# function calls.
+# function calls. The CALL operation is written in C, and manipulates
+# the Call Stack (CS)
 # ###############################################################################
 
 0 				 # this position is the null-pointer address (not used)
@@ -124,24 +182,23 @@ def $7		'SYM_7 GETLOCAL
 
 # Temp stack
 
-:TS_BASE_REF		*TEMP_STACK_DATA	# a 6 bytes wide stack [ nameRef 2 value 4 ]
+:TS_BASE_REF		*TEMP_STACK_DATA	# reserved data area
 :TS_NEXT_FRAME		0					# single byte
 
+# Dictionary pointer
 
+:DICT_TOP			_*REF_NULL			# ref to first Dictionary Entry DE
 
+# Heap management
 
-# HERE (heap next free pointer)
+:HERE               'END_MARKER			# two byte Ref to next free byte on heap
+:HERE_SHADOW		'END_MARKER			# used by main loop, to rollback heap if panic
 
-:HERE               _*REF_NULL			# two byte Ref to next free byte on heap
-:HERE_SHADOW		_*REF_NULL			# rollback if
-
-:DICT_TOP			_*REF_NULL			# ref to first CONS
 
 
 
 # Forth primitives
 # --
-
 
 
 :Malloc 					# n -- ptr # Sets all allocated bytes to zero
@@ -310,7 +367,7 @@ def _CB_bytes				@{ mul 1 256 }
 
 
 :CompileWord 					# ( word -- )
-	=$0
+	=$0									# The word
 	$0 'DictLookup CALL =$1				# $1 = DE or NULL
 	$1 _'REF_NULL EQ 'xCOMP_notInDict COND_JMP
 
@@ -333,13 +390,47 @@ def _CB_bytes				@{ mul 1 256 }
 			OP:CALL 'OutByte CALL
 		
 		:xCOMP_notInDict
+			
+			# Check if local variable set or get, returns true or false
+				
+			$0 'CompileLocalVariables 'xCOMP_done COND_JMP 
 
-			# number formats
+			# default to assume number
+			
 			$0 PARSE 					# will panic if not a number
-				'CompileNumber CALL      
-			RETURN
+				'CompileNumber CALL   
+				
+		:xCOMP_done
+		   
+		RETURN
 
 
+:CompileLocalVariables			# ( word -- )
+	=$0									# $0 = the word
+	$0 READ1 %$ EQ 
+		$0 INCR READ1 0 NE AND
+			'xCLV_get COND_JMP
+	$0 READ1 %= EQ
+		$0 INCR READ1 %$ EQ AND
+			$0 INCR2 READ1 0 NE AND
+				'xCLV_set COND_JMP
+	_'FALSE
+	RETURN
+	
+	:xCLV_get
+		# Generate code for getting local variable
+		$0 INCR WORD 'OutRef CALL
+		OP:GETLOCAL 'OutByte CALL
+		_'TRUE
+		RETURN
+
+	:xCLV_set
+		# Generate code for setting local varialbe
+		$0 LITERAL1 2 ADD WORD 'OutRef CALL
+		OP:SETLOCAL 'OutByte CALL
+		_'TRUE
+		RETURN
+	
 :CompileNumber 				# ( number -- )  
 	=$0							# the number
 	$0 LITERAL4 0xff 0xff 0x00 0x00 AND 'xCN_4 COND_JMP
@@ -370,7 +461,7 @@ def _CB_bytes				@{ mul 1 256 }
 	RETURN
 	
 
-:ParseInt					# ( word -- number )		
+:ParseInt						# ( word -- number )		
 	PARSE												# OP:PARSE may PANIC - check with IsInt first if in doubt
 	RETURN
 	
@@ -495,7 +586,9 @@ def Regular		0
 
 		
 		
-:SYM_Cons_List
+:SYM_Cons_List		# hard coded list of symbols 
+					# New symbols will be added from C, mostly from TIBW or WORD ops
+
 	*SYM_0					NEXT	
 	*SYM_1					NEXT	
 	*SYM_2					NEXT	
