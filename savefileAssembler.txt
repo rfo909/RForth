@@ -301,23 +301,51 @@
 		if (c==" ") out("_*ASCII_SPACE") else out("%"+c)
 	| _.concat(" ") + " 0"
 /sym
+
+
+# Get defines for OP: from ACode.txt
+# --
+	dict=Dict
+	SourceFile.read->line
+		assert(line.startsWith("def OP:"))
+		s=line.after("OP:").replace("^t".unEsc," ").split =>parts
+		dict.set(parts.nth(0), parts.nth(1).parseInt)
+	|
+	dict
+/GetOpCodes
+
+"^t".unEsc
+//TAB
 		
 # Assemble from SourceFile
 # --
 	P(1,SourceFile.read) => lines
 	a=Assembler
+	opCodes=GetOpCodes
 	
 	a.Main(lines)
+	buf=a.buf
+
+	println
+	println("int dataLength = " + buf.length + ";") 
+	
+	println("Byte data[] = {")
 	line=""
-	a.buf->x
-		if (getType(x)=="String") line=line+"'" + x + "'" else line=line+x
+	buf->x
+		if (getType(x)=="String") {
+			if (opCodes.has(x)) line=line+(opCodes.get(x)) else error("No opcode for " + x)
+		} else {
+			line=line+x
+		}
 		line=line+","
 		if (line.length>80) {
-			println(line)
+			println(TAB + line)
 			line=""
 		}
 	|
-	if (line.length>0) println(line)
+	if (line.length>0) println(TAB + line)
+	println("};")
+	
 /Compile
 
 

@@ -1,10 +1,10 @@
-:JMP
+:OP_JMP
 	Ref addr = dsPopRef();
 	
 	Ref currCSF = getCurrCSF();   // may create if none found
 	writeRef(currCSF + CSF_pc, addr);
 	
-:COND_JMP
+:OP_COND_JMP
 	Ref addr = dsPopRef();
 	Long cond = dsPopInt4();
 	if (cond != null) {
@@ -12,7 +12,7 @@
 		writeRef(currCSF + CSF_pc, addr);
 	}
 
-:CALL
+:OP_CALL
 	Ref addr=dsPopRef();
 	
 	Ref currCSF = getCurrCSF();
@@ -28,206 +28,206 @@
 	writeByte(newCSF + CSF_tempStackNext, tsNext);
 	writeRef(newCSF + CSF_pc, 0);
 	
-:RETURN
+:OP_RETURN
 	byte x = readByte(CS_NEXT_FRAME);
 	writeByte(CS_NEXT_FRAME, x-1);
 	
-:PANIC
+:OP_PANIC
 	Ref word = dsPopRef();
 	char *str = safeGetString(word);
-	emitStr("PANIC: ");
+	emitStr("PANIC ");
 	emitStr(str);
 	emitNewline();
 	setPanicFlag();
 	
-:HEAP_MAX
+:OP_HEAP_MAX
 	dsPushInt2(getHeapSize());
 			
-:TIBs
+:OP_TIBs
 	dsPushInt1(getTIBsChar());
 		
-:TIBr
+:OP_TIBr
 	dsPushInt1(getTIBrChar());
 	
-:TIBr_ADD
+:OP_TIBr_ADD
 	advanceTIBr();
 	
-:TIBs_ADD
+:OP_TIBs_ADD
 	advanceTIBs();
 	
-:TIBr_BACK
+:OP_TIBr_BACK
 	resetTIBr();
 	
-:TIBs_FWD
+:OP_TIBs_FWD
 	confirmTIBr();
 	
-:TIBW
+:OP_TIBW
 	char *str = getTIBWord();
 	Ref ref=getSymRef(str);
 	dsPushRef(ref);
 	
-:EMIT
+:OP_EMIT
 	char c=dsPopInt1();
 	emitChar(c);
 
-:EMITWORD
+:OP_EMITWORD
 	Ref ref=dsPopRef();
 	char *str = safeGetStr(ref);
 	emitStr(str);
 	
-:ADD
+:OP_ADD
 	Long b=dsPopInt4();
 	Long a=dsPopInt4();
 	dsPushInt4(a+b);
 	
-:SUBTRACT
+:OP_SUBTRACT
 	Long b=dsPopInt4();
 	Long a=dsPopInt4();
 	dsPushInt4(a-b);
 
-:MUL
+:OP_MUL
 	Long b=dsPopInt4();
 	Long a=dsPopInt4();
 	dsPushInt4(a*b);
-:DIV
+:OP_DIV
 	Long b=dsPopInt4();
 	Long a=dsPopInt4();
 	dsPushInt4(a/b);
 
-:MOD
+:OP_MOD
 	Long b=dsPopInt4();
 	Long a=dsPopInt4();
 	dsPushInt4(a%b);
 
-:RIGHTSHIFT
+:OP_RIGHTSHIFT
 	Long n=dsPopInt4();
 	Long val=dsPopInt4();
 	dsPushInt4(val >> n);
 
-:LEFTSHIFT
+:OP_LEFTSHIFT
 	Long n=dsPopInt4();
 	Long val=dsPopInt4();
 	dsPushInt4(val << n);
 
-:AND
+:OP_AND
 	Long b=dsPopInt4();
 	Long a=dsPopInt4();
 	if (a & b != 0) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 
-:OR
+:OP_OR
 	Long b=dsPopInt4();
 	Long a=dsPopInt4();
 	if (a | b != 0) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 
-:NOT
+:OP_NOT
 	Long val=dsPopInt4();
 	dsPushInt4( ~val );
 	
-:EQ
+:OP_EQ
 	Long b=dsPopInt4();
 	Long a=dsPopInt4();
 	if (a == b) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 
-:NE
+:OP_NE
 	Long b=dsPopInt4();
 	Long a=dsPopInt4();
 	if (a != b) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 	
-:GT
+:OP_GT
 	Long b=dsPopInt4();
 	Long a=dsPopInt4();
 	if (a > b) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 	
-:LT
+:OP_LT
 	Long b=dsPopInt4();
 	Long a=dsPopInt4();
 	if (a < b) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 
-:GE
+:OP_GE
 	Long b=dsPopInt4();
 	Long a=dsPopInt4();
 	if (a >= b) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 
-:LE
+:OP_LE
 	Long b=dsPopInt4();
 	Long a=dsPopInt4();
 	if (a <= b) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 
-:DROP
+:OP_DROP
 	dsPopInt4();
 	
-:SETLOCAL
+:OP_SETLOCAL
 	Long value=dsPopInt4();
 	Ref sym=dsPopRef();
 	setLocalValue(sym,value);
 	
-:GETLOCAL
+:OP_GETLOCAL
 	Ref sym=dsPopRef();
 	dsPushValue(getLocalValue(sym));
 	
-:WORD
+:OP_WORD
 	// create word from substring of existing word
 	Ref ref=dsPopRef();
 	char *str=safeGetString(ref);
 	addSymbol(str);
 		
-:WRITE1
+:OP_WRITE1
 	Ref ref=dsPopRef();
 	long val=dsPopInt4();
 	writeByte(ref,val);
 	
-:WRITE2
+:OP_WRITE2
 	Ref ref=dsPopRef();
 	long val=dsPopInt4();
 	write2(ref,val);
 	
-:WRITE4
+:OP_WRITE4
 	Ref ref=dsPopRef();
 	long val=dsPopInt4();
 	write4(ref,val);
 	
-:READ1
+:OP_READ1
 	Ref ref=dsPopRef();
 	dsPushInt1(readInt1(ref));
 	
-:READ2
+:OP_READ2
 	Ref ref=dsPopRef();
 	dsPushInt2(readInt2(ref));
 	
-:READ4
+:OP_READ4
 	Ref ref=dsPopRef();
 	dsPushInt4(readInt4(ref));
 
-:READ1g
+:OP_READ1g
 	Long addr=dsPopInt4();
 	dsPushInt1(readGlobal(addr));
 	
-:WRITE1g
+:OP_WRITE1g
 	Long addr=dsPopInt4();
 	Byte value=dsPopInt1();
 	writeGlobal(addr,value);
 	
-:LITERAL1
+:OP_LITERAL1
 	dsPushInt1(nextByte());
 
-:LITERAL2
+:OP_LITERAL2
 	a=nextByte();
 	b=nextByte();
 	dsPushInt2(a<<8 | b)
 	
-:LITERAL4
+:OP_LITERAL4
 	a=nextByte();
 	b=nextByte();
 	c=nextByte();
 	d=nextByte();
 	dsPushInt4(a<<24 | b<<12 | c<<8 | d)
 
-:CHECK_PARSE
+:OP_CHECK_PARSE
 	Ref symRef=dsPopRef();
 	char *str = safeGetString(symRef);
 	if (checkParseInt(str)) ds.pushValue(F_TRUE); else ds.pushValue(F_FALSE);
 	
-:PARSE
+:OP_PARSE
 	Ref symRef=dsPopRef();
 	char *str = safeGetString(symRef);
 	dsPushInt4(parseInt(str));

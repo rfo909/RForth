@@ -97,7 +97,7 @@ def _'CSF.pc				LITERAL1 4 ADD
 def _*CSF.n?				6
 def _'CSF.n?				LITERAL1 _*CSF.n?		# Size of call stack frame, to navigate the call stack
 
-def _*CS_maxDepth			30
+def _*CS_maxDepth			10
 def _'CS_maxDepth			LITERAL1 _*CS_maxDepth		# max call depth	
 
 # Temp Stack Frame (TSF)
@@ -116,7 +116,7 @@ def _'TSF.value				LITERAL1 2 ADD
 def _*TSF.n?				6
 def _'TSF.n?				LITERAL1 _*TSF.n?
 
-def _*TS_maxDepth			100
+def _*TS_maxDepth			30
 def _'TS_maxDepth			LITERAL1 _*TS_maxDepth   # number of Temp Stack Frames (TSF)
 
 
@@ -176,33 +176,54 @@ def $d		'SYM_d GETLOCAL
 
 # Op-codes for generating code
 
-def OP:LITERAL1				99
-def OP:LITERAL2				99
-def OP:LITERAL4				99
-def OP:CALL					99
-def OP:RETURN				99
-def OP:SETLOCAL				99
-def OP:GETLOCAL				99
-
-# SingleInstructionWords
-# -----------------------
-
-def OP:ADD					99
-def OP:SUBTRACT				99
-def OP:MUL					99
-def OP:DIV					99
-def OP:MOD					99
-def OP:RIGHTSHIFT			99
-def OP:LEFTSHIFT			99
-def OP:AND					99
-def OP:OR					99
-def OP:NOT					99
-def OP:EQ					99
-def OP:NE					99
-def OP:GT					99
-def OP:LT					99
-def OP:GE					99
-def OP:LE					99
+def OP:JMP                     0
+def OP:COND_JMP                1
+def OP:CALL                    2
+def OP:RETURN                  3
+def OP:PANIC                   4
+def OP:HEAP_MAX                5
+def OP:TIBs                    6
+def OP:TIBr                    7
+def OP:TIBr+                   8
+def OP:TIBs+                   9
+def OP:TIBr<                   10
+def OP:TIBs>                   11
+def OP:TIBW                    12
+def OP:EMIT                    13
+def OP:EMITWORD                14
+def OP:ADD                     15
+def OP:SUBTRACT                16
+def OP:MUL                     17
+def OP:DIV                     18
+def OP:MOD                     19
+def OP:RIGHTSHIFT              20
+def OP:LEFTSHIFT               21
+def OP:AND                     22
+def OP:OR                      23
+def OP:NOT                     24
+def OP:EQ                      25
+def OP:NE                      26
+def OP:GT                      27
+def OP:LT                      28
+def OP:GE                      29
+def OP:LE                      30
+def OP:DROP                    31
+def OP:SETLOCAL                32
+def OP:GETLOCAL                33
+def OP:WORD                    34
+def OP:WRITE1                  35
+def OP:WRITE2                  36
+def OP:WRITE4                  37
+def OP:READ1                   38
+def OP:READ2                   39
+def OP:READ4                   40
+def OP:READ1g                  41
+def OP:WRITE1g                 42
+def OP:LITERAL1                43
+def OP:LITERAL2                44
+def OP:LITERAL4                45
+def OP:CHECK_PARSE             46
+def OP:PARSE                   47
 
 
 
@@ -411,30 +432,30 @@ def _CB_bytes				@{ mul 1 256 }
 	RETURN	
 	
 	
-def EMITRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
-	# $d opcode
+def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
+	# $a = opcode
 	# NE compares $a and 'SYM_XXX, jumps to end of line if not matching
 	# if match, call OutByte with $d, then return true
 		
 :SingleInstructionWords					# ( word -- bool )
 	=$0
-	$0 'SYM_ADD 			OP:ADD 			EMITRETURN 
-	$0 'SYM_SUBTRACT		OP:SUBTRACT		EMITRETURN 
-	$0 'SYM_MUL				OP:MUL			EMITRETURN 
-	$0 'SYM_DIV				OP:DIV			EMITRETURN 
-	$0 'SYM_MOD				OP:MOD			EMITRETURN 
-	$0 'SYM_RIGHTSHIFT		OP:RIGHTSHIFT	EMITRETURN 
-	$0 'SYM_LEFTSHIFT		OP:LEFTSHIFT	EMITRETURN 
+	$0 'SYM_ADD 			OP:ADD 			OUTRETURN 
+	$0 'SYM_SUBTRACT		OP:SUBTRACT		OUTRETURN 
+	$0 'SYM_MUL				OP:MUL			OUTRETURN 
+	$0 'SYM_DIV				OP:DIV			OUTRETURN 
+	$0 'SYM_MOD				OP:MOD			OUTRETURN 
+	$0 'SYM_RIGHTSHIFT		OP:RIGHTSHIFT	OUTRETURN 
+	$0 'SYM_LEFTSHIFT		OP:LEFTSHIFT	OUTRETURN 
 	
-	$0 'SYM_AND				OP:AND			EMITRETURN 
-	$0 'SYM_OR				OP:OR			EMITRETURN 
-	$0 'SYM_NOT				OP:NOT			EMITRETURN 
-	$0 'SYM_EQ				OP:EQ			EMITRETURN 
-	$0 'SYM_NE				OP:NE			EMITRETURN 
-	$0 'SYM_GT				OP:GT			EMITRETURN 
-	$0 'SYM_LT				OP:LT			EMITRETURN 
-	$0 'SYM_GE				OP:GE			EMITRETURN 
-	$0 'SYM_LE				OP:LE			EMITRETURN 
+	$0 'SYM_AND				OP:AND			OUTRETURN 
+	$0 'SYM_OR				OP:OR			OUTRETURN 
+	$0 'SYM_NOT				OP:NOT			OUTRETURN 
+	$0 'SYM_EQ				OP:EQ			OUTRETURN 
+	$0 'SYM_NE				OP:NE			OUTRETURN 
+	$0 'SYM_GT				OP:GT			OUTRETURN 
+	$0 'SYM_LT				OP:LT			OUTRETURN 
+	$0 'SYM_GE				OP:GE			OUTRETURN 
+	$0 'SYM_LE				OP:LE			OUTRETURN 
 	
 	_'FALSE 
 	RETURN
@@ -651,10 +672,11 @@ def Regular		0
 		
 		'SYM_TOP_REF READ2 =$2									# $2 = Cons pointer
 		:xML_SymPurge
-			$0 $0 LT 'xML_SymPurgeOk COND_JMP
-			$2 LITERAL1 2 ADD READ2 =$2							# read next pointer from cons 
+			$2 $0 LT 'xML_SymPurgeOk COND_JMP
+			$2 LITERAL1 2 ADD READ2 =$2							# ptr=ptr.next 
 			'xML_SymPurge JMP									
 		:xML_SymPurgeOk
+		$2 'SYM_TOP_REF WRITE2										# update SYM_TOP
 		
 		'xML_SymPurgeOk
 	
