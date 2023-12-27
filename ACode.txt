@@ -145,8 +145,21 @@ def INCR					LITERAL1 1 ADD
 def DECR					LITERAL1 1 SUBTRACT
 def INCR2					LITERAL1 2 ADD
 
+# -------------------------------------------------------------------------
+# Light-weight call and return (used data stack to store return value)
+# -------------------------------------------------------------------------
 
+# Prefixing functions that use this mechanism by LW_
 
+def _LW_CALL		=$a _CSF_CURR =$b $b _'CSF.pc READ2 =$c $a $b _'CSF.pc WRITE2
+	# $a = target address
+	# $b = CSF_CURR
+	# $c = current pc
+	
+def _LW_RETURN =$a _CSF_CURR =$b $a $b _'CSF.pc WRITE2
+	# $a = return address
+	# $b = CSF_CURR
+	
 					
 # local variables used in defines
  
@@ -171,7 +184,25 @@ def OP:RETURN				99
 def OP:SETLOCAL				99
 def OP:GETLOCAL				99
 
+# SingleInstructionWords
+# -----------------------
 
+def OP:ADD					99
+def OP:SUBTRACT				99
+def OP:MUL					99
+def OP:DIV					99
+def OP:MOD					99
+def OP:RIGHTSHIFT			99
+def OP:LEFTSHIFT			99
+def OP:AND					99
+def OP:OR					99
+def OP:NOT					99
+def OP:EQ					99
+def OP:NE					99
+def OP:GT					99
+def OP:LT					99
+def OP:GE					99
+def OP:LE					99
 
 
 
@@ -380,11 +411,40 @@ def _CB_bytes				@{ mul 1 256 }
 	RETURN	
 	
 	
-
-
+def EMITRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
+	# $d opcode
+	# NE compares $a and 'SYM_XXX, jumps to end of line if not matching
+	# if match, call OutByte with $d, then return true
+		
+:SingleInstructionWords					# ( word -- bool )
+	=$0
+	$0 'SYM_ADD 			OP:ADD 			EMITRETURN 
+	$0 'SYM_SUBTRACT		OP:SUBTRACT		EMITRETURN 
+	$0 'SYM_MUL				OP:MUL			EMITRETURN 
+	$0 'SYM_DIV				OP:DIV			EMITRETURN 
+	$0 'SYM_MOD				OP:MOD			EMITRETURN 
+	$0 'SYM_RIGHTSHIFT		OP:RIGHTSHIFT	EMITRETURN 
+	$0 'SYM_LEFTSHIFT		OP:LEFTSHIFT	EMITRETURN 
+	
+	$0 'SYM_AND				OP:AND			EMITRETURN 
+	$0 'SYM_OR				OP:OR			EMITRETURN 
+	$0 'SYM_NOT				OP:NOT			EMITRETURN 
+	$0 'SYM_EQ				OP:EQ			EMITRETURN 
+	$0 'SYM_NE				OP:NE			EMITRETURN 
+	$0 'SYM_GT				OP:GT			EMITRETURN 
+	$0 'SYM_LT				OP:LT			EMITRETURN 
+	$0 'SYM_GE				OP:GE			EMITRETURN 
+	$0 'SYM_LE				OP:LE			EMITRETURN 
+	
+	_'FALSE 
+	RETURN
 
 :CompileWord 					# ( word -- )
 	=$0									# The word
+	$0 'SingleInstructionWords NOT 'xCompileNotSIW COND_JMP
+		RETURN
+	:xCompileNotSIW
+	
 	$0 'DictLookup CALL =$1				# $1 = DE or NULL
 	$1 _'REF_NULL EQ 'xCOMP_notInDict COND_JMP
 
@@ -563,6 +623,7 @@ def Regular		0
 	
 	RETURN
 
+
 # Main loop is called after MainSetup, and again on PANIC, as it contains
 # code to clean up after a panic (when HERE_SHADOW < HERE)
 
@@ -634,6 +695,22 @@ def Regular		0
 	*SYM_c					NEXT	
 	*SYM_d					NEXT	
 	
+	*SYM_ADD				NEXT
+	*SYM_SUBTRACT			NEXT
+	*SYM_MUL				NEXT
+	*SYM_DIV				NEXT
+	*SYM_MOD				NEXT
+	*SYM_RIGHTSHIFT			NEXT
+	*SYM_LEFTSHIFT			NEXT
+	*SYM_AND				NEXT
+	*SYM_OR					NEXT
+	*SYM_NOT				NEXT
+	*SYM_EQ					NEXT
+	*SYM_NE					NEXT
+	*SYM_GT					NEXT
+	*SYM_LT					NEXT
+	*SYM_GE					NEXT
+	*SYM_LE					NEXT
 	*SYM_COLON				NEXT
 	*SYM_SEMICOLON			NEXT
 	*SYM_IMMEDIATE			NEXT
@@ -653,6 +730,13 @@ def Regular		0
 	*SYM_Unknown-Word		NEXT
 	*SYM_OutByte-Overflow	NO_NEXT
 	
+	
+	
+	
+
+
+
+	
 :SYM_0 %0 0
 :SYM_1 %1 0
 :SYM_2 %2 0
@@ -665,6 +749,23 @@ def Regular		0
 :SYM_b %b 0
 :SYM_c %c 0
 :SYM_d %d 0
+
+:SYM_ADD %+ 0
+:SYM_SUBTRACT %- 0
+:SYM_MUL %* 0
+:SYM_DIV %/ 0
+:SYM_MOD %% 0
+:SYM_RIGHTSHIFT %> %> 0
+:SYM_LEFTSHIFT %< %< 0
+:SYM_AND %a %n %d 0
+:SYM_OR %o %r 0
+:SYM_NOT %n %o %t 0
+:SYM_EQ %e %q 0
+:SYM_NE %n %e 0
+:SYM_GT %g %t 0
+:SYM_LT %l %t 0
+:SYM_GE %g %e 0
+:SYM_LE %l %e 0
 :SYM_COLON %: 0
 :SYM_SEMICOLON %; 0
 :SYM_IMMEDIATE %I %M %M %E %D %I %A %T %E 0

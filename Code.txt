@@ -6,7 +6,7 @@
 	
 :COND_JMP
 	Ref addr = dsPopRef();
-	Long cond = dsPopValue();
+	Long cond = dsPopInt4();
 	if (cond != null) {
 		Ref currCSF = getCurrCSF();   // may create if none found
 		writeRef(currCSF + CSF_pc, addr);
@@ -34,113 +34,193 @@
 	
 :PANIC
 	Ref word = dsPopRef();
-	....
+	char *str = safeGetString(word);
+	emitStr("PANIC: ");
+	emitStr(str);
+	emitNewline();
+	setPanicFlag();
 	
 :HEAP_MAX
+	dsPushInt2(getHeapSize());
+			
 :TIBs
+	dsPushInt1(getTIBsChar());
+		
 :TIBr
+	dsPushInt1(getTIBrChar());
+	
 :TIBr_ADD
+	advanceTIBr();
+	
 :TIBs_ADD
+	advanceTIBs();
+	
 :TIBr_BACK
+	resetTIBr();
+	
 :TIBs_FWD
+	confirmTIBr();
+	
 :TIBW
+	char *str = getTIBWord();
+	Ref ref=getSymRef(str);
+	dsPushRef(ref);
+	
 :EMIT
+	char c=dsPopInt1();
+	emitChar(c);
+
 :EMITWORD
+	Ref ref=dsPopRef();
+	char *str = safeGetStr(ref);
+	emitStr(str);
+	
 :ADD
-	Long b=dsPopValue();
-	Long a=dsPopValue();
-	dsPushValue(a+b);
+	Long b=dsPopInt4();
+	Long a=dsPopInt4();
+	dsPushInt4(a+b);
 	
 :SUBTRACT
-	Long b=dsPopValue();
-	Long a=dsPopValue();
-	dsPushValue(a-b);
+	Long b=dsPopInt4();
+	Long a=dsPopInt4();
+	dsPushInt4(a-b);
 
 :MUL
-	Long b=dsPopValue();
-	Long a=dsPopValue();
-	dsPushValue(a*b);
+	Long b=dsPopInt4();
+	Long a=dsPopInt4();
+	dsPushInt4(a*b);
 :DIV
-	Long b=dsPopValue();
-	Long a=dsPopValue();
-	dsPushValue(a/b);
+	Long b=dsPopInt4();
+	Long a=dsPopInt4();
+	dsPushInt4(a/b);
 
 :MOD
-	Long b=dsPopValue();
-	Long a=dsPopValue();
-	dsPushValue(a%b);
+	Long b=dsPopInt4();
+	Long a=dsPopInt4();
+	dsPushInt4(a%b);
 
 :RIGHTSHIFT
-	Long n=dsPopValue();
-	Long val=dsPopValue();
-	dsPushValue(val >> n);
+	Long n=dsPopInt4();
+	Long val=dsPopInt4();
+	dsPushInt4(val >> n);
 
 :LEFTSHIFT
-	Long n=dsPopValue();
-	Long val=dsPopValue();
-	dsPushValue(val << n);
+	Long n=dsPopInt4();
+	Long val=dsPopInt4();
+	dsPushInt4(val << n);
 
 :AND
-	Long b=dsPopValue();
-	Long a=dsPopValue();
-	if (a & b != 0) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+	Long b=dsPopInt4();
+	Long a=dsPopInt4();
+	if (a & b != 0) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 
 :OR
-	Long b=dsPopValue();
-	Long a=dsPopValue();
-	if (a | b != 0) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+	Long b=dsPopInt4();
+	Long a=dsPopInt4();
+	if (a | b != 0) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 
 :NOT
-	Long val=dsPopValue();
-	dsPushValue( ~val );
+	Long val=dsPopInt4();
+	dsPushInt4( ~val );
 	
 :EQ
-	Long b=dsPopValue();
-	Long a=dsPopValue();
-	if (a == b) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+	Long b=dsPopInt4();
+	Long a=dsPopInt4();
+	if (a == b) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 
 :NE
-	Long b=dsPopValue();
-	Long a=dsPopValue();
-	if (a != b) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+	Long b=dsPopInt4();
+	Long a=dsPopInt4();
+	if (a != b) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 	
 :GT
-	Long b=dsPopValue();
-	Long a=dsPopValue();
-	if (a > b) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+	Long b=dsPopInt4();
+	Long a=dsPopInt4();
+	if (a > b) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 	
 :LT
-	Long b=dsPopValue();
-	Long a=dsPopValue();
-	if (a < b) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+	Long b=dsPopInt4();
+	Long a=dsPopInt4();
+	if (a < b) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 
 :GE
-	Long b=dsPopValue();
-	Long a=dsPopValue();
-	if (a >= b) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+	Long b=dsPopInt4();
+	Long a=dsPopInt4();
+	if (a >= b) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 
 :LE
-	Long b=dsPopValue();
-	Long a=dsPopValue();
-	if (a <= b) dsPushValue(F_TRUE); else dsPushValue(F_FALSE);
+	Long b=dsPopInt4();
+	Long a=dsPopInt4();
+	if (a <= b) dsPushInt4(F_TRUE); else dsPushInt4(F_FALSE);
 
 :DROP
-	dsPopValue();
+	dsPopInt4();
 	
 :SETLOCAL
+	Long value=dsPopInt4();
+	Ref sym=dsPopRef();
+	setLocalValue(sym,value);
+	
 :GETLOCAL
+	Ref sym=dsPopRef();
+	dsPushValue(getLocalValue(sym));
+	
 :WORD
+	// create word from substring of existing word
+	Ref ref=dsPopRef();
+	char *str=safeGetString(ref);
+	addSymbol(str);
+		
 :WRITE1
+	Ref ref=dsPopRef();
+	long val=dsPopInt4();
+	writeByte(ref,val);
+	
 :WRITE2
+	Ref ref=dsPopRef();
+	long val=dsPopInt4();
+	write2(ref,val);
+	
 :WRITE4
+	Ref ref=dsPopRef();
+	long val=dsPopInt4();
+	write4(ref,val);
+	
 :READ1
+	Ref ref=dsPopRef();
+	dsPushInt1(readInt1(ref));
+	
 :READ2
+	Ref ref=dsPopRef();
+	dsPushInt2(readInt2(ref));
+	
 :READ4
+	Ref ref=dsPopRef();
+	dsPushInt4(readInt4(ref));
+
 :READ1g
+	Long addr=dsPopInt4();
+	dsPushInt1(readGlobal(addr));
+	
 :WRITE1g
+	Long addr=dsPopInt4();
+	Byte value=dsPopInt1();
+	writeGlobal(addr,value);
+	
 :LITERAL1
+	dsPushInt1(nextByte());
+
 :LITERAL2
+	a=nextByte();
+	b=nextByte();
+	dsPushInt2(a<<8 | b)
+	
 :LITERAL4
+	a=nextByte();
+	b=nextByte();
+	c=nextByte();
+	d=nextByte();
+	dsPushInt4(a<<24 | b<<12 | c<<8 | d)
 
 :CHECK_PARSE
 	Ref symRef=dsPopRef();
@@ -150,5 +230,5 @@
 :PARSE
 	Ref symRef=dsPopRef();
 	char *str = safeGetString(symRef);
-	dsPushValue(parseInt(str));
+	dsPushInt4(parseInt(str));
 

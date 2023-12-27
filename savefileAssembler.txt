@@ -324,9 +324,11 @@
 
 
 
-# Reserved words 
+# Reserved words not handled by the compiler from ACode.txt
 # --
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< EOF
+
+
 
 # Control flow
 
@@ -371,7 +373,10 @@ TIBW	# Get symbol reference for string [TIBs - TIBr> return Ref
 EMIT # (char --)
 EMITWORD  # (ref -- ) - null-terminated string
 
-# math
+# The following op-codes are emitted as bytes
+# from the word compiler in ACode.txt, but are
+# also used directly int the code in that file
+# --------------------------------------------
 
 ADD
 SUBTRACT
@@ -394,7 +399,7 @@ GE
 LE
 
 
-# Stack
+# Data stack
 
 DROP
 
