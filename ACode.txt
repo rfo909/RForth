@@ -439,6 +439,36 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 		
 :SingleInstructionWords					# ( word -- bool )
 	=$0
+	
+	# TODO: add TIB* and others that we want to be part of the Forth language
+
+	$0 'SYM_RETURN 			OP:RETURN 		OUTRETURN 
+	$0 'SYM_PANIC 			OP:PANIC		OUTRETURN 
+	$0 'SYM_HEAP_MAX		OP:HEAP_MAX		OUTRETURN 
+	$0 'SYM_TIBs 			OP:TIBs			OUTRETURN 
+	$0 'SYM_TIBr 			OP:TIBr			OUTRETURN 
+	$0 'SYM_TIBr+			OP:TIBr+ 		OUTRETURN 
+	$0 'SYM_TIBs+			OP:TIBs+ 		OUTRETURN 
+	$0 'SYM_TIBr< 			OP:TIBr< 		OUTRETURN 
+	$0 'SYM_TIBs> 			OP:TIBs> 		OUTRETURN 
+	$0 'SYM_TIBW 			OP:TIBW 		OUTRETURN 
+	$0 'SYM_EMIT 			OP:EMIT 		OUTRETURN 
+	$0 'SYM_EMITWORD 		OP:EMITWORD 	OUTRETURN 
+
+	$0 'SYM_DROP 			OP:DROP			OUTRETURN 
+
+	$0 'SYM_WRITE1 			OP:WRITE1 		OUTRETURN 
+	$0 'SYM_WRITE2 			OP:WRITE2 		OUTRETURN 
+	$0 'SYM_WRITE4 			OP:WRITE4 		OUTRETURN 
+	$0 'SYM_READ1 			OP:READ1 		OUTRETURN 
+	$0 'SYM_READ2 			OP:READ2 		OUTRETURN 
+	$0 'SYM_READ4 			OP:READ4 		OUTRETURN 
+	$0 'SYM_READ1g 			OP:READ1g 		OUTRETURN 
+	$0 'SYM_WRITE1g 		OP:WRITE1g		OUTRETURN 
+	
+	$0 'SYM_CHECK_PARSE		OP:CHECK_PARSE	OUTRETURN 
+	$0 'SYM_PARSE 			OP:PARSE		OUTRETURN 
+
 	$0 'SYM_ADD 			OP:ADD 			OUTRETURN 
 	$0 'SYM_SUBTRACT		OP:SUBTRACT		OUTRETURN 
 	$0 'SYM_MUL				OP:MUL			OUTRETURN 
@@ -716,6 +746,32 @@ def Regular		0
 	*SYM_b					NEXT	
 	*SYM_c					NEXT	
 	*SYM_d					NEXT	
+
+	*SYM_RETURN				NEXT
+	*SYM_PANIC				NEXT
+	*SYM_HEAP_MAX			NEXT
+	*SYM_TIBs				NEXT
+	*SYM_TIBr				NEXT
+	*SYM_TIBr+				NEXT
+	*SYM_TIBs+				NEXT
+	*SYM_TIBr<				NEXT
+	*SYM_TIBs>				NEXT
+	*SYM_TIBW				NEXT
+	*SYM_EMIT				NEXT
+	*SYM_EMITWORD			NEXT
+	
+	*SYM_DROP				NEXT
+	*SYM_WRITE1				NEXT
+	*SYM_WRITE2				NEXT
+	*SYM_WRITE4				NEXT
+	*SYM_READ1				NEXT
+	*SYM_READ2				NEXT
+	*SYM_READ4				NEXT
+	*SYM_READ1g				NEXT
+	*SYM_WRITE1g			NEXT
+	
+	*SYM_CHECK_PARSE		NEXT
+	*SYM_PARSE				NEXT	
 	
 	*SYM_ADD				NEXT
 	*SYM_SUBTRACT			NEXT
@@ -733,6 +789,7 @@ def Regular		0
 	*SYM_LT					NEXT
 	*SYM_GE					NEXT
 	*SYM_LE					NEXT
+	
 	*SYM_COLON				NEXT
 	*SYM_SEMICOLON			NEXT
 	*SYM_IMMEDIATE			NEXT
@@ -744,7 +801,6 @@ def Regular		0
 	*SYM_OutRef				NEXT
 	*SYM_Compile			NEXT
 	*SYM_NextWord			NEXT
-	*SYM_PANIC				NEXT
 	*SYM_ParseInt			NEXT
 	*SYM_IsInt				NEXT
 	*SYM_CSF_Underflow		NEXT
@@ -772,6 +828,32 @@ def Regular		0
 :SYM_c %c 0
 :SYM_d %d 0
 
+:SYM_RETURN   %R %E %T %U %R %N 0
+:SYM_PANIC   %P %A %N %I %C 0
+:SYM_HEAP_MAX   %H %E %A %P %_ %M %A %X 0
+:SYM_TIBs   %T %I %B %s 0
+:SYM_TIBr   %T %I %B %r 0
+:SYM_TIBr+   %T %I %B %r %+ 0
+:SYM_TIBs+   %T %I %B %s %+ 0
+:SYM_TIBr<   %T %I %B %r %< 0
+:SYM_TIBs>   %T %I %B %s %> 0
+:SYM_TIBW   %T %I %B %W 0
+:SYM_EMIT   %E %M %I %T 0
+:SYM_EMITWORD   %E %M %I %T %W %O %R %D 0
+:SYM_DROP   %D %R %O %P 0
+:SYM_WRITE1   %W %R %I %T %E %1 0
+:SYM_WRITE2   %W %R %I %T %E %2 0
+:SYM_WRITE4   %W %R %I %T %E %4 0
+:SYM_READ1   %R %E %A %D %1 0
+:SYM_READ2   %R %E %A %D %2 0
+:SYM_READ4   %R %E %A %D %4 0
+:SYM_READ1g   %R %E %A %D %1 %g 0
+:SYM_WRITE1g   %W %R %I %T %E %1 %g 0
+:SYM_CHECK_PARSE   %C %H %E %C %K %_ %P %A %R %S %E 0
+:SYM_PARSE   %P %A %R %S %E 0
+
+
+
 :SYM_ADD %+ 0
 :SYM_SUBTRACT %- 0
 :SYM_MUL %* 0
@@ -788,6 +870,7 @@ def Regular		0
 :SYM_LT %l %t 0
 :SYM_GE %g %e 0
 :SYM_LE %l %e 0
+
 :SYM_COLON %: 0
 :SYM_SEMICOLON %; 0
 :SYM_IMMEDIATE %I %M %M %E %D %I %A %T %E 0
@@ -799,9 +882,9 @@ def Regular		0
 :SYM_OutRef %O %u %t %R %e %f 0
 :SYM_Compile %C %o %m %p %i %l %e 0
 :SYM_NextWord %N %e %x %t %W %o %r %d 0
-:SYM_PANIC %P %A %N %I %C 0
 :SYM_IsInt %I %s %I %n %t 0
 :SYM_ParseInt %P %a %r %s %e %I %n %t 0
+
 :SYM_CSF_Underflow %C %a %l %l %- %s %t %a %c %k %- %u %n %d %e %r %f %l %o %w 0
 :SYM_Immediate_no_word %I %m %m %e %d %i %a %t %e %- %n %o %- %w %o %r %d 0
 # --

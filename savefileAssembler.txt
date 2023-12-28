@@ -225,6 +225,8 @@
 		if (self.defs.has(word)) {
 			w=self.defs.get(word).trim
 			w=w.replace("@@",""+self.lineCounter)
+				# For defs: tag def and reference must be on same line (defs are only one line anyway)
+				
 			if (w != "") Inner {
 				w.trim.split->w2
 					self.processWord(w2.trim,acceptMissingTags)
@@ -259,7 +261,7 @@
 
 
 
-# Assemble from SourceFile
+# Assemble from SourceFile - display full information
 # --
 	P(1,SourceFile.read) => lines
 	a=Assembler
@@ -296,7 +298,7 @@
 
 # Create symbol string
 # --
-	Input("Enter symbol string").get =>str
+	P(1,Input("Enter symbol string").get) =>str
 	str.chars->c
 		if (c==" ") out("_*ASCII_SPACE") else out("%"+c)
 	| _.concat(" ") + " 0"
@@ -317,7 +319,7 @@
 "^t".unEsc
 //TAB
 		
-# Assemble from SourceFile
+# Assemble from SourceFile, resolve named op's and generate code to paste into C
 # --
 	P(1,SourceFile.read) => lines
 	a=Assembler
@@ -352,7 +354,7 @@
 
 
 
-# Reserved words not handled by the compiler from ACode.txt
+# Reserved words
 # --
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< EOF
 
