@@ -23,6 +23,7 @@
 
 # Build
 # --
+	Dir.run("clear")
 	if (InProjectDir) {
 		Dir.sub("build") => buildDir
 		buildDir.run("cmake","..")
@@ -46,3 +47,6 @@
 # --
 	Dir.run("screen","/dev/ttyACM0","115200")
 /Comm
+
+Build
+/b

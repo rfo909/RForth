@@ -25,10 +25,10 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(rf2 rf2.c )
+add_executable(rf2 rf2.c Main.c TIB.c Stack.c Heap.c CSTS.c Serial.c Sym.c )
 
-pico_set_program_name(rf2 "rf2")
-pico_set_program_version(rf2 "0.1")
+pico_set_program_name(rf2 "RForth")
+pico_set_program_version(rf2 "0.0.0b")
 
 pico_enable_stdio_uart(rf2 1)
 pico_enable_stdio_usb(rf2 0)
@@ -45,8 +45,8 @@ target_include_directories(rf2 PRIVATE
 
 # Add any user requested libraries
 target_link_libraries(rf2 
-        hardware_spi
-        hardware_i2c
+#        hardware_spi
+#        hardware_i2c
         )
 
 pico_add_extra_outputs(rf2)

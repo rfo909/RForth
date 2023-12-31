@@ -1,0 +1,19 @@
+
+FTDI pinout (remember 3.3V jumper selection)
+
+DTR RX TX VCC CTS GND
+
+Flashed mecrisp Forth on the pico, to test the FTDI chip.
+
+Hooked up GND, VCC (to VSYS) RX and TX.
+
+It works. 
+
+GNU Screen send/recv is ok, except formatting (LF only).
+
+Minicom does not work at all. Softlinking /dev/ttyUSB0 as /dev/modem. This works on RPi 3, where I connected
+directly using TX/RX GPIO pins (no FTDI), but it runs minicom 2.8, while got 2.7 on ubuntu 20 on pc.
+
+
+
+

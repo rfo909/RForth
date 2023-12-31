@@ -1,10 +1,21 @@
-typedef __UINT16_TYPE__    Ref;
-typedef __UINT_FAST8_TYPE__ Byte;
-typedef __INT32_TYPE__ Long;
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
 
-#define HEAP_SIZE       8192
+#include "pico/types.h"
+
+
+
+
+typedef uint16_t            Ref;
+typedef uint8_t         Byte;
+typedef int32_t        Long;
+
+#define HEAP_SIZE       16384
 
 // Heap locations for system variables
+
 #define H_MAIN_SETUP                1   // Ref
 #define H_MAIN_LOOP                 3   // Ref
 #define H_CS_BASE_REF               5   // Ref
@@ -17,8 +28,6 @@ typedef __INT32_TYPE__ Long;
 #define H_HERE                      15  // Ref
 #define H_HERE_SHADOW               17  // Ref
 
-
-
 #define null                    0
 
 // Forth true and false
@@ -29,14 +38,7 @@ typedef __INT32_TYPE__ Long;
 // data stack size
 #define DSTACK_DEPTH            30
 
-// CSF offsets
 
-#define CSF_code            0   // Ref
-#define CSF_tempStackBase   2   // byte
-#define CSF_tempStackNext   3   // byte
-#define CSF_pc              4   // Ref
-
-#define CSF_n               6
 
 
 
@@ -88,3 +90,79 @@ typedef __INT32_TYPE__ Long;
 #define OP_LITERAL4            45
 #define OP_CHECK_PARSE         46
 #define OP_PARSE               47
+
+
+// Main.c
+
+void PANIC (char *msg);
+bool hasPanicFlag();
+void clearPanicFlag ();
+
+// TIB.c
+
+void initTIB();
+
+char getTIBsChar();
+char getTIBrChar();
+void advanceTIBr();
+void advanceTIBs();
+void resetTIBr();
+void confirmTIBr();
+int getTIBWordLength();
+
+
+// Sym.c
+
+Ref symCreateTIBWord();
+Ref addSymbol (char *str);
+
+// Stack.c
+
+void dsPushRef (Ref value);
+void dsPushByte (Byte value);
+void dsPushValue (Long value);
+
+Ref dsPopRef ();
+Byte dsPopByte ();
+Long dsPopValue ();
+
+
+// Heap.c
+void initHeap();
+Ref heapMalloc (int length);
+char *safeGetString (Ref ref);
+
+Byte *refToPointer (Ref ref);
+Byte readByte(Ref addr);
+Ref readRef(Ref addr);
+
+Byte readInt1(Ref addr);
+Long readInt2(Ref addr);
+Long readInt4(Ref addr);
+
+void writeByte (Ref addr, Byte value);
+void writeRef (Ref addr, Ref value);
+
+void writeInt1 (Ref addr, Long value);
+void writeInt2 (Ref addr, Long value);
+void writeInt4 (Ref addr, Long value);
+
+Byte readGlobal (Long addr);
+void writeLobal (Long addr, Byte value);
+
+// Serial.c
+
+char serialNextChar();
+
+void serialEmitChar (char c);
+void serialEmitStr (char *str);
+void serialEmitNewline ();
+
+
+// CSTS.c  -- call stack and temp stack
+
+Ref csGetCurrFrame ();
+Byte csNextCodeByte ();
+void csJump (Ref value);
+void csCall (Ref addr);
+void csReturn ();
