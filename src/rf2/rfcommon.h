@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include "stdlib.h"
+#include <string.h> 
 
 #include "pico/types.h"
 
@@ -148,9 +150,11 @@ void writeInt2 (Ref addr, Long value);
 void writeInt4 (Ref addr, Long value);
 
 Byte readGlobal (Long addr);
-void writeLobal (Long addr, Byte value);
+void writeGlobal (Long addr, Byte value);
 
 // Serial.c
+
+void initSerial();
 
 char serialNextChar();
 
@@ -166,3 +170,11 @@ Byte csNextCodeByte ();
 void csJump (Ref value);
 void csCall (Ref addr);
 void csReturn ();
+
+void csSetLocal (Ref sym, Long value);
+Long csGetLocal (Ref sym);
+
+// Numbers.c
+
+bool checkParseInt (char *s);
+Long parseInt (char *s);

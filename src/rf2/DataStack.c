@@ -1,4 +1,4 @@
-#include "common.h"
+#include "rfcommon.h"
 
 
 
@@ -29,10 +29,10 @@ Long dsPopValue () {
     }
 }
 
-Ref dsPopRef ()  {
+Ref dsPopRef () {
     return (Ref) dsPopValue();
 }
 
-Ref dsPopByte ()  {
-    return (Ref) dsPopValue();
+Byte dsPopByte () {
+    return (Byte) dsPopValue();
 }

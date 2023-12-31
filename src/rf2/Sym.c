@@ -10,6 +10,9 @@
 
 static Byte buf[BUF_SIZE];
 
+static Ref lookupSymbol (char *symbol);
+static Ref addNewSymbol (char *symbol);
+
 
 Ref symCreateTIBWord () {
     int length=getTIBWordLength();
@@ -23,13 +26,13 @@ Ref symCreateTIBWord () {
         buf[pos++] = getTIBsChar();
     }
     buf[pos++]='\0';
-    return addSymbol(buf);
+    return addNewSymbol(buf);
 }
 
 Ref addSymbol (char *str) {
     Ref ref=lookupSymbol(str);
     if (ref == null) {
-        ref = addSymbol(str);
+        ref = addNewSymbol(str);
     }
     return ref;
 }
@@ -47,9 +50,10 @@ static Ref lookupSymbol (char *symbol) {
     }
 }
 
+
 // Returns ref to the string stored in the symbol stack, not the CONS cells
 // that IS the stack
-static Ref addSymbol (char *symbol) {
+static Ref addNewSymbol (char *symbol) {
     Ref strSpace = heapMalloc(strlen(symbol)+1);
     strcpy(refToPointer(strSpace), symbol);
 
@@ -59,7 +63,5 @@ static Ref addSymbol (char *symbol) {
     writeRef(H_SYM_TOP_REF, cons);
 
     return strSpace;
-
-
-
 }
+

@@ -25,7 +25,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(rf2 rf2.c Main.c TIB.c Stack.c Heap.c CSTS.c Serial.c Sym.c )
+add_executable(rf2 rf2.c Main.c TIB.c DataStack.c Heap.c CSTS.c Serial.c Sym.c Numbers.c )
 
 pico_set_program_name(rf2 "RForth")
 pico_set_program_version(rf2 "0.0.0b")

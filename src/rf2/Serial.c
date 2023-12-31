@@ -3,6 +3,9 @@
 // Serial input and output
 
 
+void initSerial() {
+    // TODO
+}
 
 char serialNextChar() {
     return 0;    

@@ -37,9 +37,9 @@ static Ref csGetPC () {
     return readRef(currCSF + CSF_pc);    
 }
 
-void csJump (Ref value) {}
+void csJump (Ref value) {
     Ref currCSF = csGetCurrFrame();
-    writeRef(currCSF + CSF_pc, addr);    
+    writeRef(currCSF + CSF_pc, value);    
 }
 
 void csCall (Ref addr) {
@@ -58,5 +58,13 @@ void csReturn() {
     Byte x = readByte(H_CS_NEXT_FRAME);
     writeByte(H_CS_NEXT_FRAME, x - 1);
 
+}
+
+void csSetLocal (Ref sym, Long value) {
+
+}
+
+Long csGetLocal (Ref sym) {
+    return null;
 }
 
