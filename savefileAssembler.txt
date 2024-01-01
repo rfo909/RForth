@@ -354,18 +354,6 @@
 
 
 
-# Generate disassembler
-# --
-	dict=GetOpCodes
-	
-	dict.keys->key
-		println("case " 
-			+ dict.get(key) 
-			+ ': { return "' + key + '";}')
-/dis 
-
-
-
 # Reserved words
 # --
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< EOF
@@ -373,17 +361,16 @@
 
 
 # Control flow
-
-JMP
-COND_JMP
-CALL # ( ref -- )		# push frame on call stack (CS)
+	
+JMP				# ( ref -- )
+COND_JMP		# ( ref cond -- )
+CALL 			# ( ref -- )		# push frame on call stack (CS)
 RETURN					# pop frame off call stack
 
 
+PANIC			# ( symbol -- )
 
-
-
-PANIC	# reset input buffer, clear data- and call stacks, invoke :MainLoop   
+		# reset input buffer, clear data- and call stacks, invoke :MainLoop   
 		
 		# See :PANIC in ACode.txt - it logs and calls PANIC
 		# When we invoke :MainLoop (pointed to from ref at :MAIN_LOOP) it
@@ -412,8 +399,8 @@ TIBW	# Get symbol reference for string [TIBs - TIBr> return Ref
 
 # Print to stdout
 
-EMIT # (char --)
-EMITWORD  # (ref -- ) - null-terminated string
+EMIT # ( char -- )
+EMITWORD  # ( symbolRef -- ) - null-terminated string
 
 # The following op-codes are emitted as bytes
 # from the word compiler in ACode.txt, but are
@@ -445,15 +432,14 @@ LE
 
 DROP
 
-#DUP     # stack operations are replaced by the local variables $n
-#SWAP
-#DROP
+# regular stack operations are replaced by the local variables $n
+# so no dup, swap or rotate etc
 
 
 # Local variables
 
-SETLOCAL		# ( value nameRef -- )
-GETLOCAL		# ( nameRef -- value )
+SETLOCAL		# ( value symbol -- )
+GETLOCAL		# ( symbol -- value )
 
 WORD			# ( Ref -- )
 	# for making new word from substring of existing word
@@ -483,7 +469,7 @@ LITERAL2
 LITERAL4
 
 
-CHECK_PARSE	# ( word -- bool )
+CHECK_PARSE	# ( symbol -- bool )
 PARSE  # ( word -- number )  - recognizes decimal, 0x0a, b1010
 
 
@@ -499,10 +485,3 @@ PARSE  # ( word -- number )  - recognizes decimal, 0x0a, b1010
 
 
 
-
-ReservedWords->w 
-	println(
-		":" + 
-		w.replace("+","_ADD").replace("-","_SUB").replace("<","_BACK").replace(">","_FWD") 
-	)
-/RW

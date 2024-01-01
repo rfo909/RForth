@@ -40,16 +40,141 @@ buffer managed in C, via a number of TIBx words in Forth. Examining characters
 forward from current position may block until new input comes in (over serial or
 otherwise).
 
+Op-codes
+--------
+
+These op-codes are executed by the interpreter.
+```
+
+
+# Control flow
+	
+JMP				# ( ref -- )
+COND_JMP		# ( ref cond -- )
+CALL 			# ( ref -- )		# push frame on call stack (CS)
+RETURN					# pop frame off call stack
+
+
+PANIC			# ( symbol -- )
+
+		# reset input buffer, clear data- and call stacks, invoke :MainLoop   
+		
+		# See :PANIC in ACode.txt - it logs and calls PANIC
+		# When we invoke :MainLoop (pointed to from ref at :MAIN_LOOP) it
+		# detects if there has been been allocated uncommitted memory from the heap,
+		# and attempts to clean up
+
+
+# Heap
+
+HEAP_MAX		# return two byte value for total number of bytes on heap (max 64k)
+
+# TIB = Terminal Input Buffer
+
+TIBs	# Start index - returns start character
+TIBr    # read index - returns character
+TIBr+   # advance TIBr
+TIBs+   # advance TIBc - if TIBr==TIBc it gets advanced too
+TIBr<   # move TIBr back to TIBs
+TIBs>   # move TIBs forward to TIBr
+	# TIBr is the pointer we use to examine input
+	# TIBs is the pointer we use to remember the start
+	# The system write pointer can advance to TIBs-1 (modulo TIB_SIZE)
+	# Advancing TIBs/TIBr past last character from serial blocks the interpreter (in Forth)
+TIBW	# Get symbol reference for string [TIBs - TIBr> return Ref
+
+
+# Print to stdout
+
+EMIT # ( char -- )
+EMITWORD  # ( symbolRef -- ) - null-terminated string
+
+# The following op-codes are emitted as bytes
+# from the word compiler in ACode.txt, but are
+# also used directly int the code in that file
+# --------------------------------------------
+
+ADD
+SUBTRACT
+MUL
+DIV
+MOD
+
+RIGHTSHIFT	# ( value n -- value )
+LEFTSHIFT	# ( value n -- value )
+
+AND   # Bitwise, so that false=0, true=0xffffffff (-1 signed long)
+OR
+NOT
+
+EQ
+NE
+GT
+LT
+GE
+LE
+
+
+# Data stack
+
+DROP
+
+# regular stack operations are replaced by the local variables $n
+# so no dup, swap or rotate etc
+
+
+# Local variables
+
+SETLOCAL		# ( value symbol -- )
+GETLOCAL		# ( symbol -- value )
+
+WORD			# ( Ref -- )
+	# for making new word from substring of existing word
+
+
+# Read and write different number of bytes
+# --
+
+WRITE1 # ( value addr -- )
+WRITE2 
+WRITE4 
+
+READ1  # ( addr -- value )
+READ2
+READ4 
+
+# Global read and write, outside of Forth heap - bytes only
+# -----
+
+READ1g		
+WRITE1g 
+
+# Literal values in code
+
+LITERAL1  # followed by 1, 2 or 4 bytes
+LITERAL2
+LITERAL4
+
+
+CHECK_PARSE	# ( symbol -- bool )
+PARSE  # ( word -- number )  - recognizes decimal, 0x0a, b1010
+
+
+```
+
 Status
 ------
 
-A "pretend assembly" language is getting finalized. It contains simple system calls,
-like CALL, RETURN, ADD, SUBTRACT etc, as well as primitives for processing words
-ahead, via the TIB.
 
-Local variables are going to be stored on a new tempStack, which allocates six bytes
-per variable, two referring to the name, and four for the value. The point of storing
-the names, is both for lookup when setting or getting values, and second to provide
-breakpoints where variables can be inspected.
+The bulk of the C code is in place, except for local variables in Forth, which
+will live on the temp stack. 
+
+Have created a simple main loop stepping one instruction
+at a time, showing the name of the instruction, and blocking on serial for each
+step ahead.
+
+Quite a bit of debugging remains, to see that the code executes as intended. 
+
+
 
 

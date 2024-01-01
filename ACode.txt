@@ -1,3 +1,15 @@
+# This file contains the initial memory layout, with both data
+# and functions. These implement the main loop, where we fetch words,
+# compile and execute them.
+#
+# The text in this file is assembled into binary form with the CFT script
+# Assembler. It contains two major functions: 
+#
+# - t       - show compiled code on still symbolic form
+# - Compile - generates content to paste into Heap.h
+#
+
+
 # Tags
 # ####
 
@@ -721,6 +733,8 @@ def Regular		0
 		
 :SYM_Cons_List		# hard coded list of symbols 
 					# New symbols will be added from C, mostly from TIBW or WORD ops
+					
+					# Note NEXT and NO_NEXT are implemented in the Assembler
 
 	*SYM_$0					NEXT	
 	*SYM_$1					NEXT	
