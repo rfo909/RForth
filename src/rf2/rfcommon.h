@@ -6,8 +6,10 @@
 #include <string.h> 
 
 #include "pico/types.h"
+#include "pico/stdlib.h"
 
 
+#define WELCOME_STRING      "\nWelcome to RFOrth\n"
 
 
 typedef uint16_t            Ref;
@@ -161,6 +163,9 @@ char serialNextChar();
 void serialEmitChar (char c);
 void serialEmitStr (char *str);
 void serialEmitNewline ();
+int serialLostChars();
+
+void DEBUG (char *msg);
 
 
 // CSTS.c  -- call stack and temp stack

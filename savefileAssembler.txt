@@ -286,7 +286,7 @@
 	true
 /t
 		
-# Calculate LITERAL2 reference
+# Calculate LITERAL2 reference by entering two single byte values (interactive)
 # --
 	result=0
 	Input("Enter sequence of bytes").get.split->val

@@ -1,6 +1,8 @@
 #include "rfcommon.h"
 
 
+// NOTE maps \r \n \t to space
+
 #define TIB_SIZE        100
 
 static char *buf;
@@ -16,8 +18,15 @@ void initTIB() {
     inputWritePos=0;
 }
 
+static char filter (char c) {
+    if (c=='\t' || c=='\n' || c=='\r') return ' ';
+    return c;
+}
+
+// Call serialNextChar() which may block until there are data
 static void getInputCharacter() {
-    char c = serialNextChar();  // blocks until data
+    char c = serialNextChar();
+    c=filter(c);
     buf[inputWritePos]=c;
     inputWritePos=(inputWritePos+1) % TIB_SIZE;
 }

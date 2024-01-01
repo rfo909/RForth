@@ -45,9 +45,11 @@ target_include_directories(rf2 PRIVATE
 
 # Add any user requested libraries
 target_link_libraries(rf2 
+  #uart_advanced pico_stdlib
+  hardware_uart
 #        hardware_spi
 #        hardware_i2c
-        )
+)
 
 pico_add_extra_outputs(rf2)
 

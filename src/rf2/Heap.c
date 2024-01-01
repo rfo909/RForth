@@ -97,14 +97,12 @@ void writeGlobal (Long addr, Byte value) {
 
 
 #include "Heap.h"
-
 int dataLength = COMPILED_DATA_LENGTH;
-Byte data[] = COMPILED_DATA;
-
 
 void initHeap() {
     // ACode.txt 
     heap=malloc(HEAP_SIZE);
+    Byte data[] = COMPILED_DATA;
     memcpy(heap, data, dataLength);
     heapPointer=dataLength;
 }
