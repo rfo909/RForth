@@ -13,8 +13,13 @@ int main()
     // TIB* has separate circular buffer for TIB* pointer logic
     // The TIB functions seem to work
     // Sym.c seems to work + the initial setup from ACode.txt also ok (eq, ne, and etc)
+    // Heap.c also ok (as it is called from Sym.c)
+
 
     for(;;) {
+        Ref here = readRef(H_HERE);
+        sprintf(buf,"here=%d\r\n", here);
+        DEBUG(buf);
 
         serialEmitStr("\r\nok ");
         

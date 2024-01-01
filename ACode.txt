@@ -259,8 +259,8 @@ def OP:PARSE                   47
 
 # Heap management
 
-:HERE               'END_MARKER			# two byte Ref to next free byte on heap
-:HERE_SHADOW		'END_MARKER			# used by main loop, to rollback heap if panic
+:HERE               *END_MARKER			# two byte Ref to next free byte on heap
+:HERE_SHADOW		*END_MARKER			# used by main loop, to rollback heap if panic
 
 
 
@@ -685,7 +685,7 @@ def Regular		0
 	'HERE_SHADOW READ2 =$0										# $0 = HERE-shadow
 	'HERE READ2 =$1												# $1 = HERE
 	
-	$1 $0 EQ 'xML_Here_ok COND_JMP								# if HERE == HERE-shadow, goto ok
+	$1 $0 EQ 'xML_Loop COND_JMP								# if HERE == HERE-shadow, goto ok
 		# remove entries from dictionary until DE ref 
 		# smaller than HERE-shadow, which means they were
 		# allocated by code that now has panicked
@@ -708,10 +708,6 @@ def Regular		0
 		:xML_SymPurgeOk
 		$2 'SYM_TOP_REF WRITE2										# update SYM_TOP
 		
-		'xML_SymPurgeOk
-	
-	:xML_Here_ok
-	
 	# The actual main loop
 	
 	:xML_Loop
