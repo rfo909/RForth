@@ -133,10 +133,12 @@ Long dsPopValue ();
 
 // Heap.c
 void initHeap();
-Ref heapMalloc (int length);
-char *safeGetString (Ref ref);
 
 Byte *refToPointer (Ref ref);
+char *safeGetString (Ref ref);
+
+Ref heapMalloc (int length);
+
 Byte readByte(Ref addr);
 Ref readRef(Ref addr);
 

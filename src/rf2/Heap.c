@@ -1,8 +1,21 @@
 #include "rfcommon.h"
 
 
-Byte *heap;
-int heapPointer=0;
+static Byte *heap;
+static int heapPointer=0;
+
+
+#include "Heap.h"
+static int dataLength = COMPILED_DATA_LENGTH;
+
+void initHeap() {
+    // ACode.txt 
+    heap=malloc(HEAP_SIZE);
+    Byte data[] = COMPILED_DATA;
+    memcpy(heap, data, dataLength);
+    heapPointer=dataLength;
+}
+
 
 
 
@@ -10,12 +23,6 @@ Byte *refToPointer (Ref ref) {
     return (heap+ref);
 }
 
-Ref heapMalloc (int length) {
-    Ref here=readRef(H_HERE); // first available byte position
-    Ref nextHere = here + length;
-    writeRef(H_HERE, nextHere);
-    return here;
-}
 
 #define MAX_STRING_LENGTH       256
 
@@ -35,6 +42,16 @@ char *safeGetString (Ref ref) {
     }
     return ptr;
 }
+
+
+
+Ref heapMalloc (int length) {
+    Ref here=readRef(H_HERE); // first available byte position
+    Ref nextHere = here + length;
+    writeRef(H_HERE, nextHere);
+    return here;
+}
+
 
 
 
@@ -95,20 +112,5 @@ void writeGlobal (Long addr, Byte value) {
 }
 
 
-
-#include "Heap.h"
-int dataLength = COMPILED_DATA_LENGTH;
-
-void initHeap() {
-    // ACode.txt 
-    heap=malloc(HEAP_SIZE);
-    Byte data[] = COMPILED_DATA;
-    memcpy(heap, data, dataLength);
-    heapPointer=dataLength;
-}
-
-// ------------------------------------------------------
-// Assembler:Compile output
-// ------------------------------------------------------
 
 

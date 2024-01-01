@@ -14,19 +14,22 @@ static Ref lookupSymbol (char *symbol);
 static Ref addNewSymbol (char *symbol);
 
 
+// Returns ref to the string stored in the symbol stack (heap), not the CONS cells
+// that IS the stack
 Ref symCreateTIBWord () {
     int length=getTIBWordLength();
     if (length > BUF_SIZE-1) {
-        PANIC("Sym-too-long");
+        PANIC("Symbol-too-long");
         return (Ref) null;
     }
     // copy characters
     int pos=0;
     while (getTIBWordLength() > 0) {
         buf[pos++] = getTIBsChar();
+        advanceTIBs();
     }
     buf[pos++]='\0';
-    return addNewSymbol(buf);
+    return addSymbol(buf);
 }
 
 Ref addSymbol (char *str) {
@@ -43,17 +46,25 @@ static Ref lookupSymbol (char *symbol) {
     while (top != null) {
         Ref strRef = readRef(top);
         char *str=(char *) refToPointer(strRef);
+
         if (!strcmp(str,symbol)) {
-            return top;
+            return strRef;
         }
+        //DEBUG("lookupSymbol");
+        //DEBUG(symbol);
+        //DEBUG("!=");
+        //DEBUG(str);
         top=readRef(top+2); // next
     }
+    return (Ref) null;
 }
 
 
-// Returns ref to the string stored in the symbol stack, not the CONS cells
+// Returns ref to the string stored in the symbol stack (heap), not the CONS cells
 // that IS the stack
 static Ref addNewSymbol (char *symbol) {
+    //DEBUG("addNewSymbol");
+    //DEBUG(symbol);
     Ref strSpace = heapMalloc(strlen(symbol)+1);
     strcpy(refToPointer(strSpace), symbol);
 

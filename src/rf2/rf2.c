@@ -3,37 +3,41 @@
 int main()
 {
     initSerial();
-    //initHeap();
+    initHeap();
     initTIB();
 
     char buf[64];
 
-    // This actually works through the FTDI chip!!
+    // Serial ok - running at 9600 baud
+    // dropped characters solved by implementing circular buffer in Serial.c
+    // TIB* has separate circular buffer for TIB* pointer logic
+    // The TIB functions seem to work
+    // Sym.c seems to work
+
     for(;;) {
-        serialEmitStr("ok ");
+
+        serialEmitStr("\r\nok ");
         
         // skip space
         while (getTIBrChar()==' ') {
             advanceTIBr();
         }
-        DEBUG("Skipped space");
         confirmTIBr();
 
         // look for next space
         while (getTIBrChar() != ' ') {
-            serialEmitChar(getTIBrChar());
             advanceTIBr();
         }
+        Ref symbolRef = symCreateTIBWord();
+        sprintf(buf,"symbolRef=%d\r\n", symbolRef);
+        serialEmitStr(buf);
+        //char *s = (char *) refToPointer(symbolRef);
+        //sprintf(buf,"%d ", symbolRef);
+        //serialEmitStr(buf);
+        //serialEmitStr(s);
         serialEmitNewline();
-        DEBUG("Got word");
-
-        // manually show the word from TIBs to TIBr
-        while (getTIBsChar() != ' ') {
-            serialEmitChar(getTIBsChar());
-            advanceTIBs();
-        }
-        serialEmitNewline();
-
+        
+        confirmTIBr();
         if (serialLostChars() != 0) {
             sprintf(buf,"Lost=%d\n", serialLostChars());
             DEBUG(buf);
