@@ -175,6 +175,7 @@ int serialLostChars();
 
 void DEBUG (char *msg);
 void DEBUGint (char *name, int value);
+void DEBUGstr (char *name, char *value);
 
 // CSTS.c  -- call stack and temp stack
 
@@ -189,6 +190,8 @@ void csReturn ();
 
 void csSetLocal (Ref sym, Long value);
 Long csGetLocal (Ref sym);
+
+void csShowOp ();
 
 // Numbers.c
 

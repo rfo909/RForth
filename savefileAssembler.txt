@@ -354,6 +354,16 @@
 
 
 
+# Generate disassembler
+# --
+	dict=GetOpCodes
+	
+	dict.keys->key
+		println("case " 
+			+ dict.get(key) 
+			+ ': { return "' + key + '";}')
+/dis 
+
 
 
 # Reserved words

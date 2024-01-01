@@ -51,10 +51,10 @@ void clearPanicFlag () {
 
 static void execute()
 {
-    int op = csNextCodeByte();
+    DEBUG("execute - calling csShowOp");
+    csShowOp();
 
-    DEBUG("execute");
-    DEBUGint("op",op);
+    int op = csNextCodeByte();
 
     switch (op) {
     case OP_JMP: {
@@ -362,14 +362,22 @@ void forthMainLoop () {
     dsInit(); // initialize data stack
     csInit();
 
+    DEBUG("Press any key");
+    serialNextChar();
+
     Ref setup=readRef(H_MAIN_SETUP);
     Ref loop=readRef(H_MAIN_LOOP);
 
+    DEBUG("forthMainLoop");
+    DEBUGint("setup", setup);
+    DEBUGint("loop",loop);
  
+
     DEBUG("Calling H_MAIN_SETUP");
-    DEBUG("Press any key");
-    serialNextChar();
+
+
     csCall(setup); // create call stack frame
+
 
     // outer loop - never terminates
     for (;;) {

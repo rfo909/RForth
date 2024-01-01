@@ -5,29 +5,35 @@
 
 
 static Long dstack[DSTACK_DEPTH];
-static Byte dStackPos=0;
+static Byte dstackNext=0;
 
 
 void dsInit() {
-    dStackPos=0;
+    dstackNext=0;
 }
 
 
 void dsPushRef(Ref value) {
-    dstack[dStackPos++] = value;
+    dsPushValue((Long) value);
 }
 void dsPushByte(Byte value) {
-    dstack[dStackPos++] = value;
+    dsPushValue((Long) value);
 }
 void dsPushValue(Long value) {
-    dstack[dStackPos++] = value;
+    if (dstackNext >= DSTACK_DEPTH) {
+        PANIC("dsPush - stack overflow");
+        return;
+    }
+    dstack[dstackNext++] = value;
 }
 
 
 Long dsPopValue () {
-    if (dStackPos > 0) {
-        return dstack[dStackPos--];
+    if (dstackNext > 0) {
+        dstackNext--;
+        return dstack[dstackNext];
     } else {
+        PANIC("dsPop - stack empty");
         return 0;
     }
 }
@@ -41,10 +47,12 @@ Byte dsPopByte () {
 }
 
 bool dsEmpty () {
-    return (dStackPos==0);
+    if (dstackNext==0) return true; else return false;
 }
 
 Long dsPeek () {
-    if (dsEmpty) return 99999;
-    return dstack[dStackPos-1];
+    if (dsEmpty) {
+        return 99999; // no PANIC, this is just peek, for debugging
+    }
+    return dstack[dstackNext-1];
 }
