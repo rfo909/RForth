@@ -89,7 +89,7 @@ void initSerial() {
 char serialNextChar() {
     // wait for input
     while(readPos == writePos) ;
-    
+
     char c=buf[readPos];
     limit=readPos;
     readPos=(readPos+1) % HW_BUF_SIZE;
@@ -116,7 +116,15 @@ int serialLostChars() {
 void DEBUG (char *msg) {
     uart_puts(UART_ID, "DEBUG ");
     uart_puts(UART_ID, msg);
-    uart_puts(UART_ID, "\r\n");
+    uart_puts(UART_ID,"\r\n");
+}
+
+void DEBUGint (char *name, int value) {
+    uart_puts(UART_ID, "   ");
+    uart_puts(UART_ID, name);
+    sprintf(buf,"=%d");
+    uart_puts(UART_ID, buf);
+    uart_puts(UART_ID,"\r\n");
 }
 
 

@@ -7,9 +7,17 @@
 #define CSF_code            0   // Ref
 #define CSF_tempStackBase   2   // byte
 #define CSF_tempStackNext   3   // byte
-#define CSF_pc              4   // Ref
+#define CSF_pc              4   // Byte
 
-#define CSF_n               6
+#define CSF_n               5
+
+void csInit () {
+    writeRef(H_CS_NEXT_FRAME,0);
+}
+
+bool csEmpty() {
+    return (readRef(H_CS_NEXT_FRAME)==null);
+}
 
 Ref csGetCurrFrame () {
     Ref nextFrame=readRef(H_CS_NEXT_FRAME);
@@ -25,33 +33,41 @@ Return next code byte, and increment PC inside CSF
 */
 Byte csNextCodeByte () {
     Ref csf=csGetCurrFrame(); // current call stack frame
-    Ref pc=readInt2(csf+CSF_pc);
-    Byte opCode=readInt1(pc);
+    Ref codeRef = readRef(csf+CSF_code);
+
+    Byte pc=readByte(csf+CSF_pc);
+    Byte opCode=readInt1(codeRef + pc);
     pc++;
-    writeInt2(csf+CSF_pc, pc);  
+    writeByte(csf+CSF_pc, pc);  
     return opCode;
 }
 
-static Ref csGetPC () {
+static Byte csGetPC () {
     Ref currCSF = csGetCurrFrame();
-    return readRef(currCSF + CSF_pc);    
+    return readByte(currCSF + CSF_pc);    
 }
 
-void csJump (Ref value) {
+void csJump (Byte value) {
     Ref currCSF = csGetCurrFrame();
-    writeRef(currCSF + CSF_pc, value);    
+    writeByte(currCSF + CSF_pc, value);    
 }
 
 void csCall (Ref addr) {
-    Ref currCSF = csGetCurrFrame();
-    Byte nextFrame = readByte(H_CS_NEXT_FRAME);
+    DEBUG("csCall");
+    DEBUGint("addr",addr);
+    Byte nextFrame = 0;
+    Byte tsNext = 0;
+    if (!csEmpty()) {
+        Ref currCSF = csGetCurrFrame();
+        Byte tsNext = readByte(currCSF + CSF_tempStackNext);
+        nextFrame = readByte(H_CS_NEXT_FRAME);
+    }
     writeByte(H_CS_NEXT_FRAME, nextFrame + 1);
-    Ref newCSF = csGetCurrFrame();
-    Byte tsNext = readByte(currCSF + CSF_tempStackNext);
+    Ref newCSF = csGetCurrFrame();  
     writeRef(newCSF + CSF_code, addr);
     writeByte(newCSF + CSF_tempStackBase, tsNext);
     writeByte(newCSF + CSF_tempStackNext, tsNext);
-    writeRef(newCSF + CSF_pc, 0);
+    writeByte(newCSF + CSF_pc, 0);
 }
 
 void csReturn() {
@@ -61,6 +77,7 @@ void csReturn() {
 }
 
 void csSetLocal (Ref sym, Long value) {
+
 
 }
 

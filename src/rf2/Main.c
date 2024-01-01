@@ -49,9 +49,13 @@ void clearPanicFlag () {
 // Execute one op-code (may involve more than one call to csNextCodeByte if first byte is a literal, as
 // those are followed by data bytes)
 
-void execute()
+static void execute()
 {
     int op = csNextCodeByte();
+
+    DEBUG("execute");
+    DEBUGint("op",op);
+
     switch (op) {
     case OP_JMP: {
         uint8_t addr = dsPopByte();
@@ -347,5 +351,57 @@ void execute()
     }
 }
 
+
+
+void forthMainLoop () {
+
+    initSerial();
+    initHeap();
+    initTIB();
+
+    dsInit(); // initialize data stack
+    csInit();
+
+    Ref setup=readRef(H_MAIN_SETUP);
+    Ref loop=readRef(H_MAIN_LOOP);
+
+ 
+    DEBUG("Calling H_MAIN_SETUP");
+    DEBUG("Press any key");
+    serialNextChar();
+    csCall(setup); // create call stack frame
+
+    // outer loop - never terminates
+    for (;;) {
+        if (hasPanicFlag()) {
+            serialEmitStr("PANIC: " );
+            serialEmitStr(panicMessage);
+            serialEmitNewline();
+            clearPanicFlag();
+            dsInit();
+            csInit();
+            DEBUG("Calling H_MAIN_LOOP");
+            csCall(loop);
+        } 
+        if (csEmpty()) {
+            DEBUG("CS is empty - code must have returned");
+            dsInit();
+            csInit();
+            DEBUG("Calling H_MAIN_LOOP");
+            csCall(loop);
+        }
+        // execute one instruction
+        execute();
+        DEBUG("Back from execute()");
+        if (dsEmpty()) {
+            DEBUGint("StackEmpty",1);
+        } else {
+            DEBUGint("Stack value", (int) dsPeek());
+        }
+        DEBUG("Press any key");
+        serialNextChar();
+
+    }
+}
 
 

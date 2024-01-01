@@ -8,6 +8,9 @@ static Long dstack[DSTACK_DEPTH];
 static Byte dStackPos=0;
 
 
+void dsInit() {
+    dStackPos=0;
+}
 
 
 void dsPushRef(Ref value) {
@@ -35,4 +38,13 @@ Ref dsPopRef () {
 
 Byte dsPopByte () {
     return (Byte) dsPopValue();
+}
+
+bool dsEmpty () {
+    return (dStackPos==0);
+}
+
+Long dsPeek () {
+    if (dsEmpty) return 99999;
+    return dstack[dStackPos-1];
 }

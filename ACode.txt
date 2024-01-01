@@ -84,7 +84,7 @@ def _'TRUE		LITERAL4  0xff 0xff 0xff 0xff
 #		code				Ref			2
 #		tempStackBase		byte		1
 #		tempStackNext		byte		1
-#		pc 					Ref			2
+#		pc 					byte		1
 #	]
 
 def _'CSF.code
@@ -94,8 +94,9 @@ def _'CSF.pc				LITERAL1 4 ADD
 
 # Sizes
 
-def _*CSF.n?				6
+def _*CSF.n?				5
 def _'CSF.n?				LITERAL1 _*CSF.n?		# Size of call stack frame, to navigate the call stack
+
 
 def _*CS_maxDepth			10
 def _'CS_maxDepth			LITERAL1 _*CS_maxDepth		# max call depth	
@@ -123,107 +124,92 @@ def _'TS_maxDepth			LITERAL1 _*TS_maxDepth   # number of Temp Stack Frames (TSF)
 # Some pseudo instructions
 # ########################
 
-def =$0		'SYM_0 SETLOCAL
-def =$1		'SYM_1 SETLOCAL
-def =$2		'SYM_2 SETLOCAL
-def =$3		'SYM_3 SETLOCAL
-def =$4		'SYM_4 SETLOCAL
-def =$5		'SYM_5 SETLOCAL
-def =$6		'SYM_6 SETLOCAL
-def =$7		'SYM_7 SETLOCAL
+def =$0		'SYM_$0 SETLOCAL
+def =$1		'SYM_$1 SETLOCAL
+def =$2		'SYM_$2 SETLOCAL
+def =$3		'SYM_$3 SETLOCAL
+def =$4		'SYM_$4 SETLOCAL
+def =$5		'SYM_$5 SETLOCAL
+def =$6		'SYM_$6 SETLOCAL
+def =$7		'SYM_$7 SETLOCAL
 
-def $0		'SYM_0 GETLOCAL
-def $1		'SYM_1 GETLOCAL
-def $2		'SYM_2 GETLOCAL
-def $3		'SYM_3 GETLOCAL
-def $4		'SYM_4 GETLOCAL
-def $5		'SYM_5 GETLOCAL
-def $6		'SYM_6 GETLOCAL
-def $7		'SYM_7 GETLOCAL
+def $0		'SYM_$0 GETLOCAL
+def $1		'SYM_$1 GETLOCAL
+def $2		'SYM_$2 GETLOCAL
+def $3		'SYM_$3 GETLOCAL
+def $4		'SYM_$4 GETLOCAL
+def $5		'SYM_$5 GETLOCAL
+def $6		'SYM_$6 GETLOCAL
+def $7		'SYM_$7 GETLOCAL
 
 def INCR					LITERAL1 1 ADD
 def DECR					LITERAL1 1 SUBTRACT
 def INCR2					LITERAL1 2 ADD
 
-# -------------------------------------------------------------------------
-# Light-weight call and return (used data stack to store return value)
-# -------------------------------------------------------------------------
-
-# Prefixing functions that use this mechanism by LW_
-
-def _LW_CALL		=$a _CSF_CURR =$b $b _'CSF.pc READ2 =$c $a $b _'CSF.pc WRITE2
-	# $a = target address
-	# $b = CSF_CURR
-	# $c = current pc
-	
-def _LW_RETURN =$a _CSF_CURR =$b $a $b _'CSF.pc WRITE2
-	# $a = return address
-	# $b = CSF_CURR
-	
-					
+						
 # local variables used in defines
  
-def =$a		'SYM_a SETLOCAL
-def =$b		'SYM_b SETLOCAL
-def =$c		'SYM_c SETLOCAL
-def =$d		'SYM_d SETLOCAL
+def =$a		'SYM_$a SETLOCAL
+def =$b		'SYM_$b SETLOCAL
+def =$c		'SYM_$c SETLOCAL
+def =$d		'SYM_$d SETLOCAL
 
-def $a		'SYM_a GETLOCAL
-def $b		'SYM_b GETLOCAL
-def $c		'SYM_c GETLOCAL
-def $d		'SYM_d GETLOCAL
+def $a		'SYM_$a GETLOCAL
+def $b		'SYM_$b GETLOCAL
+def $c		'SYM_$c GETLOCAL
+def $d		'SYM_$d GETLOCAL
 
 
 # Op-codes for generating code
 
-def OP:JMP                     0
-def OP:COND_JMP                1
-def OP:CALL                    2
-def OP:RETURN                  3
-def OP:PANIC                   4
-def OP:HEAP_MAX                5
-def OP:TIBs                    6
-def OP:TIBr                    7
-def OP:TIBr+                   8
-def OP:TIBs+                   9
-def OP:TIBr<                   10
-def OP:TIBs>                   11
-def OP:TIBW                    12
-def OP:EMIT                    13
-def OP:EMITWORD                14
-def OP:ADD                     15
-def OP:SUBTRACT                16
-def OP:MUL                     17
-def OP:DIV                     18
-def OP:MOD                     19
-def OP:RIGHTSHIFT              20
-def OP:LEFTSHIFT               21
-def OP:AND                     22
-def OP:OR                      23
-def OP:NOT                     24
-def OP:EQ                      25
-def OP:NE                      26
-def OP:GT                      27
-def OP:LT                      28
-def OP:GE                      29
-def OP:LE                      30
-def OP:DROP                    31
-def OP:SETLOCAL                32
-def OP:GETLOCAL                33
-def OP:WORD                    34
-def OP:WRITE1                  35
-def OP:WRITE2                  36
-def OP:WRITE4                  37
-def OP:READ1                   38
-def OP:READ2                   39
-def OP:READ4                   40
-def OP:READ1g                  41
-def OP:WRITE1g                 42
-def OP:LITERAL1                43
-def OP:LITERAL2                44
-def OP:LITERAL4                45
-def OP:CHECK_PARSE             46
-def OP:PARSE                   47
+def OP:JMP                     LITERAL1 0
+def OP:COND_JMP                LITERAL1 1
+def OP:CALL                    LITERAL1 2
+def OP:RETURN                  LITERAL1 3
+def OP:PANIC                   LITERAL1 4
+def OP:HEAP_MAX                LITERAL1 5
+def OP:TIBs                    LITERAL1 6
+def OP:TIBr                    LITERAL1 7
+def OP:TIBr+                   LITERAL1 8
+def OP:TIBs+                   LITERAL1 9
+def OP:TIBr<                   LITERAL1 10
+def OP:TIBs>                   LITERAL1 11
+def OP:TIBW                    LITERAL1 12
+def OP:EMIT                    LITERAL1 13
+def OP:EMITWORD                LITERAL1 14
+def OP:ADD                     LITERAL1 15
+def OP:SUBTRACT                LITERAL1 16
+def OP:MUL                     LITERAL1 17
+def OP:DIV                     LITERAL1 18
+def OP:MOD                     LITERAL1 19
+def OP:RIGHTSHIFT              LITERAL1 20
+def OP:LEFTSHIFT               LITERAL1 21
+def OP:AND                     LITERAL1 22
+def OP:OR                      LITERAL1 23
+def OP:NOT                     LITERAL1 24
+def OP:EQ                      LITERAL1 25
+def OP:NE                      LITERAL1 26
+def OP:GT                      LITERAL1 27
+def OP:LT                      LITERAL1 28
+def OP:GE                      LITERAL1 29
+def OP:LE                      LITERAL1 30
+def OP:DROP                    LITERAL1 31
+def OP:SETLOCAL                LITERAL1 32
+def OP:GETLOCAL                LITERAL1 33
+def OP:WORD                    LITERAL1 34
+def OP:WRITE1                  LITERAL1 35
+def OP:WRITE2                  LITERAL1 36
+def OP:WRITE4                  LITERAL1 37
+def OP:READ1                   LITERAL1 38
+def OP:READ2                   LITERAL1 39
+def OP:READ4                   LITERAL1 40
+def OP:READ1g                  LITERAL1 41
+def OP:WRITE1g                 LITERAL1 42
+def OP:LITERAL1                LITERAL1 43
+def OP:LITERAL2                LITERAL1 44
+def OP:LITERAL4                LITERAL1 45
+def OP:CHECK_PARSE             LITERAL1 46
+def OP:PARSE                   LITERAL1 47
 
 
 
@@ -340,7 +326,7 @@ def _CB_bytes				@{ mul 1 256 }
 
 :CompileBufPos				0					# Single byte
 	
-:OutByte					# (byte -- ) write to CompileBuf
+:OutByte					# ( byte -- ) write to CompileBuf
 	=$0								# byte
 	'CompileBufPos READ1 =$1		# 
 	$1 LITERAL1 254 GE 'xOutByte_fail COND_JMP
@@ -492,6 +478,13 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 
 :CompileWord 					# ( word -- )
 	=$0									# The word
+	
+	# Check if local variable set or get, returns true or false
+		
+	$0 'CompileLocalVariables 'xCOMP_done COND_JMP 
+
+
+	
 	$0 'SingleInstructionWords NOT 'xCompileNotSIW COND_JMP
 		RETURN
 	:xCompileNotSIW
@@ -519,10 +512,6 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 		
 		:xCOMP_notInDict
 			
-			# Check if local variable set or get, returns true or false
-				
-			$0 'CompileLocalVariables 'xCOMP_done COND_JMP 
-
 			# default to assume number
 			
 			$0 PARSE 					# will panic if not a number
@@ -533,7 +522,7 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 		RETURN
 
 
-:CompileLocalVariables			# ( word -- )
+:CompileLocalVariables			# ( word -- bool )
 	=$0									# $0 = the word
 	$0 READ1 %$ EQ 
 		$0 INCR READ1 0 NE AND
@@ -546,18 +535,21 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 	RETURN
 	
 	:xCLV_get
-		# Generate code for getting local variable
-		$0 INCR WORD 'OutRef CALL
+		# Using $nnn as name for local variable, so using $0 here
+		
+		$0 'OutRef CALL
 		OP:GETLOCAL 'OutByte CALL
 		_'TRUE
 		RETURN
 
 	:xCLV_set
-		# Generate code for setting local varialbe
-		$0 LITERAL1 2 ADD WORD 'OutRef CALL
+		# Isolate the $nnn part, by skipping first character than creating separate word
+		
+		$0 LITERAL1 1 ADD WORD 'OutRef CALL
 		OP:SETLOCAL 'OutByte CALL
 		_'TRUE
 		RETURN
+	
 	
 :CompileNumber 				# ( number -- )  
 	=$0							# the number
@@ -730,18 +722,18 @@ def Regular		0
 :SYM_Cons_List		# hard coded list of symbols 
 					# New symbols will be added from C, mostly from TIBW or WORD ops
 
-	*SYM_0					NEXT	
-	*SYM_1					NEXT	
-	*SYM_2					NEXT	
-	*SYM_3					NEXT	
-	*SYM_4					NEXT	
-	*SYM_5					NEXT	
-	*SYM_6					NEXT	
-	*SYM_7					NEXT	
-	*SYM_a					NEXT	
-	*SYM_b					NEXT	
-	*SYM_c					NEXT	
-	*SYM_d					NEXT	
+	*SYM_$0					NEXT	
+	*SYM_$1					NEXT	
+	*SYM_$2					NEXT	
+	*SYM_$3					NEXT	
+	*SYM_$4					NEXT	
+	*SYM_$5					NEXT	
+	*SYM_$6					NEXT	
+	*SYM_$7					NEXT	
+	*SYM_$a					NEXT	
+	*SYM_$b					NEXT	
+	*SYM_$c					NEXT	
+	*SYM_$d					NEXT	
 
 	*SYM_RETURN				NEXT
 	*SYM_PANIC				NEXT
@@ -811,18 +803,18 @@ def Regular		0
 
 
 	
-:SYM_0 %0 0
-:SYM_1 %1 0
-:SYM_2 %2 0
-:SYM_3 %3 0
-:SYM_4 %4 0
-:SYM_5 %5 0
-:SYM_6 %6 0
-:SYM_7 %7 0
-:SYM_a %a 0
-:SYM_b %b 0
-:SYM_c %c 0
-:SYM_d %d 0
+:SYM_$0 %$ %0 0
+:SYM_$1 %$ %1 0
+:SYM_$2 %$ %2 0
+:SYM_$3 %$ %3 0
+:SYM_$4 %$ %4 0
+:SYM_$5 %$ %5 0
+:SYM_$6 %$ %6 0
+:SYM_$7 %$ %7 0
+:SYM_$a %$ %a 0
+:SYM_$b %$ %b 0
+:SYM_$c %$ %c 0
+:SYM_$d %$ %d 0
 
 :SYM_RETURN   %R %E %T %U %R %N 0
 :SYM_PANIC   %P %A %N %I %C 0

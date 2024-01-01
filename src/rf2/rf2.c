@@ -2,6 +2,15 @@
 
 int main()
 {
+    // ready to test stepping through the assembly code, just need to do:
+    // - implement getLocal and setLocal (Main.c)
+    // - generate disassembler code to show next instruction before executing it
+
+    // handles calling a setup function then a main loop, both defined in assembly,
+    // and processing panic's.
+    forthMainLoop();
+
+    /*
     initSerial();
     initHeap();
     initTIB();
@@ -14,7 +23,6 @@ int main()
     // The TIB functions seem to work
     // Sym.c seems to work + the initial setup from ACode.txt also ok (eq, ne, and etc)
     // Heap.c also ok (as it is called from Sym.c)
-
 
     for(;;) {
         Ref here = readRef(H_HERE);
@@ -47,4 +55,5 @@ int main()
             DEBUG(buf);
         }
     }
+    */
 }

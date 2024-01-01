@@ -101,6 +101,7 @@ typedef int32_t        Long;
 void PANIC (char *msg);
 bool hasPanicFlag();
 void clearPanicFlag ();
+void forthMainLoop();
 
 // TIB.c
 
@@ -120,7 +121,9 @@ int getTIBWordLength();
 Ref symCreateTIBWord();
 Ref addSymbol (char *str);
 
-// Stack.c
+// DataStack.c
+
+void dsInit();
 
 void dsPushRef (Ref value);
 void dsPushByte (Byte value);
@@ -129,6 +132,9 @@ void dsPushValue (Long value);
 Ref dsPopRef ();
 Byte dsPopByte ();
 Long dsPopValue ();
+
+bool dsEmpty ();
+Long dsPeek (); 
 
 
 // Heap.c
@@ -168,13 +174,16 @@ void serialEmitNewline ();
 int serialLostChars();
 
 void DEBUG (char *msg);
-
+void DEBUGint (char *name, int value);
 
 // CSTS.c  -- call stack and temp stack
 
+void csInit();
+bool csEmpty();
+
 Ref csGetCurrFrame ();
 Byte csNextCodeByte ();
-void csJump (Ref value);
+void csJump (Byte value);
 void csCall (Ref addr);
 void csReturn ();
 
