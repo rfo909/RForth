@@ -223,6 +223,10 @@ def OP:LITERAL4                LITERAL1 45
 def OP:CHECK_PARSE             LITERAL1 46
 def OP:PARSE                   LITERAL1 47
 
+# Byte address for jumping inside compiled code (not used in this file)
+def OP:JMP1                    LITERAL1 48
+def OP:COND_JMP1               LITERAL1 49
+
 
 
 # Memory layout
@@ -417,6 +421,48 @@ def _CB_bytes				@{ mul 1 256 }
 		OP:RETURN 'OutByte CALL
 		RETURN
 
+:IF
+	OP:NOT 'OutByte CALL				# if not ... then jump ahead
+	'CompileBufPos READ1 =$0  			# $0 = cond-jmp byte 
+	0 'OutByte CALL						# dummy jump target
+	OP:COND_JMP1 'OutByte CALL
+	
+	:xIF_loop
+		'NextWord CALL =$1				# $1 = next word
+		$1 'SYM_THEN EQ 'xIF_then COND_JMP
+		$1 'SYM_ELSE EQ 'xIF_else COND_JMP
+		$1 'SYM_SEMICOLON EQ 'xIF_panic COND_JMP
+		$1 'CompileWord CALL
+		'xIF_loop JMP
+	:xIF_then
+		# patch current pos into $0 (if-not) jump
+		'CompileBufPos READ1
+			'CompileBuf READ2 $0 ADD
+				WRITE1
+		RETURN
+	:xIF_else
+		# generate unconditional JMP to THEN
+		'CompileBufPos READ1 =$2		# $2 = (if not else) jmp ahead
+		0 'OutByte CALL					# dummy jump target
+		OP:JMP1 'OutByte CALL
+		
+		# start else-code, patch current pos into $0 (if-not) jump
+		'CompileBufPos READ1
+			'CompileBuf READ2 $0 ADD 
+				WRITE1
+		
+		$2 =$0							# reusing the :xIF_then, $0 is now the byte to patch
+		:xIF_else_loop		# look for THEN
+			'NextWord CALL =$1
+			$1 'SYM_THEN EQ 'xIF_then COND_JMP
+			$1 'SYM_SEMICOLON EQ 'xIF_panic COND_JMP
+			$1 'CompileWord CALL
+			'xIF_else_loop JMP
+			
+	:xIF_panic
+		'SYM_Unterminated_if 'PANIC CALL			
+			
+
 
 :Immediate					# Set immediate flag on newest dictionary entry
 	'DICT_TOP READ2 =$1					# ptr to topmost DE
@@ -434,7 +480,9 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 	# $a = opcode
 	# NE compares $a and 'SYM_XXX, jumps to end of line if not matching
 	# if match, call OutByte with $d, then return true
-		
+
+# Compile single instruction words
+	
 :SingleInstructionWords					# ( word -- bool )
 	=$0
 	
@@ -500,6 +548,10 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 	$0 'SingleInstructionWords NOT 'xCompileNotSIW COND_JMP
 		RETURN
 	:xCompileNotSIW
+	
+	$0 'SYM_IF NOT 'xCompileNotIF COND_JMP
+		'IF CALL
+	:xCompileNotIF
 	
 	$0 'DictLookup CALL =$1				# $1 = DE or NULL
 	$1 _'REF_NULL EQ 'xCOMP_notInDict COND_JMP
@@ -659,6 +711,7 @@ def Regular		0
 	# name				Flags				Code			
 	# -------------------------------------------------
 	'SYM_COLON 			Immediate 			'COLON			'DictAdd CALL
+	'SYM_IF				Immediate			'IF				'DictAdd CALL
 	'SYM_IMMEDIATE		Immediate			'Immediate		'DictAdd CALL
 	'SYM_HERE			Regular				'HERE			'DictAdd CALL
 	'SYM_MALLOC			Regular				'Malloc			'DictAdd CALL
@@ -794,6 +847,9 @@ def Regular		0
 	
 	*SYM_COLON				NEXT
 	*SYM_SEMICOLON			NEXT
+	*SYM_IF					NEXT
+	*SYM_THEN				NEXT
+	*SYM_ELSE				NEXT
 	*SYM_IMMEDIATE			NEXT
 	*SYM_HERE				NEXT
 	*SYM_MALLOC				NEXT
@@ -808,6 +864,7 @@ def Regular		0
 	*SYM_CSF_Underflow		NEXT
 	*SYM_Immediate_no_word	NEXT
 	*SYM_Unknown-Word		NEXT
+	*SYM_Unterminated_if	NEXT
 	*SYM_OutByte-Overflow	NO_NEXT
 	
 	
@@ -875,6 +932,9 @@ def Regular		0
 
 :SYM_COLON %: 0
 :SYM_SEMICOLON %; 0
+:SYM_IF %i %f 0
+:SYM_THEN %t %h %e %n 0
+:SYM_ELSE %e %l %s %e 0
 :SYM_IMMEDIATE %I %M %M %E %D %I %A %T %E 0
 :SYM_HERE %H %E %R %E 0
 :SYM_MALLOC %M %A %L %L %O %C 0
@@ -891,6 +951,7 @@ def Regular		0
 :SYM_Immediate_no_word %I %m %m %e %d %i %a %t %e %- %n %o %- %w %o %r %d 0
 # --
 :SYM_Unknown-Word %U %n %k %n %o %w %n %- %W %o %r %d 0
+:SYM_Unterminated_if %U %n %t %e %r %m %i %n %a %t %e %d %- %i %f 0
 :SYM_OutByte-Overflow %O %u %t %B %y %t %e %- %O %v %e %r %f %l %o %w 0
 
 

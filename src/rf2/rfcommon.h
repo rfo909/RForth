@@ -45,9 +45,10 @@ typedef int32_t        Long;
 
 
 
-
+// JMP to absolute address in HEAP (Ref)
 #define OP_JMP                 0
 #define OP_COND_JMP            1
+
 #define OP_CALL                2
 #define OP_RETURN              3
 #define OP_PANIC               4
@@ -94,6 +95,10 @@ typedef int32_t        Long;
 #define OP_LITERAL4            45
 #define OP_CHECK_PARSE         46
 #define OP_PARSE               47
+
+// JMP to relative position in compiled code (byte)
+#define OP_JMP1                48
+#define OP_COND_JMP1           49
 
 
 // Main.c

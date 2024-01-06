@@ -150,10 +150,10 @@ void csShowOp () {
     Byte opCode=readByte(codeRef + pc);
 
     DEBUG("csShowOp - next op");
+    DEBUGstr("getOpName",getOpName(opCode));
     DEBUGint("codeRef", codeRef);
     DEBUGint("pc",(int) pc);
     DEBUGint("opCode",(int) opCode);
-    DEBUGstr("getOpName",getOpName(opCode));
 }
 
 

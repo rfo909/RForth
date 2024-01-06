@@ -348,6 +348,17 @@ static void execute()
         dsPushValue(parseInt(str));
     }
     break;
+    case OP_JMP1: {
+        Byte pc = dsPopByte();
+        csJump(pc);
+    }
+    break;
+    case OP_COND_JMP1: {
+        Long condition = dsPopValue();
+        Byte pc = dsPopByte();
+        if (condition != 0) csJump(pc);
+    }
+    break;
     }
 }
 
