@@ -51,7 +51,6 @@ void clearPanicFlag () {
 
 static void execute()
 {
-    DEBUG("execute - calling csShowOp");
     csShowOp();
 
     int op = csNextCodeByte();
@@ -411,13 +410,7 @@ void forthMainLoop () {
         }
         // execute one instruction
         execute();
-        DEBUG("Back from execute()");
-        if (dsEmpty()) {
-            DEBUGint("StackEmpty",1);
-        } else {
-            DEBUGint("Stack value", (int) dsPeek());
-        }
-        DEBUG("Press any key");
+        // wait for keypress
         serialNextChar();
 
     }

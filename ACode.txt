@@ -253,7 +253,7 @@ def OP:COND_JMP1               LITERAL1 49
 # Temp stack
 
 :TS_BASE_REF		*TEMP_STACK_DATA	# reserved data area
-:TS_NEXT_FRAME		0					# single byte
+:NOT_USED_A_1		0					# single byte
 
 # Dictionary pointer
 
@@ -264,7 +264,10 @@ def OP:COND_JMP1               LITERAL1 49
 :HERE               *END_MARKER			# two byte Ref to next free byte on heap
 :HERE_SHADOW		*END_MARKER			# used by main loop, to rollback heap if panic
 
+# Sizes for statically allocated blocks (on heap)
 
+:CS_MAX_DEPTH		_*CS_maxDepth		# byte = number of frames
+:TS_MAX_DEPTH		_*TS_maxDepth		# byte = number of frames
 
 
 
@@ -328,9 +331,11 @@ def OP:COND_JMP1               LITERAL1 49
 # Statically allocated buffers
 # ----------------------------------------------
 
+
 def _CS_bytes				@{ mul _*CSF.n? _*CS_maxDepth }
 def _TS_bytes				@{ mul _*TSF.n? _*TS_maxDepth }
 def _CB_bytes				@{ mul 1 256 }
+
 
 :CS_DATA					_CS_bytes			# call stack data
 
@@ -461,8 +466,31 @@ def _CB_bytes				@{ mul 1 256 }
 			
 	:xIF_panic
 		'SYM_Unterminated_if 'PANIC CALL			
-			
+	
 
+:LOOP
+	'CompileBufPos READ1 =$0  			# $0 = top of loop
+	
+	:xLOOP_next_word
+		'NextWord CALL =$1				# $1 = next word
+		$1 'SYM_SEMICOLON EQ 'xLOOP_panic COND_JMP
+		$1 'SYM_NEXT? EQ 'xLOOP_next? COND_JMP
+		$1 'CompileWord CALL
+	:xLOOP_next?
+		OP:NOT 'OutByte CALL   # if value on stack is false, then 
+		
+		'CompileBufPos READ1
+			LITERAL1 4				# (after-loop-pc) COND_JMP1 ($0) JMP1 --> HERE (after-loop-pc!)
+				ADD
+					'OutByte CALL	# (after-loop-pc) # byte 1
+		OP:COND_JMP1 'OutByte CALL	# COND_JMP1 # byte 2
+		$0 'OutByte CALL			# $0		# byte 3
+		OP:JMP1 'OutByte CALL		# JMP1		# byte 4
+
+		RETURN
+	:xLOOP_panic
+		'SYM_Unterminated_loop 'PANIC CALL
+		
 
 :Immediate					# Set immediate flag on newest dictionary entry
 	'DICT_TOP READ2 =$1					# ptr to topmost DE
@@ -536,6 +564,10 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 	_'FALSE 
 	RETURN
 
+
+# Compile general word. Called from COLON (and others). 
+# Does not recognize COLON or SEMICOLON.
+
 :CompileWord 					# ( word -- )
 	=$0									# The word
 	
@@ -544,14 +576,23 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 	$0 'CompileLocalVariables 'xCOMP_done COND_JMP 
 
 
+	# Check if words that map directly to instruction
 	
 	$0 'SingleInstructionWords NOT 'xCompileNotSIW COND_JMP
 		RETURN
 	:xCompileNotSIW
 	
-	$0 'SYM_IF NOT 'xCompileNotIF COND_JMP
+	# Check for IF
+	$0 'SYM_IF NE 'xCompileNotIF COND_JMP
 		'IF CALL
+		RETURN
 	:xCompileNotIF
+
+	# Check for LOOP
+	$0 'SYM_LOOP NE 'xCompileNotLoop COND_JMP
+		'LOOP CALL
+		RETURN
+	:xCompileNotLoop
 	
 	$0 'DictLookup CALL =$1				# $1 = DE or NULL
 	$1 _'REF_NULL EQ 'xCOMP_notInDict COND_JMP
@@ -575,7 +616,7 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 			OP:CALL 'OutByte CALL
 		
 		:xCOMP_notInDict
-			
+		
 			# default to assume number
 			
 			$0 PARSE 					# will panic if not a number
@@ -712,6 +753,7 @@ def Regular		0
 	# -------------------------------------------------
 	'SYM_COLON 			Immediate 			'COLON			'DictAdd CALL
 	'SYM_IF				Immediate			'IF				'DictAdd CALL
+	'SYM_LOOP			Immediate			'LOOP			'DictAdd CALL
 	'SYM_IMMEDIATE		Immediate			'Immediate		'DictAdd CALL
 	'SYM_HERE			Regular				'HERE			'DictAdd CALL
 	'SYM_MALLOC			Regular				'Malloc			'DictAdd CALL
@@ -850,6 +892,8 @@ def Regular		0
 	*SYM_IF					NEXT
 	*SYM_THEN				NEXT
 	*SYM_ELSE				NEXT
+	*SYM_LOOP				NEXT
+	*SYM_NEXT?				NEXT
 	*SYM_IMMEDIATE			NEXT
 	*SYM_HERE				NEXT
 	*SYM_MALLOC				NEXT
@@ -935,6 +979,8 @@ def Regular		0
 :SYM_IF %i %f 0
 :SYM_THEN %t %h %e %n 0
 :SYM_ELSE %e %l %s %e 0
+:SYM_LOOP %L %O %O %P 0
+:SYM_NEXT? %N %E %X %T %?
 :SYM_IMMEDIATE %I %M %M %E %D %I %A %T %E 0
 :SYM_HERE %H %E %R %E 0
 :SYM_MALLOC %M %A %L %L %O %C 0
@@ -952,6 +998,7 @@ def Regular		0
 # --
 :SYM_Unknown-Word %U %n %k %n %o %w %n %- %W %o %r %d 0
 :SYM_Unterminated_if %U %n %t %e %r %m %i %n %a %t %e %d %- %i %f 0
+:SYM_Unterminated_loop %U %n %t %e %r %m %i %n %a %t %e %d %- %l %o %o %p 0
 :SYM_OutByte-Overflow %O %u %t %B %y %t %e %- %O %v %e %r %f %l %o %w 0
 
 

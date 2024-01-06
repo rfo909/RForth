@@ -33,11 +33,12 @@ char *safeGetString (Ref ref) {
     Byte *ptr=refToPointer(ref);
     for (int i=0; i<MAX_STRING_LENGTH; i++) {
         Byte b=*(ptr+i);
+        if (b==0) break; // end of string
         if( (b>=32 && b<126) || b=='\n' || b=='\r' || b=='\t') {
             // ok
         } else {
-            PANIC("Invalid string reference");
-            return "<Invalid string reference>";
+            PANIC("Invalid string reference: nonprintable characters");
+            return "<NOT-A-STRING>";
         }
     }
     return ptr;

@@ -11,6 +11,23 @@
 
 #define CSF_n               5
 
+// Temp stack frame (TSF) field offsets
+#define TSF_symbol           0   // Ref
+#define TSF_value            2   // Long
+
+#define TSF_n                6
+
+
+/*
+TODO
+
+Read and apply limits defined in ACode by tags 
+
+:CS_MAX_DEPTH		_*CS_maxDepth		# byte = number of frames
+:TS_MAX_DEPTH		_*TS_maxDepth		# byte = number of frames
+
+*/
+
 void csInit () {
     writeRef(H_CS_NEXT_FRAME,0);
 }
@@ -73,16 +90,69 @@ void csCall (Ref addr) {
 void csReturn() {
     Byte x = readByte(H_CS_NEXT_FRAME);
     writeByte(H_CS_NEXT_FRAME, x - 1);
-
 }
 
 void csSetLocal (Ref sym, Long value) {
+    Ref csf=csGetCurrFrame();
+    Ref tsBase = readRef(H_TS_BASE_REF);
 
+    Byte tsBasePos = readByte(csf + CSF_tempStackBase);
+    Byte tsNextPos = readByte(csf + CSF_tempStackNext);
 
+    // search for symbol
+    for (Byte i = tsBasePos; i<tsNextPos; i++) {
+        Ref tsFrame = tsBase + i*TSF_n;
+        if (readRef(tsFrame + TSF_symbol) == sym) {
+            // found it
+            DEBUG("Overwriting value");
+            DEBUGstr("Name",safeGetString(sym));
+            DEBUGint("tsPos",i);
+            DEBUGint("value",value);
+            writeInt4(tsFrame + TSF_value, value);
+            return;
+        }
+    }
+    // not found
+    Byte newPos=tsNextPos;
+    // update call stack frame 
+    writeByte(csf + CSF_tempStackNext, newPos+1);
+
+    DEBUG("Adding value");
+    DEBUGstr("Name",safeGetString(sym));
+    DEBUGint("tsPos",newPos);
+    DEBUGint("value",value);
+
+    // save data into new frame
+    Ref tsFrame = tsBase + newPos*TSF_n;
+    writeRef(tsFrame + TSF_symbol, sym);
+    writeRef(tsFrame + TSF_value, value);
 }
 
+
 Long csGetLocal (Ref sym) {
+    Ref csf=csGetCurrFrame();
+    Ref tsBase = readRef(H_TS_BASE_REF);
+
+    Byte tsBasePos = readByte(csf + CSF_tempStackBase);
+    Byte tsNextPos = readByte(csf + CSF_tempStackNext);
+
+    // search for symbol
+    for (Byte i = tsBasePos; i<tsNextPos; i++) {
+        Ref tsFrame = tsBase + i*TSF_n;
+        if (readRef(tsFrame + TSF_symbol) == sym) {
+            // found it
+            DEBUG("Reading value");
+            DEBUGstr("Name",safeGetString(sym));
+            DEBUGint("tsPos",i);
+            Long value=readInt4(tsFrame + TSF_value);
+            DEBUGint("value",value);
+        }
+    }
+    // not found
+    DEBUG("Value not found");
+    DEBUGstr("Name",safeGetString(sym));
     return null;
+
 }
 
 
@@ -138,6 +208,8 @@ static char *getOpName (int op) {
         case 45: { return "LITERAL4";}
         case 46: { return "CHECK_PARSE";}
         case 47: { return "PARSE";}
+        case 48: { return "JMP1";}
+        case 49: { return "COND_JMP1";}
         default: { return "<UNKNOWN>"; }
     }
 }
@@ -149,11 +221,27 @@ void csShowOp () {
     Byte pc=readByte(csf+CSF_pc);
     Byte opCode=readByte(codeRef + pc);
 
-    DEBUG("csShowOp - next op");
-    DEBUGstr("getOpName",getOpName(opCode));
-    DEBUGint("codeRef", codeRef);
-    DEBUGint("pc",(int) pc);
-    DEBUGint("opCode",(int) opCode);
+    int next1 = readByte(codeRef+pc+1);
+    int next2  = (next1 << 8) + readByte(codeRef+pc+2);
+
+    char buf[100];
+    sprintf(buf,"%5d / %3d : op=%10s op=%2d next1=%3d next2=%5d",
+        (int) (codeRef+pc),
+        (int) pc,
+        getOpName(opCode),
+        (int) opCode,
+        next1,
+        next2
+    );
+    serialEmitStr(buf);
+    serialEmitStr(" stack: ");
+    for (int i=0; i<20; i++) {
+        Long value=dsPeek(i);
+        if (value==99999) break;
+        sprintf(buf,"%d ", value);
+        serialEmitStr(buf);
+    }
+    serialEmitNewline();
 }
 
 

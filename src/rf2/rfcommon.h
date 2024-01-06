@@ -139,7 +139,7 @@ Byte dsPopByte ();
 Long dsPopValue ();
 
 bool dsEmpty ();
-Long dsPeek (); 
+Long dsPeek (int offset); 
 
 
 // Heap.c

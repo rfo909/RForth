@@ -50,9 +50,10 @@ bool dsEmpty () {
     if (dstackNext==0) return true; else return false;
 }
 
-Long dsPeek () {
-    if (dsEmpty) {
-        return 99999; // no PANIC, this is just peek, for debugging
+Long dsPeek (int offset) {  // 0=top, 1=second top, etc, returns 99999 if past bottom 
+    if (dstackNext-1-offset < 0) {
+        return 99999;
     }
-    return dstack[dstackNext-1];
+    return dstack[dstackNext-1-offset];
 }
+
