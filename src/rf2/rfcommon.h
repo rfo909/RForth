@@ -189,7 +189,10 @@ bool csEmpty();
 
 Ref csGetCurrFrame ();
 Byte csNextCodeByte ();
-void csJump (Byte value);
+
+void csJumpToRef (Ref addr);
+void csJumpToPC (Byte pc);
+
 void csCall (Ref addr);
 void csReturn ();
 

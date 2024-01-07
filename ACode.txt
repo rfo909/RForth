@@ -79,6 +79,7 @@ def _'DE.n?    LITERAL1 7
 
 # Status byte for DE's
 
+def _'DE_Status_bit_regular				LITERAL1 0x00
 def _'DE_Status_bit_immediate			LITERAL1 0x01
 
 # Boolean constants
@@ -96,8 +97,9 @@ def _'TRUE		LITERAL4  0xff 0xff 0xff 0xff
 #		code				Ref			2
 #		tempStackBase		byte		1
 #		tempStackNext		byte		1
-#		pc 					byte		1
+#		pc 					Ref			2
 #	]
+
 
 def _'CSF.code
 def _'CSF.tempStackBase		LITERAL1 2 ADD
@@ -106,7 +108,7 @@ def _'CSF.pc				LITERAL1 4 ADD
 
 # Sizes
 
-def _*CSF.n?				5
+def _*CSF.n?				6
 def _'CSF.n?				LITERAL1 _*CSF.n?		# Size of call stack frame, to navigate the call stack
 
 
@@ -286,7 +288,7 @@ def OP:COND_JMP1               LITERAL1 49
 	:xMalloc_clear_loop
 		$2 'HERE READ2 EQ 'xMalloc_clear_end COND_JMP
 		LITERAL1 0 $2 WRITE1
-		$2 LITERAL1 ADD =$2
+		$2 LITERAL1 1 ADD =$2
 		'xMalloc_clear_loop JMP
 	:xMalloc_clear_end
 	$1							# return ptr
@@ -734,7 +736,7 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 
 
 def Immediate	_'DE_Status_bit_immediate
-def Regular		0
+def Regular		_'DE_Status_bit_regular
 
 
 

@@ -1,6 +1,6 @@
 RFOrth v2
 ---------
-v0.0.0a
+v0.0.1
 
 RFOrth v2 is a Forth bytecode compiler/interpreter, with local variables 
 instead of DUP and SWAP and ROTATE and all that stuff.
@@ -159,21 +159,30 @@ LITERAL4
 CHECK_PARSE	# ( symbol -- bool )
 PARSE  # ( word -- number )  - recognizes decimal, 0x0a, b1010
 
+# Jump to byte offset within compiled code.
+# The JMP and COND_JMP operations jump to global (inside heap) 2 byte references, and is 
+# used in the ACode.txt ("assembly")
+
+JMP1
+COND_JMP1
 
 ```
 
 Status
 ------
 
+The C code is in place, and is being tested. Added two instructions, JMP1 and COND_JMP1, since
+the original JMP and COND_JMP use 2-byte Ref's to jump directly to locations on the heap. 
 
-The bulk of the C code is in place, except for local variables in Forth, which
-will live on the temp stack. 
+As
+compiled words in Forth are written first to a compile-buffer, before being copied to final
+location on heap, and to make code more compact, we use single byte PC (program counter), which
+is an index relative to the Ref pointing to the code.
 
-Have created a simple main loop stepping one instruction
-at a time, showing the name of the instruction, and blocking on serial for each
-step ahead.
-
-Quite a bit of debugging remains, to see that the code executes as intended. 
+Quite a bit of debugging remains, both to verify the C code, which executes the byte code, and
+the static "assembly" code in ACode.txt, which implements the Forth compiler, symbol table, dictionary
+etc.
+ 
 
 
 

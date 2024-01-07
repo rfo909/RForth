@@ -7,9 +7,9 @@
 #define CSF_code            0   // Ref
 #define CSF_tempStackBase   2   // byte
 #define CSF_tempStackNext   3   // byte
-#define CSF_pc              4   // Byte
+#define CSF_pc              4   // Ref
 
-#define CSF_n               5
+#define CSF_n               6
 
 // Temp stack frame (TSF) field offsets
 #define TSF_symbol           0   // Ref
@@ -50,41 +50,55 @@ Return next code byte, and increment PC inside CSF
 */
 Byte csNextCodeByte () {
     Ref csf=csGetCurrFrame(); // current call stack frame
-    Ref codeRef = readRef(csf+CSF_code);
+    //Ref codeRef = readRef(csf+CSF_code);
 
-    Byte pc=readByte(csf+CSF_pc);
-    Byte opCode=readByte(codeRef + pc);
+    Ref pc=readRef(csf+CSF_pc);
+    Byte opCode=readByte(pc);
     pc++;
-    writeByte(csf+CSF_pc, pc);  
+    writeRef(csf+CSF_pc, pc);  
     return opCode;
 }
 
-static Byte csGetPC () {
+static Ref csGetPC () {
     Ref currCSF = csGetCurrFrame();
-    return readByte(currCSF + CSF_pc);    
+    return readRef(currCSF + CSF_pc);    
 }
 
-void csJump (Byte value) {
+void csJumpToRef (Ref addr) {
     Ref currCSF = csGetCurrFrame();
-    writeByte(currCSF + CSF_pc, value);    
+    writeRef(currCSF + CSF_pc, addr); 
+}
+
+void csJumpToPC (Byte pc) {
+    Ref currCSF = csGetCurrFrame();
+    Ref code = readRef(currCSF + CSF_code);
+
+    writeRef(currCSF + CSF_pc, code + pc);    
 }
 
 void csCall (Ref addr) {
     DEBUG("csCall");
     DEBUGint("addr",addr);
+
     Byte nextFrame = 0;
-    Byte tsNext = 0;
+    Byte tsNext = 0;    // temp stack next position
+
     if (!csEmpty()) {
         Ref currCSF = csGetCurrFrame();
-        Byte tsNext = readByte(currCSF + CSF_tempStackNext);
+        // get first available temp stack position (index, byte)
+        tsNext = readByte(currCSF + CSF_tempStackNext);
+        // also read global value for next frame on call stack (index, byte)
         nextFrame = readByte(H_CS_NEXT_FRAME);
+        DEBUG("csCall, isolated tsNext");
+        DEBUGint("tsNext",tsNext);
     }
     writeByte(H_CS_NEXT_FRAME, nextFrame + 1);
+
     Ref newCSF = csGetCurrFrame();  
     writeRef(newCSF + CSF_code, addr);
     writeByte(newCSF + CSF_tempStackBase, tsNext);
     writeByte(newCSF + CSF_tempStackNext, tsNext);
-    writeByte(newCSF + CSF_pc, 0);
+    writeRef(newCSF + CSF_pc, addr); 
 }
 
 void csReturn() {
@@ -98,16 +112,19 @@ void csSetLocal (Ref sym, Long value) {
 
     Byte tsBasePos = readByte(csf + CSF_tempStackBase);
     Byte tsNextPos = readByte(csf + CSF_tempStackNext);
+    //DEBUG("csSetLocal");
+    //DEBUGint("tsBasePos",tsBasePos);
+    //DEBUGint("tsNextPos",tsNextPos);
 
     // search for symbol
     for (Byte i = tsBasePos; i<tsNextPos; i++) {
         Ref tsFrame = tsBase + i*TSF_n;
         if (readRef(tsFrame + TSF_symbol) == sym) {
             // found it
-            DEBUG("Overwriting value");
-            DEBUGstr("Name",safeGetString(sym));
-            DEBUGint("tsPos",i);
-            DEBUGint("value",value);
+            //DEBUG("Overwriting value");
+            //DEBUGstr("Name",safeGetString(sym));
+            //DEBUGint("tsPos",i);
+            //DEBUGint("value",value);
             writeInt4(tsFrame + TSF_value, value);
             return;
         }
@@ -117,15 +134,15 @@ void csSetLocal (Ref sym, Long value) {
     // update call stack frame 
     writeByte(csf + CSF_tempStackNext, newPos+1);
 
-    DEBUG("Adding value");
-    DEBUGstr("Name",safeGetString(sym));
-    DEBUGint("tsPos",newPos);
-    DEBUGint("value",value);
+    //DEBUG("Adding value");
+    //DEBUGstr("Name",safeGetString(sym));
+    //DEBUGint("tsPos",newPos);
+    //DEBUGint("value",value);
 
     // save data into new frame
     Ref tsFrame = tsBase + newPos*TSF_n;
     writeRef(tsFrame + TSF_symbol, sym);
-    writeRef(tsFrame + TSF_value, value);
+    writeInt4(tsFrame + TSF_value, value);
 }
 
 
@@ -141,16 +158,18 @@ Long csGetLocal (Ref sym) {
         Ref tsFrame = tsBase + i*TSF_n;
         if (readRef(tsFrame + TSF_symbol) == sym) {
             // found it
-            DEBUG("Reading value");
-            DEBUGstr("Name",safeGetString(sym));
-            DEBUGint("tsPos",i);
+            //DEBUG("Reading value");
+            //DEBUGstr("Name",safeGetString(sym));
+            //DEBUGint("tsPos",i);
             Long value=readInt4(tsFrame + TSF_value);
-            DEBUGint("value",value);
+            //DEBUGint("value",value);
+            return value;
         }
     }
-    // not found
+    // not found - PANIC
     DEBUG("Value not found");
     DEBUGstr("Name",safeGetString(sym));
+    PANIC("Undefined local variable");
     return null;
 
 }
@@ -216,17 +235,27 @@ static char *getOpName (int op) {
 
 void csShowOp () {
     Ref csf=csGetCurrFrame();
-    Ref codeRef = readRef(csf+CSF_code);
+    //Ref codeRef = readRef(csf+CSF_code);
 
-    Byte pc=readByte(csf+CSF_pc);
-    Byte opCode=readByte(codeRef + pc);
+    Ref pc=readRef(csf+CSF_pc);
+    Byte opCode=readByte(pc);
 
-    int next1 = readByte(codeRef+pc+1);
-    int next2  = (next1 << 8) + readByte(codeRef+pc+2);
+    int next1 = readByte(pc+1);
+    int next2  = (next1 << 8) + readByte(pc+2);
+
 
     char buf[100];
-    sprintf(buf,"%5d / %3d : op=%10s op=%2d next1=%3d next2=%5d",
-        (int) (codeRef+pc),
+
+    serialEmitStr(" Stack: ");
+    for (int i=0; i<20; i++) {
+        Long value=dsPeek(i);
+        if (value==99999) break;
+        sprintf(buf,"%d ", value);
+        serialEmitStr(buf);
+    }
+    serialEmitNewline();
+
+    sprintf(buf,"                %5d: op=%10s op=%2d next1=%3d next2=%5d",
         (int) pc,
         getOpName(opCode),
         (int) opCode,
@@ -234,13 +263,6 @@ void csShowOp () {
         next2
     );
     serialEmitStr(buf);
-    serialEmitStr(" stack: ");
-    for (int i=0; i<20; i++) {
-        Long value=dsPeek(i);
-        if (value==99999) break;
-        sprintf(buf,"%d ", value);
-        serialEmitStr(buf);
-    }
     serialEmitNewline();
 }
 

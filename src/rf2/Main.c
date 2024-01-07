@@ -57,8 +57,8 @@ static void execute()
 
     switch (op) {
     case OP_JMP: {
-        uint8_t addr = dsPopByte();
-        csJump(addr);
+        Ref addr = dsPopRef();
+        csJumpToRef(addr);
     }
     break;
     case OP_COND_JMP: {
@@ -66,7 +66,7 @@ static void execute()
         Long cond = dsPopValue();
         if (cond != null)
         {
-            csJump(addr);
+            csJumpToRef(addr);
         }
     }
     break;
@@ -253,8 +253,8 @@ static void execute()
     }
     break;
     case OP_SETLOCAL: {
-        Long value = dsPopValue();
         Ref sym = dsPopRef();
+        Long value = dsPopValue();
         csSetLocal(sym, value);
     }
     break;
@@ -349,13 +349,13 @@ static void execute()
     break;
     case OP_JMP1: {
         Byte pc = dsPopByte();
-        csJump(pc);
+        csJumpToPC(pc);
     }
     break;
     case OP_COND_JMP1: {
-        Long condition = dsPopValue();
         Byte pc = dsPopByte();
-        if (condition != 0) csJump(pc);
+        Long condition = dsPopValue();
+        if (condition != 0) csJumpToPC(pc);
     }
     break;
     }
@@ -372,7 +372,9 @@ void forthMainLoop () {
     dsInit(); // initialize data stack
     csInit();
 
-    DEBUG("Press any key");
+    DEBUG("Press any key x3");
+    serialNextChar();
+    serialNextChar();
     serialNextChar();
 
     Ref setup=readRef(H_MAIN_SETUP);
@@ -384,6 +386,10 @@ void forthMainLoop () {
  
 
     DEBUG("Calling H_MAIN_SETUP");
+    DEBUG("Press any key x3");
+    serialNextChar();
+    serialNextChar();
+    serialNextChar();
 
 
     csCall(setup); // create call stack frame
@@ -400,6 +406,8 @@ void forthMainLoop () {
             csInit();
             DEBUG("Calling H_MAIN_LOOP");
             csCall(loop);
+            DEBUG("Press any key");
+            serialNextChar();
         } 
         if (csEmpty()) {
             DEBUG("CS is empty - code must have returned");
@@ -407,11 +415,13 @@ void forthMainLoop () {
             csInit();
             DEBUG("Calling H_MAIN_LOOP");
             csCall(loop);
+            DEBUG("Press any key");
+            serialNextChar();
         }
         // execute one instruction
         execute();
         // wait for keypress
-        serialNextChar();
+        //serialNextChar();
 
     }
 }

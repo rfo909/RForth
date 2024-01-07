@@ -114,7 +114,6 @@ int serialLostChars() {
 }
 
 void DEBUG (char *msg) {
-    uart_puts(UART_ID, "DEBUG ");
     uart_puts(UART_ID, msg);
     uart_puts(UART_ID,"\r\n");
 }

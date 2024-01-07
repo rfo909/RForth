@@ -23,6 +23,8 @@ int main()
     // The TIB functions seem to work
     // Sym.c seems to work + the initial setup from ACode.txt also ok (eq, ne, and etc)
     // Heap.c also ok (as it is called from Sym.c)
+    // Local variables ok
+    // Found bug in :Malloc in ACode, fixed
 
     for(;;) {
         Ref here = readRef(H_HERE);
