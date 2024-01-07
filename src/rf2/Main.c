@@ -64,6 +64,9 @@ static void execute()
     case OP_COND_JMP: {
         Ref addr = dsPopRef();
         Long cond = dsPopValue();
+        DEBUG("OP_COND_JMP\r\n");
+        DEBUGint("addr",addr);
+        DEBUGint("cond",cond);
         if (cond != null)
         {
             csJumpToRef(addr);
@@ -358,6 +361,11 @@ static void execute()
         if (condition != 0) csJumpToPC(pc);
     }
     break;
+    default: {
+        DEBUG("Unknown op-code\r\n");
+        DEBUGint("op",op);
+        PANIC("Unknown op-code");
+    }
     }
 }
 
@@ -366,15 +374,26 @@ static void execute()
 void forthMainLoop () {
 
     initSerial();
+
+    serialNextChar();
+
+    serialEmitStr("initSerial ok\r\n");
+    /* serialEmitStr("Press 'x' 3 times\r\n");
+    int xCount=0;
+    for(;;) {
+        char c=serialNextChar();
+        if (c=='x') xCount++;
+        if (xCount >= 3) break;
+    }*/
+
     initHeap();
     initTIB();
 
     dsInit(); // initialize data stack
-    csInit();
+    csInit(); // call stack
+    // (temp-stack is auto-initialized when pushing first frame on call stack)
 
-    serialEmitStr("Press any key x3\r\n");
-    serialNextChar();
-    serialNextChar();
+    serialEmitStr("Press any key\r\n");
     serialNextChar();
 
     Ref setup=readRef(H_MAIN_SETUP);
@@ -384,19 +403,25 @@ void forthMainLoop () {
  
 
     serialEmitStr("Calling H_MAIN_SETUP\r\n");
-    serialEmitStr("Press any key x3\r\n");
-    serialNextChar();
-    serialNextChar();
+    serialEmitStr("Press any key\r\n");
     serialNextChar();
 
 
     csCall(setup); // create call stack frame
 
 
+    Long opCount=0;
+
     // outer loop - never terminates
     for (;;) {
         if (hasPanicFlag()) {
+            DEBUG("PANIC: ");
+            DEBUG(panicMessage);
+            DEBUG("\r\n");
+            DEBUGint("opCount",opCount);
+
             DUMP_DEBUG();
+
             serialEmitStr("\r\nPANIC: " );
             serialEmitStr(panicMessage);
             serialEmitNewline();
@@ -419,6 +444,7 @@ void forthMainLoop () {
         }
         // execute one instruction
         execute();
+        opCount++;
         // wait for keypress
         //serialNextChar();
 

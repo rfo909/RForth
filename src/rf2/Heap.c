@@ -8,16 +8,39 @@ static int heapPointer=0;
 #include "Heap.h"
 static int dataLength = COMPILED_DATA_LENGTH;
 
+static Ref heapStaticDataBegin = (Ref) 0;
+static Ref heapStaticDataEnd = (Ref) 0;
+
+
 void initHeap() {
     // ACode.txt 
     heap=malloc(HEAP_SIZE);
     Byte data[] = COMPILED_DATA;
     memcpy(heap, data, dataLength);
     heapPointer=dataLength;
+
+    heapStaticDataBegin = readRef(H_HEAP_STATIC_DATA_BEGIN);
+    heapStaticDataEnd = readRef(H_HEAP_STATIC_DATA_END);
+    //heapStaticDataBegin=19;
+    //heapStaticDataEnd=3619
+ 
+    char buf[100];
+    sprintf(buf,"initHeap heapStaticDataBegin=%d heapStaticDataEnd=%d\r\n", heapStaticDataBegin, heapStaticDataEnd);
+
+    serialEmitStr(buf);
 }
 
 
+static void verifyHeapWriteAddr (Ref addr) {
 
+    if (addr >= heapStaticDataBegin && addr < heapStaticDataEnd) {
+        DEBUG("Invalid WRITE address - inside static data\r\n");
+        DEBUGint("addr",addr);
+        DEBUGint("heapStaticDataBegin", heapStaticDataBegin);
+        DEBUGint("heapStaticDataEnd", heapStaticDataEnd);
+        PANIC("Invalid WRITE");
+    } 
+}
 
 Byte *refToPointer (Ref ref) {
     return (heap+ref);
@@ -91,6 +114,7 @@ void writeRef (Ref addr, Ref value) {
 
 
 void writeInt1 (Ref addr, Long value) {
+    verifyHeapWriteAddr(addr);
     *(heap+addr)=(Byte) value;
 }
 void writeInt2 (Ref addr, Long value) {

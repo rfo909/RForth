@@ -266,11 +266,21 @@ def OP:COND_JMP1               LITERAL1 49
 :HERE               *END_MARKER			# two byte Ref to next free byte on heap
 :HERE_SHADOW		*END_MARKER			# used by main loop, to rollback heap if panic
 
+
+# This marker is the beginning of the area of the heap that is not allowed to be
+
+:BEGIN-STATIC-DATA
+
+
 # Sizes for statically allocated blocks (on heap)
 
 :CS_MAX_DEPTH		_*CS_maxDepth		# byte = number of frames
 :TS_MAX_DEPTH		_*TS_maxDepth		# byte = number of frames
 
+# Protected areas of the heap
+
+:HEAP_STATICDATA_BEGIN		*BEGIN-STATIC-DATA
+:HEAP_STATICDATA_END		*END-STATIC-DATA
 
 
 # Forth primitives
@@ -286,7 +296,8 @@ def OP:COND_JMP1               LITERAL1 49
 	# --
 	$1 =$2                      # copy pointer, for loop
 	:xMalloc_clear_loop
-		$2 'HERE READ2 EQ 'xMalloc_clear_end COND_JMP
+		$2 'HERE READ2 EQ 
+			'xMalloc_clear_end COND_JMP
 		LITERAL1 0 $2 WRITE1
 		$2 LITERAL1 1 ADD =$2
 		'xMalloc_clear_loop JMP
@@ -300,7 +311,8 @@ def OP:COND_JMP1               LITERAL1 49
 	=$3 # targetRef
 	
 	:xMemcpy_loop
-		$1 LITERAL1 0 LE 'xMemcpy_complete COND_JMP   # if count==0 goto complete
+		$1 LITERAL1 0 LE 
+			'xMemcpy_complete COND_JMP   # if count==0 goto complete
 		$2 $1 ADD READ1  # source byte
 			$3 $1 ADD WRITE1    # target write
 		$1 LITERAL1 1 SUBTRACT =$1
@@ -328,23 +340,6 @@ def OP:COND_JMP1               LITERAL1 49
 	:xCSFc_underflow
 	'SYM_CSF_Underflow 'PANIC CALL
 	
-	
-# ----------------------------------------------
-# Statically allocated buffers
-# ----------------------------------------------
-
-
-def _CS_bytes				@{ mul _*CSF.n? _*CS_maxDepth }
-def _TS_bytes				@{ mul _*TSF.n? _*TS_maxDepth }
-def _CB_bytes				@{ mul 1 256 }
-
-
-:CS_DATA					_CS_bytes			# call stack data
-
-:TEMP_STACK_DATA			_TS_bytes			# temp stack data
-		
-:CompileBuf  				_CB_bytes			# Compile buffer (256 bytes)
-
 
 
 :CompileBufPos				0					# Single byte
@@ -352,7 +347,8 @@ def _CB_bytes				@{ mul 1 256 }
 :OutByte					# ( byte -- ) write to CompileBuf
 	=$0								# byte
 	'CompileBufPos READ1 =$1		# 
-	$1 LITERAL1 254 GE 'xOutByte_fail COND_JMP
+	$1 LITERAL1 254 GE 
+		'xOutByte_fail COND_JMP
 	
 	$0 'CompileBuf $1 ADD WRITE1
 	$1 INCR 'CompileBufPos WRITE1
@@ -371,18 +367,21 @@ def _CB_bytes				@{ mul 1 256 }
 
 :FirstNonSpace 				# move TIBs to first non-space character
 	:xFNS_loop
-		TIBs _'ASCII_SPACE NE COND_JMP 'xFNS_ok 
+		TIBs _'ASCII_SPACE NE 
+			'xFNS_ok COND_JMP  
 		TIBs+
-		JMP 'xFNS_loop 
+		
+		'xFNS_loop JMP 
 	:xFNS_ok
 	RETURN
 	
 :FirstSpace 				# Move TIBr ahead to first space character
 	TIBr<
 	:xFS_loop
-		TIBr _'ASCII_SPACE EQ 'xFS_ok COND_JMP
+		TIBr _'ASCII_SPACE EQ 
+			'xFS_ok COND_JMP
 		TIBr+
-		JMP 'xFS_loop
+		'xFS_loop JMP
 	:xFS_ok
 	RETURN
 	
@@ -422,7 +421,8 @@ def _CB_bytes				@{ mul 1 256 }
 		'FirstSpace CALL
 		TIBW =$2						# next word
 		
-		$2 'SYM_SEMICOLON EQ 'xCOLON_end COND_JMP		# if semicolon, end loop
+		$2 'SYM_SEMICOLON EQ 
+			'xCOLON_end COND_JMP		# if semicolon, end loop
 		$2 'CompileWord CALL
 	:xCOLON_end
 		OP:RETURN 'OutByte CALL
@@ -436,9 +436,12 @@ def _CB_bytes				@{ mul 1 256 }
 	
 	:xIF_loop
 		'NextWord CALL =$1				# $1 = next word
-		$1 'SYM_THEN EQ 'xIF_then COND_JMP
-		$1 'SYM_ELSE EQ 'xIF_else COND_JMP
-		$1 'SYM_SEMICOLON EQ 'xIF_panic COND_JMP
+		$1 'SYM_THEN EQ 
+			'xIF_then COND_JMP
+		$1 'SYM_ELSE EQ 
+			'xIF_else COND_JMP
+		$1 'SYM_SEMICOLON EQ 
+			'xIF_panic COND_JMP
 		$1 'CompileWord CALL
 		'xIF_loop JMP
 	:xIF_then
@@ -461,8 +464,10 @@ def _CB_bytes				@{ mul 1 256 }
 		$2 =$0							# reusing the :xIF_then, $0 is now the byte to patch
 		:xIF_else_loop		# look for THEN
 			'NextWord CALL =$1
-			$1 'SYM_THEN EQ 'xIF_then COND_JMP
-			$1 'SYM_SEMICOLON EQ 'xIF_panic COND_JMP
+			$1 'SYM_THEN EQ 
+				'xIF_then COND_JMP
+			$1 'SYM_SEMICOLON EQ 
+				'xIF_panic COND_JMP
 			$1 'CompileWord CALL
 			'xIF_else_loop JMP
 			
@@ -475,8 +480,10 @@ def _CB_bytes				@{ mul 1 256 }
 	
 	:xLOOP_next_word
 		'NextWord CALL =$1				# $1 = next word
-		$1 'SYM_SEMICOLON EQ 'xLOOP_panic COND_JMP
-		$1 'SYM_NEXT? EQ 'xLOOP_next? COND_JMP
+		$1 'SYM_SEMICOLON EQ 
+			'xLOOP_panic COND_JMP
+		$1 'SYM_NEXT? EQ 
+			'xLOOP_next? COND_JMP
 		$1 'CompileWord CALL
 	:xLOOP_next?
 		OP:NOT 'OutByte CALL   # if value on stack is false, then 
@@ -496,8 +503,11 @@ def _CB_bytes				@{ mul 1 256 }
 
 :Immediate					# Set immediate flag on newest dictionary entry
 	'DICT_TOP READ2 =$1					# ptr to topmost DE
-	$1 LITERAL1 0 NE 'xImmediate_ok COND_JMP
+	$1 LITERAL1 0 NE 
+		'xImmediate_ok COND_JMP
+		
 		'SYM_Immediate_no_word 'PANIC CALL
+	
 	:xImmediate_ok
 	
 	$1 _'DE.flags READ1 =$2				# flags byte
@@ -575,35 +585,44 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 	
 	# Check if local variable set or get, returns true or false
 		
-	$0 'CompileLocalVariables 'xCOMP_done COND_JMP 
+	$0 'CompileLocalVariables 
+		'xCOMP_done COND_JMP 
 
 
 	# Check if words that map directly to instruction
 	
-	$0 'SingleInstructionWords NOT 'xCompileNotSIW COND_JMP
+	$0 'SingleInstructionWords NOT 
+		'xCompileNotSIW COND_JMP
+		
 		RETURN
 	:xCompileNotSIW
 	
 	# Check for IF
-	$0 'SYM_IF NE 'xCompileNotIF COND_JMP
+	$0 'SYM_IF NE 
+		'xCompileNotIF COND_JMP
+		
 		'IF CALL
 		RETURN
 	:xCompileNotIF
 
 	# Check for LOOP
-	$0 'SYM_LOOP NE 'xCompileNotLoop COND_JMP
+	$0 'SYM_LOOP NE 
+		'xCompileNotLoop COND_JMP
+		
 		'LOOP CALL
 		RETURN
 	:xCompileNotLoop
 	
 	$0 'DictLookup CALL =$1				# $1 = DE or NULL
-	$1 _'REF_NULL EQ 'xCOMP_notInDict COND_JMP
+	$1 _'REF_NULL EQ 
+		'xCOMP_notInDict COND_JMP
 
 		# Dictionary word found
 			
 		$1 _'DE.code =$2				# code pointer
 
-		$1 _'DE.flags READ1 _'DE_Status_bit_immediate OR NOT 'xCOMP_regular COND_JMP
+		$1 _'DE.flags READ1 _'DE_Status_bit_immediate OR NOT 
+			'xCOMP_regular COND_JMP
 
 			# immediate word, call it right now
 
@@ -660,9 +679,13 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 	
 :CompileNumber 				# ( number -- )  
 	=$0							# the number
-	$0 LITERAL4 0xff 0xff 0x00 0x00 AND 'xCN_4 COND_JMP
-	$0 LITERAL4 0x00 0x00 0xff 0x00 AND 'xCN_2 COND_JMP
-		# 1 byte literal
+	$0 LITERAL4 0xff 0xff 0x00 0x00 AND 
+		'xCN_4 COND_JMP
+	$0 LITERAL4 0x00 0x00 0xff 0x00 AND 
+		'xCN_2 COND_JMP
+		
+	
+	# 1 byte literal
 		OP:LITERAL1 'OutByte CALL
 		$0 'OutByte CALL
 		RETURN
@@ -812,6 +835,8 @@ def Regular		_'DE_Status_bit_regular
 	# The actual main loop
 	
 	:xML_Loop
+		'SYM_ok EMITWORD
+		
 		# Locate word, then compile it
 		'NextWord CALL 
 			'CompileWord CALL
@@ -907,6 +932,7 @@ def Regular		_'DE_Status_bit_regular
 	*SYM_NextWord			NEXT
 	*SYM_ParseInt			NEXT
 	*SYM_IsInt				NEXT
+	*SYM_ok					NEXT
 	*SYM_CSF_Underflow		NEXT
 	*SYM_Immediate_no_word	NEXT
 	*SYM_Unknown-Word		NEXT
@@ -994,6 +1020,7 @@ def Regular		_'DE_Status_bit_regular
 :SYM_NextWord %N %e %x %t %W %o %r %d 0
 :SYM_IsInt %I %s %I %n %t 0
 :SYM_ParseInt %P %a %r %s %e %I %n %t 0
+:SYM_ok %o %k _*ASCII_SPACE 0
 
 :SYM_CSF_Underflow %C %a %l %l %- %s %t %a %c %k %- %u %n %d %e %r %f %l %o %w 0
 :SYM_Immediate_no_word %I %m %m %e %d %i %a %t %e %- %n %o %- %w %o %r %d 0
@@ -1004,7 +1031,32 @@ def Regular		_'DE_Status_bit_regular
 :SYM_OutByte-Overflow %O %u %t %B %y %t %e %- %O %v %e %r %f %l %o %w 0
 
 
+# This marker is the end of the area of the heap that is not allowed to be
+# overwritten. See also :BEGIN-STATIC-DATA
+
+:END-STATIC-DATA
+
+# ----------------------------------------------
+# Statically allocated buffers
+# ----------------------------------------------
+
+
+def _CS_bytes				@{ mul _*CSF.n? _*CS_maxDepth }
+def _TS_bytes				@{ mul _*TSF.n? _*TS_maxDepth }
+def _CB_bytes				@{ mul 1 256 }
+
+
+:CS_DATA					_CS_bytes			# call stack data
+
+:TEMP_STACK_DATA			_TS_bytes			# temp stack data
+		
+:CompileBuf  				_CB_bytes			# Compile buffer (256 bytes)
+
 # This is the initial value of HERE
+
+
+	
+
 
 :END_MARKER
 

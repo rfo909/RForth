@@ -32,6 +32,17 @@ typedef int32_t        Long;
 #define H_HERE                      15  // Ref
 #define H_HERE_SHADOW               17  // Ref
 
+// (STATIC_DATA_BEGIN is here in the assembled code)
+
+#define H_CS_MAX_DEPTH              19  // Byte
+#define H_TS_MAX_DEPTH              20  // Byte
+
+#define H_HEAP_STATIC_DATA_BEGIN    21  // Ref
+#define H_HEAP_STATIC_DATA_END      23  // Ref
+
+
+
+
 #define null                    0
 
 // Forth true and false
