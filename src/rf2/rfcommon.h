@@ -178,9 +178,12 @@ void serialEmitStr (char *str);
 void serialEmitNewline ();
 int serialLostChars();
 
+// Debug.c
+
 void DEBUG (char *msg);
 void DEBUGint (char *name, int value);
 void DEBUGstr (char *name, char *value);
+void DUMP_DEBUG ();
 
 // CSTS.c  -- call stack and temp stack
 

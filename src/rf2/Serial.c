@@ -113,25 +113,5 @@ int serialLostChars() {
     return lostChars;
 }
 
-void DEBUG (char *msg) {
-    uart_puts(UART_ID, msg);
-    uart_puts(UART_ID,"\r\n");
-}
-
-void DEBUGint (char *name, int value) {
-    uart_puts(UART_ID, "   ");
-    uart_puts(UART_ID, name);
-    sprintf(buf,"=%d",value);
-    uart_puts(UART_ID, buf);
-    uart_puts(UART_ID,"\r\n");
-}
-
-void DEBUGstr (char *name, char *value) {
-    uart_puts(UART_ID, "   ");
-    uart_puts(UART_ID, name);
-    uart_putc(UART_ID,'=');
-    uart_puts(UART_ID, value);
-    uart_puts(UART_ID,"\r\n");
-}
 
 

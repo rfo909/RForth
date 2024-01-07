@@ -372,7 +372,7 @@ void forthMainLoop () {
     dsInit(); // initialize data stack
     csInit();
 
-    DEBUG("Press any key x3");
+    serialEmitStr("Press any key x3\r\n");
     serialNextChar();
     serialNextChar();
     serialNextChar();
@@ -380,13 +380,11 @@ void forthMainLoop () {
     Ref setup=readRef(H_MAIN_SETUP);
     Ref loop=readRef(H_MAIN_LOOP);
 
-    DEBUG("forthMainLoop");
-    DEBUGint("setup", setup);
-    DEBUGint("loop",loop);
+    serialEmitStr("forthMainLoop\r\n");
  
 
-    DEBUG("Calling H_MAIN_SETUP");
-    DEBUG("Press any key x3");
+    serialEmitStr("Calling H_MAIN_SETUP\r\n");
+    serialEmitStr("Press any key x3\r\n");
     serialNextChar();
     serialNextChar();
     serialNextChar();
@@ -398,24 +396,25 @@ void forthMainLoop () {
     // outer loop - never terminates
     for (;;) {
         if (hasPanicFlag()) {
-            serialEmitStr("PANIC: " );
+            DUMP_DEBUG();
+            serialEmitStr("\r\nPANIC: " );
             serialEmitStr(panicMessage);
             serialEmitNewline();
             clearPanicFlag();
             dsInit();
             csInit();
-            DEBUG("Calling H_MAIN_LOOP");
+            serialEmitStr("Calling H_MAIN_LOOP\r\n");
             csCall(loop);
-            DEBUG("Press any key");
+            serialEmitStr("Press any key\r\n");
             serialNextChar();
         } 
         if (csEmpty()) {
-            DEBUG("CS is empty - code must have returned");
+            serialEmitStr("CS is empty - code must have returned\r\n");
             dsInit();
             csInit();
-            DEBUG("Calling H_MAIN_LOOP");
+            serialEmitStr("Calling H_MAIN_LOOP\r\n");
             csCall(loop);
-            DEBUG("Press any key");
+            serialEmitStr("Press any key\r\n");
             serialNextChar();
         }
         // execute one instruction

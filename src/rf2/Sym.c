@@ -50,10 +50,6 @@ static Ref lookupSymbol (char *symbol) {
         if (!strcmp(str,symbol)) {
             return strRef;
         }
-        //DEBUG("lookupSymbol");
-        //DEBUG(symbol);
-        //DEBUG("!=");
-        //DEBUG(str);
         top=readRef(top+2); // next
     }
     return (Ref) null;
@@ -63,8 +59,6 @@ static Ref lookupSymbol (char *symbol) {
 // Returns ref to the string stored in the symbol stack (heap), not the CONS cells
 // that IS the stack
 static Ref addNewSymbol (char *symbol) {
-    //DEBUG("addNewSymbol");
-    //DEBUG(symbol);
     Ref strSpace = heapMalloc(strlen(symbol)+1);
     strcpy(refToPointer(strSpace), symbol);
 

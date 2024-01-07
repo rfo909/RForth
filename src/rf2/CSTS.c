@@ -77,7 +77,7 @@ void csJumpToPC (Byte pc) {
 }
 
 void csCall (Ref addr) {
-    DEBUG("csCall");
+    DEBUG("csCall\r\n");
     DEBUGint("addr",addr);
 
     Byte nextFrame = 0;
@@ -89,7 +89,7 @@ void csCall (Ref addr) {
         tsNext = readByte(currCSF + CSF_tempStackNext);
         // also read global value for next frame on call stack (index, byte)
         nextFrame = readByte(H_CS_NEXT_FRAME);
-        DEBUG("csCall, isolated tsNext");
+        DEBUG("csCall, isolated tsNext\r\n");
         DEBUGint("tsNext",tsNext);
     }
     writeByte(H_CS_NEXT_FRAME, nextFrame + 1);
@@ -112,19 +112,12 @@ void csSetLocal (Ref sym, Long value) {
 
     Byte tsBasePos = readByte(csf + CSF_tempStackBase);
     Byte tsNextPos = readByte(csf + CSF_tempStackNext);
-    //DEBUG("csSetLocal");
-    //DEBUGint("tsBasePos",tsBasePos);
-    //DEBUGint("tsNextPos",tsNextPos);
 
     // search for symbol
     for (Byte i = tsBasePos; i<tsNextPos; i++) {
         Ref tsFrame = tsBase + i*TSF_n;
         if (readRef(tsFrame + TSF_symbol) == sym) {
             // found it
-            //DEBUG("Overwriting value");
-            //DEBUGstr("Name",safeGetString(sym));
-            //DEBUGint("tsPos",i);
-            //DEBUGint("value",value);
             writeInt4(tsFrame + TSF_value, value);
             return;
         }
@@ -133,11 +126,6 @@ void csSetLocal (Ref sym, Long value) {
     Byte newPos=tsNextPos;
     // update call stack frame 
     writeByte(csf + CSF_tempStackNext, newPos+1);
-
-    //DEBUG("Adding value");
-    //DEBUGstr("Name",safeGetString(sym));
-    //DEBUGint("tsPos",newPos);
-    //DEBUGint("value",value);
 
     // save data into new frame
     Ref tsFrame = tsBase + newPos*TSF_n;
@@ -158,16 +146,12 @@ Long csGetLocal (Ref sym) {
         Ref tsFrame = tsBase + i*TSF_n;
         if (readRef(tsFrame + TSF_symbol) == sym) {
             // found it
-            //DEBUG("Reading value");
-            //DEBUGstr("Name",safeGetString(sym));
-            //DEBUGint("tsPos",i);
             Long value=readInt4(tsFrame + TSF_value);
-            //DEBUGint("value",value);
             return value;
         }
     }
     // not found - PANIC
-    DEBUG("Value not found");
+    DEBUG("Value not found\r\n");
     DEBUGstr("Name",safeGetString(sym));
     PANIC("Undefined local variable");
     return null;
@@ -246,24 +230,24 @@ void csShowOp () {
 
     char buf[100];
 
-    serialEmitStr(" Stack: ");
-    for (int i=0; i<20; i++) {
-        Long value=dsPeek(i);
-        if (value==99999) break;
-        sprintf(buf,"%d ", value);
-        serialEmitStr(buf);
-    }
-    serialEmitNewline();
+ 
 
-    sprintf(buf,"                %5d: op=%10s op=%2d next1=%3d next2=%5d",
+    sprintf(buf,"%5d: op=%10s op=%2d next1=%3d next2=%5d",
         (int) pc,
         getOpName(opCode),
         (int) opCode,
         next1,
         next2
     );
-    serialEmitStr(buf);
-    serialEmitNewline();
+    DEBUG(buf);
+    DEBUG("  Stack: ");
+    for (int i=0; i<20; i++) {
+        Long value=dsPeek(i);
+        if (value==99999) break;
+        sprintf(buf,"%d ", value);
+        DEBUG(buf);
+    }
+    DEBUG("\r\n");
 }
 
 
