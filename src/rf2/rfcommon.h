@@ -27,7 +27,7 @@ typedef int32_t        Long;
 #define H_SYM_TOP_REF               8   // Ref
 
 #define H_TS_BASE_REF               10  // Ref
-#define H_TS_NEXT_FRAME             12  // Byte
+#define H_COMPILE_BUF_POS           12  // Byte
 #define H_DICT_TOP                  13  // Ref
 #define H_HERE                      15  // Ref
 #define H_HERE_SHADOW               17  // Ref
@@ -191,6 +191,7 @@ int serialLostChars();
 
 // Debug.c
 
+void DEBUGEnable (bool enable);
 void DEBUG (char *msg);
 void DEBUGint (char *name, int value);
 void DEBUGstr (char *name, char *value);

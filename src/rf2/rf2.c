@@ -8,7 +8,7 @@ int main()
 
     // handles calling a setup function then a main loop, both defined in assembly,
     // and processing panic's.
-    forthMainLoop();
 
-   
+
+    forthMainLoop();
 }

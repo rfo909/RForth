@@ -64,9 +64,6 @@ static void execute()
     case OP_COND_JMP: {
         Ref addr = dsPopRef();
         Long cond = dsPopValue();
-        DEBUG("OP_COND_JMP\r\n");
-        DEBUGint("addr",addr);
-        DEBUGint("cond",cond);
         if (cond != null)
         {
             csJumpToRef(addr);
@@ -378,13 +375,6 @@ void forthMainLoop () {
     serialNextChar();
 
     serialEmitStr("initSerial ok\r\n");
-    /* serialEmitStr("Press 'x' 3 times\r\n");
-    int xCount=0;
-    for(;;) {
-        char c=serialNextChar();
-        if (c=='x') xCount++;
-        if (xCount >= 3) break;
-    }*/
 
     initHeap();
     initTIB();
@@ -393,7 +383,11 @@ void forthMainLoop () {
     csInit(); // call stack
     // (temp-stack is auto-initialized when pushing first frame on call stack)
 
-    serialEmitStr("Press any key\r\n");
+
+
+    serialEmitStr("Press 3x any key before calling H_MAIN_SETUP\r\n");
+    serialNextChar();
+    serialNextChar();
     serialNextChar();
 
     Ref setup=readRef(H_MAIN_SETUP);
@@ -407,8 +401,8 @@ void forthMainLoop () {
     serialNextChar();
 
 
-    csCall(setup); // create call stack frame
 
+    csCall(setup); // create call stack frame
 
     Long opCount=0;
 

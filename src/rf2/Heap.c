@@ -6,7 +6,6 @@ static int heapPointer=0;
 
 
 #include "Heap.h"
-static int dataLength = COMPILED_DATA_LENGTH;
 
 static Ref heapStaticDataBegin = (Ref) 0;
 static Ref heapStaticDataEnd = (Ref) 0;
@@ -15,9 +14,11 @@ static Ref heapStaticDataEnd = (Ref) 0;
 void initHeap() {
     // ACode.txt 
     heap=malloc(HEAP_SIZE);
-    Byte data[] = COMPILED_DATA;
-    memcpy(heap, data, dataLength);
-    heapPointer=dataLength;
+    int data[] = COMPILED_DATA;
+    for (int i=0; i<COMPILED_DATA_LENGTH; i++) {
+        *(heap+i)=(Byte) data[i];
+    }
+    heapPointer=COMPILED_DATA_LENGTH;
 
     heapStaticDataBegin = readRef(H_HEAP_STATIC_DATA_BEGIN);
     heapStaticDataEnd = readRef(H_HEAP_STATIC_DATA_END);
@@ -47,19 +48,22 @@ Byte *refToPointer (Ref ref) {
 }
 
 
-#define MAX_STRING_LENGTH       256
+#define MAX_STRING_CHECK_LENGTH       256
 
 
 // Safely get a string from the heap, checking that the characters are printable, 
 // and that it terminates correctly, or PANIC
 char *safeGetString (Ref ref) {
-    Byte *ptr=refToPointer(ref);
-    for (int i=0; i<MAX_STRING_LENGTH; i++) {
-        Byte b=*(ptr+i);
-        if (b==0) break; // end of string
-        if( (b>=32 && b<126) || b=='\n' || b=='\r' || b=='\t') {
-            // ok
-        } else {
+    //DEBUG("safeGetString");
+    //DEBUGint("ref",ref);
+
+    char *ptr=refToPointer(ref);
+    for (int i=0; i<MAX_STRING_CHECK_LENGTH; i++) {
+        char c=*(ptr+i);
+        if (c=='\0') break; // end of string
+        bool ok = (c>=32 && c<126) || c=='\n' || c=='\r' || c=='\t';
+        if (!ok) {
+            DEBUGint("Failing at pos", i);
             PANIC("Invalid string reference: nonprintable characters");
             return "<NOT-A-STRING>";
         }

@@ -11,7 +11,12 @@ data is written, in order to keep a track of events before a PANIC
 
 static char circBuffer[SIZE];
 static int pos=0;
-bool init=false;
+static bool init=false;
+static bool enableDirectLogging=false;
+
+void DEBUGEnable (bool enable) {
+    enableDirectLogging=enable;
+}
 
 
 static void add (char *s) {
@@ -20,12 +25,14 @@ static void add (char *s) {
         init=true;
         serialEmitStr("Debug.c init ok\r\n");
     }
-    while (*s != '\0') {
-        circBuffer[pos] = *s;
+    if (enableDirectLogging) serialEmitStr(s);
+
+    char *ptr=s;
+    while (*ptr != '\0') {
+        circBuffer[pos] = *ptr;
         pos=(pos+1) %  SIZE;
-        s++;
+        ptr++;
     }
-    //serialEmitStr(s);
 }
 
 void DUMP_DEBUG () {

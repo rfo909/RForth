@@ -26,6 +26,7 @@ static char filter (char c) {
 // Call serialNextChar() which may block until there are data
 static void getInputCharacter() {
     char c = serialNextChar();
+    serialEmitChar(c);
     c=filter(c);
     buf[inputWritePos]=c;
     inputWritePos=(inputWritePos+1) % TIB_SIZE;

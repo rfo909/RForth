@@ -29,15 +29,15 @@ Read and apply limits defined in ACode by tags
 */
 
 void csInit () {
-    writeRef(H_CS_NEXT_FRAME,0);
+    writeByte(H_CS_NEXT_FRAME,0);
 }
 
 bool csEmpty() {
-    return (readRef(H_CS_NEXT_FRAME)==null);
+    return (readByte(H_CS_NEXT_FRAME)==null);
 }
 
 Ref csGetCurrFrame () {
-    Ref nextFrame=readRef(H_CS_NEXT_FRAME);
+    Byte nextFrame=readByte(H_CS_NEXT_FRAME);
     if (nextFrame==0) {
         PANIC("CS empty");
         return null;
@@ -77,9 +77,6 @@ void csJumpToPC (Byte pc) {
 }
 
 void csCall (Ref addr) {
-    DEBUG("csCall\r\n");
-    DEBUGint("addr",addr);
-
     Byte nextFrame = 0;
     Byte tsNext = 0;    // temp stack next position
 
@@ -248,6 +245,14 @@ void csShowOp () {
         DEBUG(buf);
     }
     DEBUG("\r\n");
+    /*
+    DEBUG("First20: ");
+    for (int i=0; i<20; i++) {
+        sprintf(buf,"%3d ", (int) readInt1(i));
+        DEBUG(buf);
+    }
+    DEBUG("\r\n");
+    */
 }
 
 

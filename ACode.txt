@@ -38,6 +38,11 @@ def _*REF_NULL		0 0
 
 def _*ASCII_SPACE	32
 def _'ASCII_SPACE	LITERAL1 _*ASCII_SPACE
+def _*ASCII_CR		13
+def _'ASCII_CR		LITERAL1 _*ASCII_CR
+def _*ASCII_LF		10
+def _'ASCII_LF		LITERAL1 _*ASCII_LF
+
 
 # Symbol Stack Entry (SSE)
 # ########################
@@ -255,7 +260,11 @@ def OP:COND_JMP1               LITERAL1 49
 # Temp stack
 
 :TS_BASE_REF		*TEMP_STACK_DATA	# reserved data area
-:NOT_USED_A_1		0					# single byte
+
+# Compile buf pointer
+
+:CompileBufPos				0					# Single byte
+	
 
 # Dictionary pointer
 
@@ -342,8 +351,6 @@ def OP:COND_JMP1               LITERAL1 49
 	
 
 
-:CompileBufPos				0					# Single byte
-	
 :OutByte					# ( byte -- ) write to CompileBuf
 	=$0								# byte
 	'CompileBufPos READ1 =$1		# 
@@ -752,6 +759,9 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 	=$2										# code					    
 	=$1										# flags
 	=$0										# name
+	$0 EMITWORD
+	_'ASCII_CR EMIT
+	_'ASCII_LF EMIT
 	$0 'DE_create CALL =$7					# ptr to DE
 	$1 $7 _'DE.flags WRITE1					# DE.flags=flags
 	$2 $7 _'DE.code WRITE2					# DE.code=code
@@ -770,7 +780,11 @@ def Regular		_'DE_Status_bit_regular
 	'END_MARKER 'HERE WRITE2
 	'HereCommit CALL				# Update HERE_SHADOW to match HERE
 
-	
+	## SHOULD FAIL!
+	## (it did :-)
+	#LITERAL1 3
+	#	LITERAL1 200 WRITE1
+		
 	# Initial dictionary with words that can be called from Forth
 	# mainly during compilation, hence immediate
 	
@@ -810,6 +824,9 @@ def Regular		_'DE_Status_bit_regular
 	'HERE READ2 =$1												# $1 = HERE
 	
 	$1 $0 EQ 'xML_Loop COND_JMP								# if HERE == HERE-shadow, goto ok
+	
+		'SYM_cleanup_after_panic EMITWORD
+		
 		# remove entries from dictionary until DE ref 
 		# smaller than HERE-shadow, which means they were
 		# allocated by code that now has panicked
@@ -837,9 +854,14 @@ def Regular		_'DE_Status_bit_regular
 	:xML_Loop
 		'SYM_ok EMITWORD
 		
+		# reset compile buffer
+		LITERAL1 0 'CompileBufPos WRITE1
+		
 		# Locate word, then compile it
 		'NextWord CALL 
 			'CompileWord CALL
+			
+		OP:RETURN 'OutByte CALL
 		
 		# Run code in CompileBuf
 		'CompileBuf CALL
@@ -933,6 +955,7 @@ def Regular		_'DE_Status_bit_regular
 	*SYM_ParseInt			NEXT
 	*SYM_IsInt				NEXT
 	*SYM_ok					NEXT
+	*SYM_cleanup_after_panic  NEXT
 	*SYM_CSF_Underflow		NEXT
 	*SYM_Immediate_no_word	NEXT
 	*SYM_Unknown-Word		NEXT
@@ -1021,6 +1044,7 @@ def Regular		_'DE_Status_bit_regular
 :SYM_IsInt %I %s %I %n %t 0
 :SYM_ParseInt %P %a %r %s %e %I %n %t 0
 :SYM_ok %o %k _*ASCII_SPACE 0
+:SYM_cleanup_after_panic %C %l %e %a %n %i %n %g _*ASCII_SPACE %u %p _*ASCII_SPACE %a %f %t %e %r _*ASCII_SPACE %p %a %n %i %c 0
 
 :SYM_CSF_Underflow %C %a %l %l %- %s %t %a %c %k %- %u %n %d %e %r %f %l %o %w 0
 :SYM_Immediate_no_word %I %m %m %e %d %i %a %t %e %- %n %o %- %w %o %r %d 0
@@ -1053,10 +1077,6 @@ def _CB_bytes				@{ mul 1 256 }
 :CompileBuf  				_CB_bytes			# Compile buffer (256 bytes)
 
 # This is the initial value of HERE
-
-
-	
-
 
 :END_MARKER
 

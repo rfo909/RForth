@@ -8,7 +8,6 @@
 
 #define BUF_SIZE        64
 
-static Byte buf[BUF_SIZE];
 
 static Ref lookupSymbol (char *symbol);
 static Ref addNewSymbol (char *symbol);
@@ -17,22 +16,34 @@ static Ref addNewSymbol (char *symbol);
 // Returns ref to the string stored in the symbol stack (heap), not the CONS cells
 // that IS the stack
 Ref symCreateTIBWord () {
+    DEBUG("symCreateTIBWord");
+
     int length=getTIBWordLength();
+    DEBUGint("length",length);
     if (length > BUF_SIZE-1) {
-        PANIC("Symbol-too-long");
+        DEBUG("symCreateTIBWord, symbol too long\r\n");
+        DEBUGint("length",length);
+        DEBUGint("limit", BUF_SIZE);
+        PANIC("Symbol too long");
         return (Ref) null;
     }
+
     // copy characters
+    char buf[BUF_SIZE];
     int pos=0;
-    while (getTIBWordLength() > 0) {
-        buf[pos++] = getTIBsChar();
+    while (pos<length) {
+        *(buf+pos)=getTIBsChar();
         advanceTIBs();
+        pos++;
     }
-    buf[pos++]='\0';
+    *(buf+pos) = 0; // terminate string
     return addSymbol(buf);
 }
 
+
 Ref addSymbol (char *str) {
+    DEBUG("addSymbol\r\n");
+    DEBUGstr("str",str);
     Ref ref=lookupSymbol(str);
     if (ref == null) {
         ref = addNewSymbol(str);
@@ -42,11 +53,14 @@ Ref addSymbol (char *str) {
 
 
 static Ref lookupSymbol (char *symbol) {
-    Ref top = readRef(H_SYM_TOP_REF);
+    Ref top = readRef(H_SYM_TOP_REF);  // cons cell  
     while (top != null) {
+        DEBUGint("cons ref", top); 
         Ref strRef = readRef(top);
-        char *str=(char *) refToPointer(strRef);
+        DEBUGint("strRef",strRef);
+        char *str=safeGetString(strRef);
 
+        DEBUGstr("Comparing", str);
         if (!strcmp(str,symbol)) {
             return strRef;
         }
@@ -59,6 +73,8 @@ static Ref lookupSymbol (char *symbol) {
 // Returns ref to the string stored in the symbol stack (heap), not the CONS cells
 // that IS the stack
 static Ref addNewSymbol (char *symbol) {
+    DEBUG("addNewSymbol");
+    DEBUG(symbol);
     Ref strSpace = heapMalloc(strlen(symbol)+1);
     strcpy(refToPointer(strSpace), symbol);
 
