@@ -233,6 +233,7 @@ def OP:PARSE                   LITERAL1 47
 # Byte address for jumping inside compiled code (not used in this file)
 def OP:JMP1                    LITERAL1 48
 def OP:COND_JMP1               LITERAL1 49
+def OP:DEBUG                   LITERAL1 50
 
 
 
@@ -329,7 +330,9 @@ def OP:COND_JMP1               LITERAL1 49
 	:xMemcpy_complete
 	RETURN
 	
-
+:HereWord
+	'HERE 	# save HERE reference on stack
+	RETURN
 
 	
 :HereCommit					# update HERE_SHADOW to HERE
@@ -352,6 +355,8 @@ def OP:COND_JMP1               LITERAL1 49
 
 
 :OutByte					# ( byte -- ) write to CompileBuf
+	## LITERAL1 2 DEBUG  # logging + step through instructions
+
 	=$0								# byte
 	'CompileBufPos READ1 =$1		# 
 	$1 LITERAL1 254 GE 
@@ -359,10 +364,14 @@ def OP:COND_JMP1               LITERAL1 49
 	
 	$0 'CompileBuf $1 ADD WRITE1
 	$1 INCR 'CompileBufPos WRITE1
+	
+	## LITERAL1 0 DEBUG
 	RETURN
 
 	:xOutByte_fail
 	'SYM_OutByte-Overflow 'PANIC CALL
+	
+	## LITERAL1 0 DEBUG
 	RETURN
 	
 :OutRef 					# ( Ref -- ) write to CompileBuf
@@ -489,7 +498,7 @@ def OP:COND_JMP1               LITERAL1 49
 		'NextWord CALL =$1				# $1 = next word
 		$1 'SYM_SEMICOLON EQ 
 			'xLOOP_panic COND_JMP
-		$1 'SYM_NEXT? EQ 
+		$1 'SYM_Next? EQ 
 			'xLOOP_next? COND_JMP
 		$1 'CompileWord CALL
 	:xLOOP_next?
@@ -522,6 +531,16 @@ def OP:COND_JMP1               LITERAL1 49
 	$2 $1 _'DE.flags WRITE1				# write updated flags to DE.flags
 	RETURN	
 	
+	
+	
+:DOT
+	65 EMIT  # "a"
+	RETURN
+	
+:CR
+	_'ASCII_CR EMIT 
+	_'ASCII_LF EMIT
+	RETURN
 	
 def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 	# $a = opcode
@@ -591,34 +610,18 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 	=$0									# The word
 	
 	# Check if local variable set or get, returns true or false
-		
-	$0 'CompileLocalVariables 
+	
+	$0 'CompileLocalVariables CALL
 		'xCOMP_done COND_JMP 
 
+	# Check words that map directly to instruction
 
-	# Check if words that map directly to instruction
-	
-	$0 'SingleInstructionWords NOT 
+	$0 'SingleInstructionWords CALL NOT 
 		'xCompileNotSIW COND_JMP
 		
 		RETURN
 	:xCompileNotSIW
 	
-	# Check for IF
-	$0 'SYM_IF NE 
-		'xCompileNotIF COND_JMP
-		
-		'IF CALL
-		RETURN
-	:xCompileNotIF
-
-	# Check for LOOP
-	$0 'SYM_LOOP NE 
-		'xCompileNotLoop COND_JMP
-		
-		'LOOP CALL
-		RETURN
-	:xCompileNotLoop
 	
 	$0 'DictLookup CALL =$1				# $1 = DE or NULL
 	$1 _'REF_NULL EQ 
@@ -628,7 +631,7 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 			
 		$1 _'DE.code =$2				# code pointer
 
-		$1 _'DE.flags READ1 _'DE_Status_bit_immediate OR NOT 
+		$1 _'DE.flags READ1 _'DE_Status_bit_immediate AND NOT 
 			'xCOMP_regular COND_JMP
 
 			# immediate word, call it right now
@@ -643,26 +646,33 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 			$2 'OutRef CALL
 			OP:CALL 'OutByte CALL
 		
-		:xCOMP_notInDict
+	:xCOMP_notInDict
 		
-			# default to assume number
+		# default to assume number
+		
+		$0 CHECK_PARSE NOT 'xCOMP_fail COND_JMP
+		
+		$0 'CompileNumber CALL   
 			
-			$0 PARSE 					# will panic if not a number
-				'CompileNumber CALL   
-				
-		:xCOMP_done
-		   
-		RETURN
+	:xCOMP_done	   
+	RETURN
+	
+	:xCOMP_fail
+	'SYM_invalid_word EMITWORD 
+	LITERAL1 %: EMIT
+	_'ASCII_SPACE EMIT
+	$0 EMITWORD
+	'SYM_invalid_word 'PANIC CALL
 
 
 :CompileLocalVariables			# ( word -- bool )
 	=$0									# $0 = the word
-	$0 READ1 %$ EQ 
-		$0 INCR READ1 0 NE AND
+	$0 READ1 LITERAL1 %$ EQ 
+		$0 INCR READ1 LITERAL1 0 NE AND
 			'xCLV_get COND_JMP
-	$0 READ1 %= EQ
-		$0 INCR READ1 %$ EQ AND
-			$0 INCR2 READ1 0 NE AND
+	$0 READ1 LITERAL1 %= EQ
+		$0 INCR READ1 LITERAL1 %$ EQ AND
+			$0 INCR2 READ1 LITERAL1 0 NE AND
 				'xCLV_set COND_JMP
 	_'FALSE
 	RETURN
@@ -744,15 +754,11 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 
 	
 :PANIC        				# ( errorSymbol -- )
-	=$0
-	'SYM_PANIC		EMITWORD
-	_'ASCII_SPACE 	EMIT
-	$0 				EMITWORD
-	
-	PANIC						
+	PANIC
 		# reset input buffer
 		# clear data- and call stack
 		# then call :MainLoop
+	RETURN
 		
 		
 :DictAdd  					# ( name flags code -- )
@@ -794,7 +800,9 @@ def Regular		_'DE_Status_bit_regular
 	'SYM_IF				Immediate			'IF				'DictAdd CALL
 	'SYM_LOOP			Immediate			'LOOP			'DictAdd CALL
 	'SYM_IMMEDIATE		Immediate			'Immediate		'DictAdd CALL
-	'SYM_HERE			Regular				'HERE			'DictAdd CALL
+	'SYM_HERE			Regular				'HereWord		'DictAdd CALL
+	'SYM_DOT			Regular				'DOT			'DictAdd CALL
+	'SYM_cr				Regular				'CR				'DictAdd CALL
 	'SYM_MALLOC			Regular				'Malloc			'DictAdd CALL
 	'SYM_CREATE			Immediate			'CREATE			'DictAdd CALL
 	'SYM_DictLookup		Regular				'DictLookup		'DictAdd CALL
@@ -829,7 +837,7 @@ def Regular		_'DE_Status_bit_regular
 		
 		# remove entries from dictionary until DE ref 
 		# smaller than HERE-shadow, which means they were
-		# allocated by code that now has panicked
+		# allocated before code that now has panicked
 		
 		'DICT_TOP READ2 =$2										# $2 = DE pointer
 		:xML_DictPurge
@@ -852,15 +860,19 @@ def Regular		_'DE_Status_bit_regular
 	# The actual main loop
 	
 	:xML_Loop
+		
 		'SYM_ok EMITWORD
 		
 		# reset compile buffer
 		LITERAL1 0 'CompileBufPos WRITE1
 		
 		# Locate word, then compile it
-		'NextWord CALL 
-			'CompileWord CALL
-			
+		'NextWord CALL =$0 
+		
+
+		$0 'CompileWord CALL
+
+		# Add return to CompileBuf			
 		OP:RETURN 'OutByte CALL
 		
 		# Run code in CompileBuf
@@ -942,9 +954,11 @@ def Regular		_'DE_Status_bit_regular
 	*SYM_THEN				NEXT
 	*SYM_ELSE				NEXT
 	*SYM_LOOP				NEXT
-	*SYM_NEXT?				NEXT
+	*SYM_Next?				NEXT
 	*SYM_IMMEDIATE			NEXT
 	*SYM_HERE				NEXT
+	*SYM_DOT				NEXT
+	*SYM_cr					NEXT
 	*SYM_MALLOC				NEXT
 	*SYM_CREATE				NEXT
 	*SYM_DictLookup			NEXT
@@ -955,6 +969,7 @@ def Regular		_'DE_Status_bit_regular
 	*SYM_ParseInt			NEXT
 	*SYM_IsInt				NEXT
 	*SYM_ok					NEXT
+	*SYM_invalid_word		NEXT
 	*SYM_cleanup_after_panic  NEXT
 	*SYM_CSF_Underflow		NEXT
 	*SYM_Immediate_no_word	NEXT
@@ -1031,9 +1046,11 @@ def Regular		_'DE_Status_bit_regular
 :SYM_THEN %t %h %e %n 0
 :SYM_ELSE %e %l %s %e 0
 :SYM_LOOP %L %O %O %P 0
-:SYM_NEXT? %N %E %X %T %?
+:SYM_Next? %N %E %X %T %? 0
 :SYM_IMMEDIATE %I %M %M %E %D %I %A %T %E 0
 :SYM_HERE %H %E %R %E 0
+:SYM_cr %c %r 0
+:SYM_DOT %. 0
 :SYM_MALLOC %M %A %L %L %O %C 0
 :SYM_CREATE %C %R %E %A %T %E 0
 :SYM_DictLookup %? %? 0
@@ -1044,6 +1061,7 @@ def Regular		_'DE_Status_bit_regular
 :SYM_IsInt %I %s %I %n %t 0
 :SYM_ParseInt %P %a %r %s %e %I %n %t 0
 :SYM_ok %o %k _*ASCII_SPACE 0
+:SYM_invalid_word %I %n %v %a %l %i %d %- %w %o %r %d 0
 :SYM_cleanup_after_panic %C %l %e %a %n %i %n %g _*ASCII_SPACE %u %p _*ASCII_SPACE %a %f %t %e %r _*ASCII_SPACE %p %a %n %i %c 0
 
 :SYM_CSF_Underflow %C %a %l %l %- %s %t %a %c %k %- %u %n %d %e %r %f %l %o %w 0

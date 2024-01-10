@@ -54,7 +54,7 @@ Ref addSymbol (char *str) {
 
 static Ref lookupSymbol (char *symbol) {
     Ref top = readRef(H_SYM_TOP_REF);  // cons cell  
-    while (top != null) {
+    while (top != null && !hasPanicFlag()) {
         DEBUGint("cons ref", top); 
         Ref strRef = readRef(top);
         DEBUGint("strRef",strRef);

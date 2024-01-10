@@ -111,12 +111,15 @@ typedef int32_t        Long;
 #define OP_JMP1                48
 #define OP_COND_JMP1           49
 
+#define OP_DEBUG               50
+
 
 // Main.c
 
 void PANIC (char *msg);
 bool hasPanicFlag();
 void clearPanicFlag ();
+void setInteractiveSteppingOps (bool b);
 void forthMainLoop();
 
 // TIB.c

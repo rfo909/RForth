@@ -479,6 +479,8 @@ PARSE  # ( word -- number )  - recognizes decimal, 0x0a, b1010
 JMP1
 COND_JMP1
 
+DEBUG
+
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> EOF
 	->line 
 		s=line.before("#").trim

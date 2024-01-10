@@ -210,6 +210,7 @@ static char *getOpName (int op) {
         case 47: { return "PARSE";}
         case 48: { return "JMP1";}
         case 49: { return "COND_JMP1";}
+        case 50: { return "DEBUG";}
         default: { return "<UNKNOWN>"; }
     }
 }

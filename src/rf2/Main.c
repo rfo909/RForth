@@ -31,6 +31,7 @@
 
 static char *panicMessage = (char *) null;
 
+static bool interactiveSteppingOps = false;
 
 void PANIC (char *msg) {
     panicMessage=msg;
@@ -44,7 +45,9 @@ void clearPanicFlag () {
     panicMessage = (char *) null;
 }
 
-
+void setInteractiveSteppingOps (bool b) {
+    interactiveSteppingOps=b;
+}
 
 // Execute one op-code (may involve more than one call to csNextCodeByte if first byte is a literal, as
 // those are followed by data bytes)
@@ -344,6 +347,7 @@ static void execute()
     case OP_PARSE: {
         Ref symRef = dsPopRef();
         char *str = safeGetString(symRef);
+        if (checkParseInt(str)) PANIC("Not a number");
         dsPushValue(parseInt(str));
     }
     break;
@@ -356,6 +360,14 @@ static void execute()
         Byte pc = dsPopByte();
         Long condition = dsPopValue();
         if (condition != 0) csJumpToPC(pc);
+    }
+    break;
+    case OP_DEBUG: {
+        Long cond = dsPopValue();
+        if (cond >= 1) DEBUGEnable(true); else DEBUGEnable(false);
+        if (cond >= 2) setInteractiveSteppingOps(true); else setInteractiveSteppingOps(false);
+        serialEmitStr("OP_DEBUG");
+
     }
     break;
     default: {
@@ -438,10 +450,10 @@ void forthMainLoop () {
         }
         // execute one instruction
         execute();
+        if (interactiveSteppingOps) {
+            serialNextChar();
+        }
         opCount++;
-        // wait for keypress
-        //serialNextChar();
-
     }
 }
 

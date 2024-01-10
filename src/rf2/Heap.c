@@ -41,6 +41,19 @@ static void verifyHeapWriteAddr (Ref addr) {
         DEBUGint("heapStaticDataEnd", heapStaticDataEnd);
         PANIC("Invalid WRITE");
     } 
+    if (addr >= HEAP_SIZE) {
+        DEBUG("Invalid write address - outside heap\r\n");
+        DEBUGint("addr",addr);
+        PANIC("Invalid WRITE");
+    }
+}
+
+static void verifyHeapReadAddr (Ref addr) {
+    if (addr >= HEAP_SIZE) {
+        DEBUG("Invalid read address - outside heap\r\n");
+        DEBUGint("addr",addr);
+        PANIC("Invalid READ");
+    }
 }
 
 Byte *refToPointer (Ref ref) {
@@ -76,6 +89,10 @@ char *safeGetString (Ref ref) {
 Ref heapMalloc (int length) {
     Ref here=readRef(H_HERE); // first available byte position
     Ref nextHere = here + length;
+    if (nextHere > HEAP_SIZE) {
+        PANIC("Heap overflow");
+        return 0;
+    }
     writeRef(H_HERE, nextHere);
     return here;
 }
@@ -95,6 +112,7 @@ Ref readRef(Ref addr) {
 
 
 Byte readInt1(Ref addr) {
+    verifyHeapReadAddr(addr);
     return *(heap+addr);
 }
 
