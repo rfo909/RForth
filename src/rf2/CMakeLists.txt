@@ -35,7 +35,9 @@ add_executable(rf2
   Serial.c 
   Debug.c 
   Sym.c 
-  Numbers.c )
+  Numbers.c 
+  Exceptions.c
+  )
 
 pico_set_program_name(rf2 "RForth")
 pico_set_program_version(rf2 "0.0.0b")

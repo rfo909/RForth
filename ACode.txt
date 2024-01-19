@@ -236,6 +236,11 @@ def OP:COND_JMP1               LITERAL1 49
 def OP:DEBUG                   LITERAL1 50
 
 
+# Programmatic control over debugging
+
+def _DEBUG_LOG					LITERAL1 1 DEBUG
+def _DEBUG_LOG_STEP				LITERAL1 2 DEBUG
+def _DEBUG_OFF					LITERAL1 0 DEBUG
 
 # Memory layout
 #
@@ -355,9 +360,8 @@ def OP:DEBUG                   LITERAL1 50
 
 
 :OutByte					# ( byte -- ) write to CompileBuf
-	## LITERAL1 2 DEBUG  # logging + step through instructions
-
-	=$0								# byte
+	
+	=$0						# byte
 	'CompileBufPos READ1 =$1		# 
 	$1 LITERAL1 254 GE 
 		'xOutByte_fail COND_JMP
@@ -365,13 +369,11 @@ def OP:DEBUG                   LITERAL1 50
 	$0 'CompileBuf $1 ADD WRITE1
 	$1 INCR 'CompileBufPos WRITE1
 	
-	## LITERAL1 0 DEBUG
 	RETURN
 
 	:xOutByte_fail
 	'SYM_OutByte-Overflow 'PANIC CALL
 	
-	## LITERAL1 0 DEBUG
 	RETURN
 	
 :OutRef 					# ( Ref -- ) write to CompileBuf
@@ -609,23 +611,29 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 :CompileWord 					# ( word -- )
 	=$0									# The word
 	
+	# Check if number
+	
+	$0 CHECK_PARSE NOT 'xCOMP_not_number COND_JMP	
+		$0 'CompileNumber CALL   
+		RETURN
+			
+	:xCOMP_not_number	
+
 	# Check if local variable set or get, returns true or false
 	
-	$0 'CompileLocalVariables CALL
-		'xCOMP_done COND_JMP 
+	$0 'CompileLocalVariables CALL 'xCOMP_done COND_JMP 
 
 	# Check words that map directly to instruction
 
-	$0 'SingleInstructionWords CALL NOT 
-		'xCompileNotSIW COND_JMP
-		
+	$0 'SingleInstructionWords CALL NOT 'xCompileNotSIW COND_JMP
 		RETURN
 	:xCompileNotSIW
 	
+	# Check if defined in dictionary
 	
 	$0 'DictLookup CALL =$1				# $1 = DE or NULL
 	$1 _'REF_NULL EQ 
-		'xCOMP_notInDict COND_JMP
+		'xCOMP_fail COND_JMP
 
 		# Dictionary word found
 			
@@ -646,22 +654,19 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 			$2 'OutRef CALL
 			OP:CALL 'OutByte CALL
 		
-	:xCOMP_notInDict
 		
-		# default to assume number
-		
-		$0 CHECK_PARSE NOT 'xCOMP_fail COND_JMP
-		
-		$0 'CompileNumber CALL   
-			
 	:xCOMP_done	   
 	RETURN
 	
 	:xCOMP_fail
 	'SYM_invalid_word EMITWORD 
+	
 	LITERAL1 %: EMIT
 	_'ASCII_SPACE EMIT
 	$0 EMITWORD
+	_'ASCII_CR EMIT
+	_'ASCII_LF EMIT
+	
 	'SYM_invalid_word 'PANIC CALL
 
 
@@ -674,7 +679,7 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 		$0 INCR READ1 LITERAL1 %$ EQ AND
 			$0 INCR2 READ1 LITERAL1 0 NE AND
 				'xCLV_set COND_JMP
-	_'FALSE
+	_'FALSE						# Not local variable expr
 	RETURN
 	
 	:xCLV_get
@@ -735,6 +740,7 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 
 	
 :DictLookup    				# ( wordRef -- ref ) returns _'REF_NULL or pointer to dict entry
+	
 	=$0  												# name we are looking for
 	'DICT_TOP READ2 =$1 								# ptr = top dictionary entry (or null) 
 	:xDL_loop
@@ -744,9 +750,11 @@ def OUTRETURN =$a NE 'xSIW_@@ COND_JMP $a 'OutByte CALL _'TRUE RETURN :xSIW_@@
 		'xDL_loop JMP									# repeat
 	:xDL_fail
 		_'REF_NULL
+		LITERAL1 %N EMIT
 		RETURN
 	:xDL_ok
 		$1												# return ptr (to dictionary entry)
+		LITERAL1 %Y EMIT
 		RETURN
 		
 
@@ -834,6 +842,8 @@ def Regular		_'DE_Status_bit_regular
 	$1 $0 EQ 'xML_Loop COND_JMP								# if HERE == HERE-shadow, goto ok
 	
 		'SYM_cleanup_after_panic EMITWORD
+		_'ASCII_CR EMIT
+		_'ASCII_LF EMIT
 		
 		# remove entries from dictionary until DE ref 
 		# smaller than HERE-shadow, which means they were
@@ -876,8 +886,10 @@ def Regular		_'DE_Status_bit_regular
 		OP:RETURN 'OutByte CALL
 		
 		# Run code in CompileBuf
-		'CompileBuf CALL
 		
+		_DEBUG_LOG_STEP
+		'CompileBuf CALL
+		_DEBUG_OFF 
 		# If there was a panic, we never reach this line, so getting here means
 		# the word was ok. We commit the heap changes before repeating the loop
 		

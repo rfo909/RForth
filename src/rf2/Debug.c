@@ -6,7 +6,7 @@ The point of this file is to implement a circular buffer where log
 data is written, in order to keep a track of events before a PANIC
 */
 
-#define SIZE        2048
+#define SIZE        600
 
 
 static char circBuffer[SIZE];
@@ -36,12 +36,12 @@ static void add (char *s) {
 }
 
 void DUMP_DEBUG () {
-    serialEmitStr("------\r\n");
+    serialEmitStr("\r\n------(DUMP_DEBUG)------------------------\r\n");
     for (int i=0; i<SIZE; i++) {
         int p=(pos+i) % SIZE;
         serialEmitChar(circBuffer[p]);
     }
-    serialEmitStr("------\r\n");
+    serialEmitStr("\r\n------------------------------------------\r\n");
 }
 
 void DEBUG (char *msg) {
@@ -49,18 +49,18 @@ void DEBUG (char *msg) {
 }
 
 void DEBUGint (char *name, int value) {
-    add("   ");
+    add(" (");
     add(name);
     char buf[20];
     sprintf(buf,"=%d",value);
     add(buf);
-    add("\r\n");
+    add(")");
 }
 
 void DEBUGstr (char *name, char *value) {
-    add("   ");
+    add(" (");
     add(name);
     add("=");
     add(value);
-    add("\r\n");
+    add(")");
 }

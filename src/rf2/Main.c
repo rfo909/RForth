@@ -29,21 +29,7 @@
 // The Dictionary is completely managed by ACode.
 
 
-static char *panicMessage = (char *) null;
-
 static bool interactiveSteppingOps = false;
-
-void PANIC (char *msg) {
-    panicMessage=msg;
-}
-
-bool hasPanicFlag() {
-    return panicMessage != (char *) null;
-}
-
-void clearPanicFlag () {
-    panicMessage = (char *) null;
-}
 
 void setInteractiveSteppingOps (bool b) {
     interactiveSteppingOps=b;
@@ -363,11 +349,11 @@ static void execute()
     }
     break;
     case OP_DEBUG: {
-        Long cond = dsPopValue();
+        int cond = (int) dsPopValue();
         if (cond >= 1) DEBUGEnable(true); else DEBUGEnable(false);
         if (cond >= 2) setInteractiveSteppingOps(true); else setInteractiveSteppingOps(false);
-        serialEmitStr("OP_DEBUG");
-
+        DEBUG("OP_DEBUG");
+        DEBUGint("cond", cond);
     }
     break;
     default: {
@@ -417,21 +403,20 @@ void forthMainLoop () {
     csCall(setup); // create call stack frame
 
     Long opCount=0;
+    Long lastStepOpCount=0;
 
     // outer loop - never terminates
     for (;;) {
-        if (hasPanicFlag()) {
-            DEBUG("PANIC: ");
-            DEBUG(panicMessage);
+        if (hasException()) {
+            DEBUG(getExceptionType());
+            DEBUG(": ");
+            DEBUG(getExceptionMessage());
             DEBUG("\r\n");
+
             DEBUGint("opCount",opCount);
 
             DUMP_DEBUG();
-
-            serialEmitStr("\r\nPANIC: " );
-            serialEmitStr(panicMessage);
-            serialEmitNewline();
-            clearPanicFlag();
+            clearException();
             dsInit();
             csInit();
             serialEmitStr("Calling H_MAIN_LOOP\r\n");
@@ -450,8 +435,9 @@ void forthMainLoop () {
         }
         // execute one instruction
         execute();
-        if (interactiveSteppingOps) {
+        if (interactiveSteppingOps && opCount-lastStepOpCount > 20) {
             serialNextChar();
+            lastStepOpCount=opCount;
         }
         opCount++;
     }

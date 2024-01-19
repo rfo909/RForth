@@ -116,11 +116,17 @@ typedef int32_t        Long;
 
 // Main.c
 
-void PANIC (char *msg);
-bool hasPanicFlag();
-void clearPanicFlag ();
 void setInteractiveSteppingOps (bool b);
 void forthMainLoop();
+
+// Exceptions.c
+
+void PANIC (char *msg);
+void ERROR (char *msg);
+bool hasException();
+char *getExceptionMessage();
+char *getExceptionType();
+void clearException ();
 
 // TIB.c
 

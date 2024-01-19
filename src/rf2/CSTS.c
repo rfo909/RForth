@@ -86,9 +86,17 @@ void csCall (Ref addr) {
         tsNext = readByte(currCSF + CSF_tempStackNext);
         // also read global value for next frame on call stack (index, byte)
         nextFrame = readByte(H_CS_NEXT_FRAME);
-        DEBUG("csCall, isolated tsNext\r\n");
-        DEBUGint("tsNext",tsNext);
     }
+
+    DEBUG("csCall ");
+    for (int i=0; i<nextFrame; i++) {
+        DEBUG(">");
+    }
+    DEBUG(" ");
+    DEBUGint("addr", addr);
+    DEBUGint("nextFrame", nextFrame);
+
+    DEBUG("\r\n");
     writeByte(H_CS_NEXT_FRAME, nextFrame + 1);
 
     Ref newCSF = csGetCurrFrame();  
@@ -101,6 +109,7 @@ void csCall (Ref addr) {
 void csReturn() {
     Byte x = readByte(H_CS_NEXT_FRAME);
     writeByte(H_CS_NEXT_FRAME, x - 1);
+    DEBUG("csReturn\r\n");
 }
 
 void csSetLocal (Ref sym, Long value) {

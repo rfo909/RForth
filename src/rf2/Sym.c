@@ -54,13 +54,14 @@ Ref addSymbol (char *str) {
 
 static Ref lookupSymbol (char *symbol) {
     Ref top = readRef(H_SYM_TOP_REF);  // cons cell  
-    while (top != null && !hasPanicFlag()) {
-        DEBUGint("cons ref", top); 
+    while (top != null && !hasException()) {
         Ref strRef = readRef(top);
-        DEBUGint("strRef",strRef);
         char *str=safeGetString(strRef);
-
-        DEBUGstr("Comparing", str);
+        DEBUG("lookupSymbol: comparing '");
+        DEBUG(symbol);
+        DEBUG("' to '");
+        DEBUG(str);
+        DEBUG("'\r\n");
         if (!strcmp(str,symbol)) {
             return strRef;
         }

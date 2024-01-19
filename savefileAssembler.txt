@@ -350,6 +350,7 @@
 	if (line.length>0) println(TAB + line + "\")
 	println("}")
 	
+	#tags=a.tags
 /Compile
 
 
