@@ -1,0 +1,61 @@
+
+:Main
+	:Init call
+	:ConsGet call :ConsFree call
+	halt
+
+
+:Init
+	'Nulling 'ConsFree #2 show
+	#0 &ConsFree !		;; initialize ConsFree pointer to zero
+	ret
+
+
+;; Cons cells are created as a CAR+CDR tuple, each value a Word. They are allotted
+;; as needed, but also freelisted when disposed off
+
+:ConsFree #0			
+	;; freelist pointer, null means empty
+	;; Note that #0 is two bytes, but not null, so it must be nulled in :Init before use
+
+:ConsAlloc
+	WORDSIZE #2 mul allot #1 cpush ;; a=pointer new cons
+	&ConsFree @ 
+		a CDR ! ;; Cons.CDR = ConsFree
+	a &ConsFree !   ;; ConsFree = Cons
+	;; no return value
+	ret
+
+:ConsGet   ;; get Cons cell from free list (call ConsAlloc first if empty)
+	&ConsFree @ #0 ne &*FreelistOk jmp?
+		;; freelist is empty, add one Cons
+		&ConsAlloc call
+	
+	:*FreelistOk
+	;; freelist not empty, take first cons
+	&ConsFree CDR @ #1 cpush   ;; a=cons.CDR
+	a &ConsFree !			;; update freelist
+	#0 a !
+	#0 a CDR !
+	a
+	ret
+	
+:ConsFree  ;; (ptr -- )
+	#1 cpush  ;; a=ptr
+	&ConsFree
+		a CDR !		;; ptr.cdr=freelist
+	a &ConsFree !		;; freelist=ptr
+	;; no return value
+	ret
+
+
+
+;; ---------------------------------
+;; Reserved tags, must be present
+;; ---------------------------------
+
+:DATA		
+	;; data is generated here - the tag is used by disassembler to 
+	;; show bytes correctly beyond this point (not as instructions)
+
+
