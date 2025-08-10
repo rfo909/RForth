@@ -1,0 +1,76 @@
+# README
+# --
+<<< EOF
+This test interpreter has no limits on the stacks or the heap. 
+The goal is to validate the output from the Assembler.
+>>> EOF
+/Readme
+
+
+# The interpreter
+# --
+	P(1) as String => code
+	
+	self.memory=Std.Array(code.chars) # using array, as writes will generate non-readable data 
+	self.PC=0
+	self.dataStack=List
+	self.callStack=List  # number values or "mark" string
+	
+	self.nextInstruction=Lambda{
+		self.memory.get(self.PC)
+	}
+	self.showWord=Lambda{
+		P(1)=>addr
+		if (addr > self.memory.length-2) println("Invalid address")
+		else {
+			a=self.memory.get(addr)
+			b=self.memory.get(addr+1)
+			if (Sys.getType(a)=="int") a="0x"+a.hex
+			if (Sys.getType(b)=="int") b="0x"+b.hex
+			println(a,b)
+		}
+	}
+/class Interpreter
+
+
+# Test
+# --
+	P(1) => code
+	
+	if (code==null) {
+		println("Paste then . for code")
+		code=readLines(".").concat
+	}
+	Lib:Header("Code string: " + code.length + " bytes")
+	println(code)
+	println
+	
+	x=Interpreter(code)
+	loop
+		# show PC
+		instr=x.nextInstruction
+		instrName=instr
+		if (!"x0123456789ABCDEF".contains(instr)) instrName=Assembler:InstructionsLookup.get(instr)
+		
+		println("PC",("0000"+x.PC.hex.toUpper).last(4), instr, instrName)
+		# show dataStack
+		# show callStack
+		
+		terminate=false
+		Inner{
+			loop
+				command=readLine("Command: 'q' to quit, 'i' to inspect, ENTER to continue").trim
+				if(command=="q") {
+					terminate=true
+					break
+				} else if (command=="i") {
+					addr=Input("Enter address on hex format NNNN").get.parseInt(16)
+					x.showWord(addr)
+				} else if (command.trim=="") break
+			|
+		}
+		break(terminate)
+		
+		 
+/t		
+	

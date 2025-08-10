@@ -114,6 +114,7 @@
 # Flip debug mode
 # --
 	Db2:Set(Sys.scriptId,"debug", !IsDebug)
+	IsDebug
 /Debug
 
 
@@ -242,7 +243,9 @@
 		
 		# -- decimal format numbers
 		if (word.startsWith("#")) {
-			result=result + "x" + word.after("#").parseInt.hex.toUpper
+			s="x" + word.after("#").parseInt.hex.toUpper
+			println(s)
+			result=result+s
 			continue
 		}
 		
@@ -344,7 +347,7 @@
 	# identify address of tag DATA
 	tags.get("DATA").after("x").parseInt(16) => dataStart
 
-	SymDict(result,dataStart)
+	SymDict(result,dataStart,tags)
 /Assemble
 
 
@@ -393,27 +396,45 @@
 			
 	
 
+# Test by assembling ACode.txt, then disassembling it
+# --
+	Assemble => dict
+	println(dict.result)
+	Disassemble(dict)
+	
+	# Display all tags
+	Lib:Header("Tags")
+	Inner{
+		dict.tags.keys->tag
+			#println("tag",tag)
+			dict.tags.get(tag) => addr
+			#println("addr",addr)
+			out(Str(addr,tag))
+		| _.sort->x
+			tag=x.data
+			report(tag,dict.tags.get(tag))
+		| _=>rows
+		Lib:ShowRows(rows, null, false)
+	}
+	
 
-Assemble => dict
-println(dict.result)
-Disassemble(dict)
-
-# Display code as block that can be copy-pasted
-println
-Inner{
-	s=dict.result
-	loop
-		if (s.length > 70) {
-			println(s.sub(0,70))
-			s=s.sub(70)
-			continue
-		} else {
-			println(s)
-			break
-		}
-}
-println
-println(dict.result.length,"bytes")
+	# Display code as block that can be copy-pasted
+	Lib:Header("Code")
+	Inner{
+		s=dict.result
+		loop
+			if (s.length > 70) {
+				println(s.sub(0,70))
+				s=s.sub(70)
+				continue
+			} else {
+				println(s)
+				break
+			}
+	}
+	println
+	println(dict.result.length,"bytes")
+	
 /t
 	
 

@@ -1,7 +1,7 @@
 
 :Main
 	:Init call
-	:ConsGet call :ConsFree call
+	:ConsGet call :ConsDispose call
 	halt
 
 
@@ -14,9 +14,10 @@
 ;; Cons cells are created as a CAR+CDR tuple, each value a Word. They are allotted
 ;; as needed, but also freelisted when disposed off
 
-:ConsFree #0			
-	;; freelist pointer, null means empty
-	;; Note that #0 is two bytes, but not null, so it must be nulled in :Init before use
+:ConsFree x0	;; freelist pointer	
+	;; null means empty
+	;; Using two instructions to generate two bytes, which are not null, 
+	;; so the value is nulled in :Init before use
 
 :ConsAlloc
 	WORDSIZE #2 mul allot #1 cpush ;; a=pointer new cons
@@ -40,15 +41,13 @@
 	a
 	ret
 	
-:ConsFree  ;; (ptr -- )
+:ConsDispose  ;; (ptr -- )
 	#1 cpush  ;; a=ptr
 	&ConsFree
 		a CDR !		;; ptr.cdr=freelist
 	a &ConsFree !		;; freelist=ptr
 	;; no return value
 	ret
-
-
 
 ;; ---------------------------------
 ;; Reserved tags, must be present

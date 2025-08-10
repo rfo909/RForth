@@ -1,9 +1,6 @@
 
 2025-08 RFO v3
 
-# NOTE: the C code is completely obsolete with this new design.
-# Must first implement an interpreter in CFT, to verify the code.
-
 The big change compared to the previous attempt is that we operate with local
 tags between each of the global ones. This simplifies code greatly.
 
