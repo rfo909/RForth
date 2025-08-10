@@ -1,0 +1,532 @@
+# Instead of creating a virtual register machine, with instructions encoded
+# with parameters, instead we we have 
+#	- a data stack
+#	- a call stack
+#	- a program counter
+#	- single-byte instructions
+#
+# Even literal numbers consist of single byte instructions, operating on
+# the data stack.
+# 
+# Then there are a couple of inlines (macros in a masm): 
+#	- call
+# 	- ret
+#	- WORDSIZE
+#
+# These are included in the Instr() help function. Example
+#
+# :Main
+#	#2 #3 &SomeFunc call print  # should show 5 
+#
+# :SomeFunc
+#	add ret
+#
+# Numbers are written #nnn for decimal or xNNN for hex, and are always
+# encoded as xNNN. The 'x' puts a zero on the stack, while the digits
+# are supposed to multiply it with 16 and add the digit value.
+#
+# Also added support for symbols using a single tick, like 'x - these
+# are written after the :DATA tag.
+#
+# Functions are tagged with global tags, like 
+#
+# :Main      ;; defines tag
+# &Main	     ;; tag lookup, results in code xNNNN being generated.
+#
+# Inside functions, we support local tags, like
+#
+# :*Else     ;; defines tag
+# &*Else     ;; tag lookup, results in xNNNN being generated
+#
+# All tag lookups are added to a patch list, while generating as x0000 while
+# traversing the words. Then, we iterate over the patch list and insert the
+# actual values everywhere.
+#
+# The compiled code is kept readable, so it can be copy-pasted into a serial
+# console at some point.
+#
+# We even support local variables via the cpush instruction which pushes N
+# values from the stack onto the call stack frame. N can be 1-5. The values
+# which are always words, can be accessed as a, b, c, d or e, which are
+# inline functions, calculating the offset from cbase, returning pointers.
+#
+
+
+# Example code
+# --
+<<< EOF
+
+:Main
+	:Init call
+	:ConsGet call :ConsFree call
+	halt
+
+
+:Init
+	'Nulling 'ConsFree #2 show
+	#0 &ConsFree !		;; initialize ConsFree pointer to zero
+	ret
+
+
+;; Cons cells are created as a CAR+CDR tuple, each value a Word. They are allotted
+;; as needed, but also freelisted when disposed off
+
+:ConsFree #0			
+	;; freelist pointer, null means empty
+	;; Note that #0 is two bytes, but not null, so it must be nulled in :Init before use
+
+:ConsAlloc
+	WORDSIZE #2 mul allot #1 cpush ;; a=pointer new cons
+	&ConsFree @ 
+		a CDR ! ;; Cons.CDR = ConsFree
+	a &ConsFree !   ;; ConsFree = Cons
+	;; no return value
+	ret
+
+:ConsGet   ;; get Cons cell from free list (call ConsAlloc first if empty)
+	&ConsFree @ #0 ne &*FreelistOk jmp?
+		;; freelist is empty, add one Cons
+		&ConsAlloc call
+	
+	:*FreelistOk
+	;; freelist not empty, take first cons
+	&ConsFree CDR @ #1 cpush   ;; a=cons.CDR
+	a &ConsFree !			;; update freelist
+	#0 a !
+	#0 a CDR !
+	a
+	ret
+	
+:ConsFree  ;; (ptr -- )
+	#1 cpush  ;; a=ptr
+	&ConsFree
+		a CDR !		;; ptr.cdr=freelist
+	a &ConsFree !		;; freelist=ptr
+	;; no return value
+	ret
+
+
+
+;; ---------------------------------
+;; Reserved tags, must be present
+;; ---------------------------------
+
+:DATA		
+	;; data is generated here - the tag is used by disassembler to 
+	;; show bytes correctly beyond this point (not as instructions)
+
+	
+>>> EOF
+	->line
+		out(line.before(";"))  # strip comments
+/ExampleCode
+
+
+
+
+
+
+
+# List all instructions, both actual and inline's
+# --
+	P(1,true) => includeInlines
+	names=Instructions.keys
+	if (includeInlines) names=names+Inlines.keys
+	
+	names.sort
+/Instr
+
+# Assembly instructions mapped to "machine code"
+# --
+<<< EOF
+	;; memory and registers
+	read		:G		;; read byte
+	write		:H		;; write byte
+	@		:I		;; read cell/word
+	!		:J		;; write cell/word	
+	allot		:K
+	memcpy		:L
+	HERE		:g
+
+	;; stack operations
+	dup		:M
+	swap		:N
+	
+	;; call stack: note that "marks" are separate (hidden) structure, not physical on the 
+	;; visible call stack
+	cpush		:O   ;; push value on call stack
+	cmark		:P   ;; create call stack frame mark
+	cbase		:Q   ;; get address to base of current call stack frame 
+	cpop		:R   ;; call stack pop past top mark - popping top call frame off call stack
+	
+	;; math
+	add		:+
+	sub		:-
+	mul		:*
+	div		:/
+
+	;; logical operations
+	eq		:=
+	ne		:h
+	gt		:>
+	lt		:<
+	not		:i
+	and		:&	;; logical 
+	or		:|	;; logical
+
+	;; flow of control
+		
+	jmp		:S
+	jmp?		:T   ;; conditional jump on true'	
+	PC		:U   ;; puts PC on stack (as it was when invoking this instruction)
+	halt		:V
+	
+	;; call and ret are inlines (macros)
+
+	;; types	
+	tSymbol		:W   ;; tag ptr as symbol
+	tPtr		:X
+
+	;; I/O
+	show		:Y   ;; ( ptr ptr ... N -- ) - display N symbols with space between them
+	print		:.   ;; print any single value 
+	cr		:Z
+		
+>>> EOF
+	=>list
+	
+	dict=Dict
+	values="x0123456789ABCDEF"
+	
+	list->rawLine
+		line=rawLine.before(";")
+		assert(line.trim.length>0)
+		line.split(":")=>parts
+		
+		token=parts.first.trim
+		value=parts.last.trim
+		error(values.contains(value),"Duplicate machine instruction: " + value)
+		
+		dict.set(token,value)
+		values=values+value
+	|
+	dict
+/Instructions
+
+
+# Debug mode?
+# --
+	Db2:Get(Sys.scriptId,"debug",false)
+/IsDebug
+
+# Flip debug mode
+# --
+	Db2:Set(Sys.scriptId,"debug", !IsDebug)
+/Debug
+
+
+# Inline defs
+# --
+	Dict
+	.set("WORDSIZE",Sequence(
+		@ x2
+	))
+	.set("call",Sequence(
+		@ ; target address on stack
+		@ ; this is the location of PC when invoking the PC instruction
+		@ PC			
+		@ x7 add 			; calculate program address following 'jmp' below
+		@ cpush				; push return PC on call stack
+		@ cmark				; create new call frame
+		@ jmp				; to target
+	))
+	.set("ret",Sequence(
+		@ cbase  ; where current stack frame starts
+		@ WORDSIZE sub ; where previous PC is stored
+		@ read   ; prev PC now on data stack
+		@ cpop   ; return to previous stack frame
+		@ jmp    ; prev PC on stack
+	))
+	
+	## Local variables (1-5 cpush) - return pointers
+	## The offsets should ideally be calculated by the assembler, as they are static, depending
+	## WORDSIZE only.
+	
+	.set("a",Sequence(
+		@ cbase
+	))
+	.set("b",Sequence(
+		@ cbase WORDSIZE add 
+	))
+	.set("c",Sequence(
+		@ cbase WORDSIZE #2 mul add 
+	))
+	.set("d",Sequence(
+		@ cbase WORDSIZE #3 mul add 
+	))
+	.set("e",Sequence(
+		@ cbase WORDSIZE #4 mul add 
+	))
+	
+	## CONS tuples
+	.set("CDR",Sequence(
+		@ W+
+	))
+	.set("W+",Sequence(
+		@ WORDSIZE add
+	))
+	
+/Inlines
+
+
+
+# Word generator for source, for handling inlines (via push)
+# --
+	self.words=List
+	self.push = Lambda{
+		P(1) as List => lines
+		words=Inner{
+			lines->line
+				#println(line)
+				line.trim.before(";").split->word
+					out(word.trim)
+		}
+		self.words=words+self.words
+	}
+	self.getWord = Lambda{
+		if(self.words.empty) {
+			null
+		} else {
+			self.words.first => word
+			self.words=self.words.keep(1)
+			if (IsDebug) println("getWord",word)
+			word
+		}
+	}
+/class Words
+	
+
+# Assemble input to "machine code" format
+# --
+	P(1,ExampleCode) => code
+	
+	currentTag="<DEFAULT>"
+	
+	words=Words
+	words.push(code)
+
+	instructions=Instructions
+	inlines=Inlines
+
+	tags=Dict
+			
+	result=""
+	
+	patchList=List
+	symbolList=List
+	
+	loop
+		word=words.getWord
+		break(word==null)
+		
+		# inlines
+		if (inlines.has(word)) {
+			#println("Inline",word)
+			words.push(inlines.get(word))
+			continue
+		}
+		
+	
+		# specials
+		
+		# -- hex format number
+		if (word.startsWith("x")) {
+			result=result + "x" + word.after("x").parseInt(16).hex.toUpper
+			continue
+		}
+		
+		# -- decimal format numbers
+		if (word.startsWith("#")) {
+			result=result + "x" + word.after("#").parseInt.hex.toUpper
+			continue
+		}
+		
+		# -- symbol
+		if (word.startsWith("'")) {
+			symbol=word.after("'")
+			patchPos=result.length
+			symbolList.add(SymDict(symbol,patchPos))
+			words.push(List("x0000 tSymbol"))
+			continue
+		}
+		# -- local tag def
+		if (word.startsWith(":*")) {
+			tag=currentTag + "." + word.after(":*")
+			pos=result.length
+			pos=("0000"+pos.hex).last(4).toUpper
+			pos="x"+pos
+			tags.set(tag,pos)
+			println(":"+tag,pos)
+			continue
+		}
+		# -- global tag def
+		if (word.startsWith(":")) {
+			tag=word.after(":")
+			pos=("0000"+result.length.hex).last(4).toUpper
+			pos="x"+pos
+			tags.set(tag,pos)
+			println(":"+tag, pos)
+			
+			currentTag=tag
+			continue
+		}
+
+		# -- local tag reference
+		if (word.startsWith("&*")) {
+			tag=currentTag + "." + word.after("&*")
+
+			# generate dummy to be patched
+			name=tag
+			patchPos=result.length
+			patchList.add(SymDict(name,patchPos))
+			
+			result=result+"x0000"  # dummy
+			continue
+		}
+		# -- get global tag value
+		if (word.startsWith("&")) {
+			tag=word.after("&")
+
+			# generate dummy to be patched
+			name=tag
+			patchPos=result.length
+			patchList.add(SymDict(name,patchPos))
+			result=result+"x0000"  # dummy
+			continue
+		}
+			
+		# look up word in instructions map or fail
+		if (instructions.has(word)) result=result+instructions.get(word)
+		else error("Unknown word: '" + word + "'")
+	|
+	
+	# Now patch the missing tag references in the result string
+	patchList->patch
+		name=patch.name
+		patchPos=patch.patchPos
+		
+		error(!tags.has(name), "Unknown tag: " + name)
+		# replace digits+1 characters at patchPos with xNN or xNNNN
+		address=tags.get(name)
+		result=result.sub(0,patchPos) + address + result.sub(patchPos+address.length)
+	|
+		
+		
+	# Now allocate data elements (symbols) 
+	symbols=Dict # store each symbol only once
+	
+	symbolList->data
+		symbol = data.symbol
+		patchPos = data.patchPos
+		
+		pos=result.length
+		if (symbols.has(symbol)) {
+			pos=symbols.get(symbol)
+		} else {
+			# add symbol to result (on readable format, wasting one byte for the length)
+			result=result+("00"+symbol.length.hex.toUpper).last(2)
+			result=result+symbol
+			# store in symbol dictionary
+			symbols.set(symbol,pos)
+		}
+		
+		address="x" + ("0000"+pos.hex.toUpper).last(4)
+		# insert address at patchPos
+
+		result=result.sub(0,patchPos) + address + result.sub(patchPos+address.length)
+	|
+	
+	# identify address of tag DATA
+	tags.get("DATA").after("x").parseInt(16) => dataStart
+
+	SymDict(result,dataStart)
+/Assemble
+
+
+# Create instructions lookup dictionary
+# (Reverse of the Instructions dict)
+# --
+	dict=Dict
+	instr=Instructions
+	instr.keys->key
+		value=instr.get(key)
+		dict.set(value,key)
+	|
+	dict
+/InstructionsLookup
+
+
+# Show instructions lookup sorted
+# --
+	data=InstructionsLookup
+	data.keys.sort->key
+		println(key,data.get(key))
+/InstrReverse
+		
+		
+# Disassembler
+# --
+	P(1) as Dict => dict
+	
+	code=dict.result
+	dataStart=dict.dataStart
+		
+	lookup=InstructionsLookup
+	
+	pos=0
+	code.chars->c
+		if (pos==dataStart) println("--- DATA ---")
+		
+		print(("0000"+pos.hex.toUpper).last(4)+" ")
+
+		if (pos >= dataStart) {
+			println(c)
+			pos=pos+1
+			continue
+		}
+					
+		if ("0123456789ABCDEFx".contains(c)) {
+			println(c)
+		} else {
+			if (lookup.has(c)) println(lookup.get(c))
+			else error("Unknown instruction '" + c + "'")
+		}
+		pos=pos+1
+/Disassemble
+			
+	
+
+
+Assemble => dict
+println(dict.result)
+Disassemble(dict)
+
+# Display code as block that can be copy-pasted
+println
+Inner{
+	s=dict.result
+	loop
+		if (s.length > 70) {
+			println(s.sub(0,70))
+			s=s.sub(70)
+			continue
+		} else {
+			println(s)
+			break
+		}
+}
+println
+println(dict.result.length,"bytes")
+/t
+	
+
