@@ -30,7 +30,72 @@ The goal is to validate the output from the Assembler.
 			println(a,b)
 		}
 	}
+	self.push=Lambda{P(1)=>value self.dataStack.insert(0,value)}
+	self.pop=Lambda{value=self.dataStack.nth(0) self.dataStack.remove(0) value}
+	
+	self.executeInstruction=Lambda{
+		pc=self.PC
+		name="_"+self.memory.get(self.PC)
+		if (self.has(name)) {
+			closure = self.get(name)
+			result = tryCatch(closure.call)
+			
+			if (!result.ok) {
+				println("*** Execution failed:",result.msg)
+			} else {
+				# executed ok, now update PC unless a jump has already moved it
+				if (self.PC == pc) {
+					self.PC=pc+1
+				}
+				println("ok")
+			}
+		} else {
+			println("*** Unknown instruction member",name)
+		}
+	}
+	self._x=Lambda{self.push(0)}
+	self._0=Lambda{self.push(self.pop*16+0)}
+	self._1=Lambda{self.push(self.pop*16+1)}
+	self._2=Lambda{self.push(self.pop*16+2)}
+	self._3=Lambda{self.push(self.pop*16+3)}
+	self._4=Lambda{self.push(self.pop*16+4)}
+	self._5=Lambda{self.push(self.pop*16+5)}
+	self._6=Lambda{self.push(self.pop*16+6)}
+	self._7=Lambda{self.push(self.pop*16+7)}
+	self._8=Lambda{self.push(self.pop*16+8)}
+	self._8=Lambda{self.push(self.pop*16+9)}
+	self._A=Lambda{self.push(self.pop*16+10)}
+	self._B=Lambda{self.push(self.pop*16+11)}
+	self._C=Lambda{self.push(self.pop*16+12)}
+	self._D=Lambda{self.push(self.pop*16+13)}
+	self._E=Lambda{self.push(self.pop*16+14)}
+	self._F=Lambda{self.push(self.pop*16+15)}
+
+	self.set("_+", Lambda{self.push(self.pop+self.pop)})
+	self.set("_-", Lambda{b=self.pop a=self.pop self.push(a-b)})
+	self.set("_*", Lambda{b=self.pop a=self.pop self.push(a*b)})
+	self.set("_/", Lambda{b=self.pop a=self.pop self.push((a/b).i)})
+	
+	self.set("_&", Lambda{b=self.pop a=self.pop value=if(a != 0 && b != 0, 1, 0) self.push(value)})
+	self.set("_|", Lambda{b=self.pop a=self.pop value=if(a != 0 || b != 0, 1, 0) self.push(value)})
+	
+	self._S=Lambda{self.PC=self.pop}  # jmp
+	self._T=Lambda{addr=self.pop cond=self.pop if(cond != 0) self.PC=addr}  # jmp?
+	
+	
 /class Interpreter
+
+
+# Testing eval inside class 
+# --
+	self.name=Lambda{"ugh"}
+	self.func=Lambda{
+		self.get("name").call
+	}
+/class etest
+
+etest.func
+/et
 
 
 # Test
@@ -52,10 +117,15 @@ The goal is to validate the output from the Assembler.
 		instrName=instr
 		if (!"x0123456789ABCDEF".contains(instr)) instrName=Assembler:InstructionsLookup.get(instr)
 		
-		println("PC",("0000"+x.PC.hex.toUpper).last(4), instr, instrName)
 		# show dataStack
+		println("dataStack [ " + x.dataStack.reverse.concat(" ") + " ] TOP")
 		# show callStack
+		println("callStack [ " + x.callStack.reverse.concat(" ") + " ] TOP")
 		
+		println
+		println("PC",("0000"+x.PC.hex.toUpper).last(4), instr, instrName)
+		
+		println
 		terminate=false
 		Inner{
 			loop
@@ -66,7 +136,10 @@ The goal is to validate the output from the Assembler.
 				} else if (command=="i") {
 					addr=Input("Enter address on hex format NNNN").get.parseInt(16)
 					x.showWord(addr)
-				} else if (command.trim=="") break
+				} else if (command.trim=="") {
+					x.executeInstruction
+					break
+				}
 			|
 		}
 		break(terminate)

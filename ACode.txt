@@ -1,3 +1,10 @@
+&Main jmp   ;; comment out to run simple test code
+
+:Test
+	#21 #39 add #15 div  ;; works
+	
+	;; #1 #2 and #2 #0 or  ;; works
+	halt
 
 :Main
 	:Init call
