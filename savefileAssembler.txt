@@ -41,8 +41,15 @@
 	HERE		:g
 
 	;; stack operations
-	dup		:M
-	swap		:N
+	dcopy		:M		;; copy stack element n, where 0 is top etc, to top, so #1 dcopy is DUP
+	dget		:N      ;; remove stack element n and push on top
+	dpop		:j		;; remove stack top element
+
+	;;dup				;; inline: #0 dcopy
+	;;swap				;; inline: #1 dget
+	;;over				;; inline: #1 dcopy
+	;;rot				;; inline: #2 dcopy
+	;;2dup				;; inline: over over
 	
 	;; call stack: note that "marks" are separate (hidden) structure, not physical on the 
 	;; visible call stack
@@ -124,6 +131,16 @@
 	.set("WORDSIZE",Sequence(
 		@ x2
 	))
+
+	# stack manipulation
+	.set("dup",List("#0 dcopy"))
+	.set("swap",List("#1 dget"))
+	.set("over",List("#1 dcopy"))
+	.set("rot",List("#2 dget"))
+	.set("2dup",List("over over"))
+
+	# Call and return
+
 	.set("call",Sequence(
 		@ ; target address on stack
 		@ ; this is the location of PC when invoking the PC instruction

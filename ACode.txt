@@ -6,9 +6,10 @@
 
 
 :Init
-	'Nulling 'ConsFree #2 show
 	#0 &ConsFree !		;; initialize ConsFree pointer to zero
 	ret
+
+;; Stack operations
 
 
 ;; Cons cells are created as a CAR+CDR tuple, each value a Word. They are allotted
