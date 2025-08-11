@@ -75,6 +75,12 @@ The goal is to validate the output from the Assembler.
 	self.set("_-", Lambda{b=self.pop a=self.pop self.push(a-b)})
 	self.set("_*", Lambda{b=self.pop a=self.pop self.push(a*b)})
 	self.set("_/", Lambda{b=self.pop a=self.pop self.push((a/b).i)})
+	self.set("_<", Lambda{b=self.pop a=self.pop value=if(a<b,1,0) self.push(value)})
+	self.set("_=", Lambda{b=self.pop a=self.pop value=if(a==b,1,0) self.push(value)})
+	self.set("_>", Lambda{b=self.pop a=self.pop value=if(a>b,1,0) self.push(value)})
+	
+	self._g=Lambda{self.push(self.memory.length)}   # HERE
+	self._U=Lambda{self.push(self.PC)}		# PC
 	
 	self.set("_&", Lambda{b=self.pop a=self.pop value=if(a != 0 && b != 0, 1, 0) self.push(value)})
 	self.set("_|", Lambda{b=self.pop a=self.pop value=if(a != 0 || b != 0, 1, 0) self.push(value)})

@@ -78,18 +78,14 @@
 	jmp		:S
 	jmp?		:T   ;; conditional jump on true'	
 	PC		:U   ;; puts PC on stack (as it was when invoking this instruction)
-	halt		:V
 	
 	;; call and ret are inlines (macros)
 
-	;; types	
-	tSymbol		:W   ;; tag ptr as symbol
-	tPtr		:X
 
 	;; I/O
-	show		:Y   ;; ( ptr ptr ... N -- ) - display N symbols with space between them
-	print		:.   ;; print any single value 
-	cr		:Z
+	show		:V   ;; ( ptr ptr ... N -- ) - display N symbols with space between them
+	print		:W   ;; print any single value 
+	cr		:X
 		
 >>> EOF
 	=>list
