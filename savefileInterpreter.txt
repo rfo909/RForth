@@ -10,15 +10,49 @@ The goal is to validate the output from the Assembler.
 # The interpreter
 # --
 	P(1) as String => code
+
+	DSTACK_MAX = 20
+	CSTACK_MAX = 40  # callstack
+	FSTACK_MAX = 10  # frame stack - contains dictionaries
 	
 	self.memory=Std.Array(code.chars) # using array, as writes will generate non-readable data 
 	self.PC=0
-	self.dataStack=List
-	self.callStack=List  # number values or "mark" string
+
+	self.HERE = Lambda{
+		println("HERE=" + self.memory.length)
+		self.memory.length
+	}
+	self.malloc = Lambda{
+		# extends self.memory - store self.HERE first, as it is the start of the reserved memory
+		P(1)=>wordCount
+		Std.Data.for(0,wordCount,1)->i
+			self.memory.add(0)
+	}
+		
+	# the call stack must exist in self.memory and grow upwards, storing words only,
+	# for predictable address calculations. The other two, the dataStack and the
+	# frameStack just use the same implementation for practical reasons, although
+	# no instructions exist for accessing their base or TOS pointers
+
+	stackAddress=self.HERE
+	self.malloc(DSTACK_MAX)
+	self.dataStack=WordStack:Stack(self.memory, stackAddress, DSTACK_MAX, "data")
+
+	stackAddress=self.HERE
+	self.malloc(CSTACK_MAX)
+	self.callStack=WordStack:Stack(self.memory, stackAddress, CSTACK_MAX, "calls")
+
+	stackAddress=self.HERE
+	self.malloc(FSTACK_MAX)
+	self.frameStack=WordStack:Stack(self.memory, stackAddress, FSTACK_MAX, "frames")
+
+	# the frameStack contains dictionaries identifying the base and the top of the current
+	# call frame, which lives on the call stack.
 	
 	self.nextInstruction=Lambda{
 		self.memory.get(self.PC)
 	}
+
 	self.showWord=Lambda{
 		P(1)=>addr
 		if (addr > self.memory.length-2) println("Invalid address")
@@ -30,9 +64,36 @@ The goal is to validate the output from the Assembler.
 			println(a,b)
 		}
 	}
-	self.push=Lambda{P(1)=>value self.dataStack.insert(0,value)}
-	self.pop=Lambda{value=self.dataStack.nth(0) self.dataStack.remove(0) value}
-	
+	# data stack
+	self.push=Lambda{P(1)=>value self.dataStack.push(value)}
+	self.pop=Lambda{self.dataStack.pop}
+
+	# frame stack
+	self.getFrameInfo=Lambda{
+		if (self.frameStack.isEmpty) {
+			frameInfo=Dict.set("base",0).set("size",0)  # numbers are offsets in callStack, not memory absolutes
+			self.frameStack.push(frameInfo)
+		}
+		self.frameStack.peek
+	}
+
+	self.showFrameStack=Lambda{
+		self.frameStack.getStackValues->dict
+			out("(base=" + dict.base + ", size=" + dict.size+")")
+		| _.concat(" ")
+	}
+		
+
+	# call stack
+	self.cpush=Lambda{
+		P(1) => value
+		self.callStack.push(value)
+		frameInfo=self.getFrameInfo
+		frameInfo.size=frameInfo.size+1
+		self.frameStack.replaceTop(frameInfo)  # update data
+	}
+
+
 	self.executeInstruction=Lambda{
 		pc=self.PC
 		name="_"+self.memory.get(self.PC)
@@ -88,20 +149,42 @@ The goal is to validate the output from the Assembler.
 	self._S=Lambda{self.PC=self.pop}  # jmp
 	self._T=Lambda{addr=self.pop cond=self.pop if(cond != 0) self.PC=addr}  # jmp?
 	
+	self._Q=Lambda{  # call
+		targetAddr=self.pop
+		returnAddr=self.PC+1 # following call
+
+		self.cpush(returnAddr)
+		currFrame=self.getFrameInfo
+
+		frameInfo=Dict.set("base",currFrame.base+currFrame.size).set("size",0)
+			# currFrame.size will be at least 1 after we pushed return address
+
+		self.frameStack.push(frameInfo)
+
+		self.PC=targetAddr
+			# JMP
+	}
+	self._R=Lambda{  # ret
+		self.frameStack.pop
+
+		frameInfo=self.frameStack.peek  # previous frame
+
+		# resetting callstack as it were before call
+		self.callStack.setNext(frameInfo.base + frameInfo.size) 
 	
+		# popping the jump address
+		targetAddr=self.callStack.pop
+
+		# must update the frameInfo about having popped the PC
+		frameInfo.size=frameInfo.size-1
+		self.frameStack.replaceTop(frameInfo)
+
+		self.PC=targetAddr # JMP
+	}
 /class Interpreter
 
 
-# Testing eval inside class 
-# --
-	self.name=Lambda{"ugh"}
-	self.func=Lambda{
-		self.get("name").call
-	}
-/class etest
 
-etest.func
-/et
 
 
 # Test
@@ -124,9 +207,11 @@ etest.func
 		if (!"x0123456789ABCDEF".contains(instr)) instrName=Assembler:InstructionsLookup.get(instr)
 		
 		# show dataStack
-		println("dataStack [ " + x.dataStack.reverse.concat(" ") + " ] TOP")
+		println("dataStack [ " + x.dataStack.getStackValues.concat(", ") + " ] TOP")
 		# show callStack
-		println("callStack [ " + x.callStack.reverse.concat(" ") + " ] TOP")
+		println("callStack [ " + x.callStack.getStackValues.concat(" ") + " ] TOP")
+		# show frameStack
+		println("frameStack[ " + x.showFrameStack + " ] TOP")
 		
 		println
 		println("PC",("0000"+x.PC.hex.toUpper).last(4), instr, instrName)

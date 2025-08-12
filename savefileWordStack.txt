@@ -1,0 +1,94 @@
+# Stack living inside simulated memory, handling any values
+# However, for the simulated machine we're talking about 2 byte words
+# --
+	P(1) as Array => memory
+	P(2) as int => startAddress
+	P(3) as int => size
+	P(4) as String => stackName
+
+	self.memory=memory
+	self.startAddress=startAddress
+	self.size=size
+	self.name=stackName
+
+	self.next=0
+
+	self.setNext = Lambda{
+		P(1) as int => next
+		self.next=next
+		println(self.name,"setNext",next)
+	}
+
+	self.push = Lambda{
+		P(1)=>value
+		error(self.next >= self.size, self.name + ": Stack overflow")
+		self.memory.set(self.startAddress + self.next, value)
+		self.next=self.next+1
+	}
+
+	self.pop = Lambda{
+		error(self.next <= 0, self.name + ": pop: stack underflow")
+		self.next=self.next-1
+		self.memory.get(self.startAddress + self.next)  # previous top value
+	}
+
+	self.peek = Lambda{
+		error(self.next <= 0, self.name + ": peek: stack underflow")
+		self.memory.get(self.startAddress + self.next - 1)
+	}
+
+	self.replaceTop = Lambda{
+		P(1) => newValue
+		error(self.next <= 0, self.name + ": replace: stack empty")
+		self.pop
+		self.push(newValue)
+	}
+	
+
+	self.isEmpty = Lambda{
+		self.next==0
+	}
+
+	self.getStackValues = Lambda{  # top at end
+		n=0
+		end=self.next
+		loop
+			break(n >= end)
+			out(self.memory.get(self.startAddress + n))
+			n=n+1
+	}
+
+	self.dump = Lambda{
+		println(self.getStackValues.concat(" "))
+	}
+		
+/class Stack
+		
+
+# Test
+# --
+	memory=Std.Array(Std.Data.yes(100,0))
+	startAddress=1
+	size=5
+	name="teststack"
+
+	stack=Stack(memory, startAddress, size, name)
+	stack.push(34)
+	stack.dump
+	stack.push(35)
+	stack.dump
+
+	println("pop",stack.pop)
+	println("pop",stack.pop)
+
+	stack.dump
+	stack.push(1)
+	stack.push(2)
+	stack.push(3)
+	stack.push(4)
+	stack.push(5)
+	stack.dump
+	# should overflow:
+	stack.push(35)
+/t
+	

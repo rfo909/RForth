@@ -1,6 +1,12 @@
 
 
 :Test
+	;; #10 #20 &TestJmp call
+
+	;; #999  ;; to indicate on stack we are back
+
+	;; &Halt jmp
+
 	;; #0 b !
 	;; HERE
 	;; PC
@@ -14,11 +20,15 @@
 	;; #1 #2 and #2 #0 or  ;; works
 
 
+:TestJmp
+	add
+	ret
+
 :Main
 	&Init call
 	&ConsGet call 
 		&ConsDispose call
-	&Halt call
+	&Halt jmp
 
 :Init
 	#0 &ConsFree !		;; initialize ConsFree pointer to zero
@@ -75,7 +85,7 @@
 
 ;; ---------------------------------
 ;; Reserved tags, must be present
-;; ---------------------------------
+;; ---------------------------------	
 
 :DATA		
 	;; data is generated here - the tag is used by disassembler to 
