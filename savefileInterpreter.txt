@@ -35,19 +35,19 @@ The goal is to validate the output from the Assembler.
 	# the call stack and data stacks exist in self.memory and grow upwards, storing words only,
 	# for predictable address calculations.
 
-	stackAddress=self.HERE
+	self.dbase=self.HERE
 	self.memory.mallocWords(DSTACK_WORDS)
-	self.dataStack=HWSim:MemStack(self.memory, stackAddress, DSTACK_WORDS, "data")
+	self.dataStack=HWSim:MemStack(self.memory, self.dbase, DSTACK_WORDS, "data")
 
-	stackAddress=self.HERE
+	self.cbase=self.HERE
 	self.memory.mallocWords(CSTACK_WORDS)
-	self.callStack=HWSim:MemStack(self.memory, stackAddress, CSTACK_WORDS, "calls")
+	self.callStack=HWSim:MemStack(self.memory, self.cbase, CSTACK_WORDS, "calls")
 
 	# the frame stack stores frames as two words: base and size
-	stackAddress=self.HERE
+	self.fbase=self.HERE
 	FSTACK_WORDS=FSTACK_FRAMES*2
 	self.memory.mallocWords(FSTACK_WORDS)
-	self.frameStack=HWSim:MemStack(self.memory, stackAddress, FSTACK_WORDS, "frames")
+	self.frameStack=HWSim:MemStack(self.memory, self.fbase, FSTACK_WORDS, "frames")
 
 	# the frameStack contains dictionaries identifying the base and the top of the current
 	# call frame, which lives on the call stack.
@@ -59,7 +59,10 @@ The goal is to validate the output from the Assembler.
 	self.showMem=Lambda{
 		P(1)=>fromAddr
 		P(2,fromAddr+10) => toAddr
-		self.memory.dump(fromAddr,toAddr)
+		result = tryCatch(self.memory.dump(fromAddr,toAddr))
+		if (!result.ok) {
+			println("*** FAILED: " + result.msg)
+		}
 	}
 
 
@@ -208,6 +211,20 @@ The goal is to validate the output from the Assembler.
 		println("set","addr",addr,"value",value)
 		self.memory.writeWord(addr,value)
 	}
+
+	self._O=Lambda{  # cpush
+		count=self.pop  # ( [data] a b c -> [call] a b c )
+		Std.Data.for(0,count,1)->i
+			out(self.pop)  # cba
+		| _.reverse->val
+			self.cpush(val)
+	}
+
+	self._P=Lambda{ # cbase
+		frameInfo=self.fpeek
+		self.push(self.cbase + (frameInfo.base*self.WORDSIZE))
+	}
+		
 /class Interpreter
 
 
@@ -225,6 +242,27 @@ The goal is to validate the output from the Assembler.
 	| _.concat
 //ShowFrameStack
 
+
+# Show word stack
+# --
+	P(1) as &MemStack => stack
+	stack.getStackValues->value
+		out("" + value + "/x" + value.hex.toUpper)
+	| _.concat(" ")
+//ShowWordStack
+
+
+# Read address
+# --
+	Input("Enter address hex NNNN or decimal #NNNN").get =>addr
+	if (addr.startsWith("#")) {
+		addr.after("#").parseInt(10)
+	} else if (addr.startsWith("0x") || addr.startsWith("x")) {
+		addr.after("x").parseInt(16)
+	} else {
+		addr.parseInt(16)
+	}
+//ReadAddress
 
 # Test
 # --
@@ -245,34 +283,30 @@ The goal is to validate the output from the Assembler.
 		instrName=instr
 		if (!"x0123456789ABCDEF".contains(instr)) instrName=Assembler:InstructionsLookup.get(instr)
 		
+		println
 		# show dataStack
-		println("dataStack [ " + x.dataStack.getStackValues.concat(", ") + " ] TOP")
+		println("dataStack  0x" + x.dbase.hex(4) + " [ " + ShowWordStack(x.dataStack) + " ] TOP")
 		# show callStack
-		println("callStack [ " + x.callStack.getStackValues.concat(" ") + " ] TOP")
+		println("callStack  0x" + x.cbase.hex(4) + " [ " + ShowWordStack(x.callStack) + " ] TOP")
 		# show frameStack
-		println("frameStack[ " + ShowFrameStack(x.frameStack) + " ] TOP")
+		println("frameStack 0x" + x.fbase.hex(4) + " [ " + ShowFrameStack(x.frameStack) + " ] TOP")
 		
 		println
-		println("PC",("0000"+x.PC.hex.toUpper).last(4), instr, instrName)
+		println("PC", "0x" + ("0000"+x.PC.hex.toUpper).last(4), instr, instrName)
 		
 		println
-		terminate=false
-		Inner{
-			loop
-				command=readLine("Command: 'q' to quit, 'i' to inspect, ENTER to continue").trim
-				if(command=="q") {
-					terminate=true
-					break
-				} else if (command=="i") {
-					addr=Input("Enter address on hex format NNNN").get.parseInt(16)
-					x.showMem(addr)
-				} else if (command.trim=="") {
-					x.executeInstruction
-					break
-				}
-			|
+		command=readLine("Command: 'q' to quit, 'i' to inspect, 'w' read word, ENTER to continue").trim
+		if(command=="q") {
+			break
+		} else if (command=="i") {
+			addr=ReadAddress
+			x.showMem(addr)
+		} else if (command=="w") {
+			addr=ReadAddress
+			println("=> " + x.memory.readWord(addr))
+		} else if (command.trim=="") {
+			x.executeInstruction
 		}
-		break(terminate)
 		
 		 
 /t		

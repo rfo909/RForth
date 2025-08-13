@@ -79,9 +79,10 @@
 		P(2,self.HERE) => end
 		Std.Data.for(start,end,1)->addr
 			value=self.readByte(addr)
+			iaddr=("     "+addr).last(5)
 			char=""
 			if (value < 128) char=Sys.uchar(value).printable.esc
-			report(addr, "0x"+addr.hex(4), value, "0x"+value.hex(2), char)
+			report(iaddr + " - 0x"+addr.hex(4), value, "0x"+value.hex(2), char)
 		| _=>rows
 		Lib:ShowRows(rows)
 	}

@@ -19,7 +19,9 @@
 	&Halt jmp
 
 :TestJmp
-	add ret
+	#2 cpush	;; take two values off data stack, push them on call stack, maintaining the same order,
+				;; these are now available as local variables a and b
+	a @ b @ add ret
 
 :Main
 	&Init call
