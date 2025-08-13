@@ -64,7 +64,8 @@
 
 	;; data stack operations
 	dcopy		:M		;; copy stack element n, where 0 is top etc, to top, so #1 dcopy is DUP
-	dget		:N      ;; remove stack element n and push on top
+	dget		:N      	;; remove stack element n and push on top
+	
 	drop		:j		;; remove stack top element
 	dup		:l
 	swap		:m
@@ -79,11 +80,11 @@
 
 	;; call stack: note that "marks" are separate (hidden) structure, not physical on the 
 	;; visible call stack
-	cpush		:O   ;; push N values from data stack to callstack in same order (abc->abc) - the first 6 values (word) are local variables a-f
-	cbase		:P   ;; get address to base of current call stack frame (call frame stack) 
+	cpush		:O   ;; push 1 value from data stack to callstack
+				;; up to 3 values accessible as local variables a@ a! b@ b! c@ c! (single instructions)
 
-	call		:Q   ;; push PC+1 on callStack, then add mark (call frame stack), before jmp to address on dstack
-	ret			:R	 ;; cbase-1 locate return address, then pop mark from 
+	call		:Q   
+	ret		:R
 
 	;; the call stack contains local variables + the return PC when calling something. 
 	;; the callFrame stack contains two values; the base of the current frame on the call stack
@@ -91,12 +92,12 @@
 
 	;; local variable pointer instructions
 
-	a		:a
-	b		:b
-	c		:c
-	d		:d
-	e		:e
-	f		:f
+	a@		:a
+	b@		:b
+	c@		:c
+	a!		:d
+	b!		:e
+	c!		:f
 	
 	;; math (note x0-9A-F are not included)
 	add		:+
@@ -155,6 +156,7 @@
 		
 		token=parts.first.trim
 		value=parts.last.trim
+		error(value.length != 1, "Invalid machine instruction, must be 1 char: " + value)
 		error(values.contains(value),"Duplicate machine instruction: " + value)
 		
 		dict.set(token,value)

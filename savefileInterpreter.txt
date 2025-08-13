@@ -173,35 +173,41 @@ The goal is to validate the output from the Assembler.
 
 	## Local variable pointer instructions a-f
 
-	self._a=Lambda{
+	self._a=Lambda{  # a@
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
-		self.push(base)
+		value=self.memory.readWord(base)
+		self.push(value)
 	}
-	self._b=Lambda{
+	self._b=Lambda{  # b@
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
-		self.push(base+self.WORDSIZE)
+		value=self.memory.readWord(base+self.WORDSIZE)
+		self.push(value)
 	}
-	self._c=Lambda{
+	self._c=Lambda{  # c@
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
-		self.push(base+self.WORDSIZE*2)
+		value=self.memory.readWord(base+self.WORDSIZE*2)
+		self.push(value)
 	}
-	self._d=Lambda{
+	self._d=Lambda{  # a!
+		value=self.pop
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
-		self.push(base+self.WORDSIZE*3)
+		self.memory.writeWord(base, value)
 	}
-	self._e=Lambda{
+	self._e=Lambda{  # b!
+		value=self.pop
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
-		self.push(base+self.WORDSIZE*4)
+		self.memory.writeWord(base+self.WORDSIZE, value)
 	}
-	self._f=Lambda{
+	self._f=Lambda{ # c!
+		value=self.pop
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
-		self.push(base+self.WORDSIZE*5)
+		self.memory.writeWord(base+self.WORDSIZE*2, value)
 	}
 
 	self.set("_+", Lambda{self.push(self.pop+self.pop)})
@@ -277,16 +283,7 @@ The goal is to validate the output from the Assembler.
 	}
 
 	self._O=Lambda{  # cpush
-		count=self.pop  # ( [data] a b c -> [call] a b c )
-		Std.Data.for(0,count,1)->i
-			out(self.pop)  # cba
-		| _.reverse->val
-			self.cpush(val)
-	}
-
-	self._P=Lambda{ # cbase
-		frameInfo=self.fpeek
-		self.push(self.cbase + (frameInfo.base*self.WORDSIZE))
+		self.cpush(self.pop)
 	}
 
 	self._M=Lambda{ # dcopy: ( a b c 2 -- a b c a ) - argument 0 is top of stack 1 next and so on

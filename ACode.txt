@@ -1,13 +1,13 @@
 
-
 :Main
 	;; init
 	null &ConsFree !		;; initialize ConsFree pointer to zero
 
+
 	;; test
 	&ConsGet call 
 		&ConsDispose call
-	&Halt jmp
+	&Halt jmp	
 
 :Error ;; ( sym sym symCount -- )
 	show
@@ -31,44 +31,42 @@
 	;; unthinkable for embedded devices
 
 :ConsAlloc  ; ( -- )
-	HERE           ;; Ptr new CONS
-		wordsize #2 mul allot ;; reserve space
-		
-	;; (Ptr)
+	&ConsFree cpush		;; a=&ConsFree
+	HERE   cpush        ;; b=Ptr
 	
-	dup CDR &ConsFree swap !	;; ptr.CDR=&ConsFree
-	&ConsFree !			;; &ConsFree=ptr	
+	wordsize #2 mul allot ;; reserve space
+		
+	a@ b@ CDR !	;; ptr.CDR=&ConsFree
+	b@ a@ !			;; &ConsFree=ptr	
 	
 	;; no return value
 	ret
 
 :ConsGet  ; ( -- ConsPtr) - get Cons cell from free list (call ConsAlloc first if empty)
-
-	&ConsFree dup @ null ne &*FreelistOk jmp?
-		;; freelist is empty, add one Cons
+	&ConsFree cpush   ;; a=&ConsFree
+	
+	a@ @ null ne &*FreelistOk jmp?
+		;; freelist is empty, allocate one Cons
 		&ConsAlloc call
 	
 	:*FreelistOk
 	
 	;; got data in freelist, take first cons
 
-	;; (&ConsFree)
-	dup @   ;; Ptr to Cons
-	
-	;; (&ConsFree Ptr)
-	CDR @ 
-	
-	;; (&ConsFree Ptr.CDR)
-	swap !  ;; &ConsFree = Ptr.CDR
+	a@ @  		;; (ptr to Cons)
+
+	dup CDR a@ !   ;; &ConsFree = ptr.cons
 
 	;; (Ptr)
 	ret
 	
 :ConsDispose  ;; (ptr -- )
-	dup &ConsFree swap	;; (ptr &ConsFree ptr)
+	&ConsFree cpush 	;; a=&ConsFree
+	dup a@ swap		;; (ptr &ConsFree ptr)
 		CDR !		;; ptr.cdr=&ConsFree
+		
 	;; (ptr)
-	&ConsFree !		;; &ConsFree=ptr
+	a@ !			;; &ConsFree=ptr
 	;; no return value
 	ret
 
