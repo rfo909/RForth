@@ -1,0 +1,20 @@
+
+# Get single byte from bigger word
+# --
+	P(1) as int => value
+	P(2) as int => bytePos   # byte index: (3 2 1 0) for 32-bit value (1 0) for 16-bit
+
+	bits=(bytePos+1)*8
+	value.bin(bits).first(8).parseInt(2)
+/WordByte
+
+
+
+# Test bits and bytes operations
+# --
+	x="CAFE".parseInt(16)
+	error(!WordByte(x,0).hex.toUpper=="FE", "t1")
+	error(!WordByte(x,1).hex.toUpper=="CA", "t1")
+
+	"ok"
+//Test

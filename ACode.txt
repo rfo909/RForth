@@ -1,4 +1,25 @@
+:Test
+	#10 #20 &TestJmp call
 
+	;; #999  ;; to indicate on stack we are back
+
+	;; &Halt jmp
+
+	;; #0 b !
+	;; HERE
+	;; PC
+	;; #21 #39 lt
+	;; #39 #21 lt
+	;; #21 #39 gt
+	;; #39 #21 gt
+	;; xAA xAB eq
+	;; xCC xCC eq
+	;; #21 #39 add #15 div  ;; works
+	;; #1 #2 and #2 #0 or  ;; works
+	&Halt jmp
+
+:TestJmp
+	add ret
 
 :Main
 	&Init call
