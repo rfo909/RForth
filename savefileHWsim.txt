@@ -1,3 +1,23 @@
+# Get single byte from bigger word
+# --
+    P(1) as int => value
+    P(2) as int => bytePos   # byte index: (3 2 1 0) for 32-bit value (1 0) for 16-bit
+
+    bits=(bytePos+1)*8
+    value.bin(bits).first(8).parseInt(2)
+/WordByte
+
+
+
+# Test bits and bytes operations
+# --
+    x="CAFE".parseInt(16)
+    error(!WordByte(x,0).hex.toUpper=="FE", "t1")
+    error(!WordByte(x,1).hex.toUpper=="CA", "t1")
+
+    "ok"
+//TestWordByte
+
 # Simulated byte oriented memory
 # --
 	P(1,2) as int => wordSize
@@ -25,7 +45,7 @@
 
 		error(addr < 0 || addr >= self.HERE, "Invalid memory address: " + addr)
 
-		self.memory.set(addr,Binary:WordByte(value,0))
+		self.memory.set(addr,HWSim:WordByte(value,0))
 	}
 
 	self.readByte = Lambda{
@@ -58,7 +78,7 @@
 
 		addrOffset=0
 		Std.Data.each(self.wordSize-1, 0)->bytePos
-			self.writeByte(addr + addrOffset, Binary:WordByte(value,bytePos))
+			self.writeByte(addr + addrOffset, HWSim:WordByte(value,bytePos))
 			addrOffset=addrOffset+1
 	}
 
@@ -221,3 +241,6 @@
 	# should overflow:
 	stack.push(35)
 //MemStackTest
+
+
+
