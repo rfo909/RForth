@@ -146,6 +146,27 @@ The goal is to validate the output from the Assembler.
 	self._E=Lambda{self.push(self.pop*16+14)}
 	self._F=Lambda{self.push(self.pop*16+15)}
 
+	## Local variable pointer instructions a-f
+
+	self._a=Lambda{
+		self.push(self.cbase)
+	}
+	self._b=Lambda{
+		self.push(self.cbase + self.WORDSIZE)
+	}
+	self._c=Lambda{
+		self.push(self.cbase + self.WORDSIZE*2)
+	}
+	self._d=Lambda{
+		self.push(self.cbase + self.WORDSIZE*3)
+	}
+	self._e=Lambda{
+		self.push(self.cbase + self.WORDSIZE*4)
+	}
+	self._f=Lambda{
+		self.push(self.cbase + self.WORDSIZE*5)
+	}
+
 	self.set("_+", Lambda{self.push(self.pop+self.pop)})
 	self.set("_-", Lambda{b=self.pop a=self.pop self.push(a-b)})
 	self.set("_*", Lambda{b=self.pop a=self.pop self.push(a*b)})
@@ -224,6 +245,23 @@ The goal is to validate the output from the Assembler.
 		frameInfo=self.fpeek
 		self.push(self.cbase + (frameInfo.base*self.WORDSIZE))
 	}
+
+	self._M=Lambda{ # dcopy: ( a b c 2 -- a b c a ) - argument 0 is top of stack 1 next and so on
+		offset=self.pop
+		value=self.dataStack.getValue(offset)
+		self.push(value)
+	}
+
+	self._N=Lambda{ # dget: (a b c 0 -- a b) and (a b c 1 -- a c)
+		offset=self.pop
+		value=self.dataStack.removeValue(offset)
+		self.push(value)
+	}
+
+	self._j=Lambda { # drop
+		self.pop
+	}
+		
 		
 /class Interpreter
 
@@ -248,7 +286,7 @@ The goal is to validate the output from the Assembler.
 	P(1) as &MemStack => stack
 	stack.getStackValues->value
 		out("" + value + "/x" + value.hex.toUpper)
-	| _.concat(" ")
+	| _.concat("  ")
 //ShowWordStack
 
 
@@ -281,7 +319,7 @@ The goal is to validate the output from the Assembler.
 		# show PC
 		instr=x.nextInstruction
 		instrName=instr
-		if (!"x0123456789ABCDEF".contains(instr)) instrName=Assembler:InstructionsLookup.get(instr)
+		instrName=Assembler:InstructionsLookup.get(instr)
 		
 		println
 		# show dataStack

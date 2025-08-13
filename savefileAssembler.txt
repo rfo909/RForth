@@ -52,7 +52,7 @@
 	;; data stack operations
 	dcopy		:M		;; copy stack element n, where 0 is top etc, to top, so #1 dcopy is DUP
 	dget		:N      ;; remove stack element n and push on top
-	ddrop		:j		;; remove stack top element
+	drop		:j		;; remove stack top element
 
 	;;dup				;; inline: #0 dcopy
 	;;swap				;; inline: #1 dget
@@ -65,7 +65,7 @@
 
 	;; call stack: note that "marks" are separate (hidden) structure, not physical on the 
 	;; visible call stack
-	cpush		:O   ;; push value on current stack frame (callStack) (the first 6 words! are local variables a-f)
+	cpush		:O   ;; push N values from data stack to callstack in same order (abc->abc) - the first 6 values (word) are local variables a-f
 	cbase		:P   ;; get address to base of current call stack frame (call frame stack) 
 
 	call		:Q   ;; push PC+1 on callStack, then add mark (call frame stack), before jmp to address on dstack
@@ -74,12 +74,38 @@
 	;; the call stack contains local variables + the return PC when calling something. 
 	;; the callFrame stack contains two values; the base of the current frame on the call stack
 	;;		and the number of words pushed with cpush, identifying top-of-stack for callStack
+
+	;; local variable pointer instructions
+
+	a		:a
+	b		:b
+	c		:c
+	d		:d
+	e		:e
+	f		:f
 	
 	;; math (note x0-9A-F are not included)
 	add		:+
 	sub		:-
 	mul		:*
 	div		:/
+	zero	:x   		;; push zero on stack
+	0		:0
+	1		:1
+	2		:2
+	3		:3
+	4		:4
+	5		:5
+	6		:6
+	7		:7
+	8		:8
+	9		:9
+	A		:A
+	B		:B
+	C		:C
+	D		:D
+	E		:E
+	F		:F
 
 	;; logical operations
 	eq		:=
@@ -96,9 +122,6 @@
 	jmp?	:T   ;; conditional jump on true'	
 	PC		:U   ;; puts PC on stack (as it was when invoking this instruction)
 	
-	;; call and ret are inlines (macros)
-
-
 	;; I/O
 	show		:V   ;; ( ptr ptr ... N -- ) - display N symbols with space between them
 	print		:W   ;; print any single value 
@@ -108,7 +131,7 @@
 	=>list
 	
 	dict=Dict
-	values="x0123456789ABCDEF"
+	values="" 
 	
 	list->rawLine
 		line=rawLine.before(";")
@@ -152,28 +175,6 @@
 	.set("rot",List("#2 dget"))
 	.set("2dup",List("over over"))
 
-	## Local variables (1-5 cpush) - return pointers
-	## The offsets should ideally be calculated by the assembler, as they are static, depending
-	## WORDSIZE only.
-	
-	.set("a",Sequence(
-		@ cbase
-	))
-	.set("b",Sequence(
-		@ cbase WORDSIZE add 
-	))
-	.set("c",Sequence(
-		@ cbase WORDSIZE #2 mul add 
-	))
-	.set("d",Sequence(
-		@ cbase WORDSIZE #3 mul add 
-	))
-	.set("e",Sequence(
-		@ cbase WORDSIZE #4 mul add 
-	))
-	.set("f",Sequence(
-		@ cbase WORDSIZE #5 mul add 
-	))
 	
 	## CONS tuples
 	.set("CDR",Sequence(

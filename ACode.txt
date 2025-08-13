@@ -1,9 +1,10 @@
 :Test
-	#10 #20 &TestJmp call
 
-	;; #999  ;; to indicate on stack we are back
+	zero #1 #2 #3 swap
+	
 
-	;; &Halt jmp
+	;; #10 #20 #2 cpush
+	;; a @ b @ &TestJmp call 
 
 	;; #0 b !
 	;; HERE
@@ -21,7 +22,8 @@
 :TestJmp
 	#2 cpush	;; take two values off data stack, push them on call stack, maintaining the same order,
 				;; these are now available as local variables a and b
-	a @ b @ add ret
+	a @ b @ add
+	ret
 
 :Main
 	&Init call
