@@ -1,47 +1,13 @@
-:Test
 
-	;;#3 cr print
-
-	;;zero #1 #2 #3 swap
-
-	HERE #1 cpush
-	#1 allot
-
-	#34 a @ writeb
-	a @ readb
-	
-
-	;; #10 #20 #2 cpush
-	;; a @ b @ &TestJmp call 
-
-	;; #0 b !
-	;; HERE
-	;; PC
-	;; #21 #39 lt
-	;; #39 #21 lt
-	;; #21 #39 gt
-	;; #39 #21 gt
-	;; xAA xAB eq
-	;; xCC xCC eq
-	;; #21 #39 add #15 div  ;; works
-	;; #1 #2 and #2 #0 or  ;; works
-	&Halt jmp
-
-:TestJmp
-	#2 cpush	;; take two values off data stack, push them on call stack, maintaining the same order,
-				;; these are now available as local variables a and b
-	a @ b @ add
-	ret
 
 :Main
-	&Init call
+	;; init
+	null &ConsFree !		;; initialize ConsFree pointer to zero
+
+	;; test
 	&ConsGet call 
 		&ConsDispose call
 	&Halt jmp
-
-:Init
-	#0 &ConsFree !		;; initialize ConsFree pointer to zero
-	ret
 
 :Error ;; ( sym sym symCount -- )
 	show
@@ -57,41 +23,52 @@
 ;; Cons cells are created as a CAR+CDR tuple, each value a Word. They are allotted
 ;; as needed, but also freelisted when disposed off
 
-:ConsFree x0	;; freelist pointer	
+:ConsFree 0 0 0 0	;; freelist pointer 	
 	;; 0 means empty
-	;; Using two instructions to generate two bytes, which are not null, 
-	;; so the value is nulled in :Init before use
-	;; ---
-	;; NOTE the interpreter works with word-based memory, and so will affect only the
-	;; first "reserved" byte above. 
+	;; Using four instructions to generate four bytes as a placeholder.
+	;; The value is nulled in :Init before use. Using 4 bytes instead
+	;; of 2 to ensure compatibility with 4 byte wordsize - any more is
+	;; unthinkable for embedded devices
 
-:ConsAlloc
-	WORDSIZE #2 mul allot #1 cpush ;; a=pointer new cons
-	&ConsFree @ 
-		a CDR ! ;; Cons.CDR = ConsFree
-	a &ConsFree !   ;; ConsFree = Cons
+:ConsAlloc  ; ( -- )
+	HERE           ;; Ptr new CONS
+		wordsize #2 mul allot ;; reserve space
+		
+	;; (Ptr)
+	
+	dup CDR &ConsFree swap !	;; ptr.CDR=&ConsFree
+	&ConsFree !			;; &ConsFree=ptr	
+	
 	;; no return value
 	ret
 
-:ConsGet   ;; get Cons cell from free list (call ConsAlloc first if empty)
-	&ConsFree @ #0 ne &*FreelistOk jmp?
+:ConsGet  ; ( -- ConsPtr) - get Cons cell from free list (call ConsAlloc first if empty)
+
+	&ConsFree dup @ null ne &*FreelistOk jmp?
 		;; freelist is empty, add one Cons
 		&ConsAlloc call
 	
 	:*FreelistOk
-	;; freelist not empty, take first cons
-	&ConsFree CDR @ #1 cpush   ;; a=cons.CDR
-	a &ConsFree !			;; update freelist
-	#0 a !
-	#0 a CDR !
-	a
+	
+	;; got data in freelist, take first cons
+
+	;; (&ConsFree)
+	dup @   ;; Ptr to Cons
+	
+	;; (&ConsFree Ptr)
+	CDR @ 
+	
+	;; (&ConsFree Ptr.CDR)
+	swap !  ;; &ConsFree = Ptr.CDR
+
+	;; (Ptr)
 	ret
 	
 :ConsDispose  ;; (ptr -- )
-	#1 cpush  ;; a=ptr
-	&ConsFree
-		a CDR !		;; ptr.cdr=freelist
-	a &ConsFree !		;; freelist=ptr
+	dup &ConsFree swap	;; (ptr &ConsFree ptr)
+		CDR !		;; ptr.cdr=&ConsFree
+	;; (ptr)
+	&ConsFree !		;; &ConsFree=ptr
 	;; no return value
 	ret
 

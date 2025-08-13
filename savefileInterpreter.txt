@@ -174,22 +174,34 @@ The goal is to validate the output from the Assembler.
 	## Local variable pointer instructions a-f
 
 	self._a=Lambda{
-		self.push(self.cbase)
+		frameInfo=self.fpeek
+		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
+		self.push(base)
 	}
 	self._b=Lambda{
-		self.push(self.cbase + self.WORDSIZE)
+		frameInfo=self.fpeek
+		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
+		self.push(base+self.WORDSIZE)
 	}
 	self._c=Lambda{
-		self.push(self.cbase + self.WORDSIZE*2)
+		frameInfo=self.fpeek
+		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
+		self.push(base+self.WORDSIZE*2)
 	}
 	self._d=Lambda{
-		self.push(self.cbase + self.WORDSIZE*3)
+		frameInfo=self.fpeek
+		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
+		self.push(base+self.WORDSIZE*3)
 	}
 	self._e=Lambda{
-		self.push(self.cbase + self.WORDSIZE*4)
+		frameInfo=self.fpeek
+		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
+		self.push(base+self.WORDSIZE*4)
 	}
 	self._f=Lambda{
-		self.push(self.cbase + self.WORDSIZE*5)
+		frameInfo=self.fpeek
+		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
+		self.push(base+self.WORDSIZE*5)
 	}
 
 	self.set("_+", Lambda{self.push(self.pop+self.pop)})
@@ -291,6 +303,24 @@ The goal is to validate the output from the Assembler.
 
 	self._j=Lambda { # drop
 		self.pop
+	}
+	
+	self._l=Lambda{ # dup
+		value=self.pop
+		self.push(value)
+		self.push(value)
+	}
+	
+	self._m=Lambda{ # swap
+		a=self.pop
+		b=self.pop
+		self.push(a)
+		self.push(b)
+	}
+	
+	self._n=Lambda{ # CDR
+		value=self.pop
+		self.push(value+self.WORDSIZE)
 	}
 		
 		
