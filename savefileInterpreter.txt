@@ -53,29 +53,32 @@ The goal is to validate the output from the Assembler.
 		self.memory.get(self.PC)
 	}
 
-	self.showWord=Lambda{
+	self.showMem=Lambda{
 		P(1)=>addr
 		if (addr > self.memory.length-2) println("Invalid address")
 		else {
-			a=self.memory.get(addr)
-			b=self.memory.get(addr+1)
-			if (Sys.getType(a)=="int") a="0x"+a.hex
-			if (Sys.getType(b)=="int") b="0x"+b.hex
-			println(a,b)
+			value=self.memory.get(addr)
+			hex=""
+			if (Sys.getType(value)=="int") hex="0x"+value.hex
+			println("=>",value,hex)
 		}
 	}
 	# data stack
 	self.push=Lambda{P(1)=>value self.dataStack.push(value)}
 	self.pop=Lambda{self.dataStack.pop}
 
-	# frame stack
-	self.getFrameInfo=Lambda{
-		if (self.frameStack.isEmpty) {
-			frameInfo=Dict.set("base",0).set("size",0)  # numbers are offsets in callStack, not memory absolutes
-			self.frameStack.push(frameInfo)
-		}
-		self.frameStack.peek
+
+	# call stack
+	self.cpush=Lambda{
+		P(1) => value
+		self.callStack.push(value)
+		frameInfo=self.frameStack.peek
+		frameInfo.size=frameInfo.size+1
+		self.frameStack.replaceTop(frameInfo)  # update data
 	}
+
+	# initialize frame stack - these numbers are offsets on the callStack
+	self.frameStack.push(Dict.set("base",0).set("size",0))
 
 	self.showFrameStack=Lambda{
 		self.frameStack.getStackValues->dict
@@ -83,16 +86,6 @@ The goal is to validate the output from the Assembler.
 		| _.concat(" ")
 	}
 		
-
-	# call stack
-	self.cpush=Lambda{
-		P(1) => value
-		self.callStack.push(value)
-		frameInfo=self.getFrameInfo
-		frameInfo.size=frameInfo.size+1
-		self.frameStack.replaceTop(frameInfo)  # update data
-	}
-
 
 	self.executeInstruction=Lambda{
 		pc=self.PC
@@ -124,7 +117,7 @@ The goal is to validate the output from the Assembler.
 	self._6=Lambda{self.push(self.pop*16+6)}
 	self._7=Lambda{self.push(self.pop*16+7)}
 	self._8=Lambda{self.push(self.pop*16+8)}
-	self._8=Lambda{self.push(self.pop*16+9)}
+	self._9=Lambda{self.push(self.pop*16+9)}
 	self._A=Lambda{self.push(self.pop*16+10)}
 	self._B=Lambda{self.push(self.pop*16+11)}
 	self._C=Lambda{self.push(self.pop*16+12)}
@@ -154,7 +147,7 @@ The goal is to validate the output from the Assembler.
 		returnAddr=self.PC+1 # following call
 
 		self.cpush(returnAddr)
-		currFrame=self.getFrameInfo
+		currFrame=self.frameStack.peek
 
 		frameInfo=Dict.set("base",currFrame.base+currFrame.size).set("size",0)
 			# currFrame.size will be at least 1 after we pushed return address
@@ -180,6 +173,19 @@ The goal is to validate the output from the Assembler.
 		self.frameStack.replaceTop(frameInfo)
 
 		self.PC=targetAddr # JMP
+	}
+	
+	self._I=Lambda{  # @ = read word
+		# our "memory" is word-based, which differs from the future C-impl
+		addr=self.pop
+		self.push(self.memory.get(addr))
+	}
+	
+	self._J=Lambda{  # ! = write word
+		addr=self.pop
+		value=self.pop
+		println("set","addr",addr,"value",value)
+		self.memory.set(addr,value)
 	}
 /class Interpreter
 
@@ -226,7 +232,7 @@ The goal is to validate the output from the Assembler.
 					break
 				} else if (command=="i") {
 					addr=Input("Enter address on hex format NNNN").get.parseInt(16)
-					x.showWord(addr)
+					x.showMem(addr)
 				} else if (command.trim=="") {
 					x.executeInstruction
 					break

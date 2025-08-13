@@ -1,29 +1,5 @@
 
 
-:Test
-	;; #10 #20 &TestJmp call
-
-	;; #999  ;; to indicate on stack we are back
-
-	;; &Halt jmp
-
-	;; #0 b !
-	;; HERE
-	;; PC
-	;; #21 #39 lt
-	;; #39 #21 lt
-	;; #21 #39 gt
-	;; #39 #21 gt
-	;; xAA xAB eq
-	;; xCC xCC eq
-	;; #21 #39 add #15 div  ;; works
-	;; #1 #2 and #2 #0 or  ;; works
-
-
-:TestJmp
-	add
-	ret
-
 :Main
 	&Init call
 	&ConsGet call 
@@ -49,9 +25,12 @@
 ;; as needed, but also freelisted when disposed off
 
 :ConsFree x0	;; freelist pointer	
-	;; null means empty
+	;; 0 means empty
 	;; Using two instructions to generate two bytes, which are not null, 
 	;; so the value is nulled in :Init before use
+	;; ---
+	;; NOTE the interpreter works with word-based memory, and so will affect only the
+	;; first "reserved" byte above. 
 
 :ConsAlloc
 	WORDSIZE #2 mul allot #1 cpush ;; a=pointer new cons
