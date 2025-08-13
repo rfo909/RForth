@@ -11,58 +11,58 @@ The goal is to validate the output from the Assembler.
 # --
 	P(1) as String => code
 
-	DSTACK_MAX = 20
-	CSTACK_MAX = 40  # callstack
-	FSTACK_MAX = 10  # frame stack - contains dictionaries
+	# number of words
+	DSTACK_WORDS = 20
+	CSTACK_WORDS = 40  # callstack
+	FSTACK_FRAMES = 10  # frame stack - contains dictionaries
 	
-	self.memory=Std.Array(code.chars) # using array, as writes will generate non-readable data 
+	self.WORDSIZE = 2
+	self.memory=HWSim:Memory(self.WORDSIZE)
+	self.memory.malloc(code.length)
+
+	# write the code into memory
+	addr=0
+	code.chars->c self.memory.writeChar(addr,c) addr=addr+1 |
+
+	#self.memory.dump
+
 	self.PC=0
 
 	self.HERE = Lambda{
-		println("HERE=" + self.memory.length)
-		self.memory.length
-	}
-	self.malloc = Lambda{
-		# extends self.memory - store self.HERE first, as it is the start of the reserved memory
-		P(1)=>wordCount
-		Std.Data.for(0,wordCount,1)->i
-			self.memory.add(0)
+		self.memory.HERE
 	}
 		
-	# the call stack must exist in self.memory and grow upwards, storing words only,
-	# for predictable address calculations. The other two, the dataStack and the
-	# frameStack just use the same implementation for practical reasons, although
-	# no instructions exist for accessing their base or TOS pointers
+	# the call stack and data stacks exist in self.memory and grow upwards, storing words only,
+	# for predictable address calculations.
 
 	stackAddress=self.HERE
-	self.malloc(DSTACK_MAX)
-	self.dataStack=WordStack:Stack(self.memory, stackAddress, DSTACK_MAX, "data")
+	self.memory.mallocWords(DSTACK_WORDS)
+	self.dataStack=HWSim:MemStack(self.memory, stackAddress, DSTACK_WORDS, "data")
 
 	stackAddress=self.HERE
-	self.malloc(CSTACK_MAX)
-	self.callStack=WordStack:Stack(self.memory, stackAddress, CSTACK_MAX, "calls")
+	self.memory.mallocWords(CSTACK_WORDS)
+	self.callStack=HWSim:MemStack(self.memory, stackAddress, CSTACK_WORDS, "calls")
 
+	# the frame stack stores frames as two words: base and size
 	stackAddress=self.HERE
-	self.malloc(FSTACK_MAX)
-	self.frameStack=WordStack:Stack(self.memory, stackAddress, FSTACK_MAX, "frames")
+	FSTACK_WORDS=FSTACK_FRAMES*2
+	self.memory.mallocWords(FSTACK_WORDS)
+	self.frameStack=HWSim:MemStack(self.memory, stackAddress, FSTACK_WORDS, "frames")
 
 	# the frameStack contains dictionaries identifying the base and the top of the current
 	# call frame, which lives on the call stack.
 	
 	self.nextInstruction=Lambda{
-		self.memory.get(self.PC)
+		self.memory.readChar(self.PC)
 	}
 
 	self.showMem=Lambda{
-		P(1)=>addr
-		if (addr > self.memory.length-2) println("Invalid address")
-		else {
-			value=self.memory.get(addr)
-			hex=""
-			if (Sys.getType(value)=="int") hex="0x"+value.hex
-			println("=>",value,hex)
-		}
+		P(1)=>fromAddr
+		P(2,fromAddr+10) => toAddr
+		self.memory.dump(fromAddr,toAddr)
 	}
+
+
 	# data stack
 	self.push=Lambda{P(1)=>value self.dataStack.push(value)}
 	self.pop=Lambda{self.dataStack.pop}
@@ -70,26 +70,44 @@ The goal is to validate the output from the Assembler.
 
 	# call stack
 	self.cpush=Lambda{
-		P(1) => value
+		P(1) as int => value
 		self.callStack.push(value)
-		frameInfo=self.frameStack.peek
-		frameInfo.size=frameInfo.size+1
-		self.frameStack.replaceTop(frameInfo)  # update data
+		frameInfo=self.fpeek
+
+		self.frameStack.pop
+		self.frameStack.pop
+		self.fpush(frameInfo.base, frameInfo.size+1)
+	}
+
+	# frame stack
+	
+	self.fpush = Lambda{
+		P(1) as int => base
+		P(2) as int => size
+		self.frameStack.push(base)
+		self.frameStack.push(size)
+	}
+
+	self.fpeek = Lambda {
+		size=self.frameStack.pop
+		base=self.frameStack.peek
+		self.frameStack.push(size)
+		SymDict(base,size)
+	}
+
+	self.fpop = Lambda{
+		self.frameStack.pop
+		self.frameStack.pop
 	}
 
 	# initialize frame stack - these numbers are offsets on the callStack
-	self.frameStack.push(Dict.set("base",0).set("size",0))
 
-	self.showFrameStack=Lambda{
-		self.frameStack.getStackValues->dict
-			out("(base=" + dict.base + ", size=" + dict.size+")")
-		| _.concat(" ")
-	}
-		
+	self.fpush(0,0)
 
+	
 	self.executeInstruction=Lambda{
 		pc=self.PC
-		name="_"+self.memory.get(self.PC)
+		name="_"+self.memory.readChar(self.PC)
 		if (self.has(name)) {
 			closure = self.get(name)
 			result = tryCatch(closure.call)
@@ -147,20 +165,21 @@ The goal is to validate the output from the Assembler.
 		returnAddr=self.PC+1 # following call
 
 		self.cpush(returnAddr)
-		currFrame=self.frameStack.peek
+		currFrame=self.fpeek
 
 		frameInfo=Dict.set("base",currFrame.base+currFrame.size).set("size",0)
 			# currFrame.size will be at least 1 after we pushed return address
 
-		self.frameStack.push(frameInfo)
+		base=currFrame.base+currFrame.size
+		size=0
+		self.fpush(base,size)
 
-		self.PC=targetAddr
-			# JMP
+		self.PC=targetAddr # JMP
 	}
 	self._R=Lambda{  # ret
-		self.frameStack.pop
+		self.fpop
 
-		frameInfo=self.frameStack.peek  # previous frame
+		frameInfo=self.fpeek  # previous frame
 
 		# resetting callstack as it were before call
 		self.callStack.setNext(frameInfo.base + frameInfo.size) 
@@ -168,9 +187,11 @@ The goal is to validate the output from the Assembler.
 		# popping the jump address
 		targetAddr=self.callStack.pop
 
-		# must update the frameInfo about having popped the PC
-		frameInfo.size=frameInfo.size-1
-		self.frameStack.replaceTop(frameInfo)
+		# must update the frameInfo about having popped the PC from the callStack
+		base=frameInfo.base
+		size=frameInfo.size-1
+		self.fpop
+		self.fpush(base,size)
 
 		self.PC=targetAddr # JMP
 	}
@@ -178,19 +199,31 @@ The goal is to validate the output from the Assembler.
 	self._I=Lambda{  # @ = read word
 		# our "memory" is word-based, which differs from the future C-impl
 		addr=self.pop
-		self.push(self.memory.get(addr))
+		self.push(self.memory.readWord(addr))
 	}
 	
 	self._J=Lambda{  # ! = write word
 		addr=self.pop
 		value=self.pop
 		println("set","addr",addr,"value",value)
-		self.memory.set(addr,value)
+		self.memory.writeWord(addr,value)
 	}
 /class Interpreter
 
 
 
+# Show frame stack
+# --
+	P(1) as &MemStack => frameStack
+
+	# pair two values
+	count=0
+	frameStack.getStackValues->value
+		count=count+1
+		if (count % 2 == 0) out(":") else out(" ")
+		out(value)
+	| _.concat
+//ShowFrameStack
 
 
 # Test
@@ -217,7 +250,7 @@ The goal is to validate the output from the Assembler.
 		# show callStack
 		println("callStack [ " + x.callStack.getStackValues.concat(" ") + " ] TOP")
 		# show frameStack
-		println("frameStack[ " + x.showFrameStack + " ] TOP")
+		println("frameStack[ " + ShowFrameStack(x.frameStack) + " ] TOP")
 		
 		println
 		println("PC",("0000"+x.PC.hex.toUpper).last(4), instr, instrName)
