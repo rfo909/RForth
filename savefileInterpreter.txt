@@ -128,6 +128,31 @@ The goal is to validate the output from the Assembler.
 			println("*** Unknown instruction member",name)
 		}
 	}
+
+	self._k=Lambda{ # wordsize
+		self.push(self.WORDSIZE)
+	}
+	self._X=Lambda{ # cr
+		println
+	}
+	self._K=Lambda{ # allot
+		byteCount=self.pop
+		self.memory.malloc(byteCount)
+	}
+	self._G=Lambda{ # readb
+		addr=self.pop
+		self.push(self.memory.readByte(addr))
+	}
+	self._H=Lambda{ # writeb
+		addr=self.pop
+		value=self.pop
+		self.memory.writeByte(addr,value)
+	}
+	self._W=Lambda{ # print
+		value=self.pop
+		println(value)
+	}
+
 	self._x=Lambda{self.push(0)}
 	self._0=Lambda{self.push(self.pop*16+0)}
 	self._1=Lambda{self.push(self.pop*16+1)}
@@ -174,8 +199,14 @@ The goal is to validate the output from the Assembler.
 	self.set("_<", Lambda{b=self.pop a=self.pop value=if(a<b,1,0) self.push(value)})
 	self.set("_=", Lambda{b=self.pop a=self.pop value=if(a==b,1,0) self.push(value)})
 	self.set("_>", Lambda{b=self.pop a=self.pop value=if(a>b,1,0) self.push(value)})
+	self._h=Lambda{	# ne
+		b=self.pop a=self.pop value=if(a!=b,1,0) self.push(value)
+	}
+	self._i=Lambda{ # not
+		a=self.pop value=if(a==0,1,0) self.push(value)
+	}
 	
-	self._g=Lambda{self.push(self.memory.length)}   # HERE
+	self._g=Lambda{self.push(self.memory.HERE)}   # HERE
 	self._U=Lambda{self.push(self.PC)}		# PC
 	
 	self.set("_&", Lambda{b=self.pop a=self.pop value=if(a != 0 && b != 0, 1, 0) self.push(value)})

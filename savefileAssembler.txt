@@ -34,7 +34,17 @@
 /IRShow
 		
 		
-
+# Check what instructions remain to be implemented in the interpreter
+# --
+	f=Dir.file("savefileInterpreter.txt")
+	data=InstructionsLookup
+	
+	data.keys->key
+		Grep("self._"+key).fileCount(f) + Grep('self.set("_' + key).fileCount(f) => count
+		reject(count>0)
+		report(key,count,data.get(key))
+/CheckRemaining
+		
 
 
 # Assembly instructions mapped to "machine code"
@@ -43,11 +53,12 @@
 	;; memory and registers
 	readb		:G		;; read byte
 	writeb		:H		;; write byte
-	@		:I		;; read cell/word
-	!		:J		;; write cell/word	
+	@			:I		;; read cell/word
+	!			:J		;; write cell/word	
+
 	allot		:K
-	memcpy		:L
 	HERE		:g
+	wordsize	:k
 
 	;; data stack operations
 	dcopy		:M		;; copy stack element n, where 0 is top etc, to top, so #1 dcopy is DUP
@@ -89,6 +100,7 @@
 	sub		:-
 	mul		:*
 	div		:/
+
 	zero	:x   		;; push zero on stack
 	0		:0
 	1		:1

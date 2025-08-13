@@ -1,6 +1,14 @@
 :Test
 
-	zero #1 #2 #3 swap
+	;;#3 cr print
+
+	;;zero #1 #2 #3 swap
+
+	HERE #1 cpush
+	#1 allot
+
+	#34 a @ writeb
+	a @ readb
 	
 
 	;; #10 #20 #2 cpush
