@@ -9,8 +9,9 @@ It's been said that the best way of understanding Forth is to build one
 yourself. This project aims at the Pi Pico as the run platform,
 simply because the toolchain and the deploy is so easy. 
 
-It is unlikely this Forth will ever be used for anything but testing
-and development.
+It is unlikely this Forth will ever be used for anything but the experience
+of bringing up a full language from nothing, since libraries and interfacing
+hardware at the lowest level, is an entirely different matter.
 
 The initial effort consisted of making a byte code assembler, and 
 developing and compiling the code in the ACode.txt file, which is 
@@ -22,20 +23,19 @@ into the interpreter.
 A major milestone was getting the "call" and "ret" instructions
 up and working. 
 
-We manage our own call
-stack, which is also the home for up to 3 local variables inside functions,
-which means that calling and returning from functions ("words") are
-implemented as JMP's. This means we are not using the microcontroller's
-native call and return stack (although the C implementation of the 
-interpreter, naturally will).
+We manage our own call stack, which means that calling and returning from 
+functions (just tags so far) are implemented as JMP's. This means we are not
+using the microcontroller's native call and return stack (although the C 
+implementation of the interpreter, naturally will).
 
-External assembler
-------------------
+CFT assembler
+-------------
 
-The plan is to compile the base code (ACode.txt) outside the Pico,
+The plan is to compile the base code (ACode.txt) outside the microcontroller,
 using the Assembler script (written in [CFT](https://github.com/rfo909/CFT)),
 and send the bytecode string (which is kept on printable format) to
 it over serial.
+
 
 CFT interpreter
 ---------------
@@ -47,17 +47,11 @@ handling of bytes and words, as well as a MemStack class, which is a stack
 that operates in an allot'ed area inside the Memory.
 
 
-The interpreter has been essential to validate each of the (currently) 56 instructions.
+The interpreter has been essential to validate each of the (currently) 60 instructions.
 
-Byte code
----------
-Having soon used all printable non-space characters for instructions, the idea when
-moving on to implementing Forth, is to compile Forth words into individual byte
-codes outside those used for instructions, which means that invoking those
-will take the shape of a single byte in the byte code.
 
-Going Forth ... (hah hah)
--------------------------
+Going full Forth ... 
+--------------------
 
 Before we can build a Forth prompt and compiler and dictionaries, we must
 decide how to interface serial input, and test it with the CFT interpreter.
@@ -70,7 +64,8 @@ interact with it, probing and examining both memory and functionality.
 
 When the base program stabilizes, it will get included internally in 
 the interpreter (written in C), so it can execute automatically without
-having to be piped into the microcontroller every time. 
+having to be piped into the microcontroller every time. Plus it may exist
+in flash instead of RAM. 
 
 Now we talk only Forth over the serial connection.
 
@@ -81,6 +76,7 @@ If all this doesn't sound like fun, I don't know what will!
 
 Bytecode size
 -------------
+
 With bytecode being more space efficient than real assembly, actual size is
 of interest. 
 
@@ -88,16 +84,23 @@ The current version of ACode.txt implements allocating and freeing CONS cells,
 using a freelist.
 
 With test code commented out, it now compiles to 88 bytes, which is very good!
+Adding some symbols to generate output, and some code to check the CONS freelist,
+bumps the generated code up to 340 bytes. It looks like this:
 
-It should be possible implementing the basics of dictionaries and running
-a first (non-compiled) Forth engine within an additional 100-150 bytes.
+```
+x0107Zxx0107Jxx010BJXx010Fx0115x2VgWXx0118x0122x0128x3VxAOXaYx0089Qax1
+-ldx>x003ATXx010Fx0115x2VgWXx012Fx0122x0138x3Vx00AEQXx0142x1Vx0083Sx01
+07OgOkx2*KaIbJbaJXx0122x0148x2VbWRx0107IOax=x00CATaIlWXdx00B5Sx0138x01
+22x014Ex3VRx0107OaIxhx00F3Tx0089QaIlIaJRx0107OlamJaJRxxxxxxxx04HERE01:
+08Creating04CONS05cells07Showing08freelist04Done04addr04done
+```
 
 Local variables
 ---------------
-After first inlining code to calculate location of local variables relative to
-cbase (call stack base) and the frame data (fstack), local variables are now
-streamlined into the following:
 
+After first inlining code to calculate location of local variables relative to
+cbase (call stack base) and the frame data (fstack), we now have up to three
+local variables available in every function.
 ```
 	cpush     # push value from data stack onto call stack
 	          # the first value is denoted a, the second b, and the third c
@@ -109,12 +112,14 @@ streamlined into the following:
 ```
 
 With the cpush and the variable read and writes being single byte instructions, 
-the generated code rivals the regular stack operations. 
+the generated code compactness rivals the regular stack operations. 
 
 Stack operations
 ----------------
-The dup and swap operations are also implemented as single-byte instructions, but there
+The dup, swap, over and drop operations are implemented as single-byte instructions, but there
 are a couple more.
+
+Specifically created dcopy and dget, which are general enough to implement rot and other stuff.
 
 ```
 	N dcopy
@@ -122,25 +127,24 @@ are a couple more.
 	ex.
 		(x y z)
 		0 dcopy
-		(x y z z)
+		(x y z z) - corresponds to dup
 		
 		(x y z)
 		1 dcopy
-		(z y z y)
+		(x y z y) - corresponds to over
 		
 	N dget
 	
 	ex.
 		(x y z)
-		1 dget
-		(x z y)
+		2 dget
+		(y z x) - corresponds to rot
 ```
 
-Using these, the instructions over, rot and 2dup are inlined as follows
+Using these, the instructions rot and 2dup are inlined as follows
 
 ```
-	over            #1 dcopy
-	rot             #2 dget
+	rot             2 dget
 	2dup            over over
 ```
 
