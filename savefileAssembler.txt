@@ -42,6 +42,7 @@
 	println("min",min,"max",max)
 //BytecodeNumericRange
 
+
 # Show instructions lookup sorted
 # --
 	available=Dict
@@ -76,6 +77,22 @@
 		report(key,count,data.get(key))
 /CheckRemaining
 		
+
+# Generate doc for instruction set
+# --
+	f=Dir.file("savefileInterpreter.txt")
+	data=InstructionsLookup
+	
+	data.keys.sort->key
+		{
+			Grep("self._"+key).file(f) -> line
+				report(key,line.afterLast("#"))
+		}
+		{
+			Grep('self.set("_' + key).file(f)->line
+				report(key,line.afterLast("#"))
+		}
+/InstrDoc
 
 
 # Assembly instructions mapped to "machine code"

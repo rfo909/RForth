@@ -130,106 +130,106 @@ The goal is to validate the output from the Assembler.
 		}
 	}
 
-	self._k=Lambda{ # wordsize
+	self._k=Lambda{ # wordsize ( -- N )
 		self.push(self.WORDSIZE)
 	}
-	self._K=Lambda{ # allot
+	self._K=Lambda{ # allot  ( N -- )
 		byteCount=self.pop
 		self.memory.malloc(byteCount)
 	}
-	self._G=Lambda{ # readb
+	self._G=Lambda{ # readb - read byte ( addr -- value )
 		addr=self.pop
 		if (addr < self.DATA_START) println("Warning: readb: reading below DATA_START: " + addr)
 		self.push(self.memory.readByte(addr))
 	}
-	self._H=Lambda{ # writeb
+	self._H=Lambda{ # writeb - write byte ( addr -- value )
 		addr=self.pop
 		if (addr < self.DATA_START) println("ERROR: writeb: writing below DATA_START: " + addr)
 		value=self.pop
 		self.memory.writeByte(addr,value)
 	}
 
-	self._x=Lambda{self.push(0)}
-	self._0=Lambda{self.push(self.pop*16+0)}
-	self._1=Lambda{self.push(self.pop*16+1)}
-	self._2=Lambda{self.push(self.pop*16+2)}
-	self._3=Lambda{self.push(self.pop*16+3)}
-	self._4=Lambda{self.push(self.pop*16+4)}
-	self._5=Lambda{self.push(self.pop*16+5)}
-	self._6=Lambda{self.push(self.pop*16+6)}
-	self._7=Lambda{self.push(self.pop*16+7)}
-	self._8=Lambda{self.push(self.pop*16+8)}
-	self._9=Lambda{self.push(self.pop*16+9)}
-	self._A=Lambda{self.push(self.pop*16+10)}
-	self._B=Lambda{self.push(self.pop*16+11)}
-	self._C=Lambda{self.push(self.pop*16+12)}
-	self._D=Lambda{self.push(self.pop*16+13)}
-	self._E=Lambda{self.push(self.pop*16+14)}
-	self._F=Lambda{self.push(self.pop*16+15)}
+	self._x=Lambda{self.push(0)} # zero - push a zero ( -- 0 )
+	self._0=Lambda{self.push(self.pop*16+0)} # ( m -- n )  n=16*m + digit value
+	self._1=Lambda{self.push(self.pop*16+1)} # ( m -- n )  n=16*m + digit value
+	self._2=Lambda{self.push(self.pop*16+2)} # ( m -- n )  n=16*m + digit value
+	self._3=Lambda{self.push(self.pop*16+3)} # ( m -- n )  n=16*m + digit value
+	self._4=Lambda{self.push(self.pop*16+4)} # ( m -- n )  n=16*m + digit value
+	self._5=Lambda{self.push(self.pop*16+5)} # ( m -- n )  n=16*m + digit value
+	self._6=Lambda{self.push(self.pop*16+6)} # ( m -- n )  n=16*m + digit value
+	self._7=Lambda{self.push(self.pop*16+7)} # ( m -- n )  n=16*m + digit value
+	self._8=Lambda{self.push(self.pop*16+8)} # ( m -- n )  n=16*m + digit value
+	self._9=Lambda{self.push(self.pop*16+9)} # ( m -- n )  n=16*m + digit value
+	self._A=Lambda{self.push(self.pop*16+10)} # ( m -- n )  n=16*m + digit value
+	self._B=Lambda{self.push(self.pop*16+11)} # ( m -- n )  n=16*m + digit value
+	self._C=Lambda{self.push(self.pop*16+12)} # ( m -- n )  n=16*m + digit value
+	self._D=Lambda{self.push(self.pop*16+13)} # ( m -- n )  n=16*m + digit value
+	self._E=Lambda{self.push(self.pop*16+14)} # ( m -- n )  n=16*m + digit value
+	self._F=Lambda{self.push(self.pop*16+15)} # ( m -- n )  n=16*m + digit value
 
 	## Local variable pointer instructions a-f
 
-	self._a=Lambda{  # a
+	self._a=Lambda{  # a - read local variable a ( -- value )
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		value=self.memory.readWord(base)
 		self.push(value)
 	}
-	self._b=Lambda{  # b
+	self._b=Lambda{  # b - read local variable b ( -- value )
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		value=self.memory.readWord(base+self.WORDSIZE)
 		self.push(value)
 	}
-	self._c=Lambda{  # c
+	self._c=Lambda{  #  c - read local variable c ( -- value )
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		value=self.memory.readWord(base+self.WORDSIZE*2)
 		self.push(value)
 	}
-	self._d=Lambda{  # a!
+	self._d=Lambda{  # a! - set local variable a ( value -- )
 		value=self.pop
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		self.memory.writeWord(base, value)
 	}
-	self._e=Lambda{  # b!
+	self._e=Lambda{  # b! - set local variable b ( value -- )
 		value=self.pop
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		self.memory.writeWord(base+self.WORDSIZE, value)
 	}
-	self._f=Lambda{ # c!
+	self._f=Lambda{ # c! - set local variable c ( value -- )
 		value=self.pop
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		self.memory.writeWord(base+self.WORDSIZE*2, value)
 	}
 
-	self.set("_+", Lambda{self.push(self.pop+self.pop)})
-	self.set("_-", Lambda{b=self.pop a=self.pop self.push(a-b)})
-	self.set("_*", Lambda{b=self.pop a=self.pop self.push(a*b)})
-	self.set("_/", Lambda{b=self.pop a=self.pop self.push((a/b).i)})
-	self.set("_<", Lambda{b=self.pop a=self.pop value=if(a<b,1,0) self.push(value)})
-	self.set("_=", Lambda{b=self.pop a=self.pop value=if(a==b,1,0) self.push(value)})
-	self.set("_>", Lambda{b=self.pop a=self.pop value=if(a>b,1,0) self.push(value)})
+	self.set("_+", Lambda{self.push(self.pop+self.pop)}) # add
+	self.set("_-", Lambda{b=self.pop a=self.pop self.push(a-b)}) # sub
+	self.set("_*", Lambda{b=self.pop a=self.pop self.push(a*b)}) # mul
+	self.set("_/", Lambda{b=self.pop a=self.pop self.push((a/b).i)}) # div
+	self.set("_<", Lambda{b=self.pop a=self.pop value=if(a<b,1,0) self.push(value)}) # lt
+	self.set("_=", Lambda{b=self.pop a=self.pop value=if(a==b,1,0) self.push(value)}) # eq
+	self.set("_>", Lambda{b=self.pop a=self.pop value=if(a>b,1,0) self.push(value)}) # gt
 	self._h=Lambda{	# ne
 		b=self.pop a=self.pop value=if(a!=b,1,0) self.push(value)
 	}
-	self._i=Lambda{ # not
+	self._i=Lambda{ # not (boolean)
 		a=self.pop value=if(a==0,1,0) self.push(value)
 	}
 	
-	self._g=Lambda{self.push(self.memory.HERE)}   # HERE
-	self._U=Lambda{self.push(self.PC)}		# PC
+	self._g=Lambda{self.push(self.memory.HERE)}   # HERE ( -- value )
+	self._U=Lambda{self.push(self.PC)}		# PC ( -- value )
 	
-	self.set("_&", Lambda{b=self.pop a=self.pop value=if(a != 0 && b != 0, 1, 0) self.push(value)})
-	self.set("_|", Lambda{b=self.pop a=self.pop value=if(a != 0 || b != 0, 1, 0) self.push(value)})
+	self.set("_&", Lambda{b=self.pop a=self.pop value=if(a != 0 && b != 0, 1, 0) self.push(value)}) # and (boolean)
+	self.set("_|", Lambda{b=self.pop a=self.pop value=if(a != 0 || b != 0, 1, 0) self.push(value)}) # or (boolean)
 	
-	self._S=Lambda{self.PC=self.pop}  # jmp
-	self._T=Lambda{addr=self.pop cond=self.pop if(cond != 0) self.PC=addr}  # jmp?
+	self._S=Lambda{self.PC=self.pop}  # jmp ( addr -- )
+	self._T=Lambda{addr=self.pop cond=self.pop if(cond != 0) self.PC=addr}  # jmp? ( cond addr -- )
 	
-	self._Q=Lambda{  # call
+	self._Q=Lambda{  # call ( addr -- )
 		targetAddr=self.pop
 		returnAddr=self.PC+1 # following call
 
@@ -245,7 +245,7 @@ The goal is to validate the output from the Assembler.
 
 		self.PC=targetAddr # JMP
 	}
-	self._R=Lambda{  # ret
+	self._R=Lambda{  # ret - return
 		self.fpop
 
 		frameInfo=self.fpeek  # previous frame

@@ -9,8 +9,6 @@
 	;; Fall through to Main
 
 :Main
-	
-
  	cr 'HERE ': 2 show HERE print cr
 
 	;; create a number of CONS cells in freelist
