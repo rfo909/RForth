@@ -244,14 +244,7 @@
 
 # Inline defs
 # --
-	Dict
-	.set("WORDSIZE",Sequence(
-		@ x2
-	))
-
-	# stack manipulation
-	.set("rot",List("2 dget"))
-	.set("2dup",List("over over"))
+	Dict   # none at the moment
 
 //Inlines
 

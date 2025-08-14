@@ -1,5 +1,5 @@
-Forth never ceases to fascinate
-================================
+Forth never ceases to fascinate !
+=================================
 
 Version 3
 
@@ -7,26 +7,18 @@ Version 3
 
 It's been said that the best way of understanding Forth is to build one
 yourself. This project aims at the Pi Pico as the run platform,
-simply because the toolchain and the deploy is so easy. 
+simply because the toolchain and the deploy is so easy.
 
 It is unlikely this Forth will ever be used for anything but the experience
 of bringing up a full language from nothing, since libraries and interfacing
 hardware at the lowest level, is an entirely different matter.
 
-The initial effort consisted of making a byte code assembler, and 
-developing and compiling the code in the ACode.txt file, which is 
-the base code. 
+The effort so far consists of making a byte code assembler, for a stack based
+instruction set, while developing a base code in this assembly language, and
+verifying it using a stand-alone interpreter.
 
 The compiled byte code is kept a printable string, for copy-paste
 into the interpreter. 
-
-A major milestone was getting the "call" and "ret" instructions
-up and working. 
-
-We manage our own call stack, which means that calling and returning from 
-functions (just tags so far) are implemented as JMP's. This means we are not
-using the microcontroller's native call and return stack (although the C 
-implementation of the interpreter, naturally will).
 
 CFT assembler
 -------------
@@ -34,7 +26,11 @@ CFT assembler
 The plan is to compile the base code (ACode.txt) outside the microcontroller,
 using the Assembler script (written in [CFT](https://github.com/rfo909/CFT)),
 and send the bytecode string (which is kept on printable format) to
-it over serial.
+it over serial. 
+
+Eventually this code will implement a Forth REPL which can be used to
+examine state and test functionality interactively.
+
 
 
 CFT interpreter
@@ -42,110 +38,24 @@ CFT interpreter
 
 An interpreter written in CFT has also been created, in order to step through
 the byte code, to verify the assembler, and as a measuring stick
-for the C code interpreter. Had to write a Memory class, for correct 
-handling of bytes and words, as well as a MemStack class, which is a stack
-that operates in an allot'ed area inside the Memory.
+for the C code interpreter. This turned out to be completely vital for
+finding bugs, and testing each individual instruction as it is created.
 
-
-The interpreter has been essential to validate each of the (currently) 60 instructions.
-
-
-Going full Forth ... 
---------------------
-
-Before we can build a Forth prompt and compiler and dictionaries, we must
-decide how to interface serial input, and test it with the CFT interpreter.
-
-At some point we create Forth dictionaries and Forth words out of the 
-low level ("assembly") functions, and the capability of defining new words,
-compiling them to "assembly". At this point, after sending the base
-byte code, we may pipe Forth word definitions over serial, and also
-interact with it, probing and examining both memory and functionality.
-
-When the base program stabilizes, it will get included internally in 
-the interpreter (written in C), so it can execute automatically without
-having to be piped into the microcontroller every time. Plus it may exist
-in flash instead of RAM. 
-
-Now we talk only Forth over the serial connection.
 
 Great fun!!
 -----------
 
 If all this doesn't sound like fun, I don't know what will! 
 
-Bytecode size
--------------
-
-With bytecode being more space efficient than real assembly, actual size is
-of interest. 
-
-The current version of ACode.txt implements allocating and freeing CONS cells,
-using a freelist.
-
-With test code commented out, it now compiles to 88 bytes, which is very good!
-Adding some symbols to generate output, and some code to check the CONS freelist,
-bumps the generated code up to 340 bytes. It looks like this:
-
-```
-x0107Zxx0107Jxx010BJXx010Fx0115x2VgWXx0118x0122x0128x3VxAOXaYx0089Qax1
--ldx>x003ATXx010Fx0115x2VgWXx012Fx0122x0138x3Vx00AEQXx0142x1Vx0083Sx01
-07OgOkx2*KaIbJbaJXx0122x0148x2VbWRx0107IOax=x00CATaIlWXdx00B5Sx0138x01
-22x014Ex3VRx0107OaIxhx00F3Tx0089QaIlIaJRx0107OlamJaJRxxxxxxxx04HERE01:
-08Creating04CONS05cells07Showing08freelist04Done04addr04done
-```
-
-The output from this bytecode, when run in the interpreter is as follows:
-
-```
-DATA_START = 0x0107
-
-HERE : 0x01F4
-Creating CONS cells
-10
-CONS addr 0x01F4
-9
-CONS addr 0x01F8
-8
-CONS addr 0x01FC
-7
-CONS addr 0x0200
-6
-CONS addr 0x0204
-5
-CONS addr 0x0208
-4
-CONS addr 0x020C
-3
-CONS addr 0x0210
-2
-CONS addr 0x0214
-1
-CONS addr 0x0218
-HERE : 0x021C
-Showing CONS freelist 0x0214
-0x0210
-0x020C
-0x0208
-0x0204
-0x0200
-0x01FC
-0x01F8
-0x01F4
-0x0000
-freelist CONS done
-Done
-```
-
-
 
 
 Local variables
 ---------------
 
-After first inlining code to calculate location of local variables relative to
-cbase (call stack base) and the frame data (fstack), we now have up to three
-local variables available in every function.
+The assembly language supports pushing values from the data stack to the call
+stack, with the cpush instruction. The first three values pushed that way
+get avaiable as local variables a, b and c.
+
 ```
 	cpush     # push value from data stack onto call stack
 	          # the first value is denoted a, the second b, and the third c
@@ -159,38 +69,28 @@ local variables available in every function.
 With the cpush and the variable read and writes being single byte instructions, 
 the generated code compactness rivals the regular stack operations. 
 
+Pushing more values with cpush has no meaning, as those are not available
+in any way. 
+
+Setting a value with [abc]! without cpush'ing a value first, is risky,
+because those bytes will be overwritten if calling some subroutine.
+
+Using the [abc] lookup instructions without cpush is a hackish way of
+accessing local variables of the last called subroutine. :-)
+
+We settled on 3 local variables, since if more are needed, in conjunction
+with 2 on the stack, the function is too complex.
+
 Stack operations
 ----------------
+
 The dup, swap, over and drop operations are implemented as single-byte instructions, but there
 are a couple more.
 
-Specifically created dcopy and dget, which are general enough to implement rot and other stuff.
+Specifically created dcopy and dget, which are general enough to implement rot and other stuff. 
 
-```
-	N dcopy
-	
-	ex.
-		(x y z)
-		0 dcopy
-		(x y z z) - corresponds to dup
-		
-		(x y z)
-		1 dcopy
-		(x y z y) - corresponds to over
-		
-	N dget
-	
-	ex.
-		(x y z)
-		2 dget
-		(y z x) - corresponds to rot
-```
+Experience so far seems to be that dup, swap, combined with using local variables
+is what gives the best code.
 
-Using these, the instructions rot and 2dup are inlined as follows
-
-```
-	rot             2 dget
-	2dup            over over
-```
 
 

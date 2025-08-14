@@ -149,23 +149,23 @@ The goal is to validate the output from the Assembler.
 		self.memory.writeByte(addr,value)
 	}
 
-	self._x=Lambda{self.push(0)} # zero push a zero ( -- 0 )
-	self._0=Lambda{self.push(self.pop*16+0)} # ( m -- n )  n=16*m + digit value
-	self._1=Lambda{self.push(self.pop*16+1)} # ( m -- n )  n=16*m + digit value
-	self._2=Lambda{self.push(self.pop*16+2)} # ( m -- n )  n=16*m + digit value
-	self._3=Lambda{self.push(self.pop*16+3)} # ( m -- n )  n=16*m + digit value
-	self._4=Lambda{self.push(self.pop*16+4)} # ( m -- n )  n=16*m + digit value
-	self._5=Lambda{self.push(self.pop*16+5)} # ( m -- n )  n=16*m + digit value
-	self._6=Lambda{self.push(self.pop*16+6)} # ( m -- n )  n=16*m + digit value
-	self._7=Lambda{self.push(self.pop*16+7)} # ( m -- n )  n=16*m + digit value
-	self._8=Lambda{self.push(self.pop*16+8)} # ( m -- n )  n=16*m + digit value
-	self._9=Lambda{self.push(self.pop*16+9)} # ( m -- n )  n=16*m + digit value
-	self._A=Lambda{self.push(self.pop*16+10)} # ( m -- n )  n=16*m + digit value
-	self._B=Lambda{self.push(self.pop*16+11)} # ( m -- n )  n=16*m + digit value
-	self._C=Lambda{self.push(self.pop*16+12)} # ( m -- n )  n=16*m + digit value
-	self._D=Lambda{self.push(self.pop*16+13)} # ( m -- n )  n=16*m + digit value
-	self._E=Lambda{self.push(self.pop*16+14)} # ( m -- n )  n=16*m + digit value
-	self._F=Lambda{self.push(self.pop*16+15)} # ( m -- n )  n=16*m + digit value
+	self._x=Lambda{self.push(0)} # null push a zero ( -- 0 )
+	self._0=Lambda{self.push(self.pop*16+0)} # 0 ( m -- n )  n=16*m + digit value
+	self._1=Lambda{self.push(self.pop*16+1)} # 1 ( m -- n )  n=16*m + digit value
+	self._2=Lambda{self.push(self.pop*16+2)} # 2 ( m -- n )  n=16*m + digit value
+	self._3=Lambda{self.push(self.pop*16+3)} # 3 ( m -- n )  n=16*m + digit value
+	self._4=Lambda{self.push(self.pop*16+4)} # 4 ( m -- n )  n=16*m + digit value
+	self._5=Lambda{self.push(self.pop*16+5)} # 5 ( m -- n )  n=16*m + digit value
+	self._6=Lambda{self.push(self.pop*16+6)} # 6 ( m -- n )  n=16*m + digit value
+	self._7=Lambda{self.push(self.pop*16+7)} # 7 ( m -- n )  n=16*m + digit value
+	self._8=Lambda{self.push(self.pop*16+8)} # 8 ( m -- n )  n=16*m + digit value
+	self._9=Lambda{self.push(self.pop*16+9)} # 9 ( m -- n )  n=16*m + digit value
+	self._A=Lambda{self.push(self.pop*16+10)} # A ( m -- n )  n=16*m + digit value
+	self._B=Lambda{self.push(self.pop*16+11)} # B ( m -- n )  n=16*m + digit value
+	self._C=Lambda{self.push(self.pop*16+12)} # C ( m -- n )  n=16*m + digit value
+	self._D=Lambda{self.push(self.pop*16+13)} # D ( m -- n )  n=16*m + digit value
+	self._E=Lambda{self.push(self.pop*16+14)} # E ( m -- n )  n=16*m + digit value
+	self._F=Lambda{self.push(self.pop*16+15)} # F ( m -- n )  n=16*m + digit value
 
 	## Local variable pointer instructions a-f
 
@@ -206,24 +206,24 @@ The goal is to validate the output from the Assembler.
 		self.memory.writeWord(base+self.WORDSIZE*2, value)
 	}
 
-	self.set("_+", Lambda{self.push(self.pop+self.pop)}) # add
-	self.set("_-", Lambda{b=self.pop a=self.pop self.push(a-b)}) # sub
-	self.set("_*", Lambda{b=self.pop a=self.pop self.push(a*b)}) # mul
-	self.set("_/", Lambda{b=self.pop a=self.pop self.push((a/b).i)}) # div
-	self.set("_<", Lambda{b=self.pop a=self.pop value=if(a<b,1,0) self.push(value)}) # lt
-	self.set("_=", Lambda{b=self.pop a=self.pop value=if(a==b,1,0) self.push(value)}) # eq
-	self.set("_>", Lambda{b=self.pop a=self.pop value=if(a>b,1,0) self.push(value)}) # gt
-	self._h=Lambda{	# ne
+	self.set("_+", Lambda{self.push(self.pop+self.pop)}) # add ( a b -- a+b )
+	self.set("_-", Lambda{b=self.pop a=self.pop self.push(a-b)}) # sub ( a b -- a-b )
+	self.set("_*", Lambda{b=self.pop a=self.pop self.push(a*b)}) # mul ( a b -- a*b )
+	self.set("_/", Lambda{b=self.pop a=self.pop self.push((a/b).i)}) # div ( a b -- a/b )
+	self.set("_<", Lambda{b=self.pop a=self.pop value=if(a<b,1,0) self.push(value)}) # lt ( a b -- 0|1 )
+	self.set("_=", Lambda{b=self.pop a=self.pop value=if(a==b,1,0) self.push(value)}) # eq ( a b -- 0|1 )
+	self.set("_>", Lambda{b=self.pop a=self.pop value=if(a>b,1,0) self.push(value)}) # gt ( a b -- 0|1 )
+	self._h=Lambda{	# ne boolean ( a b -- 0|1 )
 		b=self.pop a=self.pop value=if(a!=b,1,0) self.push(value)
 	}
-	self._i=Lambda{ # not boolean ( 0 -- 1 )
+	self._i=Lambda{ # not boolean ( x -- 0|1 )
 		a=self.pop value=if(a==0,1,0) self.push(value)
 	}
 	
 	self._g=Lambda{self.push(self.memory.HERE)}   # HERE ( -- value )
 	
-	self.set("_&", Lambda{b=self.pop a=self.pop value=if(a != 0 && b != 0, 1, 0) self.push(value)}) # and boolean ( true false -- false )
-	self.set("_|", Lambda{b=self.pop a=self.pop value=if(a != 0 || b != 0, 1, 0) self.push(value)}) # or boolean ( true false -- true )
+	self.set("_&", Lambda{b=self.pop a=self.pop value=if(a != 0 && b != 0, 1, 0) self.push(value)}) # and boolean ( a b -- 0|1 )
+	self.set("_|", Lambda{b=self.pop a=self.pop value=if(a != 0 || b != 0, 1, 0) self.push(value)}) # or boolean ( a b -- 0|1 )
 	
 	self._S=Lambda{   # jmp ( addr -- ) updates PC
 		self.PC=self.pop
@@ -270,13 +270,13 @@ The goal is to validate the output from the Assembler.
 		self.PC=targetAddr # JMP
 	}
 	
-	self._I=Lambda{  # @ = read word
+	self._I=Lambda{  # @ read word
 		addr=self.pop
 		if (addr < self.DATA_START) println("Warning: @: reading below DATA_START: " + addr)
 		self.push(self.memory.readWord(addr))
 	}
 	
-	self._J=Lambda{  # ! = write word
+	self._J=Lambda{  # ! write word
 		addr=self.pop
 		if (addr < self.DATA_START) println("ERROR: !: writing below DATA_START: " + addr)
 		value=self.pop
@@ -316,7 +316,7 @@ The goal is to validate the output from the Assembler.
 		self.push(b)
 	}
 	
-	self._n=Lambda{ # W+   ( n -- n+WORDSIZE
+	self._n=Lambda{ # W+   ( n -- n+WORDSIZE )
 		value=self.pop
 		self.push(value+self.WORDSIZE)
 	}
@@ -389,7 +389,7 @@ The goal is to validate the output from the Assembler.
 		print(s.sub(0,8)+"_"+s.sub(8))
 		print(" ")
 	}
-	self._X=Lambda{ # cr
+	self._X=Lambda{ # cr print newline
 		println
 	}
 
