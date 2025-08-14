@@ -470,9 +470,10 @@ The goal is to validate the output from the Assembler.
 	println(code)
 	println
 	
-	x=Interpreter(code)
 	iCount=0
 	autoRunCount=0
+
+	x=Interpreter(code)
 
 	loop
 		if (autoRunCount > 0) {
