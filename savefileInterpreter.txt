@@ -132,9 +132,6 @@ The goal is to validate the output from the Assembler.
 	self._k=Lambda{ # wordsize
 		self.push(self.WORDSIZE)
 	}
-	self._X=Lambda{ # cr
-		println
-	}
 	self._K=Lambda{ # allot
 		byteCount=self.pop
 		self.memory.malloc(byteCount)
@@ -147,10 +144,6 @@ The goal is to validate the output from the Assembler.
 		addr=self.pop
 		value=self.pop
 		self.memory.writeByte(addr,value)
-	}
-	self._W=Lambda{ # print
-		value=self.pop
-		println(value)
 	}
 
 	self._x=Lambda{self.push(0)}
@@ -173,19 +166,19 @@ The goal is to validate the output from the Assembler.
 
 	## Local variable pointer instructions a-f
 
-	self._a=Lambda{  # a@
+	self._a=Lambda{  # a
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		value=self.memory.readWord(base)
 		self.push(value)
 	}
-	self._b=Lambda{  # b@
+	self._b=Lambda{  # b
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		value=self.memory.readWord(base+self.WORDSIZE)
 		self.push(value)
 	}
-	self._c=Lambda{  # c@
+	self._c=Lambda{  # c
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		value=self.memory.readWord(base+self.WORDSIZE*2)
@@ -315,9 +308,40 @@ The goal is to validate the output from the Assembler.
 		self.push(b)
 	}
 	
-	self._n=Lambda{ # CDR
+	self._n=Lambda{ # W+
 		value=self.pop
 		self.push(value+self.WORDSIZE)
+	}
+	
+	self._V=Lambda{ # show
+		println("--- show")
+		count=self.pop
+		space=""
+		Std.Data.for(0,count,1)->i
+			out(self.pop)
+		| _.reverse -> symbolAddr
+			self.memory.readChar(symbolAddr) => h
+			self.memory.readChar(symbolAddr+1) => l
+			(h+l).parseInt(16)=>length
+			# read characters
+			Inner{
+				Std.Data.for(0,length,1)=>pos
+					ch=self.memory.readChar(symbolAddr+2+pos)  # +2 skip hl
+					out(ch)
+				| _.concat
+			} => symbol
+			print(symbol)
+			print(space)
+			space=" "  # for next symbol
+	}
+	self._W=Lambda{ # print
+		println("--- print")
+		value=self.pop
+		println(value)
+	}
+
+	self._X=Lambda{ # cr
+		println
 	}
 		
 		
@@ -373,6 +397,7 @@ The goal is to validate the output from the Assembler.
 	println
 	
 	x=Interpreter(code)
+	iCount=0
 	loop
 		# show PC
 		instr=x.nextInstruction
@@ -388,7 +413,7 @@ The goal is to validate the output from the Assembler.
 		println("frameStack 0x" + x.fbase.hex(4) + " [ " + ShowFrameStack(x.frameStack) + " ] TOP")
 		
 		println
-		println("PC", "0x" + ("0000"+x.PC.hex.toUpper).last(4), instr, instrName)
+		println(("    "+iCount).last(4) + " PC", "0x" + ("0000"+x.PC.hex.toUpper).last(4), instr, instrName)
 		
 		println
 		command=readLine("Command: 'q' to quit, 'i' to inspect, 'w' read word, ENTER to continue").trim
@@ -399,9 +424,11 @@ The goal is to validate the output from the Assembler.
 			x.showMem(addr)
 		} else if (command=="w") {
 			addr=ReadAddress
-			println("=> " + x.memory.readWord(addr))
+			value=x.memory.readWord(addr)
+			println("=> " + value + " x" + value.hex)
 		} else if (command.trim=="") {
 			x.executeInstruction
+			iCount=iCount+1
 		}
 		
 		 

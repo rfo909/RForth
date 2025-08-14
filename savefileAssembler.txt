@@ -60,7 +60,7 @@
 	HERE		:g
 	wordsize	:k
 	
-	CDR		:n	;; wordsize add (for CONS cells and general use)
+	W+		:n	;; wordsize add (for CONS cells and general use)
 
 	;; data stack operations
 	dcopy		:M		;; copy stack element n, where 0 is top etc, to top, so #1 dcopy is DUP
@@ -92,9 +92,9 @@
 
 	;; local variable pointer instructions
 
-	a@		:a
-	b@		:b
-	c@		:c
+	a		:a
+	b		:b
+	c		:c
 	a!		:d
 	b!		:e
 	c!		:f
@@ -141,7 +141,7 @@
 	;; I/O
 	show		:V   ;; ( ptr ptr ... N -- ) - display N symbols with space between them
 	print		:W   ;; print any single value 
-	cr			:X
+	cr		:X
 		
 >>> EOF
 	=>list
@@ -270,9 +270,9 @@
 		# -- symbol
 		if (word.startsWith("'")) {
 			symbol=word.after("'")
-			patchPos=result.length
+			patchPos=result.length  # position of the x0000
 			symbolList.add(SymDict(symbol,patchPos))
-			words.push(List("x0000 tSymbol"))
+			words.push(List("x0000"))  # ref to symbol gets patched 
 			continue
 		}
 		# -- local tag def
@@ -345,20 +345,24 @@
 		symbol = data.symbol
 		patchPos = data.patchPos
 		
-		pos=result.length
-		if (symbols.has(symbol)) {
-			pos=symbols.get(symbol)
-		} else {
-			# add symbol to result (on readable format, wasting one byte for the length)
-			result=result+("00"+symbol.length.hex.toUpper).last(2)
+		
+		if (!symbols.has(symbol)) {
+			pos=result.length
+			
+			# add symbol to result (on readable format NN)
+			lengthField=("00" + symbol.length.hex.toUpper).last(2)
+			result=result+lengthField
 			result=result+symbol
-			# store in symbol dictionary
+
+			# store in symbol dictionary for reuse
 			symbols.set(symbol,pos)
 		}
 		
+		# look up pos for this symbol
+		pos=symbols.get(symbol)
 		address="x" + ("0000"+pos.hex.toUpper).last(4)
+		
 		# insert address at patchPos
-
 		result=result.sub(0,patchPos) + address + result.sub(patchPos+address.length)
 	|
 	

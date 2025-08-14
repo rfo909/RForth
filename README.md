@@ -3,7 +3,7 @@ Forth never ceases to fascinate
 
 Version 3
 
-2025-08-13 RFO
+2025-08-14 RFO
 
 It's been said that the best way of understanding Forth is to build one
 yourself. This project aims at the Pi Pico as the run platform,
@@ -23,7 +23,7 @@ A major milestone was getting the "call" and "ret" instructions
 up and working. 
 
 We manage our own call
-stack, which is also the home for local variables inside functions,
+stack, which is also the home for up to 3 local variables inside functions,
 which means that calling and returning from functions ("words") are
 implemented as JMP's. This means we are not using the microcontroller's
 native call and return stack (although the C implementation of the 
@@ -102,7 +102,7 @@ streamlined into the following:
 	cpush     # push value from data stack onto call stack
 	          # the first value is denoted a, the second b, and the third c
 	          
-	a@        # read value of variable a
+	a         # read value of variable a
 	#2 a!     # set variable a to 2
 	
 	(same for b and c)
@@ -120,28 +120,28 @@ are a couple more.
 	N dcopy
 	
 	ex.
-		(a b c)
+		(x y z)
 		0 dcopy
-		(a b c c)
+		(x y z z)
 		
-		(a b c)
+		(x y z)
 		1 dcopy
-		(a b c b)
+		(z y z y)
 		
 	N dget
 	
 	ex.
-		(a b c)
+		(x y z)
 		1 dget
-		(a c b)
+		(x z y)
 ```
 
 Using these, the instructions over, rot and 2dup are inlined as follows
 
 ```
-	over		#1 dcopy
-	rot		#2 dget
-	2dup		over over
+	over            #1 dcopy
+	rot             #2 dget
+	2dup            over over
 ```
 
 

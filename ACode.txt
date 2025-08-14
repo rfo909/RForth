@@ -1,12 +1,19 @@
 
 :Main
+ 	cr 'HERE #1 show    ;; does not assemble properly!!
+	HERE print
+	
 	;; init
 	null &ConsFree !		;; initialize ConsFree pointer to zero
 
+	&ConsAlloc call
+	&ConsAlloc call
 
+	cr 'Done 1 show
+		
 	;; test
-	&ConsGet call 
-		&ConsDispose call
+	;&ConsGet call 
+	;	&ConsDispose call
 	&Halt jmp	
 
 :Error ;; ( sym sym symCount -- )
@@ -20,8 +27,9 @@
 ;; Stack operations
 
 
-;; Cons cells are created as a CAR+CDR tuple, each value a Word. They are allotted
-;; as needed, but also freelisted when disposed off
+;; CONS cells are created as a CAR+CDR tuple, each value a Word. They are allotted
+;; as needed, but also freelisted when disposed off. To calculate the CDR address
+;; from the Cons pointer: W+
 
 :ConsFree 0 0 0 0	;; freelist pointer 	
 	;; 0 means empty
@@ -32,20 +40,20 @@
 
 :ConsAlloc  ; ( -- )
 	&ConsFree cpush		;; a=&ConsFree
-	HERE   cpush        ;; b=Ptr
-	
-	wordsize #2 mul allot ;; reserve space
+	HERE   cpush		;; b=Ptr to new Cons
+	wordsize #2 mul allot	;; reserve space for Cons
 		
-	a@ b@ CDR !	;; ptr.CDR=&ConsFree
-	b@ a@ !			;; &ConsFree=ptr	
+	a @ b !			;; ptr.CAR=&ConsFree
+	b a !			;; &ConsFree=ptr	
 	
 	;; no return value
 	ret
 
+
 :ConsGet  ; ( -- ConsPtr) - get Cons cell from free list (call ConsAlloc first if empty)
 	&ConsFree cpush   ;; a=&ConsFree
 	
-	a@ @ null ne &*FreelistOk jmp?
+	a @ null ne &*FreelistOk jmp?
 		;; freelist is empty, allocate one Cons
 		&ConsAlloc call
 	
@@ -53,20 +61,21 @@
 	
 	;; got data in freelist, take first cons
 
-	a@ @  		;; (ptr to Cons)
+	a @  		;; (ptr to Cons)
 
-	dup CDR a@ !   ;; &ConsFree = ptr.cons
+	dup W+ a !   ;; &ConsFree = ptr.cons
 
 	;; (Ptr)
 	ret
 	
 :ConsDispose  ;; (ptr -- )
 	&ConsFree cpush 	;; a=&ConsFree
-	dup a@ swap		;; (ptr &ConsFree ptr)
-		CDR !		;; ptr.cdr=&ConsFree
+	
+	dup a swap 		;; (ptr &ConsFree ptr)
+		!		;; ptr.car=&ConsFree
 		
 	;; (ptr)
-	a@ !			;; &ConsFree=ptr
+	a !			;; &ConsFree=ptr
 	;; no return value
 	ret
 
