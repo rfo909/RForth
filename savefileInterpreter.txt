@@ -315,29 +315,30 @@ The goal is to validate the output from the Assembler.
 	
 	self._V=Lambda{ # show
 		println("--- show")
-		count=self.pop
-		space=""
+		count=self.pop  # number of symbols
+
 		Std.Data.for(0,count,1)->i
 			out(self.pop)
 		| _.reverse -> symbolAddr
+			println("symbolAddr",symbolAddr)
 			self.memory.readChar(symbolAddr) => h
 			self.memory.readChar(symbolAddr+1) => l
 			(h+l).parseInt(16)=>length
 			# read characters
 			Inner{
-				Std.Data.for(0,length,1)=>pos
+				Std.Data.for(0,length,1)->pos
 					ch=self.memory.readChar(symbolAddr+2+pos)  # +2 skip hl
 					out(ch)
 				| _.concat
 			} => symbol
 			print(symbol)
-			print(space)
-			space=" "  # for next symbol
+			print(" ")
 	}
 	self._W=Lambda{ # print
 		println("--- print")
 		value=self.pop
-		println(value)
+		print(value)
+		print(" ")
 	}
 
 	self._X=Lambda{ # cr

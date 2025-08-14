@@ -271,8 +271,8 @@
 		if (word.startsWith("'")) {
 			symbol=word.after("'")
 			patchPos=result.length  # position of the x0000
+			result=result+"x0000"   # to be patched when processing symbols towards end of function
 			symbolList.add(SymDict(symbol,patchPos))
-			words.push(List("x0000"))  # ref to symbol gets patched 
 			continue
 		}
 		# -- local tag def
