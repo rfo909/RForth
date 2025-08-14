@@ -107,25 +107,27 @@ The goal is to validate the output from the Assembler.
 
 	self.fpush(0,0)
 
-	
+
+	self.executionCount=1
 	self.executeInstruction=Lambda{
 		pc=self.PC
+
 		name="_"+self.memory.readChar(self.PC)
 		if (self.has(name)) {
 			closure = self.get(name)
 			result = tryCatch(closure.call)
 			
 			if (!result.ok) {
-				println("*** Execution failed:",result.msg)
+				println("*** Execution failed:", result.msg, "PC", pc, "count", self.executionCount)
 			} else {
 				# executed ok, now update PC unless a jump has already moved it
 				if (self.PC == pc) {
 					self.PC=pc+1
 				}
-				println("ok")
+				self.executionCount=self.executionCount+1
 			}
 		} else {
-			println("*** Unknown instruction member",name)
+			println("*** Unknown instruction member",name,"PC=" + pc,"count="+self.executionCount)
 		}
 	}
 
@@ -271,7 +273,6 @@ The goal is to validate the output from the Assembler.
 	self._J=Lambda{  # ! = write word
 		addr=self.pop
 		value=self.pop
-		println("set","addr",addr,"value",value)
 		self.memory.writeWord(addr,value)
 	}
 
@@ -314,13 +315,11 @@ The goal is to validate the output from the Assembler.
 	}
 	
 	self._V=Lambda{ # show
-		println("--- show")
 		count=self.pop  # number of symbols
 
 		Std.Data.for(0,count,1)->i
 			out(self.pop)
 		| _.reverse -> symbolAddr
-			println("symbolAddr",symbolAddr)
 			self.memory.readChar(symbolAddr) => h
 			self.memory.readChar(symbolAddr+1) => l
 			(h+l).parseInt(16)=>length
@@ -335,7 +334,6 @@ The goal is to validate the output from the Assembler.
 			print(" ")
 	}
 	self._W=Lambda{ # print
-		println("--- print")
 		value=self.pop
 		print(value)
 		print(" ")
@@ -399,8 +397,16 @@ The goal is to validate the output from the Assembler.
 	
 	x=Interpreter(code)
 	iCount=0
+	autoRunCount=0
+
 	loop
-		# show PC
+		if (autoRunCount > 0) {
+			x.executeInstruction
+			iCount=iCount+1
+			autoRunCount=autoRunCount-1
+			continue
+		}
+			
 		instr=x.nextInstruction
 		instrName=instr
 		instrName=Assembler:InstructionsLookup.get(instr)
@@ -417,7 +423,7 @@ The goal is to validate the output from the Assembler.
 		println(("    "+iCount).last(4) + " PC", "0x" + ("0000"+x.PC.hex.toUpper).last(4), instr, instrName)
 		
 		println
-		command=readLine("Command: 'q' to quit, 'i' to inspect, 'w' read word, ENTER to continue").trim
+		command=readLine("Command: 'q' to quit, 'i' to inspect, 'w' read word, 'r' to run, ENTER to continue").trim
 		if(command=="q") {
 			break
 		} else if (command=="i") {
@@ -427,6 +433,8 @@ The goal is to validate the output from the Assembler.
 			addr=ReadAddress
 			value=x.memory.readWord(addr)
 			println("=> " + value + " x" + value.hex)
+		} else if (command=="r") {
+			Input("Enter number of instructions to run").get.parseInt => autoRunCount
 		} else if (command.trim=="") {
 			x.executeInstruction
 			iCount=iCount+1

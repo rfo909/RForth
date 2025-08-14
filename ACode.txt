@@ -9,7 +9,7 @@
 	&ConsAlloc call
 	&ConsAlloc call
 
-	cr 'Done 1 show
+	cr 'Done #1 show
 		
 	;; test
 	;&ConsGet call 
