@@ -1,3 +1,28 @@
+; This is the base system that eventually will implement some sort of a
+; REPL on a microcontroller. It contains instructions, organized under
+; tags at two levels, which are employed for direct jumps (jmp), conditional 
+; jumps (jmp?) and calls (call), which assume a return (ret).
+;
+; The outer level of tags is denoted :xxx to define a tag, and &xxx to refer
+; it. All tag references result in 5 bytes of code, which when run puts the
+; address on the stack. Outer level tags are global.
+;
+; Then there are local tags. These exist only in the scope between outer 
+; tags. This means common words like "again" or "exit" can be used
+; in different functions, without mixing up.
+;
+; These are defined with :*xxx and referred via &*xxx.
+;
+; The assembler handles patching all forward tag references when building
+; the code.
+;
+; ---
+;
+; Note that the :Init and :Main tags are never jumped to nor called, and 
+; so they exist for clarity only. Also note that the remaining global tags
+; before the :DATA are supposed to be call'ed, and end in 'ret' to return.
+;
+
 
 :Init
 	&DATA SET_DATA_START  ; to catch write attempts below this limit
