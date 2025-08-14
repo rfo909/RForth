@@ -95,6 +95,51 @@ x0107Zxx0107Jxx010BJXx010Fx0115x2VgWXx0118x0122x0128x3VxAOXaYx0089Qax1
 08Creating04CONS05cells07Showing08freelist04Done04addr04done
 ```
 
+The output from this bytecode, when run in the interpreter is as follows:
+
+```
+DATA_START = 0x0107
+
+HERE : 0x01F4
+Creating CONS cells
+10
+CONS addr 0x01F4
+9
+CONS addr 0x01F8
+8
+CONS addr 0x01FC
+7
+CONS addr 0x0200
+6
+CONS addr 0x0204
+5
+CONS addr 0x0208
+4
+CONS addr 0x020C
+3
+CONS addr 0x0210
+2
+CONS addr 0x0214
+1
+CONS addr 0x0218
+HERE : 0x021C
+Showing CONS freelist 0x0214
+0x0210
+0x020C
+0x0208
+0x0204
+0x0200
+0x01FC
+0x01F8
+0x01F4
+0x0000
+freelist CONS done
+Done
+```
+
+
+
+
 Local variables
 ---------------
 
