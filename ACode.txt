@@ -1,19 +1,24 @@
 
 :Main
- 	cr 'HERE #1 show    ;; does not assemble properly!!
-	HERE print
-	
 	;; init
 	null &ConsFree !		;; initialize ConsFree pointer to zero
+	null &DictHead !
 
-	&ConsAlloc call
-	&ConsAlloc call
+ 	cr 'HERE ': #2 show HERE print cr
 
+	;; create a number of CONS cells in freelist
+	'Creating 'CONS 'cells #3 show
+	#10 cpush   ; a	
+	:*again
+		a print
+		&ConsAlloc call
+		a #1 sub dup a! null gt &*again jmp?
+
+ 	cr 'HERE ': #2 show 
+	HERE print
 	cr 'Done #1 show
 		
-	;; test
-	;&ConsGet call 
-	;	&ConsDispose call
+
 	&Halt jmp	
 
 :Error ;; ( sym sym symCount -- )
@@ -22,9 +27,15 @@
 	
 :Halt
 	&Halt jmp
+
+
+;; The dictionary is created from CONS cells
+;;	
 	
-	
-;; Stack operations
+:DictHead 0 0 0 0   ;; pointer
+
+
+
 
 
 ;; CONS cells are created as a CAR+CDR tuple, each value a Word. They are allotted
@@ -54,7 +65,8 @@
 	&ConsFree cpush   ;; a=&ConsFree
 	
 	a @ null ne &*FreelistOk jmp?
-		;; freelist is empty, allocate one Cons
+
+		;; freelist is empty, allocate one Cons and put it in freelist
 		&ConsAlloc call
 	
 	:*FreelistOk
@@ -63,7 +75,7 @@
 
 	a @  		;; (ptr to Cons)
 
-	dup W+ a !   ;; &ConsFree = ptr.cons
+	dup @ a !   ;; &ConsFree = cons.car
 
 	;; (Ptr)
 	ret
