@@ -25,12 +25,43 @@
 	names.sort
 /IShow
 
+# Available printable non-space byte codes
+# --
+	"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-*/><=.,:;!#@%(){}[]\?_&|'`^"+'"'
+//AvailableByteCodes
+
+# Check numeric value range for printable byte codes
+# --
+	min=999
+	max=0
+	AvailableByteCodes.chars->c 
+		value=c.toHexString("ISO-8859-1").parseInt(16)
+		if (value < min) min=value
+		if (value > max) max=value
+	|
+	println("min",min,"max",max)
+//BytecodeNumericRange
 
 # Show instructions lookup sorted
 # --
+	available=Dict
+	AvailableByteCodes.chars->c
+		available.set(c,false)
+	|
+	
 	data=InstructionsLookup
 	data.keys.sort->key
+		error(!available.has(key), "Not found in available keys: " + key)
+		available.set(key,true)
 		report(key,data.get(key))
+	| _=>rows
+	Lib:ShowRows(rows)
+
+	available.keys->key assert(available.get(key)==false) out(key) | _.concat => unused
+	println("Available keys:", unused.length, unused)
+	print("Numeric range: ") 
+	BytecodeNumericRange
+	true
 /IRShow
 		
 		
@@ -64,14 +95,14 @@
 
 	;; data stack operations
 	dcopy		:M		;; copy stack element n, where 0 is top etc, to top, so #1 dcopy is DUP
-	dget		:N      	;; remove stack element n and push on top
+	dget		:N      ;; remove stack element n and push on top
 	
 	drop		:j		;; remove stack top element
-	dup		:l
+	dup			:l
 	swap		:m
+	over		:o
+	dump		:p		;; show stack content
 	
-
-	;;over				;; inline: #1 dcopy
 	;;rot				;; inline: #2 dcopy
 	;;2dup				;; inline: over over
 	
@@ -186,8 +217,7 @@
 	))
 
 	# stack manipulation
-	.set("over",List("#1 dcopy"))
-	.set("rot",List("#2 dget"))
+	.set("rot",List("2 dget"))
 	.set("2dup",List("over over"))
 
 //Inlines
@@ -253,17 +283,18 @@
 	
 		# specials
 		
-		# -- hex format number
-		if (word.startsWith("x")) {
-			result=result + "x" + word.after("x").parseInt(16).hex.toUpper
-			continue
+		# -- decimal format numbers
+		if ("0123456789".indexOf(word.chars.first) >= 0) { 
+			if (word.?parseInt) {
+				s="x"+word.parseInt.hex.toUpper
+				result=result+s
+				continue
+			}
 		}
 		
-		# -- decimal format numbers
-		if (word.startsWith("#")) {
-			s="x" + word.after("#").parseInt.hex.toUpper
-			println(s)
-			result=result+s
+		# -- hex format number
+		if (word.startsWith("x") || word.startsWith("0x")) {
+			result=result + "x" + word.after("x").parseInt(16).hex.toUpper
 			continue
 		}
 		

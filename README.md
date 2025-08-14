@@ -103,7 +103,7 @@ streamlined into the following:
 	          # the first value is denoted a, the second b, and the third c
 	          
 	a         # read value of variable a
-	#2 a!     # set variable a to 2
+	2 a!      # set variable a to 2
 	
 	(same for b and c)
 ```

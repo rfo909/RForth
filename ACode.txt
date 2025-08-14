@@ -1,31 +1,27 @@
 
 :Main
-	;; init
-	null &ConsFree !		;; initialize ConsFree pointer to zero
+	;; initialize pointers to zero
+	null &ConsFree !
 	null &DictHead !
 
- 	cr 'HERE ': #2 show HERE print cr
+
+ 	cr 'HERE ': 2 show HERE print cr
 
 	;; create a number of CONS cells in freelist
-	'Creating 'CONS 'cells #3 show
-	#10 cpush   ; a	
+	'Creating 'CONS 'cells 3 show
+	10 cpush   ; a	
 	:*again
 		a print
 		&ConsAlloc call
-		a #1 sub dup a! null gt &*again jmp?
+		a 1 sub dup a! null gt &*again jmp?
 
- 	cr 'HERE ': #2 show 
+ 	cr 'HERE ': 2 show 
 	HERE print
-	cr 'Done #1 show
-		
-
-	&Halt jmp	
-
-:Error ;; ( sym sym symCount -- )
-	show
-	&Halt jmp
+	cr 'Done 1 show
 	
-:Halt
+	;; falling through to Halt
+
+:Halt			;; endless loop
 	&Halt jmp
 
 
@@ -33,9 +29,6 @@
 ;;	
 	
 :DictHead 0 0 0 0   ;; pointer
-
-
-
 
 
 ;; CONS cells are created as a CAR+CDR tuple, each value a Word. They are allotted
@@ -52,7 +45,7 @@
 :ConsAlloc  ; ( -- )
 	&ConsFree cpush		;; a=&ConsFree
 	HERE   cpush		;; b=Ptr to new Cons
-	wordsize #2 mul allot	;; reserve space for Cons
+	wordsize 2 mul allot	;; reserve space for Cons
 		
 	a @ b !			;; ptr.CAR=&ConsFree
 	b a !			;; &ConsFree=ptr	

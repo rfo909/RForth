@@ -286,7 +286,7 @@ The goal is to validate the output from the Assembler.
 		self.push(value)
 	}
 
-	self._N=Lambda{ # dget: (a b c 0 -- a b) and (a b c 1 -- a c)
+	self._N=Lambda{ # dget: (a b c 0 -- a b c) and (a b c 1 -- a c)
 		offset=self.pop
 		value=self.dataStack.removeValue(offset)
 		self.push(value)
@@ -313,6 +313,35 @@ The goal is to validate the output from the Assembler.
 		value=self.pop
 		self.push(value+self.WORDSIZE)
 	}
+
+	self._o=Lambda{ # over
+		b=self.pop
+		a=self.pop
+		self.push(a)
+		self.push(b)
+		self.push(a)
+	}
+
+	self._p=Lambda{ # dump
+
+		println("Datastack BOTTOM ---> TOP")
+
+		values=self.dataStack.getStackValues 
+		values->x
+			s=("    "+x).last(5)+" "
+			print(s)
+		|
+		println
+
+		values->x
+			s=("    x"+x.hex).last(5)+" "
+			print(s)
+		|
+
+		println
+	}
+
+->value
 	
 	self._V=Lambda{ # show
 		count=self.pop  # number of symbols
