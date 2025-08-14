@@ -14,7 +14,7 @@ The goal is to validate the output from the Assembler.
 	# number of words
 	DSTACK_WORDS = 20
 	CSTACK_WORDS = 40  # callstack
-	FSTACK_FRAMES = 10  # frame stack - contains dictionaries
+	FSTACK_FRAMES = 10  # frame stack contains dictionaries
 	
 	self.WORDSIZE = 2
 	self.memory=HWSim:Memory(self.WORDSIZE)
@@ -102,7 +102,7 @@ The goal is to validate the output from the Assembler.
 		self.frameStack.pop
 	}
 
-	# initialize frame stack - these numbers are offsets on the callStack
+	# initialize frame stack these numbers are offsets on the callStack
 
 	self.fpush(0,0)
 
@@ -137,19 +137,19 @@ The goal is to validate the output from the Assembler.
 		byteCount=self.pop
 		self.memory.malloc(byteCount)
 	}
-	self._G=Lambda{ # readb - read byte ( addr -- value )
+	self._G=Lambda{ # readb read byte ( addr -- value )
 		addr=self.pop
 		if (addr < self.DATA_START) println("Warning: readb: reading below DATA_START: " + addr)
 		self.push(self.memory.readByte(addr))
 	}
-	self._H=Lambda{ # writeb - write byte ( addr -- value )
+	self._H=Lambda{ # writeb write byte ( addr -- value )
 		addr=self.pop
 		if (addr < self.DATA_START) println("ERROR: writeb: writing below DATA_START: " + addr)
 		value=self.pop
 		self.memory.writeByte(addr,value)
 	}
 
-	self._x=Lambda{self.push(0)} # zero - push a zero ( -- 0 )
+	self._x=Lambda{self.push(0)} # zero push a zero ( -- 0 )
 	self._0=Lambda{self.push(self.pop*16+0)} # ( m -- n )  n=16*m + digit value
 	self._1=Lambda{self.push(self.pop*16+1)} # ( m -- n )  n=16*m + digit value
 	self._2=Lambda{self.push(self.pop*16+2)} # ( m -- n )  n=16*m + digit value
@@ -169,37 +169,37 @@ The goal is to validate the output from the Assembler.
 
 	## Local variable pointer instructions a-f
 
-	self._a=Lambda{  # a - read local variable a ( -- value )
+	self._a=Lambda{  # a read local variable a ( -- value )
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		value=self.memory.readWord(base)
 		self.push(value)
 	}
-	self._b=Lambda{  # b - read local variable b ( -- value )
+	self._b=Lambda{  # b read local variable b ( -- value )
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		value=self.memory.readWord(base+self.WORDSIZE)
 		self.push(value)
 	}
-	self._c=Lambda{  #  c - read local variable c ( -- value )
+	self._c=Lambda{  #  c read local variable c ( -- value )
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		value=self.memory.readWord(base+self.WORDSIZE*2)
 		self.push(value)
 	}
-	self._d=Lambda{  # a! - set local variable a ( value -- )
+	self._d=Lambda{  # a! set local variable a ( value -- )
 		value=self.pop
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		self.memory.writeWord(base, value)
 	}
-	self._e=Lambda{  # b! - set local variable b ( value -- )
+	self._e=Lambda{  # b! set local variable b ( value -- )
 		value=self.pop
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		self.memory.writeWord(base+self.WORDSIZE, value)
 	}
-	self._f=Lambda{ # c! - set local variable c ( value -- )
+	self._f=Lambda{ # c! set local variable c ( value -- )
 		value=self.pop
 		frameInfo=self.fpeek
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
@@ -216,18 +216,23 @@ The goal is to validate the output from the Assembler.
 	self._h=Lambda{	# ne
 		b=self.pop a=self.pop value=if(a!=b,1,0) self.push(value)
 	}
-	self._i=Lambda{ # not (boolean)
+	self._i=Lambda{ # not boolean ( 0 -- 1 )
 		a=self.pop value=if(a==0,1,0) self.push(value)
 	}
 	
 	self._g=Lambda{self.push(self.memory.HERE)}   # HERE ( -- value )
-	self._U=Lambda{self.push(self.PC)}		# PC ( -- value )
 	
-	self.set("_&", Lambda{b=self.pop a=self.pop value=if(a != 0 && b != 0, 1, 0) self.push(value)}) # and (boolean)
-	self.set("_|", Lambda{b=self.pop a=self.pop value=if(a != 0 || b != 0, 1, 0) self.push(value)}) # or (boolean)
+	self.set("_&", Lambda{b=self.pop a=self.pop value=if(a != 0 && b != 0, 1, 0) self.push(value)}) # and boolean ( true false -- false )
+	self.set("_|", Lambda{b=self.pop a=self.pop value=if(a != 0 || b != 0, 1, 0) self.push(value)}) # or boolean ( true false -- true )
 	
-	self._S=Lambda{self.PC=self.pop}  # jmp ( addr -- )
-	self._T=Lambda{addr=self.pop cond=self.pop if(cond != 0) self.PC=addr}  # jmp? ( cond addr -- )
+	self._S=Lambda{   # jmp ( addr -- ) updates PC
+		self.PC=self.pop
+	}
+	self._T=Lambda{  # jmp? ( cond addr -- ) conditionally updates PC
+		addr=self.pop 
+		cond=self.pop 
+		if(cond != 0) self.PC=addr  
+	}  
 	
 	self._Q=Lambda{  # call ( addr -- )
 		targetAddr=self.pop
@@ -245,7 +250,7 @@ The goal is to validate the output from the Assembler.
 
 		self.PC=targetAddr # JMP
 	}
-	self._R=Lambda{  # ret - return
+	self._R=Lambda{  # ret return
 		self.fpop
 
 		frameInfo=self.fpeek  # previous frame
@@ -278,45 +283,45 @@ The goal is to validate the output from the Assembler.
 		self.memory.writeWord(addr,value)
 	}
 
-	self._O=Lambda{  # cpush
+	self._O=Lambda{  # cpush push value from data stack on call stack ( x -- )
 		self.cpush(self.pop)
 	}
 
-	self._M=Lambda{ # dcopy: ( a b c 2 -- a b c a ) - argument 0 is top of stack 1 next and so on
+	self._M=Lambda{ # dcopy: ( a b c 1 -- a b c b )
 		offset=self.pop
 		value=self.dataStack.getValue(offset)
 		self.push(value)
 	}
 
-	self._N=Lambda{ # dget: (a b c 0 -- a b c) and (a b c 1 -- a c)
+	self._N=Lambda{ # dget: (a b c 1 -- a c b)
 		offset=self.pop
 		value=self.dataStack.removeValue(offset)
 		self.push(value)
 	}
 
-	self._j=Lambda { # drop
+	self._j=Lambda { # drop  ( a -- )
 		self.pop
 	}
 	
-	self._l=Lambda{ # dup
+	self._l=Lambda{ # dup ( x -- x x )
 		value=self.pop
 		self.push(value)
 		self.push(value)
 	}
 	
-	self._m=Lambda{ # swap
+	self._m=Lambda{ # swap ( a b -- b a )
 		a=self.pop
 		b=self.pop
 		self.push(a)
 		self.push(b)
 	}
 	
-	self._n=Lambda{ # W+
+	self._n=Lambda{ # W+   ( n -- n+WORDSIZE
 		value=self.pop
 		self.push(value+self.WORDSIZE)
 	}
 
-	self._o=Lambda{ # over
+	self._o=Lambda{ # over ( a b -- a b a )
 		b=self.pop
 		a=self.pop
 		self.push(a)
@@ -324,7 +329,7 @@ The goal is to validate the output from the Assembler.
 		self.push(a)
 	}
 
-	self._p=Lambda{ # dump
+	self._p=Lambda{ # dump show stack contents ( -- )
 
 		println("Datastack BOTTOM ---> TOP")
 
@@ -343,15 +348,13 @@ The goal is to validate the output from the Assembler.
 		println
 	}
 
-	self._Z=Lambda{ # SET_DATA_START
+	self._Z=Lambda{ # SET_DATA_START ( addr -- )
 		value=self.pop
 		println("DATA_START = 0x" + value.hex(4).toUpper)
 		self.DATA_START = value
 	}
 
-->value
-	
-	self._V=Lambda{ # show
+	self._V=Lambda{ # show ( sym sym ... count -- )
 		count=self.pop  # number of symbols
 
 		Std.Data.for(0,count,1)->i
@@ -370,21 +373,52 @@ The goal is to validate the output from the Assembler.
 			print(symbol)
 			print(" ")
 	}
-	self._W=Lambda{ # print
+	self._W=Lambda{ # print print top value on hex format
 		value=self.pop
 		print("0x" + value.hex(4).toUpper)
 		print(" ")
 	}
-	self._Y=Lambda{ # print#
+	self._Y=Lambda{ # print# print top value on decimal format
 		value=self.pop
 		print(value)
+		print(" ")
+	}
+	self._L=Lambda{ # printb print top value on binary format
+		value=self.pop
+		s=value.bin(self.WORDSIZE*8)
+		print(s.sub(0,8)+"_"+s.sub(8))
 		print(" ")
 	}
 	self._X=Lambda{ # cr
 		println
 	}
-		
-		
+
+	self._q=Lambda { # andb binary and ( a b -- c )
+		b=self.pop
+		a=self.pop
+		self.push(HWSim:BitwiseAnd(a,b,self.WORDSIZE))	
+	}
+
+	self._r=Lambda { # orb binary or ( a b -- c )
+		b=self.pop
+		a=self.pop
+		self.push(HWSim:BitwiseOr(a,b,self.WORDSIZE))	
+	}
+	self._s=Lambda{ # inv binary not  ( a -- b )
+		a=self.pop
+		self.push(HWSim:BitwiseNot(a, self.WORDSIZE))
+	}
+	self._t=Lambda { # << left shift  ( val n -- val )
+		bits=self.pop
+		value=self.pop
+		self.push(HWSim:Leftshift(value, bits, self.WORDSIZE))
+	}
+	self._u=Lambda { # >> right shift  ( val n -- val )
+		bits=self.pop
+		value=self.pop
+		self.push(HWSim:Rightshift(value, bits, self.WORDSIZE))
+	}
+
 /class Interpreter
 
 

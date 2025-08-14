@@ -27,7 +27,7 @@
 
 # Available printable non-space byte codes
 # --
-	"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-*/><=.,:;!#@%(){}[]\?_&|'`^"+'"'
+	"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-*/><=.,:;!#@%(){}[]\?_&|'`^~"+'"'
 //AvailableByteCodes
 
 # Check numeric value range for printable byte codes
@@ -80,19 +80,26 @@
 
 # Generate doc for instruction set
 # --
-	f=Dir.file("savefileInterpreter.txt")
+	f=Sys.savefile.dir.file("savefileInterpreter.txt")
 	data=InstructionsLookup
 	
 	data.keys.sort->key
 		{
-			Grep("self._"+key).file(f) -> line
-				report(key,line.afterLast("#"))
+			a=Grep("self._"+key).file(f)
+			b=Grep('self.set("_' + key).file(f)
+			(a+b)->line
+				out(line)
 		}
-		{
-			Grep('self.set("_' + key).file(f)->line
-				report(key,line.afterLast("#"))
-		}
-/InstrDoc
+	| _ -> line
+
+		desc=line.after("#").trim
+		name=desc.before(" ")
+		desc=desc.after(" ")
+		out(Str(name, SymDict(name,desc)))
+	| _.sort->x
+		dict=x.data
+		report(dict.name, dict.desc)
+/IDoc
 
 
 # Assembly instructions mapped to "machine code"
@@ -180,18 +187,25 @@
 	not		:i
 	and		:&	;; logical 
 	or		:|	;; logical
+	
+	;; bitwise operations
+	andb		:q
+	orb		:r
+	inv		:s
+	<<		:t
+	>>		:u
 
 	;; flow of control
 		
 	jmp		:S
 	jmp?	:T   ;; conditional jump on true'	
-	PC		:U   ;; puts PC on stack (as it was when invoking this instruction)
 	
 	;; I/O
 	show		:V   ;; ( ptr ptr ... N -- ) - display N symbols with space between them
 	print		:W   ;; print any single value in hex
 	cr			:X
 	print#		:Y   ;; print value in decimal
+	printb		:L   ;; print value in binary
 		
 >>> EOF
 	=>list
