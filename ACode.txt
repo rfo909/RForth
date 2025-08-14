@@ -1,9 +1,15 @@
 
-:Main
+:Init
+	&DATA SET_DATA_START  ; to catch write attempts below this limit
+
 	;; initialize pointers to zero
 	null &ConsFree !
 	null &DictHead !
 
+	;; Fall through to Main
+
+:Main
+	
 
  	cr 'HERE ': 2 show HERE print cr
 
@@ -11,12 +17,16 @@
 	'Creating 'CONS 'cells 3 show
 	10 cpush   ; a	
 	:*again
-		a print
+		cr a print#
 		&ConsAlloc call
 		a 1 sub dup a! null gt &*again jmp?
 
  	cr 'HERE ': 2 show 
 	HERE print
+
+	cr 'Showing 'CONS 'freelist 3 show
+	&ConsFreelistShow call
+
 	cr 'Done 1 show
 	
 	;; falling through to Halt
@@ -28,19 +38,12 @@
 ;; The dictionary is created from CONS cells
 ;;	
 	
-:DictHead 0 0 0 0   ;; pointer
 
 
 ;; CONS cells are created as a CAR+CDR tuple, each value a Word. They are allotted
 ;; as needed, but also freelisted when disposed off. To calculate the CDR address
 ;; from the Cons pointer: W+
 
-:ConsFree 0 0 0 0	;; freelist pointer 	
-	;; 0 means empty
-	;; Using four instructions to generate four bytes as a placeholder.
-	;; The value is nulled in :Init before use. Using 4 bytes instead
-	;; of 2 to ensure compatibility with 4 byte wordsize - any more is
-	;; unthinkable for embedded devices
 
 :ConsAlloc  ; ( -- )
 	&ConsFree cpush		;; a=&ConsFree
@@ -49,10 +52,27 @@
 		
 	a @ b !			;; ptr.CAR=&ConsFree
 	b a !			;; &ConsFree=ptr	
+
+	cr 'CONS 'addr 2 show
+	b print
 	
 	;; no return value
 	ret
 
+
+;; run through the Cons Freelist, listing the addresses
+:ConsFreelistShow
+	&ConsFree @ cpush  ; a=pointer to next CONS
+
+	:*again
+		a 0 eq &*done jmp?
+		a @ dup print cr a!
+		&*again jmp
+
+	:*done
+	'freelist 'CONS 'done 3 show
+	ret
+		
 
 :ConsGet  ; ( -- ConsPtr) - get Cons cell from free list (call ConsAlloc first if empty)
 	&ConsFree cpush   ;; a=&ConsFree
@@ -89,7 +109,26 @@
 ;; ---------------------------------	
 
 :DATA		
-	;; data is generated here - the tag is used by disassembler to 
-	;; show bytes correctly beyond this point (not as instructions)
+	;; data is generated here, which includes symbols - the tag is used 
+	;; by disassembler to show bytes correctly beyond this point (not 
+	;; as instructions)
+
+;; for pointers we reserve bytes by entering instructions that occupy 4 bytes,
+;; even though we are never going to call them. Using 4 bytes instead of
+;; just 2 (current wordsize) ensures compatibility with a future 4 byte word size.
+;;
+;; At the top of the code, these pointers are nulled with program code, before being
+;; used. Note that on a 2-byte word size, listing the memory for a pointer, once
+;; initialized, will look like this: 0 0 x x. The two "x" are the extra zeroes.
+;;
+
+:ConsFree 0 0 0 0	;; freelist pointer 	
+	;; 0 means empty
+	;; Using four instructions to generate four bytes as a placeholder.
+	;; The value is nulled in the Init section before use. Using 4 bytes instead
+	;; of 2 to ensure compatibility with 4 byte wordsize - any more is
+	;; unthinkable for embedded devices
+
+:DictHead 0 0 0 0   ;; pointer
 
 

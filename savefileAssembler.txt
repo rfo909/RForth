@@ -86,6 +86,7 @@
 	writeb		:H		;; write byte
 	@			:I		;; read cell/word
 	!			:J		;; write cell/word	
+	SET_DATA_START  :Z	;; to sanity check read/write
 
 	allot		:K
 	HERE		:g
@@ -171,8 +172,9 @@
 	
 	;; I/O
 	show		:V   ;; ( ptr ptr ... N -- ) - display N symbols with space between them
-	print		:W   ;; print any single value 
-	cr		:X
+	print		:W   ;; print any single value in hex
+	cr			:X
+	print#		:Y   ;; print value in decimal
 		
 >>> EOF
 	=>list
@@ -284,17 +286,26 @@
 		# specials
 		
 		# -- decimal format numbers
-		if ("0123456789".indexOf(word.chars.first) >= 0) { 
-			if (word.?parseInt) {
-				s="x"+word.parseInt.hex.toUpper
-				result=result+s
-				continue
-			}
+		if ("0123456789".indexOf(word.chars.first) >= 0 && word.?parseInt) { 
+			n=word.parseInt
+			s = if (n==0, "x", "x" + n.hex.toUpper)
+			result=result+s
+			continue
 		}
 		
 		# -- hex format number
-		if (word.startsWith("x") || word.startsWith("0x")) {
-			result=result + "x" + word.after("x").parseInt(16).hex.toUpper
+		if ((word.startsWith("x") || word.startsWith("0x")) && word.after("x").?parseInt(16)) {
+			n=word.after("x").parseInt(16)
+			s = if (n==0, "x", "x" + n.hex.toUpper)
+			result=result+s
+			continue
+		}
+
+		# -- binary format number
+		if (word.startsWith("b") && word.sub(1).?parseInt(2)) {
+			n=word.sub(1).parseInt(2)
+			s = if (n==0, "x", "x" + n.hex.toUpper)
+			result=result+s
 			continue
 		}
 		

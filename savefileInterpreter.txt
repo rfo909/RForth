@@ -24,9 +24,8 @@ The goal is to validate the output from the Assembler.
 	addr=0
 	code.chars->c self.memory.writeChar(addr,c) addr=addr+1 |
 
-	#self.memory.dump
-
 	self.PC=0
+	self.DATA_START=0 # set to actual value by code, guards against runaway writes into the base code
 
 	self.HERE = Lambda{
 		self.memory.HERE
@@ -140,10 +139,12 @@ The goal is to validate the output from the Assembler.
 	}
 	self._G=Lambda{ # readb
 		addr=self.pop
+		if (addr < self.DATA_START) println("Warning: readb: reading below DATA_START: " + addr)
 		self.push(self.memory.readByte(addr))
 	}
 	self._H=Lambda{ # writeb
 		addr=self.pop
+		if (addr < self.DATA_START) println("ERROR: writeb: writing below DATA_START: " + addr)
 		value=self.pop
 		self.memory.writeByte(addr,value)
 	}
@@ -265,13 +266,14 @@ The goal is to validate the output from the Assembler.
 	}
 	
 	self._I=Lambda{  # @ = read word
-		# our "memory" is word-based, which differs from the future C-impl
 		addr=self.pop
+		if (addr < self.DATA_START) println("Warning: @: reading below DATA_START: " + addr)
 		self.push(self.memory.readWord(addr))
 	}
 	
 	self._J=Lambda{  # ! = write word
 		addr=self.pop
+		if (addr < self.DATA_START) println("ERROR: !: writing below DATA_START: " + addr)
 		value=self.pop
 		self.memory.writeWord(addr,value)
 	}
@@ -341,6 +343,12 @@ The goal is to validate the output from the Assembler.
 		println
 	}
 
+	self._Z=Lambda{ # SET_DATA_START
+		value=self.pop
+		println("DATA_START = 0x" + value.hex(4).toUpper)
+		self.DATA_START = value
+	}
+
 ->value
 	
 	self._V=Lambda{ # show
@@ -364,10 +372,14 @@ The goal is to validate the output from the Assembler.
 	}
 	self._W=Lambda{ # print
 		value=self.pop
+		print("0x" + value.hex(4).toUpper)
+		print(" ")
+	}
+	self._Y=Lambda{ # print#
+		value=self.pop
 		print(value)
 		print(" ")
 	}
-
 	self._X=Lambda{ # cr
 		println
 	}
