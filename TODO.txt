@@ -3,6 +3,39 @@
 TODO
 ----
 
+Change opcodes from "printable non-space" to more general: just bytes!
+
+The copy-paste aspect is easily solved with writing a hex string
+instead. 
+
+The opcode bytes may be organized as follows:
+
+0 		NOT USED
+1-32	System commands (reserved)
+33-127  regular instruction set (max 94 opcodes)
+128-255 tag reference lookup
+
+A 256 byte table is allocated (in the assembler) where we store the 2 bytes long tag references, up to 128.
+When an opcode is >= 128, (bit 0x80 is set) do an and with (0x7F) do a left shift (times 2) and given the
+base address of the table, look up the 2-byte address value, then push it onto the stack.
+
+This eliminates the need for back-patching in the assembly pass, as only the address table gets modified when
+the actual tag definition comes along. On memory-starved platforms, this table and the bytecode should 
+exist as arrays inside the interpreter (written in C).
+
+By handling inline constants the same way, and reusing storage for those, based on value, we can eliminate
+completely the xNNNN syntax, which alone occupies 17 opcodes.
+
+This means that we reduce the size of the bytecode by 2 bytes (ref byte + 2 bytes value) for the first 
+reference to a tag, and by 4 bytes each additional reference. The assembler must export the address table, and tell
+the interpreter how many tags are actually used. 
+
+NOTE that the address of symbols should be handled the same way!!
+
+When running the CFT interpreter, the assembler also supplies it with an overview of the tag names connected with 
+addresses, for better reporting
+
+
 
 Make abstract devices for
 	serial I/O

@@ -47,6 +47,7 @@
 
 
 ;; Generalized free list mechanism
+;; -------------------------------
 
 ;; Pop an element off the freelist, or null if freelist empty
 
@@ -75,12 +76,13 @@
 	
 
 
-;; The dictionary is created from CONS cells
+;; Dictionary stuff
 ;;	
 	
+; (TODO)
 
 
-;; CONS cells are created as a CAR+CDR tuple, each value a Word. They are allotted
+;; CONS cells are created as a two-word CAR+CDR tuple. They are allotted
 ;; as needed, but also freelisted when disposed off. To calculate the CDR address
 ;; from the Cons pointer: W+
 
