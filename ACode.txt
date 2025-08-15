@@ -50,7 +50,7 @@
 	cr 'Showing 'CONS 'freelist 3 show
 	&ConsFreelistShow call
 
-	cr 'Done 1 show
+	cr 'Done 'with 'test '- 'falling 'through 'to 'Halt 8 show
 	
 	;; falling through to Halt
 

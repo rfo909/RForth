@@ -458,17 +458,42 @@ The goal is to validate the output from the Assembler.
 	}
 //ReadAddress
 
+
+# Look up closest tag from address
+# --
+	P(1) as int => address
+	tags=Db2:Get("RForth","tags",Dict)
+	
+	smallestDiff=9999
+	forTag=""
+	tags.keys->tag
+		tagAddr=tags.get(tag)  # on format xNNNN (hex)
+		tagAddr=tagAddr.after("x").parseInt(16)
+		reject(tagAddr > address)
+		diff=address-tagAddr
+		if (diff < smallestDiff) {
+			smallestDiff=diff
+			forTag=tag
+		}
+	|
+	forTag
+/GetClosestTag	
+		
+
 # Test
 # --
 	P(1) => code
+	
+	code = Db2:Get("RForth","code",null)
 	
 	if (code==null) {
 		println("Paste then . for code")
 		code=readLines(".").concat
 	}
+	
 	Lib:Header("Code string: " + code.length + " bytes")
-	println(code)
 	println
+	
 	
 	iCount=0
 	autoRunCount=0
@@ -496,7 +521,10 @@ The goal is to validate the output from the Assembler.
 		println("frameStack 0x" + x.fbase.hex(4) + " [ " + ShowFrameStack(x.frameStack) + " ] TOP")
 		
 		println
-		println(("    "+iCount).last(4) + " PC", "0x" + ("0000"+x.PC.hex.toUpper).last(4), instr, instrName)
+		println("#" + iCount, 
+			"[" + GetClosestTag(x.PC)+ "]", 
+			"PC:", "0x" + ("0000"+x.PC.hex.toUpper).last(4), 
+			instrName)
 		
 		println
 		command=readLine("Command: 'q' to quit, 'i' to inspect, 'w' read word, 'r' to run, ENTER to continue").trim

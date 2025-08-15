@@ -505,6 +505,10 @@
 		Lib:ShowRows(rows, null, false)
 	}
 	
+	# Store stuff in database for interpreter to pick up automagically
+	Db2:Set("RForth", "tags", dict.tags)
+	Db2:Set("RForth", "code", dict.result)
+	
 
 	# Display code as block that can be copy-pasted
 	Lib:Header("Code")
