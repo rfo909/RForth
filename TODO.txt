@@ -1,14 +1,23 @@
 2025-08 v3
 
-
 TODO
 ----
 
-Serial input (got output: show and print)
 
-Consider serial communication handling (simulate in interpreter, still CFT)
-	TIB* - see ACode.old.txt
+Make abstract devices for
+	serial I/O
+	GPIO
+	I2c
+	SPI
+
+Abstraction is necessary in order to make high level simulations in the Interpreter script.
+
+REPL
+
+Generalized the freelist concept, using the first word of any type of uniformly sized blocks
 	
-Rewrite most of the C code
 
+Rewrite the C code
+	interpreter for bytecode only!
+	(which lives in program memory / flash up to the %DATA tag, for saving RAM)
 

@@ -23,7 +23,6 @@
 ; before the :DATA are supposed to be call'ed, and end in 'ret' to return.
 ;
 
-
 :Init
 	&DATA SET_DATA_START  ; to catch write attempts below this limit
 
@@ -31,31 +30,49 @@
 	null &ConsFree !
 	null &DictHead !
 
-	;; Fall through to Main
+:Tests
 
+	&ConsGet call
+	&ConsDispose call
+
+	&ConsGet call
+	
 :Main
  	cr 'HERE ': 2 show HERE print cr
 
-	;; create a number of CONS cells in freelist
-	'Creating 'CONS 'cells 3 show
-	10 cpush   ; a	
-	:*again
-		cr a print#
-		&ConsAlloc call
-		a 1 sub dup a! null gt &*again jmp?
-
- 	cr 'HERE ': 2 show 
-	HERE print
-
-	cr 'Showing 'CONS 'freelist 3 show
-	&ConsFreelistShow call
-
-	cr 'Done 'with 'test '- 'falling 'through 'to 'Halt 8 show
-	
 	;; falling through to Halt
 
 :Halt			;; endless loop
 	&Halt jmp
+
+
+;; Generalized free list mechanism
+
+;; Pop an element off the freelist, or null if freelist empty
+
+:FreePop   ; ( freeHead -- null|ptr )
+	cpush			;; a=address of freelist head word
+	a @ dup cpush null ne &*notEmpty jmp?  ;; b=address of first element in free list
+		null ret
+
+	:*notEmpty
+	b @ a!			;; store b.next (first word) into freelist head
+	b ret
+
+;; Push an element on the freelist
+
+:FreePush ; ( dataAddr freeHead -- )
+	cpush		;; a=freeHead
+	cpush		;; b=dataAddr
+
+	a @ b !		;; store freeHead into dataAddr.next (first word)
+	b a !		;; store dataAddr in freeHead
+	
+	ret
+	
+	
+	
+	
 
 
 ;; The dictionary is created from CONS cells
@@ -68,64 +85,18 @@
 ;; from the Cons pointer: W+
 
 
-:ConsAlloc  ; ( -- )
-	&ConsFree cpush		;; a=&ConsFree
-	HERE   cpush		;; b=Ptr to new Cons
-	wordsize 2 mul allot	;; reserve space for Cons
-		
-	a @ b !			;; ptr.CAR=&ConsFree
-	b a !			;; &ConsFree=ptr	
-
-	cr 'CONS 'addr 2 show
-	b print
-	
-	;; no return value
-	ret
-
-
-;; run through the Cons Freelist, listing the addresses
-:ConsFreelistShow
-	&ConsFree @ cpush  ; a=pointer to next CONS
-
-	:*again
-		a 0 eq &*done jmp?
-		a @ dup print cr a!
-		&*again jmp
-
-	:*done
-	'freelist 'CONS 'done 3 show
-	ret
-		
-
 :ConsGet  ; ( -- ConsPtr) - get Cons cell from free list (call ConsAlloc first if empty)
-	&ConsFree cpush   ;; a=&ConsFree
-	
-	a @ null ne &*FreelistOk jmp?
+	&ConsFree cpush ;; a
+	a &FreePop call cpush ;; b=ptr/null
+	b null ne &*ok jmp?
+		HERE b!				;; b=ptr new cons
+		wordsize 2 mul allot  ;; reserve the space
+	:*ok
+	b ret
 
-		;; freelist is empty, allocate one Cons and put it in freelist
-		&ConsAlloc call
 	
-	:*FreelistOk
-	
-	;; got data in freelist, take first cons
-
-	a @  		;; (ptr to Cons)
-
-	dup @ a !   ;; &ConsFree = cons.car
-
-	;; (Ptr)
-	ret
-	
-:ConsDispose  ;; (ptr -- )
-	&ConsFree cpush 	;; a=&ConsFree
-	
-	dup a swap 		;; (ptr &ConsFree ptr)
-		!		;; ptr.car=&ConsFree
-		
-	;; (ptr)
-	a !			;; &ConsFree=ptr
-	;; no return value
-	ret
+:ConsDispose  ;; ( ptr -- )
+	&ConsFree &FreePush call ret
 
 ;; ---------------------------------
 ;; Reserved tags, must be present
