@@ -18,24 +18,25 @@
 ;
 ; ---
 ;
-; Note that the :Init and :Main tags are never jumped to nor called, and 
-; so they exist for clarity only. Also note that the remaining global tags
+; Note that the :Init tag is never jumped to nor called, and so
+; exists for clarity only. Also note that the remaining global tags
 ; before the :DATA are supposed to be call'ed, and end in 'ret' to return.
 ;
 
 :Init
+
 	&DATA SET_DATA_START  ; to catch write attempts below this limit
 
 	;; initialize pointers to zero
-	null &ConsFree !
-	null &DictHead !
+	0 &ConsFree !
+	0 &DictHead !
 
-:Tests
+	;; tests
+	
+	; &ConsGet call
+	; &ConsDispose call
 
-	&ConsGet call
-	&ConsDispose call
-
-	&ConsGet call
+	; &ConsGet call
 	
 :Main
  	cr 'HERE ': 2 show HERE print cr
@@ -61,6 +62,7 @@
 	b ret
 
 ;; Push an element on the freelist
+
 
 :FreePush ; ( dataAddr freeHead -- )
 	cpush		;; a=freeHead
@@ -88,20 +90,19 @@
 
 
 :ConsGet  ; ( -- ConsPtr) - get Cons cell from free list (call ConsAlloc first if empty)
-	&ConsFree cpush ;; a
-	a &FreePop call cpush ;; b=ptr/null
-	b null ne &*ok jmp?
-		HERE b!				;; b=ptr new cons
+	&ConsFree &FreePop call cpush ;; a=ptr/null
+	a null ne &*ok jmp?
+		HERE a!				;; a=ptr new cons
 		wordsize 2 mul allot  ;; reserve the space
 	:*ok
-	b ret
+	a ret
 
 	
 :ConsDispose  ;; ( ptr -- )
 	&ConsFree &FreePush call ret
 
 ;; ---------------------------------
-;; Reserved tags, must be present
+;; Reserved tag, must be present 
 ;; ---------------------------------	
 
 :DATA		
@@ -118,13 +119,11 @@
 ;; initialized, will look like this: 0 0 x x. The two "x" are the extra zeroes.
 ;;
 
-:ConsFree 0 0 0 0	;; freelist pointer 	
+:ConsFree ret ret 	;; freelist pointer 	
 	;; 0 means empty
-	;; Using four instructions to generate four bytes as a placeholder.
-	;; The value is nulled in the Init section before use. Using 4 bytes instead
-	;; of 2 to ensure compatibility with 4 byte wordsize - any more is
-	;; unthinkable for embedded devices
+	;; Using instructions to generate a placeholder.
+	;; The value is nulled in the Init section before use.
 
-:DictHead 0 0 0 0   ;; pointer
+:DictHead ret ret   ;; pointer
 
 

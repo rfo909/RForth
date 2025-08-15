@@ -19,7 +19,7 @@ The goal is to validate the output from the Assembler.
 	self.WORDSIZE = 2
 	self.memory=HWSim:Memory(self.WORDSIZE)
 	self.memory.malloc(code.length)
-
+	
 	# write the code into memory
 	addr=0
 	code.chars->c self.memory.writeChar(addr,c) addr=addr+1 |
@@ -111,8 +111,22 @@ The goal is to validate the output from the Assembler.
 	self.executeInstruction=Lambda{
 		pc=self.PC
 
-		name="_"+self.memory.readChar(self.PC)
-		if (self.has(name)) {
+		# self.xx lambda
+		name=null
+		
+		instr=self.memory.readByte(self.PC)
+		if (instr < 32) {
+			# reserved
+			error("Reserved instruction: " + instr)
+		} else if (instr > 127) {
+			# address and constant table lookup
+			# (not implemented)
+		} else {
+			instr=Sys.uchar(instr)
+			name="_"+instr
+		}
+		# execute named function
+		if (name != null && self.has(name)) {
 			closure = self.get(name)
 			result = tryCatch(closure.call)
 			
@@ -126,7 +140,7 @@ The goal is to validate the output from the Assembler.
 				self.executionCount=self.executionCount+1
 			}
 		} else {
-			println("*** Unknown instruction member",name,"PC=" + pc,"count="+self.executionCount)
+			println("*** Unknown instruction member",name,"PC=" + pc,"instr=" + instr, "count="+self.executionCount)
 		}
 	}
 

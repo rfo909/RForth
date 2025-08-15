@@ -1,0 +1,197 @@
+# Up to 127 jump and call target addresses, as well as unnamed numeric constants, are stored 
+# in a memory table looked up by index. The named values are the tags, which may be defined then
+# used, or used before defined. This class also sees to it that no tag is redefined.
+#
+# Second, there are the numeric constant, which do not have a name, and simply reuse any slot
+# in the table with that number, or adds one if not present.
+# --
+	self.numberData=List
+	self.tags=Dict
+		
+	# lookup named tag, or add it in wait for it to be defined later, return slot position
+	self.tagLookup = Lambda{
+		P(1) as String => name
+
+		if (self.tags.has(name)) {
+			self.tags.get(name)
+		} else {
+			# since we don't know a value, we can not reuse any slot, so creating new null valued element
+			pos=self.numberData.length
+			self.numberData.add(null)
+			self.tags.set(name,pos)
+			pos
+		}
+	}
+		
+	# returns index into table / only allowed to define each name once
+	self.defineTag = Lambda{
+		P(1) as String => name
+		P(2) as int => value
+		
+		error(value<0 || value >= 2^16, "Invalid address: " + value)
+		
+		if (self.tags.has(name)) {
+			pos=self.tags.get(name)
+			error (self.numberData.get(pos) != null, "Duplicate tag definition " + name)
+			self.numberData.set(pos,value)
+			pos
+		} else {
+			pos=self.constantValue(value)
+			self.tags.set(name,pos)
+			pos
+		}
+	}
+	
+	# get slot for simple numeric constant
+	self.constantValue = Lambda {
+		P(1) as int => value
+		pos=0
+		found=false
+		loop
+			break(pos>=self.numberData.length)
+			if (self.numberData.get(pos)==value) {
+				found=true
+			} else {
+				pos=pos+1
+			}
+			break(found)
+		|
+		if (!found) {
+			pos=self.numberData.length
+			self.numberData.add(value)
+		}
+		pos
+	}
+	
+	self.getTagListSorted = Lambda{
+		self.tags.keys->tag
+			out(Int(self.resolveTag(tag), tag))
+		| _.sort->x
+			out(x.data)
+	}
+	
+	
+	self.resolveConstant = Lambda {
+		P(1) as int => byte
+		self.numberData.get(byte)
+	}
+	
+	self.resolveTag = Lambda {
+		P(1) as String => tag
+		error(!self.tags.has(tag), "Unknown tag: " + tag)
+		pos=self.tags.get(tag)
+		self.numberData.get(pos)
+	}
+	
+	
+	self.generateOutput = Lambda {
+		# Check that all symbols are defined
+		self.tags.keys->key
+			pos=self.tags.get(key)
+			if (self.numberData.get(pos)==null) error("Symbol '"+key+"' has no value")
+		|
+		self.numberData->v out(v.hex(4)) | _.concat
+	}
+	
+	self.getNumberCount = Lambda {
+		self.numberData.length
+	}	
+
+
+	self.symbols=Dict
+	self.symbolString=""
+	
+	# Symbols are stored in a separate string located somewhere at runtime,
+	# and the symbols are a position in that string, which points at the length
+	# in hex, followed by the characters. As the indexes in the symbolString
+	# will easily exceed a single byte, we go through the numberTable, storing
+	# a two-byte value and producing a single byte lookup for that number.
+	self.addSymbol = Lambda {
+		P(1) as String => symbol
+		error(symbol.length > 255, "Symbol too long: " + symbol)
+		
+		# Check that no forbidden characters
+		Inner{
+			symbol.chars->c
+				code = c.toHexString("ISO-8859-1").parseInt(16)
+				error (code < 33 || code > 127, "Invalid symbol character: " + c)
+		}
+		
+		if (self.symbols.has(symbol)) {
+			self.symbols.get(symbol)
+		} else {
+			symPos=self.symbolString.length
+			symbolRepresentation = symbol.length.hex(2).toUpper+symbol
+			self.symbolString = self.symbolString + symbolRepresentation
+			numberPos=self.constantValue(symPos)
+			self.symbols.set(symbol,numberPos)
+			numberPos
+		}
+	}
+	
+/class NumberTable	
+
+
+	
+
+
+
+	
+	
+# Test
+# --
+	t=NumberTable
+	
+	a=t.defineTag("A",5)
+	b=t.constantValue(1)
+	c=t.tagLookup("B")
+	d=t.defineTag("Av",19)
+	e=t.constantValue(2)
+	f=t.constantValue(1)
+	g=t.defineTag("B",21)
+	
+	println("---")
+	println("Output: " + t.generateOutput)
+	println("---")
+	
+	
+	
+	println 
+	println(a,b,c,d,e,f,g)
+	
+	error(""+a+b+c+d+e+f+g != "0123412", "t1 wrong result")
+	
+	t.tagLookup("D")  # undefined
+	t.defineTag("E",23)
+	
+	result = tryCatch(t.generateOutput)
+	if (result.ok) error("t2 should fail")
+	println("Should fail: " + result.msg)  # symbol 'D' undefined
+	
+	t.defineTag("D",25)
+	t.generateOutput   # no error
+	
+	result=tryCatch(t.defineTag("B",99)) # should fail
+	if (result.ok) error("t3 should fail")
+	println("Should fail: " + result.msg) # redefine tag not allowed
+
+	println
+	println("--- symbol table ---")
+	println
+	
+	x=t.addSymbol("test")
+	y=t.addSymbol("x")
+	println("First",x,"->",t.numberData.get(x))
+	println("Second",y,"->",t.numberData.get(y))
+	println("Symbolstring: " + t.symbolString)
+	
+	println("duplicate first:", t.addSymbol("test"))
+	t.defineTag("TOP",0)
+
+	println("Tag list sorted")
+	t.getTagListSorted.print
+	
+	"ok"
+	
+/t
+		

@@ -5,6 +5,7 @@ TODO
 
 Change opcodes from "printable non-space" to more general: just bytes!
 
+
 The copy-paste aspect is easily solved with writing a hex string
 instead. 
 
@@ -12,6 +13,7 @@ The opcode bytes may be organized as follows:
 
 0 		NOT USED
 1-32	System commands (reserved)
+
 33-127  regular instruction set (max 94 opcodes)
 128-255 tag reference lookup
 

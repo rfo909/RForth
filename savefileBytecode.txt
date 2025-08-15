@@ -1,0 +1,50 @@
+# Byte code list
+# --
+	self.result=List
+	self.metaInfo=Dict   # from pos as string to string
+	
+	self.addMeta=Lambda{
+		P(1) as String => s
+		pos=""+self.result.length
+		self.metaInfo.get(pos,"")+s+" " => newMeta
+		self.metaInfo.set(pos,newMeta)
+	}
+		
+	
+	
+	self.addByte=Lambda{
+		P(1) as int => byte
+		error(byte < 0 || byte > 255, "Invalid byte: " + byte)
+		self.result.add(byte)
+	}
+	self.addChar=Lambda{
+		P(1) as String => char
+		error(char.length != 1, "Expected single character")
+		self.result.add(char)
+	}
+	self.addString=Lambda{
+		P(1) as String => s
+		s.chars->c self.addChar(c)
+	}
+	self.length=Lambda{
+		self.result.length
+	}
+	self.getValue=Lambda{
+		P(1) as int => pos
+		self.result.get(pos)
+	}
+	self.getMeta=Lambda{
+		P(1) as int => pos
+		if (self.metaInfo.has(""+pos)) self.metaInfo.get(""+pos) else ""
+	}
+	self.getCodeHex=Lambda{
+		self.result->x
+			num=x
+			if (Sys.getType(num)=="String") {
+				num=num.toHexString("ISO-8859-1").parseInt(16)
+			}
+			out(num.hex(2))
+		| _.concat
+	}
+
+/class Bytecode
