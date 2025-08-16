@@ -12,14 +12,22 @@
 		
 	
 	
-	self.addByte=Lambda{
+	self.addConstantLookupByte=Lambda{
 		P(1) as int => byte
-		error(byte < 0 || byte > 255, "Invalid byte: " + byte)
-		self.result.add(byte)
+		error(byte < 0 || byte > 127, "Invalid constant lookup byte: " + byte)
+		
+		# The NumberTable operates 0-based, but constant lookup
+		# bytes are encoded as 8-bit bytes, to be identified by the
+		# interpreter as different from regular instructions which
+		# operate in the 33-127 range, or even 1-127 if need be.
+			
+		self.result.add(byte+128)
 	}
 	self.addChar=Lambda{
 		P(1) as String => char
 		error(char.length != 1, "Expected single character")
+		code=char.toHexString("ISO-8859-1").parseInt(16)
+		error(code < 33 || code > 127, "Invalid bytecode character: '" + char + "'")
 		self.result.add(char)
 	}
 	self.addString=Lambda{
@@ -45,6 +53,11 @@
 			}
 			out(num.hex(2))
 		| _.concat
+		=>s
+		if (s.length % 2 == 1) {
+			error("Bytecode hex not even: " + s)
+		}
+		s
 	}
 
 /class Bytecode

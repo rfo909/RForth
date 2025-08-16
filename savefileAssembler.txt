@@ -64,6 +64,25 @@
 	BytecodeNumericRange
 	true
 /IRShow
+
+
+# Show interpreter instructions
+# --
+	Sys.savefile.dir.file("savefileInterpreter.txt").read->line
+		
+		assert( line.contains("self._") || line.contains('self.set("_') )
+		out(line.after("self").after("_").chars.first)
+	| _.sort.concat => x
+	
+	locals=Instructions
+	locals.keys->key out(locals.get(key)) | _.sort.concat => y
+	
+	println("Interpreter: " + x)
+	println("Assembler  : " + y)
+	
+	"ok"
+/II
+	
 		
 		
 # Check what instructions remain to be implemented in the interpreter
@@ -110,7 +129,6 @@
 	writeb		:H		;; write byte
 	@		:I		;; read cell/word
 	!		:J		;; write cell/word	
-	SET_DATA_START  :Z	;; to sanity check read/write
 
 	allot		:K
 	HERE		:g
@@ -155,29 +173,16 @@
 	b!		:e
 	c!		:f
 	
+	;; global variables
+	
+	global		:x		;; read global variable ( N -- value )
+	global!		:z		;; set global variable ( value N -- )
+	
 	;; math (note x0-9A-F are not included)
 	add		:+
 	sub		:-
 	mul		:*
 	div		:/
-
-	null		:x   	;; push zero on stack (always a word)
-	0		:0
-	1		:1
-	2		:2
-	3		:3
-	4		:4
-	5		:5
-	6		:6
-	7		:7
-	8		:8
-	9		:9
-	A		:A
-	B		:B
-	C		:C
-	D		:D
-	E		:E
-	F		:F
 
 	;; logical operations
 	eq		:=	;; 0 or 1
@@ -206,6 +211,8 @@
 	cr			:X
 	print#		:Y   ;; print value in decimal
 	printb		:L   ;; print value in binary
+	
+	halt		:Z   ;; halt automatic execution in interactive interpreter
 		
 >>> EOF
 	=>list
@@ -316,7 +323,7 @@
 		if ("0123456789".indexOf(word.chars.first) >= 0 && word.?parseInt) { 
 			n=word.parseInt
 			pos=numberTable.constantValue(n)
-			bytecode.addByte(pos)
+			bytecode.addConstantLookupByte(pos)
 			continue
 		}
 		
@@ -324,7 +331,7 @@
 		if ((word.startsWith("x") || word.startsWith("0x")) && word.after("x").?parseInt(16)) {
 			n=word.after("x").parseInt(16)
 			pos=numberTable.constantValue(n)
-			bytecode.addByte(pos)
+			bytecode.addConstantLookupByte(pos)
 			continue
 		}
 
@@ -332,14 +339,14 @@
 		if (word.startsWith("b") && word.sub(1).?parseInt(2)) {
 			n=word.sub(1).parseInt(2)
 			pos=numberTable.constantValue(n)
-			bytecode.addByte(pos)
+			bytecode.addConstantLookupByte(pos)
 			continue
 		}
 		
 		# -- symbol
 		if (word.startsWith("'")) {
 			symbol=word.after("'")
-			bytecode.addByte(numberTable.addSymbol(symbol))
+			bytecode.addConstantLookupByte(numberTable.addSymbol(symbol))
 			continue
 		}
 		# -- local tag def
@@ -365,13 +372,13 @@
 		# -- local tag reference
 		if (word.startsWith("&*")) {
 			tag=currentTag + "." + word.after("&*")
-			bytecode.addByte(numberTable.tagLookup(tag))
+			bytecode.addConstantLookupByte(numberTable.tagLookup(tag))
 			continue
 		}
 		# -- get global tag value
 		if (word.startsWith("&")) {
 			tag=word.after("&")
-			bytecode.addByte(numberTable.tagLookup(tag))
+			bytecode.addConstantLookupByte(numberTable.tagLookup(tag))
 			continue
 		}
 			
@@ -387,10 +394,6 @@
 		
 	# Now allocate data elements (symbols) 
 	symbols=Dict # store each symbol only once
-
-	
-	# identify address of tag DATA
-	dataStart=numberTable.resolveTag("DATA")  # returns address
 
 	SymDict(bytecode,numberTable)
 /Assemble
@@ -415,25 +418,16 @@
 	
 	bytecode=dict.bytecode
 	numberTable=dict.numberTable
-	
-	dataStart=numberTable.resolveTag("DATA")
 		
 	lookup=InstructionsLookup
 	
 	length=bytecode.length
 	Std.Data.for(0,length,1)->pos
 		
-		
 		p1 = pos.hex(4).toUpper + " "
 		p2 = bytecode.getMeta(pos)
 
 		instr=bytecode.getValue(pos)
-		
-
-		if (pos >= dataStart) {
-			report(p1,p2,instr)
-			continue
-		}
 		
 		p3=""
 		p4=""
@@ -443,8 +437,9 @@
 			}
 			else error("Unknown instruction '" + instr + "'")
 		} else if (Sys.getType(instr)=="int") {
+			error(instr < 128, "lookup byte invalid value: " + instr)
 			p3="["+instr+"]"
-			constantValue=numberTable.resolveConstant(instr)
+			constantValue=numberTable.resolveConstant(instr-128)
 			
 			p4 = "push 0x" + constantValue.hex(4).toUpper
 		} else {
@@ -463,6 +458,7 @@
 	Disassemble(dict)
 	
 	bytecode=dict.bytecode
+	metaInfo=dict.bytecode.metaInfo # indexed by ""+PC
 	numberTable=dict.numberTable
 	
 	# Display all tags
@@ -479,21 +475,31 @@
 
 	# Display code as block that can be copy-pasted
 	
+	println("bytecode")
 	hexBlock=bytecode.getCodeHex
+	BlockFormat(bytecode.getCodeHex)
+	println(bytecode.getCodeHex.length)
 	
 	numbersStart=hexBlock.length div 2
 	hexBlock=hexBlock + numberTable.generateOutput   # hex
+	println
+	println("numberTable")
+	println(numberTable.generateOutput)
+	println(numberTable.generateOutput.length)
 
 	symbolsStart = hexBlock.length div 2
-	hexBlock=hexBlock + numberTable.symbolString.toHexString("ISO-8859-1")
-	
-	systemInfo="" + numbersStart + ":" + symbolsStart
-
-	BlockFormat(hexBlock)
+	hexBlock=hexBlock + numberTable.getSymbolHexString
+	println
+	println("symbols")
+	println(numberTable.getSymbolHexString)
+	println(numberTable.getSymbolHexString.length)
+	println
 	
 	println
-	println("Sys=" + systemInfo)
+	println("numbersStart", numbersStart)
+	println("symbolsStart", symbolsStart)
 	println
+	println("Hexblock length:", hexBlock.length)
 	println("Total #bytes:", hexBlock.length div 2)
 	
 
@@ -501,7 +507,7 @@
 	tags=numberTable.tags
 	tagListSorted=numberTable.getTagListSorted
 	
-	Db2:Set("RForth", "data", SymDict(hexBlock, numbersStart, symbolsStart, tags, tagListSorted))
+	Db2:Set("RForth", "data", SymDict(hexBlock, numbersStart, symbolsStart, tags, tagListSorted, metaInfo))
 	
 	println("Constant numbers used = " + numberTable.getNumberCount + " of 127")
 	println

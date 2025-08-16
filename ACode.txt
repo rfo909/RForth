@@ -18,28 +18,28 @@
 ;
 
 :Init
+	;; create variables in normal memory, 
+	HERE 0 global!
+	2 wordsize mul allot
+	&Main jmp
 
-	&DATA SET_DATA_START  ; to catch write attempts below this limit
-
-	;; initialize pointers to zero
-	0 &ConsFree !
-	0 &DictHead !
-
-	;; tests
+:ConsHead
+	0 global ret
 	
-	; &ConsGet call
-	; &ConsDispose call
-
-	; &ConsGet call
+:DictHead
+	0 global wordsize add ret
 	
 :Main
- 	cr 'HERE ': 2 show HERE print cr
+ 	cr 'HERE ': 2 show HERE print 
+ 	
+	&ConsGet call
+	&ConsDispose call
 
+	&ConsGet call
 
-
-:Halt			;; endless loop
-	&Halt jmp
-
+ 	cr 'After ': 'HERE ': 4 show HERE print 
+ 	
+ 	halt
 
 
 
@@ -72,13 +72,16 @@
 	
 	
 	
-
+	
+;; Global data structures depend on
+;; ConsHead and DictHead, which point to words on the heap 
+;; (see Init)
+;; ---------------------------------------------------------	
 
 ;; Dictionary stuff
 ;;	
 	
 ; (TODO)
-
 
 ;; CONS cells are created as a two-word CAR+CDR tuple. They are allotted
 ;; as needed, but also freelisted when disposed off. To calculate the CDR address
@@ -86,40 +89,20 @@
 
 
 :ConsGet  ; ( -- ConsPtr) - get Cons cell from free list (call ConsAlloc first if empty)
-	&ConsFree &FreePop call cpush ;; a=ptr/null
-	a null ne &*ok jmp?
-		HERE a!				;; a=ptr new cons
+	&ConsHead call cpush     ;; a=&ConsHead pointer
+	a &FreePop call cpush ;; b=ptr/null
+	b null ne &*ok jmp?
+		HERE b!				;; a=ptr new cons
 		wordsize 2 mul allot  ;; reserve the space
 	:*ok
-	a ret
+	b ret
 
 	
 :ConsDispose  ;; ( ptr -- )
-	&ConsFree &FreePush call ret
+	&ConsHead call &FreePush call ret
 
 ;; ---------------------------------
 ;; Reserved tag, must be present 
 ;; ---------------------------------	
-
-:DATA		
-	;; data is generated here, which includes symbols - the tag is used 
-	;; by disassembler to show bytes correctly beyond this point (not 
-	;; as instructions)
-
-;; for pointers we reserve bytes by entering instructions that occupy 4 bytes,
-;; even though we are never going to call them. Using 4 bytes instead of
-;; just 2 (current wordsize) ensures compatibility with a future 4 byte word size.
-;;
-;; At the top of the code, these pointers are nulled with program code, before being
-;; used. Note that on a 2-byte word size, listing the memory for a pointer, once
-;; initialized, will look like this: 0 0 x x. The two "x" are the extra zeroes.
-;;
-
-:ConsFree ret ret 	;; freelist pointer 	
-	;; 0 means empty
-	;; Using instructions to generate a placeholder.
-	;; The value is nulled in the Init section before use.
-
-:DictHead ret ret   ;; pointer
 
 

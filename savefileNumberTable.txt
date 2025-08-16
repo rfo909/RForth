@@ -7,6 +7,7 @@
 # --
 	self.numberData=List
 	self.tags=Dict
+	
 		
 	# lookup named tag, or add it in wait for it to be defined later, return slot position
 	self.tagLookup = Lambda{
@@ -90,7 +91,9 @@
 			pos=self.tags.get(key)
 			if (self.numberData.get(pos)==null) error("Symbol '"+key+"' has no value")
 		|
-		self.numberData->v out(v.hex(4)) | _.concat
+		self.numberData->v 
+			out(v.hex(4)) 
+		| _.concat
 	}
 	
 	self.getNumberCount = Lambda {
@@ -130,6 +133,12 @@
 			self.symbols.set(symbol,numberPos)
 			numberPos
 		}
+	}
+	
+	self.getSymbolHexString = Lambda{
+		s=self.symbolString.toHexString("ISO-8859-1")
+		error(s.length % 2 == 1,"Uneven number of digits: " + s)
+		s
 	}
 	
 /class NumberTable	

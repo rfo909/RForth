@@ -9,7 +9,9 @@ The goal is to validate the output from the Assembler.
 
 # The interpreter
 # --
-	P(1) as String => code
+	P(1) as String => hexString
+	P(2) as int => numberLookupStart
+	P(3) as int => symbolLookupStart
 
 	# number of words
 	DSTACK_WORDS = 20
@@ -18,50 +20,60 @@ The goal is to validate the output from the Assembler.
 	
 	self.WORDSIZE = 2
 	self.memory=HWSim:Memory(self.WORDSIZE)
-	self.memory.malloc(code.length)
+		
+	self.globalVariableCount = 4
+		# global variables, read with instruction 'global' and set with 'global!'
 	
-	# write the code into memory
-	addr=0
-	code.chars->c self.memory.writeChar(addr,c) addr=addr+1 |
+	# --- write the hex string into memory
+	
+	bytes = Util:HexToBytes(hexString)
+	addr=self.memory.HERE
+	error(addr != 0, "Invalid start address: " + addr)
+
+	self.memory.malloc(bytes.length)
+	bytes->b self.memory.writeByte(addr,b) addr=addr+1 |
+
+	# -- store information about the imported hex string
+	
+	self.numberLookupStart=numberLookupStart
+	self.symbolLookupStart=symbolLookupStart
+	self.symbolLookupEnd=bytes.length
 
 	self.PC=0
-	self.DATA_START=0 # set to actual value by code, guards against runaway writes into the base code
+	self.haltFlag=false
 
-	self.HERE = Lambda{
-		self.memory.HERE
-	}
 		
-	# the call stack and data stacks exist in self.memory and grow upwards, storing words only,
-	# for predictable address calculations.
+	# --- create system data objects in memory
+	
+	# the data stack stores single words
 
-	self.dbase=self.HERE
+	self.dbase=self.memory.HERE
 	self.memory.mallocWords(DSTACK_WORDS)
 	self.dataStack=HWSim:MemStack(self.memory, self.dbase, DSTACK_WORDS, "data")
 
-	self.cbase=self.HERE
+	# the call stack stores single words
+	
+	self.cbase=self.memory.HERE
 	self.memory.mallocWords(CSTACK_WORDS)
 	self.callStack=HWSim:MemStack(self.memory, self.cbase, CSTACK_WORDS, "calls")
 
 	# the frame stack stores frames as two words: base and size
-	self.fbase=self.HERE
+	
+	self.fbase=self.memory.HERE
 	FSTACK_WORDS=FSTACK_FRAMES*2
 	self.memory.mallocWords(FSTACK_WORDS)
 	self.frameStack=HWSim:MemStack(self.memory, self.fbase, FSTACK_WORDS, "frames")
 
-	# the frameStack contains dictionaries identifying the base and the top of the current
-	# call frame, which lives on the call stack.
+	# global variables
+	self.globalVariablesBase=self.memory.HERE
+	self.memory.mallocWords(self.globalVariableCount)
 	
-	self.nextInstruction=Lambda{
-		self.memory.readChar(self.PC)
-	}
+	# --- done with integrating code and setting up system structures on heap
 
-	self.showMem=Lambda{
-		P(1)=>fromAddr
-		P(2,fromAddr+10) => toAddr
-		result = tryCatch(self.memory.dump(fromAddr,toAddr))
-		if (!result.ok) {
-			println("*** FAILED: " + result.msg)
-		}
+	self.DATA_START=self.memory.HERE
+
+	self.nextInstruction=Lambda{
+		self.memory.readByte(self.PC)
 	}
 
 
@@ -109,39 +121,43 @@ The goal is to validate the output from the Assembler.
 
 	self.executionCount=1
 	self.executeInstruction=Lambda{
-		pc=self.PC
 
-		# self.xx lambda
-		name=null
+		pc = self.PC
 		
 		instr=self.memory.readByte(self.PC)
 		if (instr < 32) {
 			# reserved
 			error("Reserved instruction: " + instr)
 		} else if (instr > 127) {
-			# address and constant table lookup
-			# (not implemented)
+			# constant number lookup
+			index=instr-128
+			addr=self.numberLookupStart+(index*self.WORDSIZE)
+			value=self.memory.readWord(addr)
+			#println("[" + instr + "] push 0x" + value.hex(4).toUpper)
+			self.push(value)
 		} else {
 			instr=Sys.uchar(instr)
-			name="_"+instr
-		}
-		# execute named function
-		if (name != null && self.has(name)) {
-			closure = self.get(name)
+			lambdaName="_"+instr
+			
+			error(!self.has(lambdaName), "Unknown instruction lambda '" + lambdaName + "'") 
+
+			closure = self.get(lambdaName)
 			result = tryCatch(closure.call)
 			
 			if (!result.ok) {
-				println("*** Execution failed:", result.msg, "PC", pc, "count", self.executionCount)
-			} else {
-				# executed ok, now update PC unless a jump has already moved it
-				if (self.PC == pc) {
-					self.PC=pc+1
-				}
-				self.executionCount=self.executionCount+1
+				error ("Execution failed: " 
+				+ " lambdaName=" + lambdaName 
+				+ " msg=" + result.get("msg","(no message)")
+				+ " PC=" + pc
+				+ " count=" + self.executionCount)
 			}
-		} else {
-			println("*** Unknown instruction member",name,"PC=" + pc,"instr=" + instr, "count="+self.executionCount)
 		}
+		
+		# Executed ok, now update PC unless a jump has already moved it
+		if (self.PC == pc) {
+			self.PC=pc+1
+		}
+		self.executionCount=self.executionCount+1
 	}
 
 	self._k=Lambda{ # wordsize ( -- N )
@@ -163,25 +179,8 @@ The goal is to validate the output from the Assembler.
 		self.memory.writeByte(addr,value)
 	}
 
-	self._x=Lambda{self.push(0)} # null push a zero ( -- 0 )
-	self._0=Lambda{self.push(self.pop*16+0)} # 0 ( m -- n )  n=16*m + digit value
-	self._1=Lambda{self.push(self.pop*16+1)} # 1 ( m -- n )  n=16*m + digit value
-	self._2=Lambda{self.push(self.pop*16+2)} # 2 ( m -- n )  n=16*m + digit value
-	self._3=Lambda{self.push(self.pop*16+3)} # 3 ( m -- n )  n=16*m + digit value
-	self._4=Lambda{self.push(self.pop*16+4)} # 4 ( m -- n )  n=16*m + digit value
-	self._5=Lambda{self.push(self.pop*16+5)} # 5 ( m -- n )  n=16*m + digit value
-	self._6=Lambda{self.push(self.pop*16+6)} # 6 ( m -- n )  n=16*m + digit value
-	self._7=Lambda{self.push(self.pop*16+7)} # 7 ( m -- n )  n=16*m + digit value
-	self._8=Lambda{self.push(self.pop*16+8)} # 8 ( m -- n )  n=16*m + digit value
-	self._9=Lambda{self.push(self.pop*16+9)} # 9 ( m -- n )  n=16*m + digit value
-	self._A=Lambda{self.push(self.pop*16+10)} # A ( m -- n )  n=16*m + digit value
-	self._B=Lambda{self.push(self.pop*16+11)} # B ( m -- n )  n=16*m + digit value
-	self._C=Lambda{self.push(self.pop*16+12)} # C ( m -- n )  n=16*m + digit value
-	self._D=Lambda{self.push(self.pop*16+13)} # D ( m -- n )  n=16*m + digit value
-	self._E=Lambda{self.push(self.pop*16+14)} # E ( m -- n )  n=16*m + digit value
-	self._F=Lambda{self.push(self.pop*16+15)} # F ( m -- n )  n=16*m + digit value
 
-	## Local variable pointer instructions a-f
+	## Local variable instructions a-f
 
 	self._a=Lambda{  # a read local variable a ( -- value )
 		frameInfo=self.fpeek
@@ -362,18 +361,15 @@ The goal is to validate the output from the Assembler.
 		println
 	}
 
-	self._Z=Lambda{ # SET_DATA_START ( addr -- )
-		value=self.pop
-		println("DATA_START = 0x" + value.hex(4).toUpper)
-		self.DATA_START = value
-	}
-
 	self._V=Lambda{ # show ( sym sym ... count -- )
 		count=self.pop  # number of symbols
 
 		Std.Data.for(0,count,1)->i
 			out(self.pop)
-		| _.reverse -> symbolAddr
+		| _.reverse -> symbolRelativePos
+			symbolAddr=self.symbolLookupStart + symbolRelativePos
+			error(symbolAddr > self.symbolLookupEnd - self.WORDSIZE, "Invalid symbol lookup address: " + symbolAddr)
+			
 			self.memory.readChar(symbolAddr) => h
 			self.memory.readChar(symbolAddr+1) => l
 			(h+l).parseInt(16)=>length
@@ -432,6 +428,23 @@ The goal is to validate the output from the Assembler.
 		value=self.pop
 		self.push(HWSim:Rightshift(value, bits, self.WORDSIZE))
 	}
+	
+	self._x=Lambda { # global - get global variable ( N -- value)
+		n=self.pop
+		error(n<0 || n>=self.globalVariableCount, "global: invalid reference: " + n)
+		addr=self.globalVariablesBase + n*2
+		self.push(self.memory.readWord(addr))
+	}
+	self._z=Lambda { # global! - set global variable ( value N -- )
+		n=self.pop
+		value=self.pop
+		error(n<0 || n>=self.globalVariableCount, "global!: invalid reference: " + n)
+		addr=self.globalVariablesBase + n*2
+		self.memory.writeWord(addr, value)
+	}
+	self._Z=Lambda{  # halt - terminate execution
+		self.haltFlag=true
+	}
 
 /class Interpreter
 
@@ -472,72 +485,62 @@ The goal is to validate the output from the Assembler.
 	}
 //ReadAddress
 
-
-# Look up closest tag from address
-# --
-	P(1) as int => address
-	tags=Db2:Get("RForth","tags",Dict)
-	
-	smallestDiff=9999
-	forTag=""
-	tags.keys->tag
-		tagAddr=tags.get(tag)  # on format xNNNN (hex)
-		tagAddr=tagAddr.after("x").parseInt(16)
-		reject(tagAddr > address)
-		diff=address-tagAddr
-		if (diff < smallestDiff) {
-			smallestDiff=diff
-			forTag=tag
-		}
-	|
-	forTag
-/GetClosestTag	
 		
 
 # Test
 # --
-	P(1) => code
-	
-	code = Db2:Get("RForth","code",null)
-	
-	if (code==null) {
-		println("Paste then . for code")
-		code=readLines(".").concat
-	}
-	
-	Lib:Header("Code string: " + code.length + " bytes")
-	println
-	
+	dict = Db2:Get("RForth","data")
+	hexBlock=dict.hexBlock
+	numbersStart=dict.numbersStart
+	symbolsStart=dict.symbolsStart
+	tags=dict.tags
+	tagListSorted=dict.tagListSorted
+	metaInfo=dict.metaInfo
 	
 	iCount=0
 	autoRunCount=0
 
-	x=Interpreter(code)
+	interpreter=Interpreter(hexBlock, numbersStart, symbolsStart)
 
 	loop
+		if (interpreter.haltFlag) {
+			if (autoRunCount>0) {
+				println
+				Lib:Header("haltFlag set, stopping automatic execution, then resetting it")
+				autoRunCount=0
+			} else {
+				println
+				println("haltFlag detected, resetting it")
+				println
+			}
+			interpreter.haltFlag=false
+		}
 		if (autoRunCount > 0) {
-			x.executeInstruction
+			interpreter.executeInstruction
 			iCount=iCount+1
 			autoRunCount=autoRunCount-1
 			continue
 		}
 			
-		instr=x.nextInstruction
+		instr=interpreter.nextInstruction
 		instrName=instr
-		instrName=Assembler:InstructionsLookup.get(instr)
+		if (instr >= 33 && instr <= 127) {
+			instr=Sys.uchar(instr)
+			instrName=Assembler:InstructionsLookup.get(instr)
+			
+		}
 		
 		println
 		# show dataStack
-		println("dataStack  0x" + x.dbase.hex(4) + " [ " + ShowWordStack(x.dataStack) + " ] TOP")
+		println("dataStack  0x" + interpreter.dbase.hex(4) + " [ " + ShowWordStack(interpreter.dataStack) + " ] TOP")
 		# show callStack
-		println("callStack  0x" + x.cbase.hex(4) + " [ " + ShowWordStack(x.callStack) + " ] TOP")
+		println("callStack  0x" + interpreter.cbase.hex(4) + " [ " + ShowWordStack(interpreter.callStack) + " ] TOP")
 		# show frameStack
-		println("frameStack 0x" + x.fbase.hex(4) + " [ " + ShowFrameStack(x.frameStack) + " ] TOP")
-		println("HERE = " + x.HERE)
+		println("frameStack 0x" + interpreter.fbase.hex(4) + " [ " + ShowFrameStack(interpreter.frameStack) + " ] TOP")
+		println("HERE = 0x" + interpreter.memory.HERE.hex(4).toUpper +  " (" + interpreter.memory.HERE + ")")
 		println
 		println("#" + iCount, 
-			"[" + GetClosestTag(x.PC)+ "]", 
-			"PC:", "0x" + ("0000"+x.PC.hex.toUpper).last(4), 
+			"PC:", "0x" + ("0000"+interpreter.PC.hex.toUpper).last(4), 
 			instrName)
 		
 		println
@@ -546,15 +549,15 @@ The goal is to validate the output from the Assembler.
 			break
 		} else if (command=="i") {
 			addr=ReadAddress
-			x.showMem(addr)
+			interpreter.showMem(addr)
 		} else if (command=="w") {
 			addr=ReadAddress
-			value=x.memory.readWord(addr)
+			value=interpreter.memory.readWord(addr)
 			println("=> " + value + " x" + value.hex)
 		} else if (command=="r") {
 			Input("Enter number of instructions to run").get.parseInt => autoRunCount
 		} else if (command.trim=="") {
-			x.executeInstruction
+			interpreter.executeInstruction
 			iCount=iCount+1
 		}
 		
