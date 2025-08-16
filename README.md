@@ -138,6 +138,201 @@ from a call (ret), we have all the information we need to locate the return posi
 is removed from the call stack, and size for the frame is decremented by one, before
 updating the PC, effectively doing a jump.
 
+Disassembler
+------------
+The Assembler script also contains a disassembler that is immediately applied to the output
+from the Assembler, to show what has been done. 
+
+Example source:
+
+```
+:Init
+	;; create variables in normal memory, 
+	HERE 0 global!
+	2 wordsize mul allot
+	&Main jmp
+
+:ConsHead
+	0 global ret
+	
+:DictHead
+	0 global W+ ret
+	
+:Main
+ 	cr 'HERE ': 2 show HERE print 
+ 	
+	&ConsGet call
+	&ConsDispose call
+	&ConsGet call
+
+ 	cr 'After ': 'HERE ': 4 show HERE print 
+ 	
+	
+:Halt 
+	halt
+	&Halt jmp
+
+
+
+;; Generalized free list mechanism
+;; -------------------------------
+
+;; Pop an element off the freelist, or null if freelist empty
+
+:FreePop   ; ( freeHead -- null|ptr )
+	cpush			;; a=address of freelist head word
+	a @ dup cpush null ne &*notEmpty jmp?  ;; b=address of first element in free list
+		null ret
+
+	:*notEmpty
+	b @ a!			;; store b.next (first word) into freelist head
+	b ret
+
+;; Push an element on the freelist
+
+
+:FreePush ; ( dataAddr freeHead -- )
+	cpush		;; a=freeHead
+	cpush		;; b=dataAddr
+
+	a @ b !		;; store freeHead into dataAddr.next (first word)
+	b a !		;; store dataAddr in freeHead
+	
+	ret
+	
+	
+	
+	
+	
+;; Global data structures depend on
+;; ConsHead and DictHead, which point to words on the heap 
+;; (see Init)
+;; ---------------------------------------------------------	
+
+;; Dictionary stuff
+;;	
+	
+; (TODO)
+
+;; CONS cells are created as a two-word CAR+CDR tuple. They are allotted
+;; as needed, but also freelisted when disposed off. To calculate the CDR address
+;; from the Cons pointer: W+
+
+
+:ConsGet  ; ( -- ConsPtr) - get Cons cell from free list (call ConsAlloc first if empty)
+	&ConsHead call cpush     ;; a=&ConsHead pointer
+	a &FreePop call cpush ;; b=ptr/null
+	b null ne &*ok jmp?
+		HERE b!				;; a=ptr new cons
+		wordsize 2 mul allot  ;; reserve the space
+	:*ok
+	b ret
+
+	
+:ConsDispose  ;; ( ptr -- )
+	&ConsHead call &FreePush call ret
+
+```
+
+
+
+Output:
+
+```
+   0: 0000  | :Init HERE              |       | HERE       
+   1: 0001  | 0                       | [128] | push 0x0000
+   2: 0002  | global!                 |       | global!    
+   3: 0003  | 2                       | [129] | push 0x0002
+   4: 0004  | wordsize                |       | wordsize   
+   5: 0005  | mul                     |       | mul        
+   6: 0006  | allot                   |       | allot      
+   7: 0007  | &Main                   | [130] | push 0x0010
+   8: 0008  | jmp                     |       | jmp        
+   9: 0009  | :ConsHead 0             | [128] | push 0x0000
+  10: 000A  | global                  |       | global     
+  11: 000B  | ret                     |       | ret        
+  12: 000C  | :DictHead 0             | [128] | push 0x0000
+  13: 000D  | global                  |       | global     
+  14: 000E  | W+                      |       | W+         
+  15: 000F  | ret                     |       | ret        
+  16: 0010  | :Main cr                |       | cr         
+  17: 0011  | 'HERE                   | [128] | push 0x0000
+  18: 0012  | ':                      | [133] | push 0x0006
+  19: 0013  | 2                       | [129] | push 0x0002
+  20: 0014  | show                    |       | show       
+  21: 0015  | HERE                    |       | HERE       
+  22: 0016  | print                   |       | print      
+  23: 0017  | &ConsGet                | [134] | push 0x0043
+  24: 0018  | call                    |       | call       
+  25: 0019  | &ConsDispose            | [135] | push 0x0057
+  26: 001A  | call                    |       | call       
+  27: 001B  | &ConsGet                | [134] | push 0x0043
+  28: 001C  | call                    |       | call       
+  29: 001D  | cr                      |       | cr         
+  30: 001E  | 'After                  | [131] | push 0x0009
+  31: 001F  | ':                      | [133] | push 0x0006
+  32: 0020  | 'HERE                   | [128] | push 0x0000
+  33: 0021  | ':                      | [133] | push 0x0006
+  34: 0022  | 4                       | [136] | push 0x0004
+  35: 0023  | show                    |       | show       
+  36: 0024  | HERE                    |       | HERE       
+  37: 0025  | print                   |       | print      
+  38: 0026  | :Halt halt              |       | halt       
+  39: 0027  | &Halt                   | [137] | push 0x0026
+  40: 0028  | jmp                     |       | jmp        
+  41: 0029  | :FreePop cpush          |       | cpush      
+  42: 002A  | a                       |       | a          
+  43: 002B  | @                       |       | @          
+  44: 002C  | dup                     |       | dup        
+  45: 002D  | cpush                   |       | cpush      
+  46: 002E  | 0                       | [128] | push 0x0000
+  47: 002F  | ne                      |       | ne         
+  48: 0030  | &*notEmpty              | [139] | push 0x0034
+  49: 0031  | jmp?                    |       | jmp?       
+  50: 0032  | 0                       | [128] | push 0x0000
+  51: 0033  | ret                     |       | ret        
+  52: 0034  | :*notEmpty b            |       | b          
+  53: 0035  | @                       |       | @          
+  54: 0036  | a!                      |       | a!         
+  55: 0037  | b                       |       | b          
+  56: 0038  | ret                     |       | ret        
+  57: 0039  | :FreePush cpush         |       | cpush      
+  58: 003A  | cpush                   |       | cpush      
+  59: 003B  | a                       |       | a          
+  60: 003C  | @                       |       | @          
+  61: 003D  | b                       |       | b          
+  62: 003E  | !                       |       | !          
+  63: 003F  | b                       |       | b          
+  64: 0040  | a                       |       | a          
+  65: 0041  | !                       |       | !          
+  66: 0042  | ret                     |       | ret        
+  67: 0043  | :ConsGet &ConsHead      | [131] | push 0x0009
+  68: 0044  | call                    |       | call       
+  69: 0045  | cpush                   |       | cpush      
+  70: 0046  | a                       |       | a          
+  71: 0047  | &FreePop                | [138] | push 0x0029
+  72: 0048  | call                    |       | call       
+  73: 0049  | cpush                   |       | cpush      
+  74: 004A  | b                       |       | b          
+  75: 004B  | 0                       | [128] | push 0x0000
+  76: 004C  | ne                      |       | ne         
+  77: 004D  | &*ok                    | [141] | push 0x0055
+  78: 004E  | jmp?                    |       | jmp?       
+  79: 004F  | HERE                    |       | HERE       
+  80: 0050  | b!                      |       | b!         
+  81: 0051  | wordsize                |       | wordsize   
+  82: 0052  | 2                       | [129] | push 0x0002
+  83: 0053  | mul                     |       | mul        
+  84: 0054  | allot                   |       | allot      
+  85: 0055  | :*ok b                  |       | b          
+  86: 0056  | ret                     |       | ret        
+  87: 0057  | :ConsDispose &ConsHead  | [131] | push 0x0009
+  88: 0058  | call                    |       | call       
+  89: 0059  | &FreePush               | [140] | push 0x0039
+  90: 005A  | call                    |       | call       
+  91: 005B  | ret                     |       | ret       ```
+```
+
 
 References
 ----------

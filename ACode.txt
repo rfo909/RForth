@@ -27,7 +27,7 @@
 	0 global ret
 	
 :DictHead
-	0 global wordsize add ret
+	0 global W+ ret
 	
 :Main
  	cr 'HERE ': 2 show HERE print 
