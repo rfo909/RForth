@@ -16,12 +16,6 @@
 ; The assembler handles patching all forward tag references when building
 ; the code.
 ;
-; ---
-;
-; Note that the :Init tag is never jumped to nor called, and so
-; exists for clarity only. Also note that the remaining global tags
-; before the :DATA are supposed to be call'ed, and end in 'ret' to return.
-;
 
 :Init
 
@@ -41,10 +35,12 @@
 :Main
  	cr 'HERE ': 2 show HERE print cr
 
-	;; falling through to Halt
+
 
 :Halt			;; endless loop
 	&Halt jmp
+
+
 
 
 ;; Generalized free list mechanism

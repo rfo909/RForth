@@ -100,6 +100,7 @@
 
 	self.symbols=Dict
 	self.symbolString=""
+	self.symbolCount=0
 	
 	# Symbols are stored in a separate string located somewhere at runtime,
 	# and the symbols are a position in that string, which points at the length
@@ -116,6 +117,8 @@
 				code = c.toHexString("ISO-8859-1").parseInt(16)
 				error (code < 33 || code > 127, "Invalid symbol character: " + c)
 		}
+		
+		self.symbolCount=self.symbolCount+1
 		
 		if (self.symbols.has(symbol)) {
 			self.symbols.get(symbol)
