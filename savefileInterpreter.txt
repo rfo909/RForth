@@ -33,6 +33,21 @@
 
 	self.PC=0
 	self.haltFlag=false
+	
+	self.outputLines=List("")
+
+	self.addOutputText = Lambda{
+		P(1) as String => s
+		
+		currOutputLine=self.outputLines.last
+		index=self.outputLines.length-1
+		updatedLine = currOutputLine + s
+		self.outputLines.set(index,updatedLine)
+	}
+	self.addOutputCR = Lambda {
+		self.outputLines.add("")
+	}
+
 
 		
 	# --- create system data objects in memory
@@ -111,7 +126,7 @@
 	self.fpush(0,0)
 
 
-	self.executionCount=1
+	self.executionCount=0
 	self.executeInstruction=Lambda{
 
 		pc = self.PC
@@ -125,7 +140,7 @@
 			index=instr-128
 			addr=self.numberLookupStart+(index*self.WORDSIZE)
 			value=self.memory.readWord(addr)
-			#println("[" + instr + "] push 0x" + value.hex(4).toUpper)
+			#println("[" + instr + "] push 0x" + value.hex(4))
 			self.push(value)
 		} else {
 			instr=Sys.uchar(instr)
@@ -161,12 +176,12 @@
 	}
 	self._G=Lambda{ # readb read byte ( addr -- value )
 		addr=self.pop
-		if (addr < self.DATA_START) error("readb: reading below DATA_START: 0x" + addr.hex(4).toUpper)
+		if (addr < self.DATA_START) error("readb: reading below DATA_START: 0x" + addr.hex(4))
 		self.push(self.memory.readByte(addr))
 	}
 	self._H=Lambda{ # writeb write byte ( addr -- value )
 		addr=self.pop
-		if (addr < self.DATA_START) error("writeb: writing below DATA_START: 0x" + addr.hex(4).toUpper)
+		if (addr < self.DATA_START) error("writeb: writing below DATA_START: 0x" + addr.hex(4))
 		value=self.pop
 		self.memory.writeByte(addr,value)
 	}
@@ -277,13 +292,13 @@
 	
 	self._I=Lambda{  # @ read word
 		addr=self.pop
-		if (addr < self.DATA_START) error("@: reading below DATA_START: 0x" + addr.hex(4).toUpper)
+		if (addr < self.DATA_START) error("@: reading below DATA_START: 0x" + addr.hex(4))
 		self.push(self.memory.readWord(addr))
 	}
 	
 	self._J=Lambda{  # ! write word
 		addr=self.pop
-		if (addr < self.DATA_START) error("!: writing below DATA_START: 0x" + addr.hex(4).toUpper)
+		if (addr < self.DATA_START) error("!: writing below DATA_START: 0x" + addr.hex(4))
 		value=self.pop
 		self.memory.writeWord(addr,value)
 	}
@@ -352,7 +367,7 @@
 
 		println
 	}
-
+	
 	self._V=Lambda{ # show ( sym sym ... count -- )
 		count=self.pop  # number of symbols
 
@@ -370,29 +385,25 @@
 				Std.Data.for(0,length,1)->pos
 					ch=self.memory.readChar(symbolAddr+2+pos)  # +2 skip hl
 					out(ch)
-				| _.concat
-			} => symbol
-			print(symbol)
-			print(" ")
+			} _.concat => symbol
+			
+			self.addOutputText(""+symbol+" ")
 	}
 	self._W=Lambda{ # print print top value on hex format
 		value=self.pop
-		print("0x" + value.hex(4).toUpper)
-		print(" ")
+		self.addOutputText("0x" + value.hex(4)+" ")
 	}
 	self._Y=Lambda{ # print# print top value on decimal format
 		value=self.pop
-		print(value)
-		print(" ")
+		self.addOutputText(""+value+" ")
 	}
 	self._L=Lambda{ # printb print top value on binary format
 		value=self.pop
 		s=value.bin(self.WORDSIZE*8)
-		print(s.sub(0,8)+"_"+s.sub(8))
-		print(" ")
+		self.addOutputText(s.sub(0,8)+"_"+s.sub(8) + " ")
 	}
 	self._X=Lambda{ # cr print newline
-		println
+		self.addOutputCR
 	}
 
 	self._q=Lambda { # andb binary and ( a b -- c )
@@ -460,14 +471,53 @@
 # --
 	P(1) as &MemStack => stack
 	stack.getStackValues->value
-		out(value.hex(4).toUpper)
+		out(value.hex(4))
 	| _.concat(" ")
 //ShowWordStack
 
 
+# Show global variables
+# --
+	P(1) as &Interpreter => interpreter
+
+	Std.Data.for(0, interpreter.globalVariableCount, 1)->index
+		out(" " + interpreter.memory.readWord(interpreter.globalVariablesBase + index*interpreter.WORDSIZE).hex(4))
+	| _.concat.trim
+
+/ShowGlobals
+
+
+
+# Show memory content
+# --
+	P(1) as int => startAddr
+	P(2) as &Memory => memory
+	
+	lastAddr=startAddr + 64
+	if (lastAddr >= memory.HERE) lastAddr=memory.HERE
+		
+	
+	Std.Data.for(startAddr, lastAddr, 1)->addr
+		offset=addr-startAddr
+
+		if (offset % 4 == 0) {
+			println
+			print(addr.hex(4)+"  ")
+		}
+		value=memory.readByte(addr)
+		print(value.hex(2) + " ")
+		
+	|
+	println
+	readLine("Continue")
+/ShowMemory	
+
+
 # Read address
 # --
-	Input("Enter address hex NNNN or decimal #NNNN").get =>addr
+	P(1) as int => dataStart
+	println("DATA_START: " + dataStart.hex(4))
+	Input("Enter address hex NNNN or decimal #NNNN").setCurrCond(dataStart.hex(4)).get =>addr
 	if (addr.startsWith("#")) {
 		addr.after("#").parseInt(10)
 	} else if (addr.startsWith("0x") || addr.startsWith("x")) {
@@ -475,12 +525,17 @@
 	} else {
 		addr.parseInt(16)
 	}
-//ReadAddress
+//ReadMemoryInspectAddress
 
+	
+	
 		
 
 # Test
 # --
+	# uses Curses
+	Curses:Enable
+
 	dict = Db2:Get("RForth","data")
 	hexBlock=dict.hexBlock
 	numbersStart=dict.numbersStart
@@ -489,12 +544,12 @@
 	tagListSorted=dict.tagListSorted
 	metaInfo=dict.metaInfo
 	
-	iCount=0
 	autoRunCount=0
 
 	interpreter=Interpreter(hexBlock, numbersStart, symbolsStart)
 
 	loop
+		print(Curses:Clear)
 		if (interpreter.haltFlag) {
 			if (autoRunCount>0) {
 				println
@@ -509,48 +564,80 @@
 		}
 		if (autoRunCount > 0) {
 			interpreter.executeInstruction
-			iCount=iCount+1
 			autoRunCount=autoRunCount-1
 			continue
 		}
+		
+		# show outputlines
+		
+		outputLines=interpreter.outputLines
+		if (outputLines.length > 10) outputLines = outputLines.last(10)
+		outputLines=List("Output:","-------")+outputLines
+		count=outputLines.length
+		Inner {
+			x=60
+			maxLineLength=Term.w-x-2
 			
-		instr=interpreter.nextInstruction
-		instrName=instr
-		if (instr >= 33 && instr <= 127) {
-			instr=Sys.uchar(instr)
-			instrName=Assembler:InstructionsLookup.get(instr)
-			
+			Std.Data.for(0,count,1)->y
+				line=outputLines.get(y)
+				if (line.length > maxLineLength) line=line.sub(0,maxLineLength)+"+"
+				println(Curses:CurGoto(x,Term.h-10-count+y)+line)
+				
 		}
 		
-		println
-		# show dataStack
-		println("dataStack  0x" + interpreter.dbase.hex(4) + " [ " + ShowWordStack(interpreter.dataStack) + " ] TOP")
-		# show callStack
-		println("callStack  0x" + interpreter.cbase.hex(4) + " [ " + ShowWordStack(interpreter.callStack) + " ] TOP")
-		# show frameStack
-		println("frameStack 0x" + interpreter.fbase.hex(4) + " [ " + ShowFrameStack(interpreter.frameStack) + " ] TOP")
-		println("HERE = 0x" + interpreter.memory.HERE.hex(4).toUpper +  " (" + interpreter.memory.HERE + ")")
-		println
-		println("#" + iCount, 
-			"PC:", "0x" + ("0000"+interpreter.PC.hex.toUpper).last(4), 
-			instrName)
+		print(Curses:Home)
 		
+		# show context
+		lines=Term.h-10
+		if (!Curses:Enabled) lines=lines-5
+		
+		from=interpreter.PC-(lines div 3)
+		if (from < 0) from=0
+		to=from+lines
+		if (to > numbersStart) to=numbersStart
+		
+		Inner {
+			Std.Data.for(from,to,1)->pc
+				mark = if(pc==interpreter.PC,"===>","")
+				
+				instr=interpreter.memory.readByte(pc)
+				if (instr >= 33 && instr <= 127) {
+					instr=Sys.uchar(instr)
+					instr=Assembler:InstructionsLookup.get(instr)
+				} else if (instr >= 128) {
+					instr="(constant)"
+				}
+				
+				report(mark,pc.hex(4), metaInfo.get(""+pc), instr)
+		} _=>rows
+		Lib:ShowRows(rows,null,false)
+			
+		
+		
+		println(Curses:CurGoto(0,Term.h-9))
+
+		println("dataStack  0x" + interpreter.dbase.hex(4) + " [ " + ShowWordStack(interpreter.dataStack) + " ] TOP")
+		println("callStack  0x" + interpreter.cbase.hex(4) + " [ " + ShowWordStack(interpreter.callStack) + " ] TOP")
+		println("frameStack 0x" + interpreter.fbase.hex(4) + " [ " + ShowFrameStack(interpreter.frameStack) + " ] TOP")
+		println("#instr=" + interpreter.executionCount,
+			"DATA_START=" + interpreter.DATA_START.hex(4),
+			"HERE=" + interpreter.memory.HERE.hex(4) +  " (" + interpreter.memory.HERE + ")",
+			"Globals=[" + ShowGlobals(interpreter) + "]"
+			)
+
 		println
-		command=readLine("Command: 'q' to quit, 'i' to inspect, 'w' read word, 'r' to run, ENTER to step").trim
+
+		command=readLine("'q' to quit, 'i' to inspect, 'r' to run, ENTER to step").trim
 		if(command=="q") {
 			break
 		} else if (command=="i") {
-			addr=ReadAddress
-			interpreter.showMem(addr)
-		} else if (command=="w") {
-			addr=ReadAddress
-			value=interpreter.memory.readWord(addr)
-			println("=> " + value + " x" + value.hex)
+			println
+			addr=ReadMemoryInspectAddress(interpreter.DATA_START)
+			ShowMemory(addr, interpreter.memory)
 		} else if (command=="r") {
 			Input("Enter number of instructions to run").get.parseInt => autoRunCount
 		} else if (command.trim=="") {
 			interpreter.executeInstruction
-			iCount=iCount+1
 		}	 
 /Run
 

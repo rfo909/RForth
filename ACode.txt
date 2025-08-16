@@ -30,13 +30,13 @@
 	0 global W+ ret
 	
 :Main
- 	cr 'HERE ': 2 show HERE print 
+ 	cr 'HERE: 1 show HERE print 
  	
 	&ConsGet call
 	&ConsDispose call
 	&ConsGet call
 
- 	cr 'After ': 'HERE ': 4 show HERE print 
+ 	cr 'After_HERE: 1 show HERE print
  	
 	
 :Halt 
