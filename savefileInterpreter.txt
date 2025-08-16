@@ -169,12 +169,12 @@ The goal is to validate the output from the Assembler.
 	}
 	self._G=Lambda{ # readb read byte ( addr -- value )
 		addr=self.pop
-		if (addr < self.DATA_START) println("Warning: readb: reading below DATA_START: 0x" + addr.hex(4).toUpper)
+		if (addr < self.DATA_START) error("readb: reading below DATA_START: 0x" + addr.hex(4).toUpper)
 		self.push(self.memory.readByte(addr))
 	}
 	self._H=Lambda{ # writeb write byte ( addr -- value )
 		addr=self.pop
-		if (addr < self.DATA_START) println("ERROR: writeb: writing below DATA_START: 0x" + addr.hex(4).toUpper)
+		if (addr < self.DATA_START) error("writeb: writing below DATA_START: 0x" + addr.hex(4).toUpper)
 		value=self.pop
 		self.memory.writeByte(addr,value)
 	}
@@ -285,13 +285,13 @@ The goal is to validate the output from the Assembler.
 	
 	self._I=Lambda{  # @ read word
 		addr=self.pop
-		if (addr < self.DATA_START) println("Warning: @: reading below DATA_START: 0x" + addr.hex(4).toUpper)
+		if (addr < self.DATA_START) error("@: reading below DATA_START: 0x" + addr.hex(4).toUpper)
 		self.push(self.memory.readWord(addr))
 	}
 	
 	self._J=Lambda{  # ! write word
 		addr=self.pop
-		if (addr < self.DATA_START) println("ERROR: !: writing below DATA_START: 0x" + addr.hex(4).toUpper)
+		if (addr < self.DATA_START) error("!: writing below DATA_START: 0x" + addr.hex(4).toUpper)
 		value=self.pop
 		self.memory.writeWord(addr,value)
 	}
@@ -559,8 +559,9 @@ The goal is to validate the output from the Assembler.
 		} else if (command.trim=="") {
 			interpreter.executeInstruction
 			iCount=iCount+1
-		}
-		
-		 
+		}	 
+/Run
+
+Run
 /t		
 	

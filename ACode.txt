@@ -34,12 +34,14 @@
  	
 	&ConsGet call
 	&ConsDispose call
-
 	&ConsGet call
 
  	cr 'After ': 'HERE ': 4 show HERE print 
  	
- 	halt
+	
+:Halt 
+	halt
+	&Halt jmp
 
 
 

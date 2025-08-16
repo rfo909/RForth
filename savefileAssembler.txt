@@ -475,31 +475,31 @@
 
 	# Display code as block that can be copy-pasted
 	
-	println("bytecode")
+	#println("bytecode")
 	hexBlock=bytecode.getCodeHex
-	BlockFormat(bytecode.getCodeHex)
-	println(bytecode.getCodeHex.length)
+	#BlockFormat(bytecode.getCodeHex)
+	#println(bytecode.getCodeHex.length)
 	
 	numbersStart=hexBlock.length div 2
 	hexBlock=hexBlock + numberTable.generateOutput   # hex
-	println
-	println("numberTable")
-	println(numberTable.generateOutput)
-	println(numberTable.generateOutput.length)
+	#println
+	#println("numberTable")
+	#println(numberTable.generateOutput)
+	#println(numberTable.generateOutput.length)
 
 	symbolsStart = hexBlock.length div 2
 	hexBlock=hexBlock + numberTable.getSymbolHexString
-	println
-	println("symbols")
-	println(numberTable.getSymbolHexString)
-	println(numberTable.getSymbolHexString.length)
-	println
+	#println
+	#println("symbols")
+	#println(numberTable.getSymbolHexString)
+	#println(numberTable.getSymbolHexString.length)
+	#println
 	
 	println
 	println("numbersStart", numbersStart)
 	println("symbolsStart", symbolsStart)
 	println
-	println("Hexblock length:", hexBlock.length)
+	#println("Hexblock length:", hexBlock.length)
 	println("Total #bytes:", hexBlock.length div 2)
 	
 
@@ -514,7 +514,11 @@
 	
 	"ok"
 	
+/Compile
+
+Compile
 /t
+
 
 # Block format text for copy/paste
 # --
