@@ -391,10 +391,8 @@
 		}
 	
 	|
-		
-	# Now allocate data elements (symbols) 
-	symbols=Dict # store each symbol only once
-
+	
+	# Return dict	
 	SymDict(bytecode,numberTable)
 /Assemble
 

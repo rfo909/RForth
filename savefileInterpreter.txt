@@ -1,11 +1,3 @@
-# README
-# --
-<<< EOF
-This test interpreter has no limits on the stacks or the heap. 
-The goal is to validate the output from the Assembler.
->>> EOF
-/Readme
-
 
 # The interpreter
 # --
@@ -544,7 +536,7 @@ The goal is to validate the output from the Assembler.
 			instrName)
 		
 		println
-		command=readLine("Command: 'q' to quit, 'i' to inspect, 'w' read word, 'r' to run, ENTER to continue").trim
+		command=readLine("Command: 'q' to quit, 'i' to inspect, 'w' read word, 'r' to run, ENTER to step").trim
 		if(command=="q") {
 			break
 		} else if (command=="i") {
