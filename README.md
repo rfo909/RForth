@@ -1,9 +1,9 @@
 Forth never ceases to fascinate !
 =================================
 
-Version 3
+Version 3 (alpha)
 
-2025-08-14 RFO
+2025-08-16 RFO
 
 It's been said that the best way of understanding Forth is to build one
 yourself. This project aims at the Pi Pico as the run platform,
@@ -14,18 +14,20 @@ of bringing up a full language from nothing, since libraries and interfacing
 hardware at the lowest level, is an entirely different matter.
 
 The effort so far consists of making a byte code assembler, for a stack based
-instruction set, while developing a base code in this assembly language, and
-verifying it using a stand-alone interpreter.
+instruction set, while developing using a simple base code source file written
+in this assembly language, and verifying it using a stand-alone interpreter.
 
 CFT assembler
 -------------
 
-An assembler is written as a [CFT](https://github.com/rfo909/CFT)) script
-with several support files, and it generates single byte instructions. 
+The assembler is written as a [CFT](https://github.com/rfo909/CFT) script, 
+which is a script language I've written myself (in Java). It is perfect for
+prototyping (as well as daily tool). The assembler reads the source file
+and generates a sequence of single byte instructions.
 
 An initial design decision to use printable non-space characters for instructions,
 effectively reserved the range 33-127 for normal opcodes. The original design
-inlined numeric constants by defining
+inlined numeric constants by defining the following single byte instructions:
 
 - "x" to push zero on the stack
 - "0-9A-F" to multiply value on stack by 16 before adding 0-15.
@@ -38,6 +40,10 @@ With "normal" opcodes kept in a defined range, the modified scheme was to
 put all numeric constants as a list of 2-byte values, and refer to these
 by opcodes 128-255. So now any numeric constant is pushed on the stack
 using a single byte. 
+
+This means the number of unique tags plus the number of unique symbols ("non-space strings"),
+plus the number of unique numeric constants in the code, must not exceed 127.
+
 
 CFT interpreter
 ---------------
@@ -136,6 +142,6 @@ updating the PC, effectively doing a jump.
 References
 ----------
 
-- [Instruction set]{InstructionSet.md} for regular opcodes 33-127
+- [Instruction set](InstructionSet.md) for regular opcodes 33-127
 
 
