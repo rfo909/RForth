@@ -103,8 +103,5 @@
 :ConsDispose  ;; ( ptr -- )
 	&ConsHead call &FreePush call ret
 
-;; ---------------------------------
-;; Reserved tag, must be present 
-;; ---------------------------------	
 
 
