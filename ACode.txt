@@ -18,9 +18,11 @@
 ;
 
 :Init
-	;; create variables in normal memory, 
-	HERE 0 global!
-	2 wordsize mul allot
+	;; create variables in normal r/w heap memory
+	HERE 0 global!		;; store HERE in global variable 0
+	wordsize allot		;; ConsHead
+	wordsize allot		;; DictHead
+
 	&Main jmp
 
 :ConsHead
@@ -33,8 +35,12 @@
  	cr 'HERE: 1 show HERE print 
  	
 	&ConsGet call
-	&ConsDispose call
 	&ConsGet call
+	&ConsGet call
+	
+	&ConsDispose call
+	&ConsDispose call
+	&ConsDispose call
 
  	cr 'After_HERE: 1 show HERE print
  	

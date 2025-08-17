@@ -493,14 +493,14 @@
 	P(1) as int => startAddr
 	P(2) as &Memory => memory
 	
-	lastAddr=startAddr + 64
+	lastAddr=startAddr + 32
 	if (lastAddr >= memory.HERE) lastAddr=memory.HERE
 		
 	
 	Std.Data.for(startAddr, lastAddr, 1)->addr
 		offset=addr-startAddr
 
-		if (offset % 4 == 0) {
+		if (offset % 2 == 0) {
 			println
 			print(addr.hex(4)+"  ")
 		}
@@ -517,7 +517,7 @@
 # --
 	P(1) as int => dataStart
 	println("DATA_START: " + dataStart.hex(4))
-	Input("Enter address hex NNNN or decimal #NNNN").setCurrCond(dataStart.hex(4)).get =>addr
+	Input("Enter address hex NNNN or decimal #NNNN").setCurr(dataStart.hex(4)).get =>addr
 	if (addr.startsWith("#")) {
 		addr.after("#").parseInt(10)
 	} else if (addr.startsWith("0x") || addr.startsWith("x")) {
@@ -545,6 +545,7 @@
 	metaInfo=dict.metaInfo
 	
 	autoRunCount=0
+	breakpoint=-1
 
 	interpreter=Interpreter(hexBlock, numbersStart, symbolsStart)
 
@@ -555,6 +556,7 @@
 				println
 				Lib:Header("haltFlag set, stopping automatic execution, then resetting it")
 				autoRunCount=0
+				readLine("Continue")
 			} else {
 				println
 				println("haltFlag detected, resetting it")
@@ -562,6 +564,10 @@
 			}
 			interpreter.haltFlag=false
 		}
+		if (interpreter.PC==breakpoint) {
+			autoRunCount=0
+		}
+		
 		if (autoRunCount > 0) {
 			interpreter.executeInstruction
 			autoRunCount=autoRunCount-1
@@ -598,7 +604,16 @@
 		
 		Inner {
 			Std.Data.for(from,to,1)->pc
-				mark = if(pc==interpreter.PC,"===>","")
+				mark=""
+				if (pc==interpreter.PC) {
+					if (pc==breakpoint) {
+						mark="BP =>"
+					} else {
+						mark="====>"
+					}
+				} else if (pc==breakpoint) {
+					mark="BP"
+				}
 				
 				instr=interpreter.memory.readByte(pc)
 				if (instr >= 33 && instr <= 127) {
@@ -615,27 +630,54 @@
 		
 		
 		println(Curses:CurGoto(0,Term.h-9))
+		
+		dmax="max=" + interpreter.dataStack.maxDepth
+		cmax="max=" + interpreter.callStack.maxDepth
+		fmax="max=" + interpreter.frameStack.maxDepth
 
-		println("dataStack  0x" + interpreter.dbase.hex(4) + " [ " + ShowWordStack(interpreter.dataStack) + " ] TOP")
-		println("callStack  0x" + interpreter.cbase.hex(4) + " [ " + ShowWordStack(interpreter.callStack) + " ] TOP")
-		println("frameStack 0x" + interpreter.fbase.hex(4) + " [ " + ShowFrameStack(interpreter.frameStack) + " ] TOP")
-		println("#instr=" + interpreter.executionCount,
+		println("dataStack  0x" + interpreter.dbase.hex(4) + " [ " + ShowWordStack(interpreter.dataStack) + " ] TOP " + dmax)
+		println("callStack  0x" + interpreter.cbase.hex(4) + " [ " + ShowWordStack(interpreter.callStack) + " ] TOP " + cmax)
+		println("frameStack 0x" + interpreter.fbase.hex(4) + " [ " + ShowFrameStack(interpreter.frameStack) + " ] TOP " + fmax)
+		print(Curses:TxtBlue)
+		println(
+			"#instr=" + interpreter.executionCount,
 			"DATA_START=" + interpreter.DATA_START.hex(4),
-			"HERE=" + interpreter.memory.HERE.hex(4) +  " (" + interpreter.memory.HERE + ")",
+			"HERE=" + interpreter.memory.HERE.hex(4),
 			"Globals=[" + ShowGlobals(interpreter) + "]"
 			)
-
+		print(Curses:Reset)
+		
+		localVariables=Inner{
+			framesize=interpreter.frameStack.peek
+			to=framesize
+			if (to >= 3) to=3  
+			Std.Data.for(0,to,1)->i
+				value=interpreter.callStack.getValue(framesize-i-1)
+				out("abc".chars.get(i)+"="+value.hex(4))
+			| _.concat(" ").trim => x
+			if (x != "") x=x+" "
+			x
+		}
+		println(		
+			localVariables + 
+			if (breakpoint>=0, Curses:TxtRed+"bp="+breakpoint.hex(4)+Curses:Reset, "")
+		)
 		println
 
-		command=readLine("'q' to quit, 'i' to inspect, 'r' to run, ENTER to step").trim
+		command=readLine("==> q=quit, d=dump, b=set-bp, c=clear-bp, r=run, ENTER=step").trim
 		if(command=="q") {
 			break
-		} else if (command=="i") {
+		} else if (command=="d") {
 			println
 			addr=ReadMemoryInspectAddress(interpreter.DATA_START)
 			ShowMemory(addr, interpreter.memory)
+		} else if (command=='b') {
+			println
+			Input("Enter address for break point (hex)").get.parseInt(16) => breakpoint
+		} else if (command=='c') {
+			breakpoint=-1
 		} else if (command=="r") {
-			Input("Enter number of instructions to run").get.parseInt => autoRunCount
+			autoRunCount=100000
 		} else if (command.trim=="") {
 			interpreter.executeInstruction
 		}	 
