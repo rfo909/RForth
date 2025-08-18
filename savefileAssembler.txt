@@ -1,6 +1,4 @@
 
-
-
 # Example code
 # --
 	Sys.savefile.dir.file("ACode.txt").read
@@ -494,8 +492,8 @@
 	#println
 	
 	println
-	println("numbersStart", numbersStart)
-	println("symbolsStart", symbolsStart)
+	println("numbersStart", numbersStart.hex(4))
+	println("symbolsStart", symbolsStart.hex(4))
 	println
 	#println("Hexblock length:", hexBlock.length)
 	println("Total #bytes:", hexBlock.length div 2)

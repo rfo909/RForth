@@ -102,7 +102,7 @@
 
 
 	self.symbols=Dict
-	self.symbolString=""
+	self.symbolData=List  # list of bytes as int
 	self.symbolCount=0
 	
 	# Symbols are stored in a separate string located somewhere at runtime,
@@ -112,7 +112,7 @@
 	# a two-byte value and producing a single byte lookup for that number.
 	self.addSymbol = Lambda {
 		P(1) as String => symbol
-		error(symbol.length > 255, "Symbol too long: " + symbol)
+		error(symbol.length > 255, "Symbol too long, max 255: " + symbol)
 		
 		# Check that no forbidden characters
 		Inner{
@@ -126,19 +126,28 @@
 		if (self.symbols.has(symbol)) {
 			self.symbols.get(symbol)
 		} else {
-			symPos=self.symbolString.length
-			symbolRepresentation = symbol.length.hex(2).toUpper+symbol
-			self.symbolString = self.symbolString + symbolRepresentation
+			symPos=self.symbolData.length
+			self.symbolData.add(symbol.length)
+			Inner { 
+				symbol.chars->c 
+					hex=c.toHexString("ISO-8859-1")
+					error(hex.length > 2, "Unexpected hex string " + hex + " for character '" + c + "'")
+					self.symbolData.add(hex.parseInt(16))
+			}
+
+			# make a single byte representation for the symbol offset in the symbol data
 			numberPos=self.constantValue(symPos)
+			# register in dict for reuse if same symbol used again
 			self.symbols.set(symbol,numberPos)
 			numberPos
 		}
 	}
 	
 	self.getSymbolHexString = Lambda{
-		s=self.symbolString.toHexString("ISO-8859-1")
-		error(s.length % 2 == 1,"Uneven number of digits: " + s)
-		s
+
+		self.symbolData->x
+			out(x.hex(2))
+		| _.concat
 	}
 	
 /class NumberTable	
@@ -195,7 +204,6 @@
 	y=t.addSymbol("x")
 	println("First",x,"->",t.numberData.get(x))
 	println("Second",y,"->",t.numberData.get(y))
-	println("Symbolstring: " + t.symbolString)
 	
 	println("duplicate first:", t.addSymbol("test"))
 	t.defineTag("TOP",0)
