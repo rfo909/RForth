@@ -367,28 +367,33 @@ instruction following the constant byte for the symbol.
 
 Since symbols are stored in the same way as strings, with a single byte first indicating the number of
 characters, followed by those characters, once a symbol reference has been converted to a real address
-by sym2s, it can be treated like any other string (except trying to write to it will fail, because
-it lives in protected memory). 
+by sym2s, it can be treated like any other string.
 
-Working dynamically with strings, such as user input, is in the works, but not ready yet. 
+The assembler therefore automatically adds the sym2s following the byte from the NumberTable that
+generates the offset. This turns the symbol into a real string, and the language does not
+need to see symbols and strings as different, except we can't write to a string that is stored in
+the assembler-generated code+number+symbols byte sequence.
+
+## Whitespace
+
+Symbols can be written in two ways
+
+```
+'SomeWord      # single word, no spaces
+"Some_words    # underscore gets converted to space
+```
+
 
 ## Display output
 
 ```
+
 # str1 str2 str3 3 show     # show takes the count, then prints the strings, each followed by a space
 'this 'is 'a 'test 4 show
 
+# But often we do this
+"this_is_a_test .str
 ```
-
-## Buffers
-
-In order to perform string operations, two buffers are defined, the InputBuffer and ScratchBuffer.
-
-These live in heap space, and so the code for managing them is written in the language itself, 
-requiring little in the way of additional instructions, except perhaps strcpy, strcat etc, to
-speed things up.
-
-The exact needs for string processing aren't ready yet. 
 
 ## Other output
 
@@ -402,9 +407,29 @@ printb                 # print value in binary format
 printc                 # print byte as character
 ```
 
-These will most likely be replaced by string functions that concatenates a string
-representation of the top value to an existing string, which can the be printed.
+## Buffers and events
 
+In order to perform string operations, the ACode file defines an InputBuffer on the heap (in the address
+space available to the language). It also defines a subroutine that is to be called when there is
+a new word to process.
+
+```
+	;; register inputbuffer and event handler
+	&InputBufferAddr call 0 registerPointer
+	&SerialWordReceived 1 registerPointer
+```
+
+When this is done, whenever the underlying code receives a word, it puts it into the Input buffer,
+then invokes the function ("SerialWordReceived").
+
+It actually works.
+
+As long as an event handler is running, no other event handlers can be started.
+
+In order to test this out while the Interpreter runs actual code, and not just the tight endless loop
+at the ":Halt" tag, a delay of 50ms has been added in the Interpreter:Run function. The interpreter command "r"
+has been changed from running a specific number of instructions, to running for 10 seconds.
+	
 
 
 References
