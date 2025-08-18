@@ -212,6 +212,10 @@
 	
 	halt		:Z   ;; halt automatic execution in interactive interpreter
 		
+	;; Strings are stored as one length byte and N characters (max 255)
+
+	sym2s		:A		;; convert to string pointer
+
 >>> EOF
 	=>list
 	

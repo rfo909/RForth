@@ -448,6 +448,12 @@
 		self.haltFlag=true
 	}
 
+	self._A=Lambda{  # sym2s - convert symbol offset to string pointer
+		offset=self.pop
+		addr=self.symbolLookupStart + offset
+		self.push(addr)
+	}
+
 /class Interpreter
 
 
