@@ -212,12 +212,15 @@
 	printb		:L   ;; print value in binary
 	printc		:U   ;; print value as character (if single byte)
 	
-	halt		:Z   ;; halt automatic execution in interactive interpreter
+	halt		:Z   ;; halt automatic execution in interactive interpreter (hard-coded breakpoint)
+				;; on a microcontroller we will just run in a tight forever loop when halted
+	
 		
 	;; Strings are stored as one length byte and N characters (max 255)
 
-	sym2s		:A		;; convert to string pointer
+	sym2s		:A		;; convert to string pointer (used by compiler only)
 	.str		:C		;; print string
+	registerPointer	:E		;; ( ptr event-id -- )
 
 >>> EOF
 	=>list
@@ -258,6 +261,7 @@
 # --
 	Dict
 		.set("null",List("0"))
+		.set("spc",List(' "_ .str'))
 
 //Inlines
 

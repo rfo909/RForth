@@ -29,35 +29,35 @@
 	HERE 2 global!		;; InputBuffer - String
 	wordsize allot
 
-	HERE 3 global!		;; ScratchBuffer - String|Any
-	wordsize allot
-
-	HERE 4 global!		;; SymbolList
-	wordsize allot
-
-	;; create the buffers
-	HERE &InputBuffer call !
+	;; buffer 
+	HERE &InputBufferAddr call !
 	256 allot
 	
-	HERE &ScratchBuffer call !
-	256 allot
-
+	;; write a zero to InputBuffer to indicate not no content
+	0 &InputBufferAddr call writeb
+	
+	;; register inputbuffer and event handler
+	&InputBufferAddr call 0 registerPointer
+	&SerialWordReceived 1 registerPointer
 	
 	&Main jmp
 
-:ConsHead
-	0 global ret	
-:DictHead
-	1 global ret
-:InputBuffer
-	2 global ret
-:ScratchBuffer
-	3 global ret
-:SymbolList
-	4 global ret
+:ConsHead 0 global ret	
+:DictHead 1 global ret
+:InputBufferAddr 2 global ret
+
+:SerialWordReceived 
+	&InputBufferAddr call cpush   ;; a points to inputbuffer
+	cr "Word_" .str a .str ""_received .str
+	
+	;; indicate word consumed
+	0 a writeb 
+	
+	ret
+
 
 :Main
- 	cr "Main_start: .str HERE print 
+ 	cr "HERE_at_Main_start:_ .str HERE print 
  	
 	&ConsGet call
 	&ConsGet call
@@ -67,12 +67,15 @@
 	&ConsDispose call
 	&ConsDispose call
 
- 	cr "After_HERE: .str HERE print
+ 	cr "HERE_at_end_of_Main:_ .str HERE print
  	
 	
 :Halt 
-	halt
+	;;halt
+	;;; Forever loop, serving events only from now on
 	&Halt jmp
+	
+
 
 
 
