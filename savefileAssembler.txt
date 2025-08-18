@@ -111,7 +111,8 @@
 
 		desc=line.after("#").trim
 		name=desc.before(" ")
-		desc=desc.after(" ")
+		desc=desc.after(" ").trim
+		if (desc.startsWith("-")) desc=desc.sub(1).trim
 		out(Str(name, SymDict(name,desc)))
 	| _.sort->x
 		dict=x.data
@@ -204,17 +205,19 @@
 	jmp?	:T   ;; conditional jump on true'	
 	
 	;; I/O
-	show		:V   ;; ( ptr ptr ... N -- ) - display N symbols with space between them
+	show		:V   ;; ( ptr ptr ... N -- ) - display N STRINGS with space between them
 	print		:W   ;; print any single value in hex
 	cr			:X
 	print#		:Y   ;; print value in decimal
 	printb		:L   ;; print value in binary
+	printc		:U   ;; print value as character (if single byte)
 	
 	halt		:Z   ;; halt automatic execution in interactive interpreter
 		
 	;; Strings are stored as one length byte and N characters (max 255)
 
 	sym2s		:A		;; convert to string pointer
+	.str		:C		;; print string
 
 >>> EOF
 	=>list
@@ -346,11 +349,16 @@
 		}
 		
 		# -- symbol
-		if (word.startsWith("'")) {
-			symbol=word.after("'")
+		if (word.startsWith("'") || word.startsWith('"')) {
+			symbol=word.sub(1)
+			if (word.startsWith('"')) symbol=symbol.replace("_"," ")
+
 			bytecode.addConstantLookupByte(numberTable.addSymbol(symbol))
+			# add instruction to convert symbol to string at runtime
+			words.push(List("sym2s"))
 			continue
 		}
+
 		# -- local tag def
 		if (word.startsWith(":*")) {
 			tag=currentTag + "." + word.after(":*")

@@ -118,7 +118,7 @@
 		Inner{
 			symbol.chars->c
 				code = c.toHexString("ISO-8859-1").parseInt(16)
-				error (code < 33 || code > 127, "Invalid symbol character: " + c)
+				error (code < 32 || code > 127, "Invalid symbol character: " + c)
 		}
 		
 		self.symbolCount=self.symbolCount+1

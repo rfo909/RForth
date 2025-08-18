@@ -19,20 +19,45 @@
 
 :Init
 	;; create variables in normal r/w heap memory
-	HERE 0 global!		;; store HERE in global variable 0
-	wordsize allot		;; ConsHead
-	wordsize allot		;; DictHead
 
+	HERE 0 global!		;; ConsHead
+	wordsize allot
+
+	HERE 1 global!		;; DictHead
+	wordsize allot
+
+	HERE 2 global!		;; InputBuffer - String
+	wordsize allot
+
+	HERE 3 global!		;; ScratchBuffer - String|Any
+	wordsize allot
+
+	HERE 4 global!		;; SymbolList
+	wordsize allot
+
+	;; create the buffers
+	HERE &InputBuffer call !
+	256 allot
+	
+	HERE &ScratchBuffer call !
+	256 allot
+
+	
 	&Main jmp
 
 :ConsHead
-	0 global ret
-	
+	0 global ret	
 :DictHead
-	0 global W+ ret
-	
+	1 global ret
+:InputBuffer
+	2 global ret
+:ScratchBuffer
+	3 global ret
+:SymbolList
+	4 global ret
+
 :Main
- 	cr 'HERE: 1 show HERE print 
+ 	cr "Main_start: .str HERE print 
  	
 	&ConsGet call
 	&ConsGet call
@@ -42,7 +67,7 @@
 	&ConsDispose call
 	&ConsDispose call
 
- 	cr 'After_HERE: 1 show HERE print
+ 	cr "After_HERE: .str HERE print
  	
 	
 :Halt 

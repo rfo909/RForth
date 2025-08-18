@@ -3,6 +3,27 @@
 TODO
 ----
 
+String functions working in heap address space
+
+	bufPtr strClear  # write 0 in the first byte
+
+	'symbol bufPtr symcat
+
+Convert value from TOS to different string formats, for presentation
+	(eliminate print print# printb printc)
+
+Consider a stack mark mechanism (separate address?) to simplify string processing
+
+	[ = set mark in register inside the protected part of address space
+	"the_result_is_ .str 
+	42 .dec
+	] =  print stuff
+	
+Can let the assembler generate code for symbols by not only the singe constant byte, but
+followed by the sym2s instruction, so that all the language sees are real strings with
+absolute addresses!
+
+
 Make abstract devices for
 	serial I/O
 	GPIO
