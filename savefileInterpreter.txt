@@ -150,9 +150,10 @@
 		pc = self.PC
 		
 		# event generation?
-		if (self.eventHandlerCallingBase==null &&self.inputBuffer != 0 && self.inputEventWordReceived != 0) {
+		if (self.eventHandlerCallingBase == null && self.inputBuffer != 0 && self.inputEventWordReceived != 0) {
 			length = self.memory.readByte(self.inputBuffer)
 			if (length > 0) {
+				#readLine("executeInstruction: generating event call")
 				# data present, invoke event handler
 				self.push(self.inputEventWordReceived) 
 				
@@ -167,7 +168,7 @@
 		instr=self.memory.readByte(self.PC)
 		if (instr < 32) {
 			# reserved
-			error("Reserved instruction: " + instr)
+			error("ERROR: Reserved instruction: " + instr)
 		} else if (instr > 127) {
 			# constant number lookup
 			index=instr-128
@@ -507,12 +508,12 @@
 		addr=self.pop
 		if (eventId==0) {
 			self.inputBuffer=addr
-			self.addOutputText("#Setting (0) inputBuffer: " + addr.hex(4))
 			self.addOutputCR
+			self.addOutputText("#Setting (0) inputBuffer: " + addr.hex(4))
 		} else if (eventId==1) {
 			self.inputEventWordReceived=addr
-			self.addOutputText("#Setting (1) inputEventWordReceived: " + addr.hex(4))
 			self.addOutputCR
+			self.addOutputText("#Setting (1) inputEventWordReceived: " + addr.hex(4))
 		} else {
 			error("Unknown eventId: " + eventId)
 		}
@@ -620,15 +621,21 @@
 
 	
 # Simulated serial input 
-# Invoked on halt only
 # --
 	P(1) as &Interpreter => interpreter
 	
-	s=Db2:Get("Interpreter","InputWord",null)
-	Db2:Set("Interpreter","InputWord",null)
+	error(interpreter.inputBuffer == 0, "interpreter.inputBuffer not defined (yet) 0")
+		
+	Std.Db.obtainLock("InputWords",1000)
+	wordList=Db2:Get("Interpreter","InputWords",List)
+	Db2:Set("Interpreter","InputWords",wordList.keep(1))
+	Std.Db.releaseLock("InputWords")
+
+	s=wordList.first
+
 	
 	if (s != null && s.length > 0) {
-		println("Inserting word " + s)
+		#readLine("Inserting word " + s)
 		Inner{
 			offset=1  # past length byte
 			s.chars->c
@@ -641,18 +648,23 @@
 		interpreter.memory.writeByte(interpreter.inputBuffer,length)
 	}
 
-/CheckForSimulatedSerialInputWord
+
+//CheckForSimulatedSerialInputWord
 	
 	
 # Generate serial input words
 # --
 	loop
 		readLine("Enter word, blank to quit") => w
-		Db2:Set("Interpreter","InputWord",w)
+		break(w=="")
+		Std.Db.obtainLock("InputWords",1000)
+		wordList=Db2:Get("Interpreter","InputWords",List)
+		Db2:Set("Interpreter","InputWords",List+w)
+		Std.Db.releaseLock("InputWords")
 /GenerateSerialInput
 
 GenerateSerialInput
-/SI
+/GSI
 
 # Test
 # --
@@ -673,9 +685,7 @@ GenerateSerialInput
 	interpreter=Interpreter(hexBlock, numbersStart, symbolsStart)
 
 	loop
-		CheckForSimulatedSerialInputWord(interpreter)
-		
-		Sys.sleep(50)   # in order to test serial input while running actual code
+		if (interpreter.inputBuffer != 0) CheckForSimulatedSerialInputWord(interpreter)
 		
 		if (interpreter.haltFlag) {
 			if (runUntil > 0) {
@@ -693,11 +703,19 @@ GenerateSerialInput
 			interpreter.haltFlag=false
 		}
 		if (interpreter.PC==breakpoint) {
+			#readLine("Found breakpoint")
+			# cancel autorun
 			runUntil=0
 		}
 		
 		if (runUntil > Sys.currentTimeMillis) {
-			interpreter.executeInstruction
+			tryCatch(interpreter.executeInstruction) => result
+			if (!result.ok) {
+				println("ERROR: executeInstruction failed: " + result.msg)
+				readLine("Press ENTER")
+				# cancel autorun
+				runUntil=0
+			}
 			continue
 		}
 		
@@ -746,7 +764,11 @@ GenerateSerialInput
 				instr=interpreter.memory.readByte(pc)
 				if (instr >= 33 && instr <= 127) {
 					instr=Sys.uchar(instr)
-					instr=Assembler:InstructionsLookup.get(instr)
+					tryCatch(instr=Assembler:InstructionsLookup.get(instr))=>result
+					if (!result.ok) {
+						println("InstructionsLookup failed for inst: " + instr)
+						readLine("Press ENTER")
+					}
 				} else if (instr >= 128) {
 					instr="(constant)"
 				}
@@ -766,7 +788,7 @@ GenerateSerialInput
 		println("dataStack  0x" + interpreter.dbase.hex(4) + " [ " + ShowWordStack(interpreter.dataStack) + " ] TOP " + dmax)
 		println("callStack  0x" + interpreter.cbase.hex(4) + " [ " + ShowWordStack(interpreter.callStack) + " ] TOP " + cmax)
 		println("frameStack 0x" + interpreter.fbase.hex(4) + " [ " + ShowFrameStack(interpreter.frameStack) + " ] TOP " + fmax)
-		print(Curses:Underline)
+		print(Prompt:GetPathColor)
 		println(
 			"#instr=" + interpreter.executionCount,
 			"DATA_START=" + interpreter.DATA_START.hex(4),
@@ -786,11 +808,12 @@ GenerateSerialInput
 			if (x != "") x=x+" "
 			x
 		}
+		print(Prompt:GetColor)
 		println(		
 			localVariables + 
-			if (breakpoint>=0, Curses:TxtRed+"bp="+breakpoint.hex(4)+Curses:Reset, "")
+			if (breakpoint>=0, "bp="+breakpoint.hex(4), "")
 		)
-		println
+		println(Curses:Reset)
 
 		command=readLine("==> q=quit, d=dump, b=set-bp, c=clear-bp, r=run, ENTER=step").trim
 		if(command=="q") {
@@ -807,7 +830,13 @@ GenerateSerialInput
 		} else if (command=="r") {
 			runUntil=Sys.currentTimeMillis+10000 # 10 sec
 		} else if (command.trim=="") {
-			interpreter.executeInstruction
+			tryCatch(interpreter.executeInstruction) => result
+			if (!result.ok) {
+				println("ERROR: executeInstruction failed: " + result.msg)
+				readLine("Press ENTER")
+				# cancel autorun
+				runUntil=0
+			}
 		}	 
 /Run
 

@@ -47,6 +47,7 @@
 :InputBufferAddr 2 global ret
 
 :SerialWordReceived 
+	;;halt
 	&InputBufferAddr call cpush   ;; a points to inputbuffer
 	cr "Word_" .str a .str ""_received .str
 	
