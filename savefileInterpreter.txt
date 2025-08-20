@@ -189,7 +189,7 @@
 				error ("Execution failed: " 
 				+ " lambdaName=" + lambdaName 
 				+ " msg=" + result.get("msg","(no message)")
-				+ " PC=" + pc
+				+ " PC=" + pc.hex(4)
 				+ " count=" + self.executionCount)
 			}
 		}
@@ -518,7 +518,31 @@
 			error("Unknown eventId: " + eventId)
 		}
 	}
-	
+	self._B=Lambda{ # streq - compare strings, return 0 if not and 1 if equal
+		a=self.pop
+		b=self.pop
+		len=self.memory.readByte(a)
+		if (self.memory.readByte(b) != len) {
+			self.push(0)
+		} else {
+			match=true
+			Inner{Std.Data.for(0,len,1)->i
+				if (self.memory.readByte(a+1+i) != self.memory.readByte(b+1+i)) {
+					match=false
+					break
+				}
+			}
+			self.push(if(match,1,0))
+		}
+	}
+	self._D=Lambda { # memcpy ( ptrSrc ptrTarget bytecount -- )
+		byteCount=self.pop
+		target=self.pop
+		source=self.pop
+		Std.Data.for(0,byteCount,1)->i
+			self.memory.writeByte(target+i, self.memory.readByte(source+i))
+	}
+		
 /class Interpreter
 
 
@@ -608,7 +632,6 @@
 # --
 	P(1) as int => dataStart
 
-	println("DATA_START: " + dataStart.hex(4))
 	Input("Enter address hex NNNN or decimal #NNNN").setCurrCond(dataStart.hex(4)).get =>addr
 	if (addr.startsWith("#")) {
 		addr.after("#").parseInt(10)
@@ -815,20 +838,33 @@ GenerateSerialInput
 		)
 		println(Curses:Reset)
 
-		command=readLine("==> q=quit, d=dump, b=set-bp, c=clear-bp, r=run, ENTER=step").trim
+		command=readLine("==> q=quit, d=dump, b=bp, c=clear-bp, h=hex->dec, r(xx)?=run s=skip, ENTER=step").trim
 		if(command=="q") {
 			break
 		} else if (command=="d") {
 			println
 			addr=ReadMemoryInspectAddress(interpreter.DATA_START)
 			ShowMemory(addr, interpreter.memory)
-		} else if (command=='b') {
-			println
-			Input("Enter address for break point (hex)").get.parseInt(16) => breakpoint
+		} else if (command.startsWith('b')) {
+			if (command.after("b").?parseInt(16)) {
+				breakpoint=command.after("b").parseInt(16)
+			} else {
+				println
+				Input("Enter address for break point (hex)").get.parseInt(16) => breakpoint
+			}
 		} else if (command=='c') {
 			breakpoint=-1
-		} else if (command=="r") {
+		} else if (command=='h') {
+			println(readLine("Hex").parseInt(16))
+			readLine("Continue")
+		} else if (command.startsWith("r")) {
+			if (command.after("r").?parseInt(16)) {
+				breakpoint=command.after("r").parseInt(16)
+			}
 			runUntil=Sys.currentTimeMillis+10000 # 10 sec
+		} else if (command=="s") {
+			breakpoint=interpreter.PC+1
+			runUntil=Sys.currentTimeMillis+2000
 		} else if (command.trim=="") {
 			tryCatch(interpreter.executeInstruction) => result
 			if (!result.ok) {

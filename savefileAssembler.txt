@@ -220,6 +220,8 @@
 
 	sym2s		:A		;; convert to string pointer (used by compiler only)
 	.str		:C		;; print string
+	streq		:B		;; compare strings ( ptr ptr -- 0/1 )  boolean
+	memcpy		:D		;; ( ptrSrc ptrTarget count -- )
 	registerPointer	:E		;; ( ptr event-id -- )
 
 >>> EOF
@@ -452,8 +454,8 @@
 			error(instr < 128, "lookup byte invalid value: " + instr)
 			p3="["+instr+"]"
 			constantValue=numberTable.resolveConstant(instr-128)
-			
-			p4 = "push 0x" + constantValue.hex(4).toUpper
+
+			p4 = "push 0x" + constantValue.hex(4)
 		} else {
 			error("Unknown instr type: " + instr)
 		}
