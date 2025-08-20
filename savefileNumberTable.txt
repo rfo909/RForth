@@ -74,6 +74,7 @@
 	
 	self.resolveConstant = Lambda {
 		P(1) as int => byte
+		error (byte >= self.numberData.length || byte < 0, "resolveConstant, byte value out of range: " + byte)
 		self.numberData.get(byte)
 	}
 	

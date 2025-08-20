@@ -14,13 +14,9 @@
 /ShowTagUse
 
 
-# List all instructions, both actual and inline's
+# List all instructions
 # --
-	P(1,true) => includeInlines
-	names=Instructions.keys
-	if (includeInlines) names=names+Inlines.keys
-	
-	names.sort
+	Instructions.keys.sort
 /IShow
 
 # Available printable non-space byte codes
@@ -259,13 +255,29 @@
 /Debug
 
 
-# Inline defs
+# Inline defs static plus defined in source with '#name ...'
 # --
-	Dict
-		.set("null",List("0"))
-		.set("spc",List(' "_ .str'))
-
-//Inlines
+	dict=Dict
+		.set("null","0")
+		.set("spc",'"_ .str')
+		
+	self.dict=dict
+	
+		
+	self.hasSymbol=Lambda{
+		P(1) as String=>symbol 
+		self.dict.has(symbol)
+	}
+	self.getSymbol=Lambda{
+		P(1) as String => symbol
+		self.dict.get(symbol)
+	}
+	self.addSymbol=Lambda{
+		P(1) as String => symbol
+		P(2) as String => code
+		self.dict.set(symbol,code)
+	}
+/class Inlines
 
 
 
@@ -299,13 +311,27 @@
 # --
 	P(1,ExampleCode) => code
 	
+	inlines=Inlines
+	
+	# process macros in code
+	code = Inner{
+		code->line
+			if (line.startsWith("#")) {
+				name=line.after("#").before(" ")
+				code=line.after(" ")
+				inlines.addSymbol(name,code)
+				println("MACRO:", name)
+			} else {
+				out(line)
+		}
+	}
+	
 	currentTag="<DEFAULT>"
 	
 	words=Words
 	words.push(code)
 
 	instructions=Instructions
-	inlines=Inlines
 
 	numberTable=NumberTable:NumberTable
 		# all tags and constant numbers are added to the number table, and
@@ -319,9 +345,9 @@
 		break(word==null)
 		
 		# inlines
-		if (inlines.has(word)) {
+		if (inlines.hasSymbol(word)) {
 			#println("Inline",word)
-			words.push(inlines.get(word))
+			words.push(List(inlines.getSymbol(word)))
 			continue
 		}
 		
@@ -409,7 +435,7 @@
 	|
 	
 	# Return dict	
-	SymDict(bytecode,numberTable)
+	SymDict(bytecode,numberTable,inlines)
 /Assemble
 
 
@@ -454,6 +480,7 @@
 			error(instr < 128, "lookup byte invalid value: " + instr)
 			p3="["+instr+"]"
 			constantValue=numberTable.resolveConstant(instr-128)
+			error(Sys.getType(constantValue)!="int","WADDAFUCK? " + constantValue)
 
 			p4 = "push 0x" + constantValue.hex(4)
 		} else {
@@ -525,6 +552,10 @@
 	
 	println("Constant numbers used = " + numberTable.getNumberCount + " of 127")
 	println
+	Lib:Header("Macros")
+	Inner{
+		dict.inlines.dict.keys.sort->symbol println(symbol)
+	}
 	
 	"ok"
 	
