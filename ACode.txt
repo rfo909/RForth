@@ -17,126 +17,140 @@
 ; the code.
 ;
 
+#DictHead 0 global
+#InputBuffer 1 global
+#SymHead 2 global
+
+
 :Init
 	;; create variables in normal r/w heap memory
 
-	HERE 0 global!		;; ConsHead
+	HERE 0 global!		;; DictHead
 	wordsize allot
 
-	HERE 1 global!		;; DictHead
-	wordsize allot
+	HERE 1 global!		;; InputBuffer - points to input buffer
+	256 allot		;; 1 global points to this buffer
 
-	HERE 2 global!		;; InputBuffer - String
-	wordsize allot
-
-	;; buffer 
-	HERE &InputBufferAddr call !
-	256 allot
+	HERE 2 global!		;; SymHead - symbol list in HEAP memory
+	wordsize allot 
 	
-	;; write a zero to InputBuffer to indicate not no content
-	0 &InputBufferAddr call writeb
-	
+	;; initialize InputBuffer length byte to 0
+	0 InputBuffer writeb
+		
 	;; register inputbuffer and event handler
-	&InputBufferAddr call 0 registerPointer
+	InputBuffer 0 registerPointer
 	&SerialWordReceived 1 registerPointer
 	
 	&Main jmp
-
-:ConsHead 0 global ret	
-:DictHead 1 global ret
-:InputBufferAddr 2 global ret
-
+	
 :SerialWordReceived 
 	;;halt
-	&InputBufferAddr call cpush   ;; a points to inputbuffer
+	InputBuffer cpush   ;; a points to inputbuffer
 	cr "Word_" .str a .str ""_received .str
 	
 	;; indicate word consumed
 	0 a writeb 
-	
 	ret
 
 
-:Main
- 	cr "HERE_at_Main_start:_ .str HERE print 
- 	
-	&ConsGet call
-	&ConsGet call
-	&ConsGet call
-	
-	&ConsDispose call
-	&ConsDispose call
-	&ConsDispose call
+;; building a symbol table on the heap for both internally defined words and
+;; words received over serial
+;; ---
 
- 	cr "HERE_at_end_of_Main:_ .str HERE print
- 	
+:SymLookup ; (strPtr -- newPtr) - strPtr is internal symbol or temp storage (InputBuffer)
+	cpush			;; a = str
+	SymHead @ cpush   	;; b=symbol table entry (2 words)
+	:*next
+		b null eq &*notFound jmp?
+		b @ a streq &*found jmp?
+		b W+ @ b!
+		&*next jmp
+	:*found
+	b @ ret
 	
+	:*notFound
+	a &SymAdd call  ;; returns pointer to newString
+	
+	; (newString)
+	ret
+	
+	
+:SymAdd ; (strPtr -- newString)
+	HERE cpush			;; a=newCons
+		wordsize 2 mul allot
+
+	; (strPtr)
+	dup readb cpush			;; b=length of string
+	
+	; (strPtr)
+	HERE cpush			;; c=newString
+		b 1 add allot
+		
+	; (strPtr)
+	c 
+		b 1 add
+	
+	; (strPtr newString totalLength) 
+	memcpy
+
+	;; put data into newCons
+	c a !				;; newCons.CAR = newString
+	SymHead @ a W+ !		;; newCons.CDR = *SymHead
+	a SymHead !			;; SymHead=newCOns
+	
+	c ret				;; return newString
+
+
+;; -------------------------------------------------------
+;; Dictionary
+;; -------------------------------------------------------
+
+:DictAdd ;; ( strPtr codePtr -- )
+	swap &SymLookup call cpush	;; a=heapString
+	HERE cpush			;; b=newEntry 
+	wordsize 3 mul allot		;; (strPtr, codePtr, nextPtr)
+	cpush				;; c=code
+	
+	a b !
+	c 
+		b W+ !
+	DictHead @ 
+		b W+ W+ !
+	b DictHead !
+	ret
+
+:DictLookup ;; ( strptr -- codeptr )
+	&SymLookup call cpush		;; a=heapString
+	DictHead @ cpush		;; b=currEntry
+	:*next
+		b null eq &*NotFound jmp?
+		b @ a eq &*Found jmp?
+		b W+ W+ @ b!
+		&*next jmp
+	:*Found
+		b W+ @ ret
+	:*NotFound
+		null ret
+		
+
+:Dup
+	cpush a a
+	ret
+	
+:HelloWorld
+	"Hello_world .str
+	ret
+
+:Main
+	'Dup &Dup &DictAdd call
+	'Hello &HelloWorld &DictAdd call
+	
+	'Hello &DictLookup call call
+
 :Halt 
-	;;halt
+	halt
 	;;; Forever loop, serving events only from now on
 	&Halt jmp
 	
-
-
-
-
-;; Generalized free list mechanism
-;; -------------------------------
-
-;; Pop an element off the freelist, or null if freelist empty
-
-:FreePop   ; ( freeHead -- null|ptr )
-	cpush			;; a=address of freelist head word
-	a @ dup cpush null ne &*notEmpty jmp?  ;; b=address of first element in free list
-		null ret
-
-	:*notEmpty
-	b @ a!			;; store b.next (first word) into freelist head
-	b ret
-
-;; Push an element on the freelist
-
-
-:FreePush ; ( dataAddr freeHead -- )
-	cpush		;; a=freeHead
-	cpush		;; b=dataAddr
-
-	a @ b !		;; store freeHead into dataAddr.next (first word)
-	b a !		;; store dataAddr in freeHead
-	
-	ret
-	
-	
-	
-	
-	
-;; Global data structures depend on
-;; ConsHead and DictHead, which point to words on the heap 
-;; (see Init)
-;; ---------------------------------------------------------	
-
-;; Dictionary stuff
-;;	
-	
-; (TODO)
-
-;; CONS cells are created as a two-word CAR+CDR tuple. They are allotted
-;; as needed, but also freelisted when disposed off. To calculate the CDR address
-;; from the Cons pointer: W+
-
-
-:ConsGet  ; ( -- ConsPtr) - get Cons cell from free list (call ConsAlloc first if empty)
-	&ConsHead call cpush     ;; a=&ConsHead pointer
-	a &FreePop call cpush ;; b=ptr/null
-	b null ne &*ok jmp?
-		HERE b!				;; a=ptr new cons
-		wordsize 2 mul allot  ;; reserve the space
-	:*ok
-	b ret
-
-	
-:ConsDispose  ;; ( ptr -- )
-	&ConsHead call &FreePush call ret
-
 
 
