@@ -44,12 +44,20 @@
 	&Main jmp
 	
 :SerialWordReceived 
-	;;halt
 	InputBuffer cpush   ;; a points to inputbuffer
 	cr "Word_" .str a .str ""_received .str
 	
-	;; indicate word consumed
-	0 a writeb 
+	a &DictLookup call cpush  ;; b is result
+	cr "Got_code_ptr_ .str b print
+	b null eq &*NotFound jmp?
+		b call 			;; call code for word
+		&*WordConsumed jmp
+	:*NotFound
+		cr "Word_" .str a .str ""_not_found .str
+		
+	:*WordConsumed	
+		;; indicate word consumed
+		0 a writeb 
 	ret
 
 
@@ -133,19 +141,39 @@
 		null ret
 		
 
-:Dup
-	cpush a a
-	ret
+;; Forth vocabulary
+
+:Dup dup ret
+:Swap swap ret
+:Add add ret
+:Sub sub ret
+:Mul mul ret
+:Div div ret
+:@ @ ret
+:! ! ret
 	
 :HelloWorld
-	"Hello_world .str
+	"Hello_world_running .str
 	ret
 
 :Main
-	'Dup &Dup &DictAdd call
 	'Hello &HelloWorld &DictAdd call
+
+	'Dup &Dup &DictAdd call
+	'Swap &Swap &DictAdd call
+	'Add &Add &DictAdd call
+	'Sub &Sub &DictAdd call
+	'Mul &Mul &DictAdd call
+	'Div &Div &DictAdd call
 	
-	'Hello &DictLookup call call
+	'@ &@ &DictAdd call
+	'! &! &DictAdd call
+	
+	;;'Hello &DictLookup call cr call
+	
+	2 3 'Add &DictLookup call cr call print#
+	
+	;; 2007 instructions executed
 
 :Halt 
 	halt
