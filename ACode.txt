@@ -60,125 +60,45 @@
 		0 a writeb 
 	ret
 
-
-;; building a symbol table on the heap for both internally defined words and
-;; words received over serial
-;; ---
-
-:SymLookup ; (strPtr -- newPtr) - strPtr is internal symbol or temp storage (InputBuffer)
-	cpush			;; a = str
-	SymHead @ cpush   	;; b=symbol table entry (2 words)
-	:*next
-		b null eq &*notFound jmp?
-		b @ a streq &*found jmp?
-		b W+ @ b!
-		&*next jmp
-	:*found
-	b @ ret
-	
-	:*notFound
-	a &SymAdd call  ;; returns pointer to newString
-	
-	; (newString)
-	ret
-	
-	
-:SymAdd ; (strPtr -- newString)
-	HERE cpush			;; a=newCons
-		wordsize 2 mul allot
-
-	; (strPtr)
-	dup readb cpush			;; b=length of string
-	
-	; (strPtr)
-	HERE cpush			;; c=newString
-		b 1 add allot
-		
-	; (strPtr)
-	c 
-		b 1 add
-	
-	; (strPtr newString totalLength) 
-	memcpy
-
-	;; put data into newCons
-	c a !				;; newCons.CAR = newString
-	SymHead @ a W+ !		;; newCons.CDR = *SymHead
-	a SymHead !			;; SymHead=newCOns
-	
-	c ret				;; return newString
-
-
-;; -------------------------------------------------------
-;; Dictionary
-;; -------------------------------------------------------
-
-:DictAdd ;; ( strPtr codePtr -- )
-	swap &SymLookup call cpush	;; a=heapString
-	HERE cpush			;; b=newEntry 
-	wordsize 3 mul allot		;; (strPtr, codePtr, nextPtr)
-	cpush				;; c=code
-	
-	a b !
-	c 
-		b W+ !
-	DictHead @ 
-		b W+ W+ !
-	b DictHead !
-	ret
-
-:DictLookup ;; ( strptr -- codeptr )
-	&SymLookup call cpush		;; a=heapString
-	DictHead @ cpush		;; b=currEntry
-	:*next
-		b null eq &*NotFound jmp?
-		b @ a eq &*Found jmp?
-		b W+ W+ @ b!
-		&*next jmp
-	:*Found
-		b W+ @ ret
-	:*NotFound
-		null ret
-		
-
-;; Forth vocabulary
-
-:Dup dup ret
-:Swap swap ret
-:Add add ret
-:Sub sub ret
-:Mul mul ret
-:Div div ret
-:@ @ ret
-:! ! ret
-	
-:HelloWorld
-	"Hello_world_running .str
-	ret
-
 :Main
-	'Hello &HelloWorld &DictAdd call
 
-	'Dup &Dup &DictAdd call
-	'Swap &Swap &DictAdd call
-	'Add &Add &DictAdd call
-	'Sub &Sub &DictAdd call
-	'Mul &Mul &DictAdd call
-	'Div &Div &DictAdd call
-	
-	'@ &@ &DictAdd call
-	'! &! &DictAdd call
-	
-	;;'Hello &DictLookup call cr call
-	
-	2 3 'Add &DictLookup call cr call print#
-	
-	;; 2007 instructions executed
+	cr "Instr_ .str
+	'bbbb &DictLookup call print
 
 :Halt 
 	halt
 	;;; Forever loop, serving events only from now on
 	&Halt jmp
 	
+:DictLookup ; ( stringPtr -- codePtr )
+	cpush				;; a=string
+	&Dictionary cpush		;; b=current entry
+	:*next
+		b readb null eq &*notFound jmp?
+		a b streq &*found jmp?
+		b readb 1 add
+			b add 
+				wordsize add b!
+		&*next jmp
+	:*notFound
+		null ret
+	:*found
+		b readb 1 add 
+			b add @ ret
 
 
+:Dup
+	'This_is_Dup .str ret
+	
+:Hello
+	'This_is_Hello .str ret
+
+:DATA
+
+;; The literals (%'xxx and %tag are one-pass only, no patching, so they must only refer
+;; to tags defined above, not below.
+
+:Dictionary
+	%'aaaa %Dup
+	%'bbbb %Hello
+	HEX:00

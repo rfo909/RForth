@@ -796,7 +796,7 @@ GenerateSerialInput
 					instr="(constant)"
 				}
 				
-				report(mark,pc.hex(4), metaInfo.get(""+pc), instr)
+				report(mark,pc.hex(4), metaInfo.get(""+pc,""), instr)
 		} _=>rows
 		Lib:ShowRows(rows,null,false)
 			

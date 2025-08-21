@@ -141,14 +141,12 @@
 	over		:o
 	dump		:p		;; show stack content
 	
-	;;rot				;; inline: #2 dcopy
-	;;2dup				;; inline: over over
-	
 	;; Both dStack and cstack must grow upwards in memory, containing words only, for
 	;; predictable address calculations
 
 	;; call stack: note that "marks" are separate (hidden) structure, not physical on the 
-	;; visible call stack
+	;; visible call stack (for example separate frame stack)
+	
 	cpush		:O   ;; push 1 value from data stack to callstack
 				;; up to 3 values accessible as local variables a@ a! b@ b! c@ c! (single instructions)
 
@@ -304,6 +302,16 @@
 			word
 		}
 	}
+	self.append = Lambda{
+			P(1) as List => lines
+		words=Inner{
+			lines->line
+				#println(line)
+				line.trim.before(";").split->word
+					out(word.trim)
+		}
+		self.words=self.words+words
+	}
 /class Words
 	
 
@@ -339,6 +347,8 @@
 		# we add it to the output bytecode
 					
 	bytecode=Bytecode:Bytecode   # object
+	
+	STRcount=0
 	
 	loop
 		word=words.getWord
@@ -390,6 +400,36 @@
 			words.push(List("sym2s"))
 			continue
 		}
+		
+		# -- inline (literal data) symbols
+		if (word.startsWith("%'")) {
+			symbol=word.after("'")
+
+			words.push(List("HEX:"+symbol.length.hex(2) + symbol.toHexString("ISO-8859-1")))
+			continue
+		}
+		
+		# -- literal tag lookup (no patch, only works with predefined tags - for DATA section)
+		if (word.startsWith("%")) {
+			tag=word.after("%")
+			addr=numberTable.resolveTag(tag)
+			
+			words.push(List("HEX:" + addr.hex(4)))
+			continue
+		}
+		
+		# --- the HEX:NNN.. special word
+		if (word.startsWith("HEX:")) {
+			hex=word.after(":")
+			Inner {
+				loop
+					break(hex=="")
+					s=hex.first(2)
+					hex=hex.sub(2)
+					bytecode.addRawByte(s.parseInt(16))
+			}
+			continue
+		}		
 
 		# -- local tag def
 		if (word.startsWith(":*")) {
@@ -458,6 +498,8 @@
 	
 	bytecode=dict.bytecode
 	numberTable=dict.numberTable
+	
+	DATA = numberTable.resolveTag("DATA")
 		
 	lookup=InstructionsLookup
 	
@@ -477,12 +519,19 @@
 			}
 			else error("Unknown instruction '" + instr + "'")
 		} else if (Sys.getType(instr)=="int") {
-			error(instr < 128, "lookup byte invalid value: " + instr)
-			p3="["+instr+"]"
-			constantValue=numberTable.resolveConstant(instr-128)
-			error(Sys.getType(constantValue)!="int","WADDAFUCK? " + constantValue)
-
-			p4 = "push 0x" + constantValue.hex(4)
+			if (pos < DATA) {
+				error(instr < 128, "lookup byte invalid value: " + instr)
+				p3="["+instr+"]"
+				constantValue=numberTable.resolveConstant(instr-128)
+				if (Sys.getType(constantValue) != "int") {
+					p4="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX " + constantValue
+				} else {
+					p4 = "push 0x" + constantValue.hex(4)
+				}
+			} else {
+				p3="DATA"
+				p4=instr.hex(4)
+			}
 		} else {
 			error("Unknown instr type: " + instr)
 		}
@@ -496,6 +545,13 @@
 # Test by assembling ACode.txt, then disassembling it
 # --
 	Assemble => dict
+	
+	# Check that no unmatched tags
+	Inner{
+		dict.numberTable.tags.keys->key
+			error(dict.numberTable.resolveTag(key)==null, "Undefined tag: " + key)
+	}
+	
 	Disassemble(dict)
 	
 	bytecode=dict.bytecode

@@ -23,6 +23,12 @@
 			
 		self.result.add(byte+128)
 	}
+	self.addRawByte=Lambda{
+		P(1) as int => byte
+		error(byte<0 || byte > 255, "Invalid raw byte: " + byte)
+		self.result.add(byte)
+	}
+	
 	self.addChar=Lambda{
 		P(1) as String => char
 		error(char.length != 1, "Expected single character")
