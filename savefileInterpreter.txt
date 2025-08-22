@@ -210,7 +210,6 @@
 	}
 	self._G=Lambda{ # readb read byte ( addr -- value )
 		addr=self.pop
-		#if (addr < self.DATA_START) error("readb: reading below DATA_START: 0x" + addr.hex(4))
 		self.push(self.memory.readByte(addr))
 	}
 	self._H=Lambda{ # writeb write byte ( addr -- value )
@@ -331,7 +330,6 @@
 	
 	self._I=Lambda{  # @ read word
 		addr=self.pop
-		#if (addr < self.DATA_START) error("@: reading below DATA_START: 0x" + addr.hex(4))
 		self.push(self.memory.readWord(addr))
 	}
 	

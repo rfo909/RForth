@@ -63,7 +63,13 @@
 :Main
 
 	cr "Instr_ .str
-	'bbbb &DictLookup call print
+	'bbbb &DictLookup call cpush
+	a print
+	
+	cr "Calling_it .str
+	cr
+	a call
+
 
 :Halt 
 	halt
@@ -87,16 +93,35 @@
 			b add @ ret
 
 
+
+
 :Dup
-	'This_is_Dup .str ret
+	cr 'This_is_Dup .str ret
 	
 :Hello
-	'This_is_Hello .str ret
+	cr 'This_is_Hello .str ret
+
+;; The DATA tag affects how stuff is displayed by the disassembler
+;;
+;; Note that the interpreter should enforce a different rule. The output
+;; from the assembler is as follows
+;;
+;; - Code - all code in this file, including the DATA section
+;; - NumberTable - all tag references, all static numbers and all static symbols 'xxx in this file
+;; - Symbols - all static symbols in this file
+;;
+;; The interpreter, after populating its virtual RAM with this output, and with offsets for where
+;; NumberTable and Symbols are located, then creates its own runtime structures (3 stacks etc).
+;; When this is done, it stores the value of HERE internally, which is the address of the next available
+;; RAM location, and uses this to prevent wild pointer writes into the code and the runtime
+;; structures.
 
 :DATA
 
 ;; The literals (%'xxx and %tag are one-pass only, no patching, so they must only refer
-;; to tags defined above, not below.
+;; to tags defined above, not below. The strings are written with a length byte followed
+;; by characters, and the references as a Word-sized numbers (2 bytes). These become part
+;; of the hex string output from the assembler.
 
 :Dictionary
 	%'aaaa %Dup

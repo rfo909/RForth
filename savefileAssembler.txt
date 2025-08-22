@@ -597,7 +597,8 @@
 	println("symbolsStart", symbolsStart.hex(4))
 	println
 	#println("Hexblock length:", hexBlock.length)
-	println("Total #bytes:", hexBlock.length div 2)
+	totBytes=hexBlock.length div 2
+	println("Total #bytes:", totBytes, totBytes.hex(4))
 	
 
 	# Store stuff in database for interpreter to pick up automagically
