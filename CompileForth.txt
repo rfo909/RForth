@@ -1,0 +1,71 @@
+Must separate between jumps, which takes place within a word, and
+calling other words. The outer "tags" of ACode.txt should really be
+considered dictionary entries. Their names must exist as symbols in 
+a symbol table.
+
+When our code says &Something call, it should be translated into
+putting "Something" in a symbol table, and creating the three byte
+command "CALL" X Y, where X and Y form a word, pointing at the entry
+for "Something" in the dictionary.
+
+When our code says <cond> <addr> jmp? or just <cond> jmp, these are only
+for movements within the word, and are converted to
+
+	"JMP" X or "JMP?" X
+
+where X is a single unsigned byte. This means that a compiled word can
+be up to 255 bytes long.
+
+
+Basic library vs Forth
+----------------------
+The forth REPL requires a compiler for Forth. It requires a compile stack,
+where we keep track of what offsets need patching
+
+Forth code that is not a word definition is also compiled then executed.
+
+When doing a word definition, the ":" is recognized as a word that has
+code that pertains to the compilation stage
+
+:
+	compile
+		push("LITERAL")
+
+<any token>
+	if (peek(LITERAL)) {
+		create dictionary entry
+		...
+		reset compile stack
+		currPos=0
+	}
+	???
+
+
+
+
+Compile stack
+-------------
+
+
+IF
+	compile
+		push("IF",currPos)
+		emit("NNNN")
+		emit("jmp?)
+
+ELSE
+	compile
+		push("ELSE",currPos)
+		emit("NNNN")
+		patch("IF",currPos)
+
+THEN
+	compile
+		if(peek("ELSE")) {
+			patch("ELSE",currPos)
+		} else {
+			patch("IF",currPos)
+		}
+
+
+	
