@@ -38,17 +38,17 @@
 	0 InputBuffer writeb
 		
 	;; register inputbuffer and event handler
-	InputBuffer 0 registerPointer
-	&SerialWordReceived 1 registerPointer
+	InputBuffer 0 registerPointer				;; this triggers availability of the input buffer
+	&SerialWordReceived 1 registerPointer		;; this triggers availability of calling it when data in input buffer
 	
 	&Main jmp
 	
 :SerialWordReceived 
 	InputBuffer cpush   ;; a points to inputbuffer
-	cr "Word_" .str a .str ""_received .str
+	;;cr "Word_" .str a .str ""_received .str
 	
 	a &DictLookup call cpush  ;; b is result
-	cr "Got_code_ptr_ .str b print
+
 	b null eq &*NotFound jmp?
 		b call 			;; call code for word
 		&*WordConsumed jmp
@@ -64,12 +64,6 @@
 
 	cr
 	
-	'n &DictLookup call call
-	'dup &DictLookup call call
-	'add &DictLookup call call
-	'print# &DictLookup call call
-	
-	;; should print 84
 
 :Halt 
 	halt
@@ -99,6 +93,7 @@
 :IN 42 ret
 :IAdd add ret
 :IPrint# print# ret
+:Icr cr ret
 
 ;; The DATA tag affects how stuff is displayed by the disassembler
 ;;
@@ -127,6 +122,6 @@
 	%'n 		%IN
 	%'add 		%IAdd
 	%'print#	%IPrint#
-
+	%'cr		%Icr
 	;; end mark
 	HEX:FFFF

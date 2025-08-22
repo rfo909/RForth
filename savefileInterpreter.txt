@@ -646,27 +646,31 @@
 	P(1) as &Interpreter => interpreter
 	
 	error(interpreter.inputBuffer == 0, "interpreter.inputBuffer not defined (yet) 0")
+	length=interpreter.memory.readByte(interpreter.inputBuffer)
+
+	if (length==0) {
+
+		# no word in buffer - get next
+		Std.Db.obtainLock("InputWords",1000)
+		wordList=Db2:Get("Interpreter","InputWords",List)
+		Db2:Set("Interpreter","InputWords",wordList.keep(1))
+		Std.Db.releaseLock("InputWords")
+
+		s=wordList.first  # null if list empty
+
 		
-	Std.Db.obtainLock("InputWords",1000)
-	wordList=Db2:Get("Interpreter","InputWords",List)
-	Db2:Set("Interpreter","InputWords",wordList.keep(1))
-	Std.Db.releaseLock("InputWords")
-
-	s=wordList.first
-
-	
-	if (s != null && s.length > 0) {
-		#readLine("Inserting word " + s)
-		Inner{
-			offset=1  # past length byte
-			s.chars->c
-				interpreter.memory.writeChar(interpreter.inputBuffer+offset, c)
-				offset=offset+1
+		if (s != null && s.length > 0) {
+			Inner{
+				offset=1  # past length byte
+				s.chars->c
+					interpreter.memory.writeChar(interpreter.inputBuffer+offset, c)
+					offset=offset+1
+			}
+			
+			# write length byte last, as it triggers the event	
+			length=s.length
+			interpreter.memory.writeByte(interpreter.inputBuffer,length)
 		}
-		
-		# write length byte last, as it triggers the event	
-		length=s.length
-		interpreter.memory.writeByte(interpreter.inputBuffer,length)
 	}
 
 
@@ -676,11 +680,11 @@
 # Generate serial input words
 # --
 	loop
-		readLine("Enter word, blank to quit") => w
+		readLine("Enter words, blank to quit") => w
 		break(w=="")
 		Std.Db.obtainLock("InputWords",1000)
 		wordList=Db2:Get("Interpreter","InputWords",List)
-		Db2:Set("Interpreter","InputWords",List+w)
+		Db2:Set("Interpreter","InputWords",List+w.split)
 		Std.Db.releaseLock("InputWords")
 /GenerateSerialInput
 
@@ -700,8 +704,9 @@ GenerateSerialInput
 	tagListSorted=dict.tagListSorted
 	metaInfo=dict.metaInfo
 	
-	runUntil=0		# Sys.currentTimeMillis
+	runUntilCount=-1		# Sys.currentTimeMillis
 	breakpoint=-1
+	autorun=false
 
 	interpreter=Interpreter(hexBlock, numbersStart, symbolsStart)
 
@@ -709,33 +714,25 @@ GenerateSerialInput
 		if (interpreter.inputBuffer != 0) CheckForSimulatedSerialInputWord(interpreter)
 		
 		if (interpreter.haltFlag) {
-			if (runUntil > 0) {
-				println
-				Lib:Header("haltFlag set, stopping automatic execution, then resetting it")
-				runUntil=0
-				
-				println
-				readLine("Continue")
-			} else {
-				println
-				println("haltFlag detected, resetting it")
-				println
-			}
 			interpreter.haltFlag=false
+			autorun=false
 		}
 		if (interpreter.PC==breakpoint) {
-			#readLine("Found breakpoint")
-			# cancel autorun
-			runUntil=0
+			runUntilCount=-1
+			autorun=false
+		}
+		if (interpreter.executionCount==runUntilCount) {
+			runUntilCount=-1
+			autorun=false
 		}
 		
-		if (runUntil > Sys.currentTimeMillis) {
+		if (autorun) {
 			tryCatch(interpreter.executeInstruction) => result
 			if (!result.ok) {
 				println("ERROR: executeInstruction failed: " + result.msg)
 				readLine("Press ENTER")
 				# cancel autorun
-				runUntil=0
+				autorun=false
 			}
 			continue
 		}
@@ -856,20 +853,25 @@ GenerateSerialInput
 			println(readLine("Hex").parseInt(16))
 			readLine("Continue")
 		} else if (command.startsWith("r")) {
-			if (command.after("r").?parseInt(16)) {
-				breakpoint=command.after("r").parseInt(16)
+			readLine("Enter target address as NNN (hex) or instruction counter as #NNN (decimal), blank to just run") => str
+			if (str.startsWith("#")) {
+				runUntilCount=str.after("#").parseInt
+			} else if (str.trim != "") {
+				breakpoint=str.parseInt(16)
+				runUntilCount=-1
 			}
-			runUntil=Sys.currentTimeMillis+10000 # 10 sec
+			autorun=true
+
 		} else if (command=="s") {
 			breakpoint=interpreter.PC+1
-			runUntil=Sys.currentTimeMillis+2000
+			autorun=true
 		} else if (command.trim=="") {
 			tryCatch(interpreter.executeInstruction) => result
 			if (!result.ok) {
 				println("ERROR: executeInstruction failed: " + result.msg)
 				readLine("Press ENTER")
 				# cancel autorun
-				runUntil=0
+				autorun=false
 			}
 		}	 
 /Run
