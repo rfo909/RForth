@@ -62,14 +62,14 @@
 
 :Main
 
-	cr "Instr_ .str
-	'bbbb &DictLookup call cpush
-	a print
-	
-	cr "Calling_it .str
 	cr
-	a call
-
+	
+	'n &DictLookup call call
+	'dup &DictLookup call call
+	'add &DictLookup call call
+	'print# &DictLookup call call
+	
+	;; should print 84
 
 :Halt 
 	halt
@@ -80,7 +80,7 @@
 	cpush				;; a=string
 	&Dictionary cpush		;; b=current entry
 	:*next
-		b readb null eq &*notFound jmp?
+		b @ 0xFFFF eq &*notFound jmp?
 		a b streq &*found jmp?
 		b readb 1 add
 			b add 
@@ -95,11 +95,10 @@
 
 
 
-:Dup
-	cr 'This_is_Dup .str ret
-	
-:Hello
-	cr 'This_is_Hello .str ret
+:IDup dup ret
+:IN 42 ret
+:IAdd add ret
+:IPrint# print# ret
 
 ;; The DATA tag affects how stuff is displayed by the disassembler
 ;;
@@ -124,6 +123,10 @@
 ;; of the hex string output from the assembler.
 
 :Dictionary
-	%'aaaa %Dup
-	%'bbbb %Hello
-	HEX:00
+	%'dup 		%IDup
+	%'n 		%IN
+	%'add 		%IAdd
+	%'print#	%IPrint#
+
+	;; end mark
+	HEX:FFFF
