@@ -120,12 +120,72 @@
 	&StartNextWord jmp
 
 :CompileWord
-	;; look up in dictionary, error if not found
+	&NextWord &DictLookup call 			;; stackEntry / null
+	dup null eq &*notFound jmp?
+	readb add 1 add					;; address of CODE MODE NEXT (skipping the string)
+	
+	; ( CODE-ptr )
+	dup W+ @ &ProcessCodeMode call ; with (CODE-PTR MODE-VALUE)
+	&StartNextWord jmp
+	
+	:*notFound
+	cr "Unknown_word_ .str
+	&NextWord .str
+	
+	&REPL jmp
+
+
+;; -----------------------------------------------
+;; Utility subroutines, invoked with call
+;; -----------------------------------------------
+	
+:DictLookup ;; ( str -- stackEntry|null )
+	cpush				;; a=str
+	&Dictionary cpush		;; b=current dictionary entry
+	:*next
+		b @ null eq &*notFound jmp?	;; pointer is null, not found
+		b a streq &*found jmp?		;; got a match
+		
+		b readb 1 add 			;; byte count past string
+			wordsize 2 mul add	;; past code-pointer and flags
+				@		;; read next pointer
+		b!				;; update b with it
+		&*next jmp
+	:*notFound
+		null ret
+	:*found
+		b ret
+
+:ProcessCodeMode ;; ( code-ptr mode-value -- ) ;; decide how to handle word
+	swap cpush cpush    			; a=code b=mode-value
+	&IsCompiling readb cpush		; c=isCompiling 0/1
+	
+	c b 1 eq and &*callCode jmp?		;; isCompiling && mode==immediate: call code
+	c ! b 0 eq and &*callCode jmp?		;; !isCompiling && mode==normal: call code
+	c b 0 eq and &*genCall jmp?		;; isCompiling && mode==normal: generate call to the code
+	
+	; !isCompiling and immediate
+	cr "Immediate_word_ .str
+	&NextWord .str
+	"_ignored_(not_compiling) .str
+	ret
+	
+	:*callCode
+		a call
+		ret
+	:*genCall
+		;; ### TODO: must remove NumberTable, put addresses inline ###
+		;; 
+		;; And a simple assembler would be nice
+		cr "Should_generate_code_to_call_ .str
+		a print
+		ret
+	
 	;; is isCompiling && immediate: call word code
 	;; if isCompiling && !immediate: emit instructions to call the code
 	;; if !isCompiling && immediate: do nothing
 	;; if !isCompiling && !immediate: call word code
-	&StartNextWord jmp
+
 	
 ;; -----------------------------------------------
 ;; Implementations for initial words in dictionary
@@ -160,6 +220,7 @@
 #define NORMAL 		HEX:0000
 #define IMMEDIATE	HEX:0001
 
+
 ;; The dictionary entry has the following format:
 ;;
 ;;  - name as string: 1 byte length, followed by characters
@@ -170,7 +231,7 @@
 ;; Next=0 means terminated
 
 :Dictionary
-	%':		%COLON		IMMEDIATE	%NEXT
+	%':		%COLON		NORMAL		%NEXT
 	HEX:013B	%SEMICOLON	IMMEDIATE	%NEXT
 	%'immediate	%immediate	NORMAL		w0
 	
