@@ -32,7 +32,10 @@
 	0 &IsLiteral writeb				;; set IsLiteral flag = 0	
 	0 &NextWord writeb				;; set next word length = 0
 	0 &NextNumber !				;; set next number = 0 (word write)
-	
+
+#define DIGIT_0		48
+#define DIGIT_9		57
+
 :GetChar
 	readc &NextChar writeb
 
@@ -42,7 +45,7 @@
 	;; add character to NextWord, regardless of whether it is believed to be a number
 	;; because future characters may change it from number to word
 			
-	&NextChar
+	&NextChar readb
 		&NextWord readb 1 add &NextWord add	;; write pos
 			writeb				
 	&NextWord readb 1 add &NextWord writeb			;; update length
@@ -52,25 +55,30 @@
 	&IsWord readb &ProcessChar jmp?		;; is IsWord is set, go directly there
 	
 	&NextChar readb 
-		dup '0 ge 
-		swap '9 le and 
+		dup DIGIT_0 ge			;; '0' 
+		swap DIGIT_9 le and 			;; '9'
 			&ProcessDigit jmp?	;; is it a digit?
 			
 	&ProcessChar jmp			;; assuming word
 
 
 :ProcessSpace
+	&NextWord readb
+		0 eq &StartNextWord jmp?	;; no word, just a space, ignore it
+		
 	&IsNumber readb &CompleteNumber jmp?
-	&CompleteWord jmp?
+	&CompleteWord jmp
 	
 :ProcessDigit
 	1 &IsNumber writeb					;; set IsNumber flag = 1
 	
 	;; calculate digit value		
-	&NextChar '0 sub 9 gt &InvalidNumber jmp?	;; if bigger than 9, invalid number
+	&NextChar readb
+		DIGIT_0 sub 9 gt &InvalidNumber jmp?	;; if bigger than 9, invalid number
 		
-	&NextNumber @ 10 mul &NextChar '0 sub add 
-		&NextNumber !				;; update NextNumber
+	&NextNumber @ 10 mul 
+		&NextChar readb DIGIT_0 sub add 
+			&NextNumber !			;; update NextNumber
 	&GetChar jmp					;; GOTO GetChar
 
 :ProcessChar
@@ -83,6 +91,9 @@
 	&GetChar jmp
 	
 :CompleteNumber
+	cr "Got_number_ .str 
+	&NextNumber @ print#
+	;
 	&IsLiteral readb &InvalidLiteralNumber jmp?	;; numbers can't be dictionary names
 	&IsCompiling readb &CompileNumber jmp?		;; are we in compile mode?
 	&NextNumber @					;; push number on stack
@@ -90,7 +101,12 @@
 	
 	
 :CompleteWord
-	ret
+	cr "Looking_up_ .str
+	&NextWord .str
+	;;
+	'TODO_ .str
+	&StartNextWord jmp
+	
 
 
 :InvalidLiteralNumber					;; expected word name 
