@@ -1,127 +1,161 @@
-; This is the base system that eventually will implement some sort of a
-; REPL on a microcontroller. It contains instructions, organized under
-; tags at two levels, which are employed for direct jumps (jmp), conditional 
-; jumps (jmp?) and calls (call), which assume a return (ret).
-;
-; The outer level of tags is denoted :xxx to define a tag, and &xxx to refer
-; it. All tag references result in 5 bytes of code, which when run puts the
-; address on the stack. Outer level tags are global.
-;
-; Then there are local tags. These exist only in the scope between outer 
-; tags. This means common words like "again" or "exit" can be used
-; in different functions, without mixing up.
-;
-; These are defined with :*xxx and referred via &*xxx.
-;
-; The assembler handles patching all forward tag references when building
-; the code.
-;
+;; This file implements a state machine for the REPL and compiler.
+;;
+;; The data stack is already defined, as this "pretend assembly" exists on
+;; a virtual stack machine. The return stack also exists, and there are
+;; instructions call and ret which use it. The state machine that follows
+;; only uses jumps.
+;;
+;; Towards the end follows the data fields. Using the following notation to
+;; create placeholders and values in memory:
+;;
+;;  HEX:0001 
+;;  %'symbol     - generates one length byte followed by the characters
+;;  %tag         - inlines a tag address as a two byte word
+;;  %NEXT        - generates a pointer one word ahead, then writes that value as a word
+;;  b0           - generates a null byte, shortcut for HEX:00
+;;  w0           - generates a null word, shortcut for HEX:0000
+;;
+;; Note tags must be defined earlier in the file, as the %tag references are not
+;; part of the resolve scheme implemented in NumberTable
 
-#DictHead 0 global
-#InputBuffer 1 global
-#SymHead 2 global
+;; ------------ top of file ----------
 
 
-:Init
-	;; create variables in normal r/w heap memory
-
-	HERE 0 global!		;; DictHead
-	wordsize allot
-
-	HERE 1 global!		;; InputBuffer - points to input buffer
-	256 allot		;; 1 global points to this buffer
-
-	HERE 2 global!		;; SymHead - symbol list in HEAP memory
-	wordsize allot 
+:REPL
+	cr "Ready>_ .str
+	0 &IsCompiling writeb			;; set IsCompiling flag = 0 - set to 1 when compiling a word
+	&StartNextWord jmp
 	
-	;; initialize InputBuffer length byte to 0
-	0 InputBuffer writeb
+:StartNextWord
+	0 &IsNumber writeb				;; set IsNumber flag = 0
+	0 &IsWord writeb				;; set IsWord flag = 0
+	0 &IsLiteral writeb				;; set IsLiteral flag = 0	
+	0 &NextWord writeb				;; set next word length = 0
+	0 &NextNumber !				;; set next number = 0 (word write)
+	
+:GetChar
+	readc &NextChar writeb
+
+	&NextChar readb 
+		0x20 eq &ProcessSpace jmp?	;; is it a space?
+
+	;; add character to NextWord, regardless of whether it is believed to be a number
+	;; because future characters may change it from number to word
+			
+	&NextChar
+		&NextWord readb 1 add &NextWord add	;; write pos
+			writeb				
+	&NextWord readb 1 add &NextWord writeb			;; update length
+
+
+	&IsNumber readb &ProcessDigit jmp?		;; if IsNumber is set, go directly there
+	&IsWord readb &ProcessChar jmp?		;; is IsWord is set, go directly there
+	
+	&NextChar readb 
+		dup '0 ge 
+		swap '9 le and 
+			&ProcessDigit jmp?	;; is it a digit?
+			
+	&ProcessChar jmp			;; assuming word
+
+
+:ProcessSpace
+	&IsNumber readb &CompleteNumber jmp?
+	&CompleteWord jmp?
+	
+:ProcessDigit
+	1 &IsNumber writeb					;; set IsNumber flag = 1
+	
+	;; calculate digit value		
+	&NextChar '0 sub 9 gt &InvalidNumber jmp?	;; if bigger than 9, invalid number
 		
-	;; register inputbuffer and event handler
-	InputBuffer 0 registerPointer				;; this triggers availability of the input buffer
-	&SerialWordReceived 1 registerPointer		;; this triggers availability of calling it when data in input buffer
-	
-	&Main jmp
-	
-:SerialWordReceived 
-	InputBuffer cpush   ;; a points to inputbuffer
-	;;cr "Word_" .str a .str ""_received .str
-	
-	a &DictLookup call cpush  ;; b is result
+	&NextNumber @ 10 mul &NextChar '0 sub add 
+		&NextNumber !				;; update NextNumber
+	&GetChar jmp					;; GOTO GetChar
 
-	b null eq &*NotFound jmp?
-		b call 			;; call code for word
-		&*WordConsumed jmp
-	:*NotFound
-		cr "Word_" .str a .str ""_not_found .str
-		
-	:*WordConsumed	
-		;; indicate word consumed
-		0 a writeb 
+:ProcessChar
+	1 &IsWord writeb					;; set IsWord flag = 1
+	&GetChar jmp					;; GOTO GetChar
+	
+:InvalidNumber
+	0 &IsNumber writeb					;; change from IsNumber to IsWord
+	1 &IsWord writeb
+	&GetChar jmp
+	
+:CompleteNumber
+	&IsLiteral readb &InvalidLiteralNumber jmp?	;; numbers can't be dictionary names
+	&IsCompiling readb &CompileNumber jmp?		;; are we in compile mode?
+	&NextNumber @					;; push number on stack
+	&StartNextWord jmp					;; GOTO NextWord
+	
+	
+:CompleteWord
 	ret
 
-:Main
 
+:InvalidLiteralNumber					;; expected word name 
 	cr
+	"Unexpected_number_ .str
+	&NextNumber @ print			
+	&REPL jmp
 	
+:CompileNumber
+	;; ### TODO
+	&StartNextWord jmp
 
-:Halt 
-	halt
-	;;; Forever loop, serving events only from now on
-	&Halt jmp
+:CompileWord
+	;; look up in dictionary, error if not found
+	;; is isCompiling && immediate: call word code
+	;; if isCompiling && !immediate: emit instructions to call the code
+	;; if !isCompiling && immediate: do nothing
+	;; if !isCompiling && !immediate: call word code
+	&StartNextWord jmp
 	
-:DictLookup ; ( stringPtr -- codePtr )
-	cpush				;; a=string
-	&Dictionary cpush		;; b=current entry
-	:*next
-		b @ 0xFFFF eq &*notFound jmp?
-		a b streq &*found jmp?
-		b readb 1 add
-			b add 
-				wordsize add b!
-		&*next jmp
-	:*notFound
-		null ret
-	:*found
-		b readb 1 add 
-			b add @ ret
+;; -----------------------------------------------
+;; Implementations for initial words in dictionary
+;; -----------------------------------------------
 
-
-
-
-:IDup dup ret
-:IN 42 ret
-:IAdd add ret
-:IPrint# print# ret
-:Icr cr ret
-
-;; The DATA tag affects how stuff is displayed by the disassembler
-;;
-;; Note that the interpreter should enforce a different rule. The output
-;; from the assembler is as follows
-;;
-;; - Code - all code in this file, including the DATA section
-;; - NumberTable - all tag references, all static numbers and all static symbols 'xxx in this file
-;; - Symbols - all static symbols in this file
-;;
-;; The interpreter, after populating its virtual RAM with this output, and with offsets for where
-;; NumberTable and Symbols are located, then creates its own runtime structures (3 stacks etc).
-;; When this is done, it stores the value of HERE internally, which is the address of the next available
-;; RAM location, and uses this to prevent wild pointer writes into the code and the runtime
-;; structures.
-
+:COLON
+	ret
+	
+:SEMICOLON
+	ret
+	
+:immediate
+	ret
+		
+	
 :DATA
 
-;; The literals (%'xxx and %tag are one-pass only, no patching, so they must only refer
-;; to tags defined above, not below. The strings are written with a length byte followed
-;; by characters, and the references as a Word-sized numbers (2 bytes). These become part
-;; of the hex string output from the assembler.
+:NextChar 	b0
+:IsCompiling 	b0
+:IsNumber 	b0
+:IsWord 	b0
+:IsLiteral	b0
+
+:NextWord			;; length + 16 characters
+	b0
+	b0 b0 b0 b0   b0 b0 b0 b0 	; 8 bytes
+	b0 b0 b0 b0   b0 b0 b0 b0 	; 8 bytes
+
+
+:NextNumber w0
+
+#define NORMAL 		HEX:0000
+#define IMMEDIATE	HEX:0001
+
+;; The dictionary entry has the following format:
+;;
+;;  - name as string: 1 byte length, followed by characters
+;;  - code reference: word pointer
+;;  - flags: word
+;;  - next: word
+;;
+;; Next=0 means terminated
 
 :Dictionary
-	%'dup 		%IDup
-	%'n 		%IN
-	%'add 		%IAdd
-	%'print#	%IPrint#
-	%'cr		%Icr
-	;; end mark
-	HEX:FFFF
+	%':		%COLON		IMMEDIATE	%NEXT
+	HEX:013B	%SEMICOLON	IMMEDIATE	%NEXT
+	%'immediate	%immediate	NORMAL		w0
+	
+:DictionaryEnd  ;; for memory dumping - the w0 in the next of last row is the search terminator

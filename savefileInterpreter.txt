@@ -34,14 +34,6 @@
 	self.PC=0
 	self.haltFlag=false
 	
-	# --- events
-	
-	self.inputBuffer = 0          # set with '0 registerPtr' instruction
-	self.inputEventWordReceived = 0    # set with '1 registerPtr' instruction
-	
-	self.eventHandlerCallingBase = null
-		# the base of the frame that we were running when an event handler was invoked
-
 	# --- output 
 
 	self.outputLines=List("")
@@ -95,7 +87,7 @@
 	
 	# --- done with integrating code and setting up system structures on heap
 
-	self.DATA_START=self.memory.HERE
+	self.DATA_START=0  	# no protection
 
 	self.nextInstruction=Lambda{
 		self.memory.readByte(self.PC)
@@ -148,22 +140,6 @@
 	self.executeInstruction=Lambda{
 
 		pc = self.PC
-		
-		# event generation?
-		if (self.eventHandlerCallingBase == null && self.inputBuffer != 0 && self.inputEventWordReceived != 0) {
-			length = self.memory.readByte(self.inputBuffer)
-			if (length > 0) {
-				#readLine("executeInstruction: generating event call")
-				# data present, invoke event handler
-				self.push(self.inputEventWordReceived) 
-				
-				self.eventHandlerCallingBase=self.fpeek.base
-				
-				self.PC=self.PC-1
-				self._Q  # call sets return address = PC+1
-				pc=self.PC
-			}
-		}
 		
 		instr=self.memory.readByte(self.PC)
 		if (instr < 32) {
@@ -271,6 +247,16 @@
 	}
 	self._i=Lambda{ # not boolean ( x -- 0|1 )
 		a=self.pop value=if(a==0,1,0) self.push(value)
+	}
+	self._E=Lambda{ # ge ( a b -- 0|1 )
+		b=self.pop
+		a=self.pop
+		if (a>=b) self.push(1) else self.push(0)
+	}
+	self._F=Lambda{ # le ( a b -- 0|1 )
+		b=self.pop
+		a=self.pop
+		if (a<=b) self.push(1) else self.push(0)
 	}
 	
 	self._g=Lambda{self.push(self.memory.HERE)}   # HERE ( -- value )
@@ -501,21 +487,6 @@
 		self.printString(addr)
 	}
 
-	self._E=Lambda{ # registerPtr 
-		eventId=self.pop
-		addr=self.pop
-		if (eventId==0) {
-			self.inputBuffer=addr
-			self.addOutputCR
-			self.addOutputText("#Setting (0) inputBuffer: " + addr.hex(4))
-		} else if (eventId==1) {
-			self.inputEventWordReceived=addr
-			self.addOutputCR
-			self.addOutputText("#Setting (1) inputEventWordReceived: " + addr.hex(4))
-		} else {
-			error("Unknown eventId: " + eventId)
-		}
-	}
 	self._B=Lambda{ # streq - compare strings, return 0 if not and 1 if equal
 		a=self.pop
 		b=self.pop
@@ -540,6 +511,21 @@
 		Std.Data.for(0,byteCount,1)->i
 			self.memory.writeByte(target+i, self.memory.readByte(source+i))
 	}
+	
+	self.bufferedInput=""
+	self._v=Lambda{ # readc ( -- byte ) - read single character - blocking
+		if (self.bufferedInput.length==0) {
+			self.bufferedInput = readLine("Enter input")
+		}
+		if (self.bufferedInput.length==0) {
+			self.bufferedInput=" "
+		}
+		value=self.bufferedInput.chars.first.toHexString("ISO-8859-1").parseInt(16)
+		self.push(value)
+		self.bufferedInput=self.bufferedInput.sub(1)
+		
+	 }
+		
 		
 /class Interpreter
 
@@ -640,56 +626,7 @@
 	}
 //ReadMemoryInspectAddress
 
-	
-# Simulated serial input 
-# --
-	P(1) as &Interpreter => interpreter
-	
-	error(interpreter.inputBuffer == 0, "interpreter.inputBuffer not defined (yet) 0")
-	length=interpreter.memory.readByte(interpreter.inputBuffer)
 
-	if (length==0) {
-
-		# no word in buffer - get next
-		Std.Db.obtainLock("InputWords",1000)
-		wordList=Db2:Get("Interpreter","InputWords",List)
-		Db2:Set("Interpreter","InputWords",wordList.keep(1))
-		Std.Db.releaseLock("InputWords")
-
-		s=wordList.first  # null if list empty
-
-		
-		if (s != null && s.length > 0) {
-			Inner{
-				offset=1  # past length byte
-				s.chars->c
-					interpreter.memory.writeChar(interpreter.inputBuffer+offset, c)
-					offset=offset+1
-			}
-			
-			# write length byte last, as it triggers the event	
-			length=s.length
-			interpreter.memory.writeByte(interpreter.inputBuffer,length)
-		}
-	}
-
-
-//CheckForSimulatedSerialInputWord
-	
-	
-# Generate serial input words
-# --
-	loop
-		readLine("Enter words, blank to quit") => w
-		break(w=="")
-		Std.Db.obtainLock("InputWords",1000)
-		wordList=Db2:Get("Interpreter","InputWords",List)
-		Db2:Set("Interpreter","InputWords",List+w.split)
-		Std.Db.releaseLock("InputWords")
-/GenerateSerialInput
-
-GenerateSerialInput
-/GSI
 
 # Test
 # --
@@ -711,8 +648,6 @@ GenerateSerialInput
 	interpreter=Interpreter(hexBlock, numbersStart, symbolsStart)
 
 	loop
-		if (interpreter.inputBuffer != 0) CheckForSimulatedSerialInputWord(interpreter)
-		
 		if (interpreter.haltFlag) {
 			interpreter.haltFlag=false
 			autorun=false

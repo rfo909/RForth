@@ -28,6 +28,13 @@
 		error(byte<0 || byte > 255, "Invalid raw byte: " + byte)
 		self.result.add(byte)
 	}
+	self.addRawWord=Lambda{
+		P(1) as int => word
+		word.bin(16).first(8).parseInt(2) => a
+		word.bin(16).last(8).parseInt(2) => b
+		self.addRawByte(a)
+		self.addRawByte(b)
+	}
 	
 	self.addChar=Lambda{
 		P(1) as String => char

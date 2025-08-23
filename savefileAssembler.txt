@@ -186,6 +186,9 @@
 	and		:&	;; logical 
 	or		:|	;; logical
 	
+	ge		:E	;; logical
+	le		:F	;; logical
+	
 	;; bitwise operations
 	andb		:q
 	orb		:r
@@ -208,7 +211,7 @@
 	
 	halt		:Z   ;; halt automatic execution in interactive interpreter (hard-coded breakpoint)
 				;; on a microcontroller we will just run in a tight forever loop when halted
-	
+	readc		:v   ;; ( -- byte ) - read single character (byte), blocking 
 		
 	;; Strings are stored as one length byte and N characters (max 255)
 
@@ -216,7 +219,6 @@
 	.str		:C		;; print string
 	streq		:B		;; compare strings ( ptr ptr -- 0/1 )  boolean
 	memcpy		:D		;; ( ptrSrc ptrTarget count -- )
-	registerPointer	:E		;; ( ptr event-id -- )
 
 >>> EOF
 	=>list
@@ -253,11 +255,13 @@
 /Debug
 
 
-# Inline defs static plus defined in source with '#name ...'
+# Inline defs static plus defined in source as macros with '#name ...'
 # --
 	dict=Dict
 		.set("null","0")
 		.set("spc",'"_ .str')
+		.set("b0", "HEX:00")
+		.set("w0", "HEX:0000")
 		
 	self.dict=dict
 	
@@ -324,9 +328,9 @@
 	# process macros in code
 	code = Inner{
 		code->line
-			if (line.startsWith("#")) {
-				name=line.after("#").before(" ")
-				code=line.after(" ")
+			if (line.startsWith("#define ")) {
+				name=line.after(" ").before(" ")
+				code=line.after(" ").after(" ")
 				inlines.addSymbol(name,code)
 				println("MACRO:", name)
 			} else {
@@ -401,6 +405,14 @@
 			continue
 		}
 		
+		# -- %NEXT
+		if (word=="%NEXT") {
+			# point to next word (for static lists)
+			value=bytecode.length+2  # wordsize
+			bytecode.addRawWord(value)
+			continue
+		}
+		
 		# -- inline (literal data) symbols
 		if (word.startsWith("%'")) {
 			symbol=word.after("'")
@@ -417,6 +429,7 @@
 			words.push(List("HEX:" + addr.hex(4)))
 			continue
 		}
+			
 		
 		# --- the HEX:NNN.. special word
 		if (word.startsWith("HEX:")) {
