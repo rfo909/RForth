@@ -567,7 +567,7 @@
 				}
 			} else {
 				p3="DATA"
-				p4=instr.hex(4)
+				p4="0x"+instr.hex(2)  # a byte
 			}
 		} else {
 			error("Unknown instr type: " + instr)

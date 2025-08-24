@@ -513,7 +513,10 @@
 			self.memory.writeByte(target+i, self.memory.readByte(source+i))
 	}
 	
-	self.bufferedInput="42 dup add print# halt "
+	self.bufferedInput="42 dup add "
+	# 1584 instructions to process this in interactive mode
+	
+	
 	self._v=Lambda{ # readc ( -- byte ) - read single character - blocking
 		if (self.bufferedInput.length==0) {
 			Lib:Header("The REPL is waiting for more input characters!")
@@ -643,11 +646,14 @@
 	tagListSorted=dict.tagListSorted
 	metaInfo=dict.metaInfo
 	
+	
+	
 	runUntilCount=-1		# Sys.currentTimeMillis
 	breakpoint=-1
 	autorun=false
 
 	interpreter=Interpreter(hexBlock, numbersStart, symbolsStart)
+	interpreter.DATA_START=tags.get("PROTECT")
 
 	loop
 		if (interpreter.haltFlag) {
@@ -718,11 +724,12 @@
 				
 				instr=interpreter.memory.readByte(pc)
 				if (instr >= 33 && instr <= 127) {
-					instr=Sys.uchar(instr)
-					tryCatch(instr=Assembler:InstructionsLookup.get(instr))=>result
-					if (!result.ok) {
-						println("InstructionsLookup failed for inst: " + instr)
-						readLine("Press ENTER")
+					ch=Sys.uchar(instr)
+					tryCatch(x=Assembler:InstructionsLookup.get(ch))=>result
+					if (result.ok) {
+						instr=x
+					} else {
+						instr="(data: 0x" + instr.hex(4) + ")"
 					}
 				} else if (instr >= 128) {
 					instr="(constant)"
