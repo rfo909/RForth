@@ -60,6 +60,25 @@
 /IRShow
 
 
+# Build inline-dictionary code
+# --
+	data=InstructionsLookup
+
+	excluded="cpush a! b! c! a b c global global!".split
+	
+	data.keys.sort->char
+		name=data.get(char)
+		reject(excluded.contains(name))
+		s=("%'"+name + " ".times(16)).first(16)
+
+		hex="HEX:00"+char.toHexString("ISO-8859-1")  # code pointer is code
+		s=s+(hex+" ".times(16)).first(16)
+		s=s+"INLINE      "
+		s=s+"%NEXT        ;; " + char
+		println(s)
+/InlineDictionary
+
+
 # Show interpreter instructions
 # --
 	Sys.savefile.dir.file("savefileInterpreter.txt").read->line
@@ -130,6 +149,7 @@
 	wordsize	:k
 	
 	W+		:n	;; wordsize add (for CONS cells and general use)
+	2W+		:w	
 
 	;; data stack operations
 	dcopy		:M		;; copy stack element n, where 0 is top etc, to top, so #1 dcopy is DUP
@@ -533,13 +553,17 @@
 			else error("Unknown instruction '" + instr + "'")
 		} else if (Sys.getType(instr)=="int") {
 			if (pos < DATA) {
-				error(instr < 128, "lookup byte invalid value: " + instr)
-				p3="["+instr+"]"
-				constantValue=numberTable.resolveConstant(instr-128)
-				if (Sys.getType(constantValue) != "int") {
-					p4="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX " + constantValue
+				if (instr < 128) {
+					p3="lookup byte invalid: " + instr
+					p4=""
 				} else {
-					p4 = "push 0x" + constantValue.hex(4)
+					p3="["+instr+"]"
+					constantValue=numberTable.resolveConstant(instr-128)
+					if (Sys.getType(constantValue) != "int") {
+						p4="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX " + constantValue
+					} else {
+						p4 = "push 0x" + constantValue.hex(4)
+					}
 				}
 			} else {
 				p3="DATA"

@@ -5,6 +5,8 @@
 	P(2) as int => numberLookupStart
 	P(3) as int => symbolLookupStart
 
+	Term.wrap(true)			# to see full error listings
+	
 	# number of words
 	DSTACK_WORDS = 20
 	CSTACK_WORDS = 40  # callstack
@@ -307,11 +309,6 @@
 		self.fpush(base,size)
 
 		self.PC=targetAddr # JMP
-		
-		# check if this return is out of an event handler, and if so null out the 
-		# flag that says so, which means new events are available
-		
-		if (self.eventHandlerCallingBase==base) self.eventHandlerCallingBase=null
 	}
 	
 	self._I=Lambda{  # @ read word
@@ -362,6 +359,10 @@
 	self._n=Lambda{ # W+   ( n -- n+WORDSIZE )
 		value=self.pop
 		self.push(value+self.WORDSIZE)
+	}
+	self._w=Lambda{ # 2W+ ( m -- n+WORDSIZE*2 )
+		value=self.pop
+		self.push(value+self.WORDSIZE+self.WORDSIZE)
 	}
 
 	self._o=Lambda{ # over ( a b -- a b a )
@@ -512,7 +513,7 @@
 			self.memory.writeByte(target+i, self.memory.readByte(source+i))
 	}
 	
-	self.bufferedInput=""
+	self.bufferedInput="42 dup add print# halt "
 	self._v=Lambda{ # readc ( -- byte ) - read single character - blocking
 		if (self.bufferedInput.length==0) {
 			Lib:Header("The REPL is waiting for more input characters!")
@@ -789,13 +790,13 @@
 			println(readLine("Hex").parseInt(16))
 			readLine("Continue")
 		} else if (command.startsWith("r")) {
-			readLine("Enter target address as NNN (hex) or instruction counter as #NNN (decimal), blank to just run") => str
-			if (str.startsWith("#")) {
-				runUntilCount=str.after("#").parseInt
-			} else if (str.trim != "") {
-				breakpoint=str.parseInt(16)
-				runUntilCount=-1
+			instrCount=1
+			if (command.after("r").?parseInt) {
+				instrCount=command.after("r").parseInt
+			} else {
+				Input("Enter instruction count").get.parseInt => instrCount
 			}
+			runUntilCount=interpreter.executionCount + instrCount
 			autorun=true
 
 		} else if (command=="s") {
