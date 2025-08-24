@@ -12,21 +12,14 @@
 		
 	
 	
-	self.addConstantLookupByte=Lambda{
-		P(1) as int => byte
-		error(byte < 0 || byte > 127, "Invalid constant lookup byte: " + byte)
-		
-		# The NumberTable operates 0-based, but constant lookup
-		# bytes are encoded as 8-bit bytes, to be identified by the
-		# interpreter as different from regular instructions which
-		# operate in the 33-127 range, or even 1-127 if need be.
-			
-		self.result.add(byte+128)
-	}
 	self.addRawByte=Lambda{
 		P(1) as int => byte
 		error(byte<0 || byte > 255, "Invalid raw byte: " + byte)
 		self.result.add(byte)
+	}
+	self.addRawBytes=Lambda{
+		P(1) as List => list
+		list->byte self.addRawByte(byte)
 	}
 	self.addRawWord=Lambda{
 		P(1) as int => word
@@ -43,6 +36,14 @@
 		error(code < 33 || code > 127, "Invalid bytecode character: '" + char + "'")
 		self.result.add(char)
 	}
+	self.patch=Lambda{
+		P(1) as int => pos
+		P(2) as List => data
+		data->byte
+			self.result.set(pos,byte)
+			pos=pos+1
+	}
+		
 	self.addString=Lambda{
 		P(1) as String => s
 		s.chars->c self.addChar(c)
@@ -53,6 +54,7 @@
 	self.getValue=Lambda{
 		P(1) as int => pos
 		self.result.get(pos)
+		
 	}
 	self.getMeta=Lambda{
 		P(1) as int => pos

@@ -1,116 +1,70 @@
-# Up to 127 jump and call target addresses, as well as unnamed numeric constants, are stored 
-# in a memory table looked up by index. The named values are the tags, which may be defined then
-# used, or used before defined. This class also sees to it that no tag is redefined.
+# Manage tags and generating numbers as code
+# Numbers in code are issued as sequences of 7 bit numbers, with
+# the high bit set, together with the z instruction which puts
+# a 0 on the stack. Hitting a high-bit byte, it is processed by
+# stripping the high bit, and with the remaining value:  
+# 
+#	push(pop()*128+value)
 #
-# Second, there are the numeric constant, which do not have a name, and simply reuse any slot
-# in the table with that number, or adds one if not present.
 # --
-	self.numberData=List
-	self.tags=Dict
+	self.TAG_BYTES = 2
 	
-		
-	# lookup named tag, or add it in wait for it to be defined later, return slot position
-	self.tagLookup = Lambda{
-		P(1) as String => name
-
-		if (self.tags.has(name)) {
-			self.tags.get(name)
-		} else {
-			# since we don't know a value, we can not reuse any slot, so creating new null valued element
-			pos=self.numberData.length
-			self.numberData.add(null)
-			self.tags.set(name,pos)
-			pos
-		}
-	}
-		
-	# returns index into table / only allowed to define each name once
-	self.defineTag = Lambda{
-		P(1) as String => name
-		P(2) as int => value
-		
-		error(value<0 || value >= 2^16, "Invalid address: " + value)
-		
-		if (self.tags.has(name)) {
-			pos=self.tags.get(name)
-			error (self.numberData.get(pos) != null, "Duplicate tag definition " + name)
-			self.numberData.set(pos,value)
-			pos
-		} else {
-			pos=self.constantValue(value)
-			self.tags.set(name,pos)
-			pos
-		}
+	# tags are assumed 
+	self.tags=Dict	# tagName, tagAddress
+	self.patchList=List  # of dictionaries with tagName and patchAddress fields
+	
+	self.defineTag=Lambda{
+		P(1) as String => tagName
+		P(2) as int => tagAddress
+		error(self.tags.has(tagName), "Invalid redefinition of tag " + tagName)
+		self.tags.set(tagName,tagAddress)
 	}
 	
-	# get slot for simple numeric constant
-	self.constantValue = Lambda {
-		P(1) as int => value
-		pos=0
-		found=false
-		loop
-			break(pos>=self.numberData.length)
-			if (self.numberData.get(pos)==value) {
-				found=true
-			} else {
-				pos=pos+1
-			}
-			break(found)
-		|
-		if (!found) {
-			pos=self.numberData.length
-			self.numberData.add(value)
+	self.getTagAddress=Lambda{
+		P(1) as String => name
+		self.tags.get(name)
+	}
+	
+	# when patching unresolved tag lookups
+	self.getTagAsCode=Lambda{
+		P(1) as String => name
+		NumberTable:GenerateNumberBytes(self.tags.get(name), self.TAG_BYTES)
+	}
+	
+			
+	
+	self.lookupTag=Lambda{
+		P(1) as String => tagName
+		P(2) as int => patchAddress
+		
+		addr=0
+		if (self.tags.has(tagName)) {
+			addr=self.tags.get(tagName)
+		} else {
+			self.patchList.add(SymDict(tagName,patchAddress))
 		}
-		pos
+		# return bytes
+		NumberTable:GenerateNumberBytes(addr, self.TAG_BYTES)
 	}
 	
 	self.getTagListSorted = Lambda{
-		self.tags.keys->tag
-			out(Int(self.resolveTag(tag), tag))
-		| _.sort->x
-			out(x.data)
-	}
-	
-	
-	self.resolveConstant = Lambda {
-		P(1) as int => byte
-		error (byte >= self.numberData.length || byte < 0, "resolveConstant, byte value out of range: " + byte)
-		self.numberData.get(byte)
-	}
-	
-	self.resolveTag = Lambda {
-		P(1) as String => tag
-		error(!self.tags.has(tag), "Unknown tag: " + tag)
-		pos=self.tags.get(tag)
-		self.numberData.get(pos)
-	}
-	
-	
-	self.generateOutput = Lambda {
-		# Check that all symbols are defined
 		self.tags.keys->key
-			pos=self.tags.get(key)
-			if (self.numberData.get(pos)==null) error("Symbol '"+key+"' has no value")
-		|
-		self.numberData->v 
-			out(v.hex(4)) 
-		| _.concat
+			out(Int(self.tags.get(key), key))
+		| _.sort->x
+			out(x.data)  # key
 	}
 	
-	self.getNumberCount = Lambda {
-		self.numberData.length
-	}	
-
-
 	self.symbols=Dict
 	self.symbolData=List  # list of bytes as int
 	self.symbolCount=0
 	
 	# Symbols are stored in a separate string located somewhere at runtime,
 	# and the symbols are a position in that string, which points at the length
-	# in hex, followed by the characters. As the indexes in the symbolString
-	# will easily exceed a single byte, we go through the numberTable, storing
-	# a two-byte value and producing a single byte lookup for that number.
+	# in hex, followed by the characters. 
+	#
+	# This function returns the address in the form of a list of bytes, which are
+	# valid instructions, to be added to the bytecode.
+	
 	self.addSymbol = Lambda {
 		P(1) as String => symbol
 		error(symbol.length > 255, "Symbol too long, max 255: " + symbol)
@@ -125,7 +79,7 @@
 		self.symbolCount=self.symbolCount+1
 		
 		if (self.symbols.has(symbol)) {
-			self.symbols.get(symbol)
+			NumberTable:GenerateNumberBytes(self.symbols.get(symbol))
 		} else {
 			symPos=self.symbolData.length
 			self.symbolData.add(symbol.length)
@@ -136,11 +90,9 @@
 					self.symbolData.add(hex.parseInt(16))
 			}
 
-			# make a single byte representation for the symbol offset in the symbol data
-			numberPos=self.constantValue(symPos)
 			# register in dict for reuse if same symbol used again
-			self.symbols.set(symbol,numberPos)
-			numberPos
+			self.symbols.set(symbol,symPos)
+			NumberTable:GenerateNumberBytes(symPos)
 		}
 	}
 	
@@ -151,68 +103,69 @@
 		| _.concat
 	}
 	
-/class NumberTable	
+/class Numbers
 
 
-	
-
-
-
-	
-	
 # Test
 # --
-	t=NumberTable
-	
-	a=t.defineTag("A",5)
-	b=t.constantValue(1)
-	c=t.tagLookup("B")
-	d=t.defineTag("Av",19)
-	e=t.constantValue(2)
-	f=t.constantValue(1)
-	g=t.defineTag("B",21)
-	
-	println("---")
-	println("Output: " + t.generateOutput)
-	println("---")
-	
-	
-	
-	println 
-	println(a,b,c,d,e,f,g)
-	
-	error(""+a+b+c+d+e+f+g != "0123412", "t1 wrong result")
-	
-	t.tagLookup("D")  # undefined
-	t.defineTag("E",23)
-	
-	result = tryCatch(t.generateOutput)
-	if (result.ok) error("t2 should fail")
-	println("Should fail: " + result.msg)  # symbol 'D' undefined
-	
-	t.defineTag("D",25)
-	t.generateOutput   # no error
-	
-	result=tryCatch(t.defineTag("B",99)) # should fail
-	if (result.ok) error("t3 should fail")
-	println("Should fail: " + result.msg) # redefine tag not allowed
+	tags=Tags
+	tags.addTagDef("init",20)
+	tags.addTagDef("MAIN",4078)
 
-	println
-	println("--- symbol table ---")
-	println
+	println(tags.lookupTag("MAIN", 99).concat(" "))
+	println(tags.lookupTag("Undefined", 100).concat(" "))
 	
-	x=t.addSymbol("test")
-	y=t.addSymbol("x")
-	println("First",x,"->",t.numberData.get(x))
-	println("Second",y,"->",t.numberData.get(y))
-	
-	println("duplicate first:", t.addSymbol("test"))
-	t.defineTag("TOP",0)
-
-	println("Tag list sorted")
-	t.getTagListSorted.print
-	
+	JSON:PP(tags.patchList)
 	"ok"
+//tTags
+
+
+
+# Generate number as bytes (list of int) - includes value 122 which it the "z" in front
+# --
+	P(1) as int => number
+	P(2,0) as int => byteCount 	# 0 for lowest possible
 	
-/t
-		
+	bits=number.bin(64)
+	
+	# consuming from the right, 7 bits at a time
+	loop
+		if (bits.length < 7) bits="0000000"+bits
+		break(bits.parseInt(2)==0)
+		x="1"+bits.last(7)
+		bits=bits.sub(0,bits.length-7)
+		out(x.parseInt(2))
+	| _.reverse=>bytes
+	
+	error (byteCount>0 && bytes.length>byteCount,  
+		"Value " + number + " does not fit in " + byteCount + " bytes")
+
+	leadingZeroesMissing = 0
+	if (byteCount > 0) {
+		leadingZeroesMissing=byteCount-bytes.length
+	}
+	# return value incli
+	List(122) + Std.Data.yes(leadingZeroesMissing, 128) + bytes
+/GenerateNumberBytes
+
+
+# Reconstruct number from bytes (for test, as the numbers are considered code, and executed
+# one at a time).
+# --
+	P(1) as List => bytes
+	value=0
+	bytes->byte
+		x=byte.bin(8).last(7).parseInt(2)
+		value=value*128+x
+	|
+	value
+//BackToValue
+
+
+
+# Test
+# --
+	GenerateNumberBytes(7029,0) => list
+	list.print
+	BackToValue(list.keep(1))  # skip the 'z' instruction
+//tNumbers

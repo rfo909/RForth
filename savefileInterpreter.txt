@@ -2,8 +2,7 @@
 # The interpreter
 # --
 	P(1) as String => hexString
-	P(2) as int => numberLookupStart
-	P(3) as int => symbolLookupStart
+	P(2) as int => symbolsStart
 
 	Term.wrap(true)			# to see full error listings
 	
@@ -29,8 +28,7 @@
 
 	# -- store information about the imported hex string
 	
-	self.numberLookupStart=numberLookupStart
-	self.symbolLookupStart=symbolLookupStart
+	self.symbolsStart=symbolsStart
 	self.symbolLookupEnd=bytes.length
 
 	self.PC=0
@@ -148,11 +146,9 @@
 			# reserved
 			error("ERROR: Reserved instruction: " + instr)
 		} else if (instr > 127) {
-			# constant number lookup
-			index=instr-128
-			addr=self.numberLookupStart+(index*self.WORDSIZE)
-			value=self.memory.readWord(addr)
-			#println("[" + instr + "] push 0x" + value.hex(4))
+			# encoded number literal in 7 lowest bits
+			value=self.pop
+			value=value*128 + (instr.bin(8).last(7).parseInt(2))
 			self.push(value)
 		} else {
 			instr=Sys.uchar(instr)
@@ -466,7 +462,7 @@
 		addr=self.globalVariablesBase + n*2
 		self.push(self.memory.readWord(addr))
 	}
-	self._z=Lambda { # global! - set global variable ( value N -- )
+	self._y=Lambda { # global! - set global variable ( value N -- )
 		n=self.pop
 		value=self.pop
 		error(n<0 || n>=self.globalVariableCount, "global!: invalid reference: " + n)
@@ -479,7 +475,7 @@
 
 	self._A=Lambda{  # sym2s - convert symbol offset to string pointer
 		offset=self.pop
-		addr=self.symbolLookupStart + offset
+		addr=self.symbolsStart + offset
 		self.push(addr)
 	}
 
@@ -529,6 +525,10 @@
 		self.push(value)
 		self.bufferedInput=self.bufferedInput.sub(1)
 		
+	 }
+	 
+	 self._z = Lambda{ # z ( -- 0 ) pushes a single zero on the stack
+	 	self.push(0)
 	 }
 		
 		
@@ -640,7 +640,6 @@
 
 	dict = Db2:Get("RForth","data")
 	hexBlock=dict.hexBlock
-	numbersStart=dict.numbersStart
 	symbolsStart=dict.symbolsStart
 	tags=dict.tags
 	tagListSorted=dict.tagListSorted
@@ -652,7 +651,7 @@
 	breakpoint=-1
 	autorun=false
 
-	interpreter=Interpreter(hexBlock, numbersStart, symbolsStart)
+	interpreter=Interpreter(hexBlock, symbolsStart)
 	interpreter.DATA_START=tags.get("PROTECT")
 
 	loop
@@ -707,7 +706,7 @@
 		from=interpreter.PC-(lines div 3)
 		if (from < 0) from=0
 		to=from+lines
-		if (to > numbersStart) to=numbersStart
+		if (to > symbolsStart) to=symbolsStart
 		
 		Inner {
 			Std.Data.for(from,to,1)->pc
@@ -729,10 +728,10 @@
 					if (result.ok) {
 						instr=x
 					} else {
-						instr="(data: 0x" + instr.hex(4) + ")"
+						instr="(data: 0x" + instr.hex(2) + ")"
 					}
 				} else if (instr >= 128) {
-					instr="(constant)"
+					instr="0x"+instr.hex(2)
 				}
 				
 				report(mark,pc.hex(4), metaInfo.get(""+pc,""), instr)
