@@ -64,10 +64,15 @@
 # --
 	data=InstructionsLookup
 
-	excluded="cpush a! b! c! a b c global global!".split
+	excluded="call jmp jmp? sym2s".split
 	
 	data.keys.sort->char
 		name=data.get(char)
+		out(Str(name,char))
+	| _.sort->x
+		name=""+x
+		char=x.data
+		
 		reject(excluded.contains(name))
 		s=("%'"+name + " ".times(16)).first(16)
 

@@ -3,47 +3,33 @@ Forth never ceases to fascinate !
 
 Version 3 (alpha)
 
-2025-08-18 RFO
+2025-08-24 RFO
 
 It's been said that the best way of understanding Forth is to build one
 yourself. This project aims at the Pi Pico as the run platform,
-simply because the toolchain and the deploy is so easy.
+simply because the quality of the toolchain and that deploy is so easy. 
 
-It is unlikely this Forth will ever be used for anything but the experience
-of bringing up a full language from nothing, since libraries and interfacing
-hardware at the lowest level, is an entirely different matter.
+Still, apart from handling serial I/O, the hardware isn't too important,
+because bytecode. 
 
-The effort so far consists of making a byte code assembler, for a stack based
-instruction set, while developing using a simple base code source file written
-in this assembly language, and verifying it using a stand-alone interpreter.
+The virtual machine that runs the bytecode is a stack machine, where
+most of the instructions are Forth in syntax and semantics, and 
+so end up in the system dictionary. 
 
-CFT assembler
--------------
+External assembler
+------------------
 
-The assembler is written as a [CFT](https://github.com/rfo909/CFT) script, 
+An assembler is written as a [CFT](https://github.com/rfo909/CFT) script, 
 which is a script language I've written myself (in Java). It is perfect for
 prototyping (as well as daily tool). The assembler reads the source file
 and generates a sequence of single byte instructions.
 
-An initial design decision to use printable non-space characters for instructions,
-effectively reserved the range 33-127 for normal opcodes. The original design
-inlined numeric constants by defining the following single byte instructions:
+Numeric constants, both tags (addresses) and in the code, are converted via a lookup
+map to single byte values in the range 128-255. Static strings in the code are
+stored in a separate memory area, with offsets into that area managed as other
+numeric constants.
 
-- "x" to push zero on the stack
-- "0-9A-F" to multiply value on stack by 16 before adding 0-15.
-
-This worked, but the problem was it grew the generated code, as the wordsize
-is 2 bytes, and jump addresses are as well. That meant that any tag lookup
-resulted in xNNNN in the bytecode, using 5 bytes.
-
-With "normal" opcodes kept in a defined range, the modified scheme was to
-put all numeric constants as a list of 2-byte values, and refer to these
-by opcodes 128-255. So now any numeric constant is pushed on the stack
-using a single byte. 
-
-This means the number of unique tags plus the number of unique symbols ("non-space strings"),
-plus the number of unique numeric constants in the code, must not exceed 127.
-
+This results in compact bytecode output, at the expense of lookups.
 
 CFT interpreter
 ---------------
@@ -53,25 +39,59 @@ written in CFT. This has been invaluable for validating the assembler. It
 correctly simulates a byte oriented memory, on which the three stacks of the
 language also live. 
 
-After sectioning off constant values into a separate sequence of bytes, and
-also supporting symbols (non-space strings) for reporting and dictionary 
-purposes, the three sequences of bytes are strung together to form a 
-single hex-string, which is the input to the interpreter along with
-offsets for where things are found.
+The REPL
+--------
+The REPL is implemented as a state machine in the "assembly" language, in
+the file ACode.txt, after I found out how both to process input character by
+character, and what little effort it takes to compile to "machine code" in
+my simulated environment.
 
-The interpreter, when it starts, allocates bytes in simulated memory
-and put the bytes from the hex-string into it. The code starts at PC=0.
 
-Then it allocates the three stacks, as well as some few words of storage
-that serve the "global" variables. This is a mechanism for creating the
-very first global structures, and currently a maximum of 4 is supported,
-although really just one would suffice.
+Memory map
+----------
+The ACode.txt file is a memory map, with code and data, such as the initial dictionary.
+The system has some memory protection abilities. 
 
-After adding all this to the simulated memory, the HERE value (top of
-heap) is stored internally, as a barrier for the read and write instructions, 
-leaving them to work only from this address and up. In effect we've created
-a combined code and system data segment that isn't freely available to
-the "assembly language".
+It uses two special tags in the source code
+
+```
+:DATA
+:PROTECT
+```
+
+The first one aids the integrated disassembler (in the Assembler script) in presenting
+data, while the second is used by the interpreter as a lower limit for the write
+instructions "!" and "writeb".
+
+
+A journey ...
+-------------
+
+Writing code, deleting code, pondering, reading and learning ...
+
+The "assembly" level code for the system is in the ACode.txt file, and it has
+been over a few revisions after starting version 3 of RForth. I needed some
+time learning to do things simple in the assembly language, which is VERY
+similar to Forth.
+
+It became clear to me that there is no big distinction between the compile
+loop and the interpret loop. Most of the code deals with recognizing numbers,
+isolating words, and traversing the dictionary, looking up words. The difference
+is then what to do, create code for a call, or do the call. 
+
+Words have three states, registered in the dictionary:
+
+- NORMAL: invoked in interactive mode, have calls to them generated in compile mode
+- IMMEDIATE: invoked in compile mode, have no meaning interactively??
+- INLINE: like normal, but the code pointer field is used to contain a single instruction, 
+	not a subroutine pointer, from where we expect
+	to be returned by a call to "ret".
+ 	
+The bytecode of the interpreter/compiler along with some 300 bytes of reserved memory
+for state, compile buffers and compile stack, totals about 600 bytes. 
+
+The initial dictionary is also about 600 bytes, 
+
 
 
 Local variables
@@ -93,36 +113,21 @@ get avaiable as local variables a, b and c.
 
 With the cpush and the variable operations being single byte instructions, 
 the generated code compactness rivals the use of traditional stack operations, 
-like dup and swap. Those are implemented as well, as single byte instructions.
+like dup and swap. 
 
-Using cpush to push more than 3 values has no meaning, and might be considered
-a bug, as there is no way from inside the language to access those.
+Note that the REPL state machine does not use local variables, as it uses only
+jumps between states, no "call - ret". Local variables are a feature of callable
+subroutines (addresses in assembly, words in Forth). 
 
-Doing update of a variable with a! (or b/c) without cpush'ing a value first, is risky,
-because those words may be overwritten if calling some subroutine.
-
-Using the [abc] lookup instructions without cpush is a hackish way of
-accessing local variables of the last called subroutine.
-
-We settled on 3 local variables, since if more are needed, in conjunction
-with 2 on the stack, the function is too complex.
-
-Stack operations
-----------------
-
-The dup, swap, over and drop operations are implemented as single-byte instructions, but there
-are a couple more.
-
-Specifically created dcopy and dget, which are general enough to implement rot and other stuff. 
-
-Experience so far seems to be that dup, swap, combined with using local variables
-is what gives the best code.
 
 The three stacks
 ----------------
-The most used stack is the data stack. Most operations interact with it. It stores single words.
+The data stack is just that. It is used for parameter passing and results. It stores single words
+regardless of if values are read or written as bytes from/to memory.
 
-Then there is the call stack. It is also a stack of words. When doing a call to a subroutine,
+The word size is set to 2 bytes. This gives an address space of 64k.
+
+Then there is the call stack ("return stack"). It is also a stack of words. When doing a call to a subroutine,
 the return address is pushed on the call stack. But in addition, the call stack is where
 up to 3 local variables can be created with cpush. To control data content on the call stack,
 we added a third stack:
@@ -138,302 +143,19 @@ from a call (ret), we have all the information we need to locate the return posi
 is removed from the call stack, and size for the frame is decremented by one, before
 updating the PC, effectively doing a jump.
 
-Disassembler
-------------
-The Assembler script also contains a disassembler that is immediately applied to the output
+
+Debugging
+---------
+
+The Assembler script contains a disassembler that is immediately applied to the output
 from the Assembler, to show what has been done. 
 
-Example source:
-
-```
-:Init
-	;; create variables in normal memory, 
-	HERE 0 global!
-	2 wordsize mul allot
-	&Main jmp
-
-:ConsHead
-	0 global ret
-	
-:DictHead
-	0 global W+ ret
-	
-:Main
- 	cr 'HERE ': 2 show HERE print 
- 	
-	&ConsGet call
-	&ConsDispose call
-	&ConsGet call
-
- 	cr 'After ': 'HERE ': 4 show HERE print 
- 	
-	
-:Halt 
-	halt
-	&Halt jmp
+Together with the memory dump feature and general information about stacks, variables and
+globals in the Interpreter, and the "halt" instruction together with dynamic breakpoints,
+it is possible to debug the code quite efficiently.
 
 
 
-;; Generalized free list mechanism
-;; -------------------------------
-
-;; Pop an element off the freelist, or null if freelist empty
-
-:FreePop   ; ( freeHead -- null|ptr )
-	cpush			;; a=address of freelist head word
-	a @ dup cpush null ne &*notEmpty jmp?  ;; b=address of first element in free list
-		null ret
-
-	:*notEmpty
-	b @ a!			;; store b.next (first word) into freelist head
-	b ret
-
-;; Push an element on the freelist
-
-
-:FreePush ; ( dataAddr freeHead -- )
-	cpush		;; a=freeHead
-	cpush		;; b=dataAddr
-
-	a @ b !		;; store freeHead into dataAddr.next (first word)
-	b a !		;; store dataAddr in freeHead
-	
-	ret
-	
-	
-	
-	
-	
-;; Global data structures depend on
-;; ConsHead and DictHead, which point to words on the heap 
-;; (see Init)
-;; ---------------------------------------------------------	
-
-;; Dictionary stuff
-;;	
-	
-; (TODO)
-
-;; CONS cells are created as a two-word CAR+CDR tuple. They are allotted
-;; as needed, but also freelisted when disposed off. To calculate the CDR address
-;; from the Cons pointer: W+
-
-
-:ConsGet  ; ( -- ConsPtr) - get Cons cell from free list (call ConsAlloc first if empty)
-	&ConsHead call cpush     ;; a=&ConsHead pointer
-	a &FreePop call cpush ;; b=ptr/null
-	b null ne &*ok jmp?
-		HERE b!				;; a=ptr new cons
-		wordsize 2 mul allot  ;; reserve the space
-	:*ok
-	b ret
-
-	
-:ConsDispose  ;; ( ptr -- )
-	&ConsHead call &FreePush call ret
-
-```
-
-
-
-Output:
-
-```
-   0: 0000  | :Init HERE              |       | HERE       
-   1: 0001  | 0                       | [128] | push 0x0000
-   2: 0002  | global!                 |       | global!    
-   3: 0003  | 2                       | [129] | push 0x0002
-   4: 0004  | wordsize                |       | wordsize   
-   5: 0005  | mul                     |       | mul        
-   6: 0006  | allot                   |       | allot      
-   7: 0007  | &Main                   | [130] | push 0x0010
-   8: 0008  | jmp                     |       | jmp        
-   9: 0009  | :ConsHead 0             | [128] | push 0x0000
-  10: 000A  | global                  |       | global     
-  11: 000B  | ret                     |       | ret        
-  12: 000C  | :DictHead 0             | [128] | push 0x0000
-  13: 000D  | global                  |       | global     
-  14: 000E  | W+                      |       | W+         
-  15: 000F  | ret                     |       | ret        
-  16: 0010  | :Main cr                |       | cr         
-  17: 0011  | 'HERE                   | [128] | push 0x0000
-  18: 0012  | ':                      | [133] | push 0x0006
-  19: 0013  | 2                       | [129] | push 0x0002
-  20: 0014  | show                    |       | show       
-  21: 0015  | HERE                    |       | HERE       
-  22: 0016  | print                   |       | print      
-  23: 0017  | &ConsGet                | [134] | push 0x0043
-  24: 0018  | call                    |       | call       
-  25: 0019  | &ConsDispose            | [135] | push 0x0057
-  26: 001A  | call                    |       | call       
-  27: 001B  | &ConsGet                | [134] | push 0x0043
-  28: 001C  | call                    |       | call       
-  29: 001D  | cr                      |       | cr         
-  30: 001E  | 'After                  | [131] | push 0x0009
-  31: 001F  | ':                      | [133] | push 0x0006
-  32: 0020  | 'HERE                   | [128] | push 0x0000
-  33: 0021  | ':                      | [133] | push 0x0006
-  34: 0022  | 4                       | [136] | push 0x0004
-  35: 0023  | show                    |       | show       
-  36: 0024  | HERE                    |       | HERE       
-  37: 0025  | print                   |       | print      
-  38: 0026  | :Halt halt              |       | halt       
-  39: 0027  | &Halt                   | [137] | push 0x0026
-  40: 0028  | jmp                     |       | jmp        
-  41: 0029  | :FreePop cpush          |       | cpush      
-  42: 002A  | a                       |       | a          
-  43: 002B  | @                       |       | @          
-  44: 002C  | dup                     |       | dup        
-  45: 002D  | cpush                   |       | cpush      
-  46: 002E  | 0                       | [128] | push 0x0000
-  47: 002F  | ne                      |       | ne         
-  48: 0030  | &*notEmpty              | [139] | push 0x0034
-  49: 0031  | jmp?                    |       | jmp?       
-  50: 0032  | 0                       | [128] | push 0x0000
-  51: 0033  | ret                     |       | ret        
-  52: 0034  | :*notEmpty b            |       | b          
-  53: 0035  | @                       |       | @          
-  54: 0036  | a!                      |       | a!         
-  55: 0037  | b                       |       | b          
-  56: 0038  | ret                     |       | ret        
-  57: 0039  | :FreePush cpush         |       | cpush      
-  58: 003A  | cpush                   |       | cpush      
-  59: 003B  | a                       |       | a          
-  60: 003C  | @                       |       | @          
-  61: 003D  | b                       |       | b          
-  62: 003E  | !                       |       | !          
-  63: 003F  | b                       |       | b          
-  64: 0040  | a                       |       | a          
-  65: 0041  | !                       |       | !          
-  66: 0042  | ret                     |       | ret        
-  67: 0043  | :ConsGet &ConsHead      | [131] | push 0x0009
-  68: 0044  | call                    |       | call       
-  69: 0045  | cpush                   |       | cpush      
-  70: 0046  | a                       |       | a          
-  71: 0047  | &FreePop                | [138] | push 0x0029
-  72: 0048  | call                    |       | call       
-  73: 0049  | cpush                   |       | cpush      
-  74: 004A  | b                       |       | b          
-  75: 004B  | 0                       | [128] | push 0x0000
-  76: 004C  | ne                      |       | ne         
-  77: 004D  | &*ok                    | [141] | push 0x0055
-  78: 004E  | jmp?                    |       | jmp?       
-  79: 004F  | HERE                    |       | HERE       
-  80: 0050  | b!                      |       | b!         
-  81: 0051  | wordsize                |       | wordsize   
-  82: 0052  | 2                       | [129] | push 0x0002
-  83: 0053  | mul                     |       | mul        
-  84: 0054  | allot                   |       | allot      
-  85: 0055  | :*ok b                  |       | b          
-  86: 0056  | ret                     |       | ret        
-  87: 0057  | :ConsDispose &ConsHead  | [131] | push 0x0009
-  88: 0058  | call                    |       | call       
-  89: 0059  | &FreePush               | [140] | push 0x0039
-  90: 005A  | call                    |       | call       
-  91: 005B  | ret                     |       | ret 
-```
-
-# Symbols and strings
-
-In order to output meaningful text, the language supports symbols, which are allocated
-as part of the hex string result from the assembler. In the source code they are denoted
-in two way:
-
-```
-'SomeName
-"Some_Text
-```
-
-The first case is stored as-is, and ends up as a single-byte instruction in the range 128-255, which
-resolves to a constant number being the offset into the symbol storage (of the hex string output).
-
-The second form does almost exactly the same, extept it replace underscores with space, when creating
-the symbol.
-
-## Not real pointers
-
-When resolving a constant byte representing a symbol, the result value is not an absolute address,
-but an index into the symbol part of the hex string generated by the assembler. The reason is that
-at compile-time we don't know what the actual addresses will be.
-
-In order to make a symbol index into a real reference, need to add it to the base of the symbol
-storage, and that is done at runtime with the instruction "sym2s". 
-
-To avoid having to work with different types of strings, the assembler automatically adds the sym2s
-instruction following the constant byte for the symbol.
-
-
-## Strings
-
-Since symbols are stored in the same way as strings, with a single byte first indicating the number of
-characters, followed by those characters, once a symbol reference has been converted to a real address
-by sym2s, it can be treated like any other string.
-
-The assembler therefore automatically adds the sym2s following the byte from the NumberTable that
-generates the offset. This turns the symbol into a real string, and the language does not
-need to see symbols and strings as different, except we can't write to a string that is stored in
-the assembler-generated code+number+symbols byte sequence.
-
-## Whitespace
-
-Symbols can be written in two ways
-
-```
-'SomeWord      # single word, no spaces
-"Some_words    # underscore gets converted to space
-```
-
-
-## Display output
-
-```
-
-# str1 str2 str3 3 show     # show takes the count, then prints the strings, each followed by a space
-'this 'is 'a 'test 4 show
-
-# But often we do this
-"this_is_a_test .str
-```
-
-## Other output
-
-In addition to printing symbols and strings, we can also print content from the stack. Currently
-this is done with these different instructions:
-
-```
-print                  # print value in hex
-print#                 # print value in decimal
-printb                 # print value in binary format
-printc                 # print byte as character
-```
-
-## Buffers and events
-
-In order to perform string operations, the ACode file defines an InputBuffer on the heap (in the address
-space available to the language). It also defines a subroutine that is to be called when there is
-a new word to process.
-
-```
-	;; register inputbuffer and event handler
-	&InputBufferAddr call 0 registerPointer
-	&SerialWordReceived 1 registerPointer
-```
-
-When this is done, whenever the underlying code receives a word, it puts it into the Input buffer,
-then invokes the function ("SerialWordReceived").
-
-It actually works.
-
-As long as an event handler is running, no other event handlers can be started.
-
-In order to test this out while the Interpreter runs actual code, and not just the tight endless loop
-at the ":Halt" tag, a delay of 50ms has been added in the Interpreter:Run function. The interpreter command "r"
-has been changed from running a specific number of instructions, to running for 10 seconds.
-	
-
-
-References
-----------
 
 - [Instruction set](InstructionSet.md) for regular opcodes 33-127
 
