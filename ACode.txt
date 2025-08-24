@@ -20,6 +20,7 @@
 
 ;; ------------ top of file ----------
 
+
 :Init
 	&Dictionary 0 global!			;; store dictionary pointer in 0 global
 
@@ -133,8 +134,15 @@
 	&REPL jmp
 	
 :CompileNumber
-	;; ### TODO
-	;; Generate code for number - NumberTable??
+	&NextNumber @					;; the number
+		&CompileBuf dup readb add		;; write position in CompileBuf
+			n2code				;; generate code, return N = number of bytes written
+	
+	; (N)
+	&CompileBuf readb 				;; old length
+		add 					;; add to N 
+			&CompileBuf writeb		;; update counter for CompileBuf
+
 	&StartNextWord jmp
 
 
@@ -195,8 +203,16 @@
 		a call 
 		ret
 	:*generateCall
-		cr "generateCall_ .str a print "_(TODO) .str
-		;; TODO
+		cr "generateCall_ .str a print
+		a						;; the number
+			&CompileBuf dup readb add		;; write position in CompileBuf
+				n2code				;; generate code, return N = number of bytes written
+		
+		; (N)
+		&CompileBuf readb 				;; old length
+			add 					;; add to N 
+				&CompileBuf writeb		;; update counter for CompileBuf
+
 		ret
 	:*inlineCode
 		cr "inlineCode_ .str a print
@@ -205,12 +221,11 @@
 		ret
 	:*callInline
 		cr "callInline_ .str a print
-		; -- clear CompileBuf, emit opcode + ret, call it
-		;    (interactive mode only, so buffer not in use)
-		0 &CompileBuf writeb
-		a @ &EmitByte call
-		0x52 &EmitByte call  ;; "R" = ret
-		&CompileBuf 1 add call    ;; byte 0 is the next
+		0 &CompileBuf writeb				;; clear CompileBuf (this is interactive mode, so buffer not in use)
+		a @ &EmitByte call				;; add the opcode
+		0x52 &EmitByte call  				;; add "R" = ret
+		&CompileBuf 1 add call    			;; invoke CompileBuf offset 1 (as byte 0 is the length)
+		ret
 	
 ;; -----------------------------------------------
 ;; Implementations for initial complex words in dictionary
@@ -284,7 +299,7 @@
 	%'eq            HEX:003D        INLINE      %NEXT        ;; =
 	%'ge            HEX:0045        INLINE      %NEXT        ;; E
 	%'global        HEX:0078        INLINE      %NEXT        ;; x
-	%'global!       HEX:007A        INLINE      %NEXT        ;; z
+	%'global!       HEX:0079        INLINE      %NEXT        ;; y
 	%'gt            HEX:003E        INLINE      %NEXT        ;; >
 	%'halt          HEX:005A        INLINE      %NEXT        ;; Z
 	%'inv           HEX:0073        INLINE      %NEXT        ;; s
@@ -292,6 +307,8 @@
 	%'lt            HEX:003C        INLINE      %NEXT        ;; <
 	%'memcpy        HEX:0044        INLINE      %NEXT        ;; D
 	%'mul           HEX:002A        INLINE      %NEXT        ;; *
+	%'n2code        HEX:0032        INLINE      %NEXT        ;; 2
+	%'n2code3       HEX:0031        INLINE      %NEXT        ;; 1
 	%'ne            HEX:0068        INLINE      %NEXT        ;; h
 	%'not           HEX:0069        INLINE      %NEXT        ;; i
 	%'or            HEX:007C        INLINE      %NEXT        ;; |
@@ -310,6 +327,8 @@
 	%'swap          HEX:006D        INLINE      %NEXT        ;; m
 	%'wordsize      HEX:006B        INLINE      %NEXT        ;; k
 	%'writeb        HEX:0048        INLINE      %NEXT        ;; H
+	%'zero          HEX:007A        INLINE      %NEXT        ;; z
+
 
 
 	;; ----------------------------------------------------------

@@ -198,7 +198,9 @@
 	
 	;; compiled numbers
 		
-	zero		:z
+	null		:z		;; push zero on the stack
+	n2code3		:1		;; convert number on stack to 3 code bytes
+	n2code		:2		;; convert number on stack to 2-4 code bytes
 	
 	;; math (note x0-9A-F are not included)
 	add		:+
@@ -287,7 +289,6 @@
 # Inline defs static plus defined in source as macros with '#name ...'
 # --
 	dict=Dict
-		.set("null","0")
 		.set("spc",'"_ .str')
 		.set("b0", "HEX:00")
 		.set("w0", "HEX:0000")

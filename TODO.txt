@@ -3,21 +3,6 @@
 TODO
 ----
 
-Change call instruction to have two bytes following, with the address
-Basically remove the NumberTable class, use back-patching.
-
-For local tags we let jmp and jmp? be followed by a single byte
-which is a local offset
-
-
-REPL and compiler
------------------
-a state machine for processing input
-global state variables in memory for controlling processing
-hard-coded initial dictionary linked list
-
-
-
 Make abstract devices for
 	GPIO
 	I2c
@@ -25,15 +10,8 @@ Make abstract devices for
 
 	-> in order to make high level simulations in the Interpreter script.
 
-REPL
-	requires dictionary
-		requires symbol table
-		
-	for inspecting and setting hardware registers (new instructions)
-	for testing functionality
-	export added code as text?
-
-
-Rewrite the C code
-	interpreter for bytecode only?
+C-code
+------
+As with the CFT interpreter, it executes the opcodes of the instruction set. The
+REPL and Forth compiler is written in the corresponding assembly language.
 

@@ -527,8 +527,27 @@
 		
 	 }
 	 
-	 self._z = Lambda{ # z ( -- 0 ) pushes a single zero on the stack
+	 self._z = Lambda{ # null ( -- 0 ) pushes a single zero on the stack
 	 	self.push(0)
+	 }
+	 
+	 self._1 = Lambda { # n2code3 ( val addr -- ) convert value (0-16k) to 3 code bytes, written to addr+
+	 	addr=self.pop
+	 	number=self.pop
+	 	bytes=NumberTable:GenerateNumberBytes(number,2)->b
+	 		self.memory.writeByte(addr,b)
+	 		addr=addr+1
+	 	|
+	 }
+		
+	 self._2 = Lambda { # n2code ( val addr -- N ) convert value to code, written to addr, returns number of bytes written
+	 	addr=self.pop
+	 	number=self.pop
+	 	bytes=NumberTable:GenerateNumberBytes(number,2)->b
+	 		self.memory.writeByte(addr,b)
+	 		addr=addr+1
+	 	|
+	 	self.push(bytes.length)
 	 }
 		
 		
