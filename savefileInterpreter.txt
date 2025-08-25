@@ -595,7 +595,7 @@
 	P(1) as int => startAddr
 	P(2) as &Memory => memory
 
-	bytesPerLine=4
+	bytesPerLine=if(Term.w > 90, 8, 4)
 	
 	lastAddr=startAddr + (Term.h-4)*bytesPerLine
 	if (lastAddr < startAddr+10) lastAddr=startAddr+10

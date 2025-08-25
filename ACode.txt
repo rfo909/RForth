@@ -335,7 +335,8 @@
 		
 	%':		%COLON		NORMAL		%NEXT
 	HEX:013B	%SEMICOLON	IMMEDIATE	%NEXT
-	
+	%'EmitByte	%EmitByte	NORMAL		%NEXT
+	%'DictLookup	%DictLookup	NORMAL		%NEXT
 	%'immediate	%immediate	IMMEDIATE	w0	;; <-- w0 = terminating the linked list
 :DictionaryEnd
 

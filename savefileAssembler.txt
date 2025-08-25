@@ -425,7 +425,7 @@
 			symbol=word.sub(1)
 			if (word.startsWith('"')) symbol=symbol.replace("_"," ")
 			
-			bytecode.addRawBytes(numberTable.addSymbol(word))
+			bytecode.addRawBytes(numberTable.addSymbol(symbol))
 			# add instruction to convert symbol to string at runtime
 			words.push(List("sym2s"))
 			continue
