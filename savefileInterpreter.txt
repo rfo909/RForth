@@ -146,9 +146,12 @@
 			# reserved
 			error("ERROR: Reserved instruction: " + instr)
 		} else if (instr > 127) {
-			# encoded number literal in 7 lowest bits
+			# encoded number literal in 6 lowest bits
+			if (instr.bin(8).chars.get(1)=="1") {
+				self.push(0)
+			}
 			value=self.pop
-			value=value*128 + (instr.bin(8).last(7).parseInt(2))
+			value=value*64 + (instr.bin(8).last(6).parseInt(2))
 			self.push(value)
 		} else {
 			instr=Sys.uchar(instr)

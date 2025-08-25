@@ -1,13 +1,10 @@
 # Manage tags and generating numbers as code
-# Numbers in code are issued as sequences of 7 bit numbers, with
-# the high bit set, together with the z instruction which puts
-# a 0 on the stack. Hitting a high-bit byte, it is processed by
-# stripping the high bit, and with the remaining value:  
-# 
-#	push(pop()*128+value)
+# Numbers in code are issued as sequences of 6 bit numbers, with
+# the high bit set, and the second highest set to push a zero
+# first, replacing the need for a separate instruction for just this.
 #
 # --
-	self.TAG_BYTES = 2
+	self.TAG_BYTES = 3
 	
 	# tags are assumed 
 	self.tags=Dict	# tagName, tagAddress
@@ -128,24 +125,33 @@
 	
 	bits=number.bin(64)
 	
-	# consuming from the right, 7 bits at a time
+	# consuming from the right, 6 bits at a time
 	loop
-		if (bits.length < 7) bits="0000000"+bits
+		if (bits.length < 6) bits="000000"+bits
 		break(bits.parseInt(2)==0)
-		x="1"+bits.last(7)
-		bits=bits.sub(0,bits.length-7)
+		x="10" + bits.last(6)
+		bits=bits.sub(0,bits.length-6)
 		out(x.parseInt(2))
 	| _.reverse=>bytes
 	
+	#bytes.print	
 	error (byteCount>0 && bytes.length>byteCount,  
 		"Value " + number + " does not fit in " + byteCount + " bytes")
 
 	leadingZeroesMissing = 0
-	if (byteCount > 0) {
+	if (bytes.length==0) bytes=List(128)
+	
+	if (byteCount > 0) {  # 0 means as many as needed
 		leadingZeroesMissing=byteCount-bytes.length
 	}
-	# return value incli
-	List(122) + Std.Data.yes(leadingZeroesMissing, 128) + bytes
+	bytes = Std.Data.yes(leadingZeroesMissing, 128) + bytes
+	
+	# modify first byte has to have the 64 bit set, which means push a zero on the stack first
+
+	bytes.set(0,bytes.get(0)+64)
+	
+	# return value
+	bytes
 /GenerateNumberBytes
 
 
@@ -153,10 +159,11 @@
 # one at a time).
 # --
 	P(1) as List => bytes
-	value=0
+	value=999999
 	bytes->byte
-		x=byte.bin(8).last(7).parseInt(2)
-		value=value*128+x
+		if (byte.bin.chars.get(1)=="1") value=0
+		x=byte.bin(8).last(6).parseInt(2)
+		value=value*64+x
 	|
 	value
 //BackToValue
@@ -165,7 +172,15 @@
 
 # Test
 # --
-	GenerateNumberBytes(7029,0) => list
-	list.print
-	BackToValue(list.keep(1))  # skip the 'z' instruction
+	GenerateNumberBytes(1,0) => list
+	list->x println(x.bin) 	| 
+	BackToValue(list)  # skip the 'z' instruction
 //tNumbers
+
+# Check
+# --
+	Input("Numbers on hex separated by space").get.split->x
+		out(x.parseInt(16))
+	| _=>list
+	BackToValue(list).hex
+/ch
