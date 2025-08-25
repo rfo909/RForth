@@ -765,8 +765,9 @@
 		fmax="max=" + interpreter.frameStack.maxDepth
 
 		println("dataStack  0x" + interpreter.dbase.hex(4) + " [ " + ShowWordStack(interpreter.dataStack) + " ] TOP " + dmax)
-		println("callStack  0x" + interpreter.cbase.hex(4) + " [ " + ShowWordStack(interpreter.callStack) + " ] TOP " + cmax)
 		println("frameStack 0x" + interpreter.fbase.hex(4) + " [ " + ShowFrameStack(interpreter.frameStack) + " ] TOP " + fmax)
+		println("callStack  0x" + interpreter.cbase.hex(4) + " [ " + ShowWordStack(interpreter.callStack) + " ] TOP " + cmax)
+		
 		print(Prompt:GetPathColor)
 		println(
 			"#instr=" + interpreter.executionCount,

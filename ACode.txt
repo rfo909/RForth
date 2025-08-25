@@ -450,10 +450,7 @@
 	%'immediate	%immediate	IMMEDIATE	w0	;; <-- w0 = terminating the linked list
 :DictionaryEnd
 
-
-; Note: The dictionary needs to be extended, and then must exist after DATA
-	
-:PROTECT
+:PROTECT		;; against writes, not reads
 
 :DictionaryHead %Dictionary
 
