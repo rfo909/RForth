@@ -356,10 +356,6 @@
 		value=self.pop
 		self.push(value+self.WORDSIZE)
 	}
-	self._w=Lambda{ # 2W+ ( m -- n+WORDSIZE*2 )
-		value=self.pop
-		self.push(value+self.WORDSIZE+self.WORDSIZE)
-	}
 
 	self._o=Lambda{ # over ( a b -- a b a )
 		b=self.pop

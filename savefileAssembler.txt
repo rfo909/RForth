@@ -153,8 +153,7 @@
 	HERE		:g
 	wordsize	:k
 	
-	W+		:n	;; wordsize add (for CONS cells and general use)
-	2W+		:w	
+	W+			:n	;; wordsize add 
 
 	;; data stack operations
 	dcopy		:M		;; copy stack element n, where 0 is top etc, to top, so #1 dcopy is DUP
