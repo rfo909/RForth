@@ -103,6 +103,24 @@
 	
 :CompleteWord
 	cr "Got_word_ .str &NextWord .str
+	
+	;; ----- IsLiteral?
+	&IsLiteral readb not &*lookup jmp?
+	
+	;; ------ Yes - copy NextWord to IsCompilingWord buffer
+	&NextWord					;; src
+		&IsCompilingWord			;; target
+			&NextWord readb 1 add		;; count
+				memcpy
+				
+	;; set IsLiteral to 0
+	0 &IsLiteral writeb
+	
+	&StartNextWord jmp
+	
+			
+	;; ------- Not a literal, proceed with lookup
+	:*lookup
 	&NextWord &DictLookup call 			;; dictionary entry pointer or null
 	
 	; ( dictEntryPointer )
@@ -113,7 +131,7 @@
 	; (dictEntryPointer past the string - pointing at CODE, MODE, NEXT (words)
 	; ( CODE-ptr )
 	dup W+ @  
-		; (CODE-ptr MODE-value) 
+		; (CODE-ptr-ptr MODE-value) 
 		&ExecuteWord call
 	
 	&StartNextWord jmp
@@ -155,12 +173,12 @@
 	0 &IsCompiling writeb			;; set IsCompiling flag = 0 - set to 1 when compiling a word
 	0 &IsCompilingWord writeb
 	0 &IsCompilingWordMode writeb
+	0 &IsLiteral writeb				;; set IsLiteral flag = 0	
 	ret
 
 :ResetWordParser
 	0 &IsNumber writeb				;; set IsNumber flag = 0
 	0 &IsWord writeb				;; set IsWord flag = 0
-	0 &IsLiteral writeb				;; set IsLiteral flag = 0	
 	0 &NextWord writeb				;; set next word length = 0
 	0 &NextNumber !				;; set next number = 0 (word write)
 	ret
@@ -177,7 +195,7 @@
 	cpush				;; a=str
 	&Dictionary cpush		;; b=current dictionary entry
 	:*next
-		b @ null eq &*notFound jmp?	;; pointer is null, not found
+		b null eq &*notFound jmp?	;; pointer is null, not found
 		b a streq &*found jmp?		;; got a match
 		
 		b 
@@ -191,8 +209,8 @@
 	:*found
 		b ret
 
-:ExecuteWord ;; ( code-ptr mode-value -- ) ;; decide how to handle word
-	swap cpush				; a=code  
+:ExecuteWord ;; ( code-ptr-ptr mode-value -- ) ;; decide how to handle word
+	swap @ cpush				; a=code-ptr  
 	cpush    				; b=mode-value
 	
 	&IsCompiling readb not &*NotCompiling jmp?
@@ -266,6 +284,8 @@
 		ret
 	
 :SEMICOLON
+	halt
+	
 	;; verify compile mode
 	&IsCompiling readb &*ok jmp?
 		;; ignore it

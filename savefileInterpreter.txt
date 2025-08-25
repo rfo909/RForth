@@ -505,7 +505,7 @@
 			self.memory.writeByte(target+i, self.memory.readByte(source+i))
 	}
 	
-	self.bufferedInput=": rf 2 3 add ; "
+	self.bufferedInput=": rf 2 3 add ; rf print "
 	# "42 dup add " <-- 1584 instructions to process this in interactive mode
 	
 	
