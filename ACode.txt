@@ -20,24 +20,22 @@
 
 ;; ------------ top of file ----------
 
+#define DIGIT_0		48
+#define DIGIT_9		57
+
+
 
 :Init
 	&Dictionary 0 global!			;; store dictionary pointer in 0 global
 
 :REPL
 	cr "Ready>_ .str
-	0 &IsCompiling writeb			;; set IsCompiling flag = 0 - set to 1 when compiling a word
+	&ResetCompile call
 	&StartNextWord jmp
-	
-:StartNextWord
-	0 &IsNumber writeb				;; set IsNumber flag = 0
-	0 &IsWord writeb				;; set IsWord flag = 0
-	0 &IsLiteral writeb				;; set IsLiteral flag = 0	
-	0 &NextWord writeb				;; set next word length = 0
-	0 &NextNumber !				;; set next number = 0 (word write)
 
-#define DIGIT_0		48
-#define DIGIT_9		57
+:StartNextWord
+	&ResetWordParser call
+	&GetChar jmp
 
 :GetChar
 	readc &NextChar writeb
@@ -153,6 +151,21 @@
 ;; Utility subroutines, invoked with call
 ;; -----------------------------------------------
 
+:ResetCompile
+	0 &IsCompiling writeb			;; set IsCompiling flag = 0 - set to 1 when compiling a word
+	0 &IsCompilingWord writeb
+	0 &IsCompilingWordMode writeb
+	ret
+
+:ResetWordParser
+	0 &IsNumber writeb				;; set IsNumber flag = 0
+	0 &IsWord writeb				;; set IsWord flag = 0
+	0 &IsLiteral writeb				;; set IsLiteral flag = 0	
+	0 &NextWord writeb				;; set next word length = 0
+	0 &NextNumber !				;; set next number = 0 (word write)
+	ret
+
+
 :EmitByte   ;; ( byte -- )
 	cpush				;; a=bytevalue
 	&CompileBuf readb 1 add cpush	;; b=offset 
@@ -233,12 +246,94 @@
 
 	
 :COLON
+	;; already in compile mode?
+	&IsCompiling readb &*nested jmp?
+
+	;; set compile mode
+	1 &IsCompiling writeb
+
+	;; next word is to be a literal
+	1 &IsLiteral writeb
+
+	;; ensure compile buffer is ready
+	0 &CompileBuf writeb
+
+	;; that's all?
 	ret
+
+	:*nested
+		cr "Can_not_nest_colons:_ .str "Ignoring .str
+		ret
 	
 :SEMICOLON
-	ret
+	;; verify compile mode
+	&IsCompiling readb &*ok jmp?
+		;; ignore it
+		ret
+	:*ok
+		;; check that there is a symbol
+		&IsCompilingWord readb 0 eq &*noSymbol jmp?
+
+		;; info
+		cr "Finishing_word_ .str &IsCompilingWord .str
+
+		;; add a ret instruction to CompileBuf
+		0x52 &EmitByte call
+
+		;; allocate buffer not including length byte
+		HERE cpush								;; a=codebuffer
+			&CompileBuf readb 
+				allot
+
+		;; copy code into codebuffer
+		&CompileBuf 1 add
+			a
+				&CompileBuf readb
+					memcpy
+		
+		;; allocate dictionary entry
+		HERE cpush							;; b=dictEntry
+		&IsCompilingWord readb 1 add		;; length of symbol
+			wordsize 3 mul add				;; code pointer, flags, next
+				allot
+
+		;; copy symbol
+		&IsCompilingWord					;; src
+			b								;; target
+				&IsCompilingWord readb 1 add	;; byte count
+					memcpy
+		
+		;; advance dict entry pointer past name
+		b readb b add cpush					;; c=point to CODE field
+
+		;; write code address and advance c
+		a c !
+		c wordsize add c!
+
+		;; write mode and advance pointer
+		&IsCompilingWordMode readb
+			c !
+		c wordsize add c!
+
+		;; write next pointer
+		&DictionaryHead @ 
+			c !
+
+		;; update DictionaryHead
+		b &DictionaryHead !
+
+		;; all done
+		ret
+
+	:*noSymbol
+		"No_symbol_defined_for_word .str
+		halt
+		&ResetCompile call
+		ret
 	
 :immediate
+	;; change the IsCompilingWordMode to immediate
+	1 &IsCompilingWordMode writeb
 	ret
 		
 
@@ -335,8 +430,6 @@
 		
 	%':		%COLON		NORMAL		%NEXT
 	HEX:013B	%SEMICOLON	IMMEDIATE	%NEXT
-	%'EmitByte	%EmitByte	NORMAL		%NEXT
-	%'DictLookup	%DictLookup	NORMAL		%NEXT
 	%'immediate	%immediate	IMMEDIATE	w0	;; <-- w0 = terminating the linked list
 :DictionaryEnd
 
@@ -345,7 +438,12 @@
 	
 :PROTECT
 
+:DictionaryHead %Dictionary
+
 :IsCompiling 	b0
+:IsCompilingWord	b0 w0 w0 w0 w0  w0 w0 w0 w0   ;; length + 16 bytes
+:IsCompilingWordMode b0						;; modified by the immediate word, default is 0 (NORMAL)
+
 :IsNumber 	b0
 :IsWord 	b0
 :IsLiteral	b0
