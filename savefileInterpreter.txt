@@ -8,8 +8,8 @@
 	
 	# number of words
 	DSTACK_WORDS = 20
-	CSTACK_WORDS = 40  # callstack
-	FSTACK_FRAMES = 10  # frame stack contains dictionaries
+	CSTACK_WORDS = 50  # callstack
+	FSTACK_FRAMES = 20  # frame stack contains dictionaries
 	
 	self.WORDSIZE = 2
 	self.memory=HWSim:Memory(self.WORDSIZE)
@@ -685,12 +685,9 @@
 				}
 
 				readLine("Ready")=>s
-				if (s=="q") {
-					autorun=false
-				} else {
-					s=" " + s + " "
-					interpreter.bufferedInput=s
-				}
+				s=" " + s + " "
+				interpreter.bufferedInput=s
+				autorun=false 
 			}
 		}
 
