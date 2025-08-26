@@ -3,6 +3,27 @@
 TODO
 ----
 
+- IMMEDIATE words have no meaning outside compile mode, as the modifier
+means "execute immediately" in compile mode.
+
+So COLON is not immediate, as when we enter it we are in "interpreter" mode,
+executing each word directly.
+
+Certain words, such as CONSTANT have a "data space" address, which gets pushed on the
+stack at execution
+
+: CONSTANT CREATE , DOES> @ ;
+
+The CREATE word takes a symbol from the input stream, creates a dictionary entry
+with it. Then the COMMA takes a value from the stack, allocates memory for it, and
+*compiles* it into code. 
+
+The the DOES> comes along, adding code for reading the value.
+
+Is this right??
+
+
+
 Make abstract devices for
 	GPIO
 	I2c
