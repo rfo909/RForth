@@ -508,9 +508,10 @@
 			self.memory.writeByte(target+i, self.memory.readByte(source+i))
 	}
 	
-	self.bufferedInput=": rf 2 3 add ; rf print halt "
+	self.bufferedInput=": rf 2 3 add ; rf print "
+
 	# "42 dup add " <-- 1584 instructions to process this in interactive mode
-	
+	# ": rf 2 3 add ; rf print " # <-- 7455 instructions
 	
 	self._v=Lambda{ # readc ( -- byte ) - read single character - blocking
 		if (self.bufferedInput.length==0) {

@@ -251,9 +251,10 @@
 		a &EmitByte call
 		ret
 	:*callInline
+		;; when inlining, the "code pointer" is the instruction! 00nn!
 		cr "callInline_ .str a print
 		0 &CompileBuf writeb				;; clear CompileBuf (this is interactive mode, so buffer not in use)
-		a @ &EmitByte call				;; add the opcode
+		a &EmitByte call					;; add the opcode
 		0x52 &EmitByte call  				;; add "R" = ret
 		&CompileBuf 1 add call    			;; invoke CompileBuf offset 1 (as byte 0 is the length)
 		ret
