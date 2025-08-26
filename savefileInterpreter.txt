@@ -644,7 +644,7 @@
 
 	if (s.?parseInt(16)) {
 		s.parseInt(16)
-	} if (tags.has(s)) {
+	} else if (tags.has(s)) {
 		tags.get(s)
 	} else {
 		value=0
@@ -703,8 +703,13 @@
 				}
 
 				readLine("Ready")=>s
-				s=" " + s + " "
-				interpreter.bufferedInput=s
+				if (s=="q") {
+					interpreter.bufferedInput=" "
+					autorun=false 
+				} else {
+					s=" " + s + " "
+					interpreter.bufferedInput=s
+				}
 			}
 		}
 
