@@ -636,19 +636,37 @@
 /ShowMemory	
 
 
-# Read address
+# Read memory address
 # --
-	P(1) as int => dataStart
+	P(1) as Dict => tags
 
-	Input("Enter address hex NNNN or decimal #NNNN").setCurrCond(dataStart.hex(4)).get =>addr
-	if (addr.startsWith("#")) {
-		addr.after("#").parseInt(10)
-	} else if (addr.startsWith("0x") || addr.startsWith("x")) {
-		addr.after("x").parseInt(16)
+	Input("Enter address hex NNNN or tag or part of tag").get =>s
+
+	if (s.?parseInt(16)) {
+		s.parseInt(16)
+	} if (tags.has(s)) {
+		tags.get(s)
 	} else {
-		addr.parseInt(16)
-	}
-//ReadMemoryInspectAddress
+		value=0
+		Inner{
+			tags.keys->key
+				#println(key)
+				if (key.contains(s)) {
+					println("Using tag " + key)
+					readLine("Enter")
+					value=tags.get(key) 
+					break
+				}
+			|
+			if(value==0) {
+				println("No matching tag, using DATA")
+				value=tags.get("DATA")
+				readLine("Enter")
+			}
+		}
+		value
+	}  	
+//ReadMemoryAddress
 
 
 
@@ -687,7 +705,6 @@
 				readLine("Ready")=>s
 				s=" " + s + " "
 				interpreter.bufferedInput=s
-				autorun=false 
 			}
 		}
 
@@ -825,15 +842,11 @@
 			break
 		} else if (command=="d") {
 			println
-			addr=ReadMemoryInspectAddress(interpreter.DATA_START)
+			addr=ReadMemoryAddress(tags)
 			ShowMemory(addr, interpreter.memory)
-		} else if (command.startsWith('b')) {
-			if (command.after("b").?parseInt(16)) {
-				breakpoint=command.after("b").parseInt(16)
-			} else {
-				println
-				Input("Enter address for break point (hex)").get.parseInt(16) => breakpoint
-			}
+		} else if (command=='b') {
+			addr=ReadMemoryAddress(tags)
+			breakpoint=addr
 		} else if (command=='c') {
 			breakpoint=-1
 		} else if (command=='h') {

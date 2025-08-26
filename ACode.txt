@@ -26,7 +26,7 @@
 
 
 :Init
-	&Dictionary 0 global!			;; store dictionary pointer in 0 global
+	&DictionaryHead 0 global!			;; store dictionary head pointer in 0 global
 
 :REPL
 	;; cr "Ready>_ .str
@@ -52,8 +52,8 @@
 	&NextWord readb 1 add &NextWord writeb			;; update length
 
 
-	&IsNumber readb &ProcessDigit jmp?		;; if IsNumber is set, go directly there
 	&IsWord readb &ProcessChar jmp?		;; is IsWord is set, go directly there
+	&IsNumber readb &ProcessDigit jmp?		;; if IsNumber is set, go directly there
 	
 	&NextChar readb 
 		dup DIGIT_0 ge			;; '0' 
@@ -234,7 +234,7 @@
 		a call 
 		ret
 	:*generateCall
-		;; cr "generateCall_ .str a print
+		cr "generateCall_ .str a print
 		a						;; the number
 			&CompileBuf dup readb add		;; write position in CompileBuf
 				n2code				;; generate code, return N = number of bytes written
