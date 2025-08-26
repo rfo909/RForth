@@ -508,7 +508,7 @@
 			self.memory.writeByte(target+i, self.memory.readByte(source+i))
 	}
 	
-	self.bufferedInput=": rf 2 3 add ; rf print "
+	self.bufferedInput=": rf 2 3 add ; rf print halt "
 	# "42 dup add " <-- 1584 instructions to process this in interactive mode
 	
 	
@@ -533,7 +533,7 @@
 	 self._1 = Lambda { # n2code3 ( val addr -- ) convert value (0-16k) to 3 code bytes, written to addr+
 	 	addr=self.pop
 	 	number=self.pop
-	 	bytes=NumberTable:GenerateNumberBytes(number,2)->b
+	 	bytes=NumberTable:GenerateNumberBytes(number,3)->b
 	 		self.memory.writeByte(addr,b)
 	 		addr=addr+1
 	 	|
@@ -542,7 +542,7 @@
 	 self._2 = Lambda { # n2code ( val addr -- N ) convert value to code, written to addr, returns number of bytes written
 	 	addr=self.pop
 	 	number=self.pop
-	 	bytes=NumberTable:GenerateNumberBytes(number,2)->b
+	 	bytes=NumberTable:GenerateNumberBytes(number)->b
 	 		self.memory.writeByte(addr,b)
 	 		addr=addr+1
 	 	|
@@ -666,11 +666,14 @@
 	
 	
 	runUntilCount=-1		# Sys.currentTimeMillis
+	monitorByteAddr=-1		# monitor for changes
 	breakpoint=-1
 	autorun=false
 
 	interpreter=Interpreter(hexBlock, symbolsStart)
 	interpreter.DATA_START=tags.get("PROTECT")
+
+	monitorByteValue=0
 
 	loop
 		if (interpreter.haltFlag) {
@@ -681,9 +684,15 @@
 			runUntilCount=-1
 			autorun=false
 		}
-		if (interpreter.executionCount==runUntilCount) {
+		if (runUntilCount > 0 && interpreter.executionCount==runUntilCount) {
 			runUntilCount=-1
 			autorun=false
+		}
+		if (monitorByteAddr >= 0 && monitorByteAddr < interpreter.memory.HERE 
+				&& interpreter.memory.readByte(monitorByteAddr) != monitorByteValue)
+		{
+			autorun=false
+			monitorByteValue = interpreter.memory.readByte(monitorByteAddr)
 		}
 		
 		if (autorun) {
@@ -795,7 +804,7 @@
 		)
 		println(Curses:Reset)
 
-		command=readLine("==> q=quit, d=dump, b=bp, c=clear-bp, h=hex->dec, r(xx)?=run s=skip, ENTER=step").trim
+		command=readLine("==> q=quit, d=dump, b=bp, c=clear-bp, h=hex->dec, r=run s=skip, ENTER=step").trim
 		if(command=="q") {
 			break
 		} else if (command=="d") {
@@ -815,13 +824,16 @@
 			println(readLine("Hex").parseInt(16))
 			readLine("Continue")
 		} else if (command.startsWith("r")) {
-			instrCount=1
-			if (command.after("r").?parseInt) {
-				instrCount=command.after("r").parseInt
+			Input("Enter instruction count, or 'bNNNN' = hex address to monitor byte change").get => s
+			if (s.startsWith("b")) {
+				monitorByteAddr=s.sub(1).parseInt(16)
+				monitorByteValue=-1
+				runUntilCount=-1
 			} else {
-				Input("Enter instruction count").get.parseInt => instrCount
+				instrCount=s.parseInt
+				runUntilCount=interpreter.executionCount + instrCount
+				monitorByteAddr=-1
 			}
-			runUntilCount=interpreter.executionCount + instrCount
 			autorun=true
 
 		} else if (command=="s") {

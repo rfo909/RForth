@@ -151,7 +151,7 @@
 	
 :CompileNumber
 	&NextNumber @					;; the number
-		&CompileBuf dup readb add		;; write position in CompileBuf
+		&CompileBuf dup readb add 1 add		;; write position in CompileBuf
 			n2code				;; generate code, return N = number of bytes written
 	
 	; (N)
@@ -193,7 +193,7 @@
 	
 :DictLookup ;; ( str -- stackEntry|null )
 	cpush				;; a=str
-	&Dictionary cpush		;; b=current dictionary entry
+	&DictionaryHead @ cpush		;; b=current dictionary entry
 	:*next
 		b null eq &*notFound jmp?	;; pointer is null, not found
 		b a streq &*found jmp?		;; got a match
@@ -246,9 +246,9 @@
 
 		ret
 	:*inlineCode
+		;; when inlining, the "code pointer" is the instruction! 00nn!
 		cr "inlineCode_ .str a print
-		a @ &EmitByte call
-		;; -- the inline symbols have the opcode encoded as 0x00nn in the code field
+		a &EmitByte call
 		ret
 	:*callInline
 		cr "callInline_ .str a print
@@ -284,8 +284,7 @@
 		ret
 	
 :SEMICOLON
-	halt
-	
+
 	;; verify compile mode
 	&IsCompiling readb &*ok jmp?
 		;; ignore it
@@ -324,7 +323,7 @@
 					memcpy
 		
 		;; advance dict entry pointer past name
-		b readb b add cpush					;; c=point to CODE field
+		b readb b add 1 add cpush					;; c=point to CODE field
 
 		;; write code address and advance c
 		a c !
@@ -341,6 +340,9 @@
 
 		;; update DictionaryHead
 		b &DictionaryHead !
+
+		;; switch off compile mode and clean up
+		&ResetCompile call
 
 		;; all done
 		ret
