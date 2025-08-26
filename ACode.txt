@@ -29,7 +29,7 @@
 	&Dictionary 0 global!			;; store dictionary pointer in 0 global
 
 :REPL
-	cr "Ready>_ .str
+	;; cr "Ready>_ .str
 	&ResetCompile call
 	&StartNextWord jmp
 
@@ -92,8 +92,8 @@
 	&GetChar jmp
 	
 :CompleteNumber
-	cr "Got_number_ .str 
-	&NextNumber @ print#
+	;;cr "Got_number_ .str 
+	;;&NextNumber @ print#
 	;
 	&IsLiteral readb &InvalidLiteralNumber jmp?	;; numbers can't be dictionary names
 	&IsCompiling readb &CompileNumber jmp?		;; are we in compile mode?
@@ -102,7 +102,7 @@
 	
 	
 :CompleteWord
-	cr "Got_word_ .str &NextWord .str
+	;;cr "Got_word_ .str &NextWord .str
 	
 	;; ----- IsLiteral?
 	&IsLiteral readb not &*lookup jmp?
@@ -224,17 +224,17 @@
 		b 0 eq &*callCode jmp?		;; mode==normal, call the code
 		b 2 eq &*callInline jmp?	;; mode==inline, execute that instruction
 	
-		cr "Immediate_word_ .str
+		cr "Immediate_word_ .str 
 		&NextWord .str
-		"_has_no_interactve_use .str
+		"_has_no_interactive_use .str
 		&REPL jmp
 		
 	:*callCode
-		cr "callCode_ .str a print
+		;; cr "callCode_ .str a print
 		a call 
 		ret
 	:*generateCall
-		cr "generateCall_ .str a print
+		;; cr "generateCall_ .str a print
 		a						;; the number
 			&CompileBuf dup readb add		;; write position in CompileBuf
 				n2code				;; generate code, return N = number of bytes written
@@ -247,12 +247,12 @@
 		ret
 	:*inlineCode
 		;; when inlining, the "code pointer" is the instruction! 00nn!
-		cr "inlineCode_ .str a print
+		;; cr "inlineCode_ .str a print
 		a &EmitByte call
 		ret
 	:*callInline
 		;; when inlining, the "code pointer" is the instruction! 00nn!
-		cr "callInline_ .str a print
+		;; cr "callInline_ .str a print
 		0 &CompileBuf writeb				;; clear CompileBuf (this is interactive mode, so buffer not in use)
 		a &EmitByte call					;; add the opcode
 		0x52 &EmitByte call  				;; add "R" = ret
@@ -295,7 +295,7 @@
 		&IsCompilingWord readb 0 eq &*noSymbol jmp?
 
 		;; info
-		cr "Finishing_word_ .str &IsCompilingWord .str
+		;; cr "Finishing_word_ .str &IsCompilingWord .str
 
 		;; add a ret instruction to CompileBuf
 		0x52 &EmitByte call

@@ -508,7 +508,7 @@
 			self.memory.writeByte(target+i, self.memory.readByte(source+i))
 	}
 	
-	self.bufferedInput=": rf 2 3 add ; rf print "
+	self.bufferedInput=""
 
 	# "42 dup add " <-- 1584 instructions to process this in interactive mode
 	# ": rf 2 3 add ; rf print " # <-- 7455 instructions
@@ -677,6 +677,23 @@
 	monitorByteValue=0
 
 	loop
+		pc=interpreter.PC
+		if (instr=interpreter.memory.readByte(pc)==118) {  # "v" is readc
+			if (interpreter.bufferedInput=="") {
+				Inner {
+					interpreter.outputLines->line println(line) |
+				}
+
+				readLine("Ready")=>s
+				if (s=="q") {
+					autorun=false
+				} else {
+					s=" " + s + " "
+					interpreter.bufferedInput=s
+				}
+			}
+		}
+
 		if (interpreter.haltFlag) {
 			interpreter.haltFlag=false
 			autorun=false
@@ -762,7 +779,8 @@
 					instr="0x"+instr.hex(2)
 				}
 				
-				report(mark,pc.hex(4), metaInfo.get(""+pc,""), instr)
+				report(mark,pc.hex(4), 
+					(metaInfo.get(""+pc,"")+" ".times(25)).first(25), instr)
 		} _=>rows
 		Lib:ShowRows(rows,null,false)
 			
