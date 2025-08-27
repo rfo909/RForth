@@ -27,11 +27,13 @@
 
 :Init
 	&DictionaryHead 0 global!			;; store dictionary head pointer in 0 global
+	&CompileBuf 1 global!		;; for immediate words to meddle in the compilation process :-)
 
 :REPL
 	;; cr "Ready>_ .str
 	&ResetCompile call
 	&StartNextWord jmp
+	
 
 :StartNextWord
 	&ResetWordParser call
@@ -225,8 +227,8 @@
 		;; --- interactive		
 		b 0 eq &*callCode jmp?		;; mode==normal, call the code
 		b 2 eq &*callInline jmp?	;; mode==inline, execute that instruction
+		b 1 eq &*callCode jmp?		;; mode==immediate, call the code
 
-		;; mode=immedate - has no function interactively
 		&REPL jmp
 		
 	:*callCode
@@ -397,6 +399,7 @@
 	%'>>            HEX:0075        INLINE      %NEXT        ;; u
 	%'@             HEX:0049        INLINE      %NEXT        ;; I
 	%'HERE          HEX:0067        INLINE      %NEXT        ;; g
+	%'PC            HEX:0050        INLINE      %NEXT        ;; P
 	%'W+            HEX:006E        INLINE      %NEXT        ;; n
 	%'a             HEX:0061        INLINE      %NEXT        ;; a
 	%'a!            HEX:0064        INLINE      %NEXT        ;; d
@@ -408,6 +411,7 @@
 	%'b!            HEX:0065        INLINE      %NEXT        ;; e
 	%'c             HEX:0063        INLINE      %NEXT        ;; c
 	%'c!            HEX:0066        INLINE      %NEXT        ;; f
+	%'call          HEX:0051        INLINE      %NEXT        ;; Q
 	%'cpush         HEX:004F        INLINE      %NEXT        ;; O
 	%'cr            HEX:0058        INLINE      %NEXT        ;; X
 	%'dcopy         HEX:004D        INLINE      %NEXT        ;; M
@@ -423,11 +427,14 @@
 	%'gt            HEX:003E        INLINE      %NEXT        ;; >
 	%'halt          HEX:005A        INLINE      %NEXT        ;; Z
 	%'inv           HEX:0073        INLINE      %NEXT        ;; s
+	%'jmp           HEX:0053        INLINE      %NEXT        ;; S
+	%'jmp?          HEX:0054        INLINE      %NEXT        ;; T
 	%'le            HEX:0046        INLINE      %NEXT        ;; F
 	%'lt            HEX:003C        INLINE      %NEXT        ;; <
 	%'memcpy        HEX:0044        INLINE      %NEXT        ;; D
 	%'mul           HEX:002A        INLINE      %NEXT        ;; *
 	%'n2code        HEX:0032        INLINE      %NEXT        ;; 2
+	%'n2code2       HEX:0033        INLINE      %NEXT        ;; 3
 	%'n2code3       HEX:0031        INLINE      %NEXT        ;; 1
 	%'ne            HEX:0068        INLINE      %NEXT        ;; h
 	%'not           HEX:0069        INLINE      %NEXT        ;; i
@@ -450,7 +457,8 @@
 	%'writeb        HEX:0048        INLINE      %NEXT        ;; H
 
 	;; ----------------------------------------------------------
-		
+	
+	%'emitb		%EmitByte	NORMAL		%NEXT	
 	%':		%COLON		NORMAL		%NEXT
 	HEX:013B	%SEMICOLON	IMMEDIATE	%NEXT
 	%'immediate	%immediate	IMMEDIATE	w0	;; <-- w0 = terminating the linked list

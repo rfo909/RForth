@@ -508,7 +508,7 @@
 			self.memory.writeByte(target+i, self.memory.readByte(source+i))
 	}
 	
-	self.bufferedInput=""
+	self.bufferedInput=GetInitialForthCode
 
 	# "42 dup add " <-- 1584 instructions to process this in interactive mode
 	# ": rf 2 3 add ; rf print " # <-- 7455 instructions
@@ -548,6 +548,19 @@
 	 		addr=addr+1
 	 	|
 	 	self.push(bytes.length)
+	 }
+
+	 self._3 = Lambda { # n2code2 ( val addr -- N ) convert (0-4096) to 2 code bytes, written to addr+
+	 	addr=self.pop
+	 	number=self.pop
+	 	bytes=NumberTable:GenerateNumberBytes(number,2)->b
+	 		self.memory.writeByte(addr,b)
+	 		addr=addr+1
+	 	|
+	 }
+
+	 self._P = Lambda{ # PC ( -- addr )
+	 	self.push(self.PC)
 	 }
 		
 		
@@ -669,6 +682,72 @@
 //ReadMemoryAddress
 
 
+
+# Initial forth code
+# --
+<<< EOF
+
+( Current offset in compileBuf )
+: . cr print# ;	
+
+( current offset in compileBuf )
+: _pc 1 global readb immediate ;
+
+( emit dummy word to be patched )
+: _0w 0 emitb 0 emitb immediate ;
+
+( Push compile pos on stack )
+: _ppos _pc immediate ;
+
+: IF 
+	105 emitb   ( not - works the condition )
+	_pc dup .      ( push pc on stack - picked up the THEN )
+	_0w         ( 0 0 - patched by THEN )
+	80 emitb    ( PC )
+	43 emitb    ( add )
+	84 emitb    ( jmp? )
+	immediate
+	;
+	
+: THEN ( only modifies IF to jump here if condition fails )
+	cpush            ( a is the paddress of the _0w field )
+	_pc a sub cpush  ( b = bytes the IF jump should move forward )
+	3 sub            ( compensate three PC++ before running jmp?)
+		a
+			n2code2
+	immediate
+	;
+
+
+: XX 
+	1 global readb		( length)
+		1 global add 1 add ( write pos )
+			cpush   (a)
+	42 a n2code ( N )
+		1 global readb add
+			1 global writeb 
+	immediate 
+	;
+	
+: test XX . ;
+ 
+: tast 1 2 drop drop _pc . ;
+
+>>> EOF
+	->line
+		s=line.before("(").trim
+		reject(s=="")
+		out(s)
+	| => lines
+	#lines.print
+	#readLine("Enter")
+	
+	
+	lines.concat(" ") => str
+	#println(str)
+	#readLine("Enter")
+	str
+/GetInitialForthCode
 
 # Test
 # --

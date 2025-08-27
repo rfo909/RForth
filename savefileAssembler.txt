@@ -64,7 +64,7 @@
 # --
 	data=InstructionsLookup
 
-	excluded="call jmp jmp? sym2s".split
+	excluded="sym2s".split
 	
 	data.keys.sort->char
 		name=data.get(char)
@@ -139,6 +139,19 @@
 		report(dict.name, dict.desc)
 /IDoc
 
+# Generate numeric values for instructions
+# --
+	data = InstructionsLookup
+	data.keys.sort->code
+		name=data.get(code)
+		out(Str(name,code))
+	| _.sort->x
+		code=x.data
+		name=data.get(code)
+		num=code.toHexString("ISO-8859-1").first(2).parseInt(16)
+		report(name,code,num)
+/NDoc
+
 
 # Assembly instructions mapped to "machine code"
 # --
@@ -152,8 +165,9 @@
 	allot		:K
 	HERE		:g
 	wordsize	:k
+	PC		:P		;; push PC word on stack
 	
-	W+			:n	;; wordsize add 
+	W+		:n	;; wordsize add 
 
 	;; data stack operations
 	dcopy		:M		;; copy stack element n, where 0 is top etc, to top, so #1 dcopy is DUP
@@ -198,8 +212,9 @@
 	;; compiled numbers
 		
 	null		:z		;; push zero on the stack
-	n2code3		:1		;; convert number on stack to 3 code bytes
-	n2code		:2		;; convert number on stack to 2-4 code bytes
+	n2code3		:1		;; convert number on stack to 3 code bytes (global addresses)
+	n2code2		:3		;; convert to 2 code bytes (offsets within words)
+	n2code		:2		;; convert number on stack to 2-4 code bytes (constant numbers)
 	
 	;; math (note x0-9A-F are not included)
 	add		:+
