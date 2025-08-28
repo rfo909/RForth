@@ -720,9 +720,9 @@
 
 
 : ret?	( if true, return )
-	( PC 5 add jmp? ret ... )
+	( 4 PC add jmp? ret ... )
+	196 emitb		( 0xc4 - constant 5 )
 	80 emitb		( PC )
-	197 emitb		( 0xc5 - constant 5 )
 	43 emitb		( add )
 	84 emitb		( jmp? )
 	82 emitb		( ret )
@@ -771,6 +771,8 @@
 
 	monitorByteValue=0
 
+	lastReadTime=Sys.currentTimeMillis
+
 	loop
 		pc=interpreter.PC
 		if (instr=interpreter.memory.readByte(pc)==118) {  # "v" is readc
@@ -779,7 +781,8 @@
 					interpreter.outputLines->line println(line) |
 				}
 
-				readLine("Ready")=>s
+				elapsedTime=Sys.currentTimeMillis - lastReadTime
+				readLine("[" + elapsedTime + "] Ready")=>s
 				if (s=="q") {
 					interpreter.bufferedInput=" "
 					autorun=false 
@@ -787,6 +790,7 @@
 					s=" " + s + " "
 					interpreter.bufferedInput=s
 				}
+				lastReadTime=Sys.currentTimeMillis
 			}
 		}
 
