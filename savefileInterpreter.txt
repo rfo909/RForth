@@ -719,19 +719,17 @@
 	;
 
 
-: XX 
-	1 global readb		( length)
-		1 global add 1 add ( write pos )
-			cpush   (a)
-	42 a n2code ( N )
-		1 global readb add
-			1 global writeb 
-	immediate 
+: ret?	( if true, return )
+	( PC 5 add jmp? ret ... )
+	80 emitb		( PC )
+	197 emitb		( 0xc5 - constant 5 )
+	43 emitb		( add )
+	84 emitb		( jmp? )
+	82 emitb		( ret )
+	immediate
 	;
-	
-: test XX . ;
- 
-: tast 1 2 drop drop _pc . ;
+
+: cond not ret? 999 . ;
 
 >>> EOF
 	->line
