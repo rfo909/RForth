@@ -28,59 +28,44 @@
 :Init
 	;; if PANIC restart, preserve dictionary head
 	0 global 0 ne &*keepDictHead jmp?
-		&Dictionary &DictionaryHead !
 		;; Store dictionary head pointer in 0 global for
 		;; access from assembly
 		&DictionaryHead 0 global!
 
 	:*keepDictHead
-	
-	;; Make stuff available to Forth
-	
-	&CompileBuf	1 global!
-	&NextWord	2 global!
-	&NextNumber	3 global!
-	&IsNumber	4 global!
-	&IsWord		5 global!
-	
-	
 	0 &IsCompiling writeb
 	0 &IsCompilingWord writeb	
 
 :REPL
 	&GetNextWord call
-	
-	cr &NextWord .str
+	&IsNumber readb cpush     ; a
+	&IsWord readb cpush       ; b
 
-	&IsNumber readb &ProcessNumber call?
-	&IsWord readb &ProcessWord call?
+	a &ProcessNumber call?
+	b &ProcessWord call?
 	;; otherwise ignore (must have been an error)
-	&IsNumber readb not 
-		&IsWord readb not 
-			and &ResetCompile call?	;; something went wrong
+	a not b not and &ResetCompile call?	;; something went wrong
 	&REPL jmp
 
 
 :GetNextWord
 	0 &NextWord writeb
 	0 &NextNumber !
-	
 	1 &IsNumber writeb	; assuming number until non-digit
 	0 &IsWord writeb
 
 	0 cpush  		; using a for next char
 	0 cpush			; using b to keep track of length of current word
-	
 	:*nextChar
 		readc a!
 		a 0x20 eq b 0 eq and &*nextChar jmp? 	;; ignore preceding space
 		a 0x20 eq &*done jmp?			;; word identified
 
-		a DIGIT_0 lt a DIGIT_9 gt or &*notDigit jmp?
+		a DIGIT_0 gt a DIGIT_9 gt or &*notDigit jmp?
 
 		;; digit - update NextNumber
 		&NextNumber @ 10 mul a DIGIT_0 sub add &NextNumber !
-		&*doNext jmp
+		&*doNext
 	:*notDigit
 		0 &IsNumber writeb
 		1 &IsWord writeb
@@ -89,7 +74,6 @@
 		;; update NextWord
 		a &NextWord b 1 add add writeb
 		b 1 add b!
-		b &NextWord writeb
 		&*nextChar jmp
 	:*done
 		b &NextWord writeb
@@ -105,13 +89,13 @@
 	
 	:*compile
 	
-		&NextNumber @ 0 &EmitNumber call
+		&NextNumber @ &EmitNumber call
 		ret
 		
 :ProcessWord
 	;; look up word in dictionary
 	
-	;; cr "Looking_up_ .str &NextWord .str
+	cr "Looking_up_ .str &NextWord .str
 	
 	&NextWord &DictLookup call 			;; dictionary entry pointer or null
 	
@@ -153,47 +137,33 @@
 	b &CompileBuf writeb
 	ret
 	
-:EmitNumber ;; ( value nbytes -- ) 
-	swap 
-	cpush			;; a=number
-	cpush			;; b=nbytes
+:EmitNumber ;; ( value -- )
+	cpush			;; number
 	
 	;; calculate write position
-	&CompileBuf readb 1 add &CompileBuf add cpush    ;; c
+	&CompileBuf readb 1 add &CompileBuf add cpush    ;; b
 	
 	;; generate number as code
 	a 
-		c 
-			b
-				n2code 				;; returns number of bytes generated
+		b n2code cpush 				;; c = number of bytes generated
 		
 	;; update CompileBuf length
 	&CompileBuf readb
-		add
+		c add
 			&CompileBuf writeb
 			
 	ret
-
-
 	
 :EmitOp  ;; ( str -- code ) - lookup in dictionary
-	&DictLookup call cpush 		;; a=dictionary entry
-	a 0 eq &*notFound jmp?
-	
-	a readb add 1 add a!		;; skip string - points to code
-	
-	a wordsize add @ 
-		2 eq &*ok jmp?  ;; mode==2 (LITERAL) is ok
-	
-	:*ok
-		a @ &EmitByte call
-		ret
-	
-	:*notFound
-		cr "EmitOp_ .str
+	&DictLookup cpush 		;; a=dictionary entry
+	a readb 1 add a!		;; skip string
+	a wordsize add @ 2 eq &*ok jmp?  ;; mode==2 (LITERAL) is ok
+		cr "EmitOp:_unknown_op_ .str
 		a .str
-		"_not_found .str
 		PANIC
+	:*ok
+	a @ &EmitByte call
+	ret
 	
 		
 		
@@ -232,15 +202,22 @@
 		b 2 eq &*callInline jmp?	;; mode==inline, execute that instruction
 		b 1 eq &*callCode jmp?		;; mode==immediate, call the code
 
-		ret
+		&REPL jmp
 		
 	:*callCode
-		;; cr "callCode_ .str a print
+		cr "callCode_ .str a print
 		a call 
 		ret
 	:*generateCall
 		cr "generateCall_ .str a print
-		a 0 &EmitNumber call
+		a						;; the number
+			&CompileBuf &CompileBuf readb add 1 add		;; write position in CompileBuf
+				n2code				;; generate code, return N = number of bytes written
+		
+		; (N)
+		&CompileBuf readb 				;; old length
+			add 					;; add to N 
+				&CompileBuf writeb		;; update counter for CompileBuf
 
 		;; add the call instruction
 		0x51						;; Q = call
@@ -249,18 +226,16 @@
 		ret
 	:*inlineCode
 		;; when inlining, the "code pointer" is the instruction! 00nn!
-		;;cr "inlineCode_ .str a print
+		cr "inlineCode_ .str a print
 		a &EmitByte call
 		ret
 	:*callInline
 		;; when inlining, the "code pointer" is the instruction! 00nn!
-		;; cr "callInline_ .str a print
-		0 &CompileBuf writeb		;; clear CompileBuf (this is interactive mode, so buffer not in use)
-		a &EmitByte call
-		;; add the opcode
-		;;"ret &EmitOp call
-		0x52 &EmitByte call  		;; add "R" = ret
-		&CompileBuf 1 add call    	;; invoke CompileBuf offset 1 (as byte 0 is the length)
+		cr "callInline_ .str a print
+		0 &CompileBuf writeb				;; clear CompileBuf (this is interactive mode, so buffer not in use)
+		a &EmitByte call					;; add the opcode
+		0x52 &EmitByte call  				;; add "R" = ret
+		&CompileBuf 1 add call    			;; invoke CompileBuf offset 1 (as byte 0 is the length)
 		ret
 	
 ;; -----------------------------------------------
@@ -270,7 +245,7 @@
 	
 :COLON
 	;; already in compile mode?
-	&IsCompiling readb &*nestedError jmp?
+	&IsCompiling readb &*nested jmp?
 
 	;; set compile mode
 	1 &IsCompiling writeb
@@ -292,13 +267,12 @@
 	;; that's all?
 	ret
 
-	:*nestedError
+	:*nested
 		cr "Can_not_nest_colons:_ .str "_Ignoring .str
 		PANIC
 	
 	:*numberError
 		cr "Can_not_use_number_as_word_name:_ .str
-		&NextWord .str
 		&ResetCompile call
 		PANIC
 		
@@ -314,22 +288,20 @@
 		;; add a ret instruction to CompileBuf
 		0x52 &EmitByte call
 
-		;; allocate permanent code buffer including length byte
+		;; allocate buffer including length byte
 		HERE cpush								;; a=codebuffer
-		&CompileBuf readb 1 add				;; length
+		&CompileBuf readb 1 add
 			allot
 
-		;; copy code into codebuffer including the length
-		&CompileBuf 
+		;; copy code into codebuffer
+		&CompileBuf add
 			a
 				&CompileBuf readb 1 add
 					memcpy
-					
-		a 1 add a!	; skip the length byte
 		
 		;; allocate dictionary entry
 		HERE cpush							;; b=dictEntry
-		&IsCompilingWord readb 1 add			;; length of symbol
+		&IsCompilingWord readb 1 add		;; length of symbol
 			wordsize 3 mul add				;; code pointer, flags, next
 				allot
 
@@ -343,11 +315,12 @@
 		b readb b add 1 add cpush					;; c=point to CODE field
 
 		;; write code address and advance c
-		a c !
+		a 1 add c !		;; 1 + to go past the length byte, which we keep for control etc
 		c W+ c!
 
 		;; write mode and advance pointer
-		&IsCompilingWordMode readb c !
+		&IsCompilingWordMode readb
+			c !
 		c W+ c!
 
 		;; write next pointer
@@ -370,24 +343,10 @@
 :immediate
 	;; change the IsCompilingWordMode to immediate
 	1 &IsCompilingWordMode writeb
-	ret		
-
-:ShowWords
-	&DictionaryHead @ cpush 		;; a=dictionaryFrame
-	:*next
-		cr
-		a &Dictionary @ eq &*done jmp?
-		a .str
-		"_ .str
-		a readb add 1 add a!   		;; past the name
-		a @ print			;; the code address
-		"_ .str
-		a W+ @ print			;; mode
-		a W+ W+ @ a!			;; a=a.next
-		&*next jmp
-	:*done
 	ret
-	
+		
+
+
 :DATA
 
 ;; The dictionary entry has the following format:
@@ -436,7 +395,6 @@
 	%'c!            HEX:0066        INLINE      %NEXT        ;; f
 	%'call          HEX:0051        INLINE      %NEXT        ;; Q
 	%'call?         HEX:0034        INLINE      %NEXT        ;; 4
-	%'clear         HEX:0077        INLINE      %NEXT        ;; w
 	%'cpush         HEX:004F        INLINE      %NEXT        ;; O
 	%'cr            HEX:0058        INLINE      %NEXT        ;; X
 	%'dcopy         HEX:004D        INLINE      %NEXT        ;; M
@@ -459,6 +417,8 @@
 	%'memcpy        HEX:0044        INLINE      %NEXT        ;; D
 	%'mul           HEX:002A        INLINE      %NEXT        ;; *
 	%'n2code        HEX:0032        INLINE      %NEXT        ;; 2
+	%'n2code2       HEX:0033        INLINE      %NEXT        ;; 3
+	%'n2code3       HEX:0031        INLINE      %NEXT        ;; 1
 	%'ne            HEX:0068        INLINE      %NEXT        ;; h
 	%'not           HEX:0069        INLINE      %NEXT        ;; i
 	%'null          HEX:007A        INLINE      %NEXT        ;; z
@@ -482,13 +442,9 @@
 	%'wordsize      HEX:006B        INLINE      %NEXT        ;; k
 	%'writeb        HEX:0048        INLINE      %NEXT        ;; H
 
-
-
 	;; ----------------------------------------------------------
 	
-	%'words		%ShowWords	NORMAL		%NEXT
-	%'GetNextWord	%GetNextWord	NORMAL		%NEXT
-	%'EmitByte	%EmitByte	NORMAL		%NEXT
+	%'emitb		%EmitByte	NORMAL		%NEXT	
 	%':		%COLON		NORMAL		%NEXT
 	HEX:013B	%SEMICOLON	IMMEDIATE	%NEXT
 	%'immediate	%immediate	IMMEDIATE	w0	;; <-- w0 = terminating the linked list

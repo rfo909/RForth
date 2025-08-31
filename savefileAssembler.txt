@@ -88,7 +88,7 @@
 # --
 	Sys.savefile.dir.file("savefileInterpreter.txt").read->line
 		
-		assert( line.contains("self._") || line.contains('self.set("_') )
+		assert( line.contains("self._") && line.contains("=") || line.contains('self.set("_') )
 		out(line.after("self").after("_").chars.first)
 	| _.sort.concat => x
 	
@@ -122,7 +122,7 @@
 	
 	data.keys.sort->key
 		{
-			a=Grep("self._"+key).file(f)
+			a=Grep("self._"+key).match("=").file(f)
 			b=Grep('self.set("_' + key).file(f)
 			(a+b)->line
 				out(line)
@@ -178,6 +178,7 @@
 	swap		:m
 	over		:o
 	dump		:p		;; show stack content
+	clear		:w		;; clear stack
 	
 	;; Both dStack and cstack must grow upwards in memory, containing words only, for
 	;; predictable address calculations
@@ -188,8 +189,7 @@
 	cpush		:O   ;; push 1 value from data stack to callstack
 				;; up to 3 values accessible as local variables a@ a! b@ b! c@ c! (single instructions)
 
-	call		:Q   
-	ret		:R
+
 
 	;; the call stack contains local variables + the return PC when calling something. 
 	;; the callFrame stack contains two values; the base of the current frame on the call stack
@@ -212,8 +212,6 @@
 	;; compiled numbers
 		
 	null		:z		;; push zero on the stack
-	n2code3		:1		;; convert number on stack to 3 code bytes (global addresses)
-	n2code2		:3		;; convert to 2 code bytes (offsets within words)
 	n2code		:2		;; convert number on stack to 2-4 code bytes (constant numbers)
 	
 	;; math (note x0-9A-F are not included)
@@ -244,7 +242,16 @@
 	;; flow of control
 		
 	jmp		:S
-	jmp?	:T   ;; conditional jump on true'	
+	jmp?		:T   	;; conditional jump on true	
+	call		:Q  
+	call?		:4 
+	ret		:R
+	ret?		:5	
+	
+	rfwd?		:6	;; single byte (0-64) offset jumps (inside word)
+	rback?		:7
+
+	PANIC		:0	;; clean up stacks and set PC=0
 	
 	;; I/O
 	show		:V   ;; ( ptr ptr ... N -- ) - display N STRINGS with space between them

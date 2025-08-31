@@ -7,7 +7,7 @@
 	Term.wrap(true)			# to see full error listings
 	
 	# number of words
-	DSTACK_WORDS = 20
+	DSTACK_WORDS = 50
 	CSTACK_WORDS = 50  # callstack
 	FSTACK_FRAMES = 20  # frame stack contains dictionaries
 	
@@ -45,6 +45,7 @@
 		index=self.outputLines.length-1
 		updatedLine = currOutputLine + s
 		self.outputLines.set(index,updatedLine)
+		println("# " + s)
 	}
 	self.addOutputCR = Lambda {
 		self.outputLines.add("")
@@ -135,6 +136,20 @@
 
 	self.fpush(0,0)
 
+	self.PANIC = Lambda{
+		P(1) => msg
+		
+		Lib:Header(msg)
+		println("PC=0x" + self.PC.hex(4),"#count=" + self.executionCount)
+				
+		self.dataStack.reset
+		self.callStack.reset
+		self.frameStack.reset
+		self.PC=0
+		
+		error("PANIC")
+	}
+
 
 	self.executionCount=0
 	self.executeInstruction=Lambda{
@@ -157,17 +172,12 @@
 			instr=Sys.uchar(instr)
 			lambdaName="_"+instr
 			
-			error(!self.has(lambdaName), "Unknown instruction lambda '" + lambdaName + "'") 
+			if (!self.has(lambdaName)) {
+				error("Unknown instruction lambda '" + lambdaName + "'") 
+			} else {
 
-			closure = self.get(lambdaName)
-			result = tryCatch(closure.call)
-			
-			if (!result.ok) {
-				error ("Execution failed: " 
-				+ " lambdaName=" + lambdaName 
-				+ " msg=" + result.get("msg","(no message)")
-				+ " PC=" + pc.hex(4)
-				+ " count=" + self.executionCount)
+				closure = self.get(lambdaName)
+				closure.call
 			}
 		}
 		
@@ -191,9 +201,12 @@
 	}
 	self._H=Lambda{ # writeb write byte ( addr -- value )
 		addr=self.pop
-		if (addr < self.DATA_START) error("writeb: writing below DATA_START: 0x" + addr.hex(4))
-		value=self.pop
-		self.memory.writeByte(addr,value)
+		if (addr < self.DATA_START) {
+			error("writeb: writing below DATA_START: 0x" + addr.hex(4))
+		} else {
+			value=self.pop
+			self.memory.writeByte(addr,value)
+		}
 	}
 
 
@@ -260,7 +273,9 @@
 		if (a<=b) self.push(1) else self.push(0)
 	}
 	
-	self._g=Lambda{self.push(self.memory.HERE)}   # HERE ( -- value )
+	self._g=Lambda{ # HERE ( -- value )
+		self.push(self.memory.HERE)
+	}
 	
 	self.set("_&", Lambda{b=self.pop a=self.pop value=if(a != 0 && b != 0, 1, 0) self.push(value)}) # and boolean ( a b -- 0|1 )
 	self.set("_|", Lambda{b=self.pop a=self.pop value=if(a != 0 || b != 0, 1, 0) self.push(value)}) # or boolean ( a b -- 0|1 )
@@ -273,6 +288,16 @@
 		cond=self.pop 
 		if(cond != 0) self.PC=addr  
 	}  
+	
+	 self._4 = Lambda { # call?
+		targetAddr=self.pop
+		cond=self.pop
+		if (cond != 0) {
+			# call regular call
+			self.push(targetAddr)
+			self._Q
+		}
+	}
 	
 	self._Q=Lambda{  # call ( addr -- )
 		targetAddr=self.pop
@@ -290,6 +315,16 @@
 
 		self.PC=targetAddr # JMP
 	}
+	self._5 = Lambda { # ret?
+		addr=self.pop
+		cond=self.pop
+		if (cond != 0) {
+			# call regular ret
+			self.push(addr)
+			self._R
+		}
+	}
+		
 	self._R=Lambda{  # ret return
 		self.fpop
 
@@ -353,6 +388,10 @@
 		b=self.pop
 		self.push(a)
 		self.push(b)
+	}
+	
+	self._w = Lambda{ # clear - Clear stack
+		self.dataStack.reset
 	}
 	
 	self._n=Lambda{ # W+   ( n -- n+WORDSIZE )
@@ -531,38 +570,43 @@
 	 	self.push(0)
 	 }
 	 
-	 self._1 = Lambda { # n2code3 ( val addr -- ) convert value (0-16k) to 3 code bytes, written to addr+
+	
+	 self._2 = Lambda { # n2code ( num addr nbytes -- N ) num to code, write to addr, nbytes=0 means variable, returns #bytes 
+	 	nbytes=self.pop
 	 	addr=self.pop
 	 	number=self.pop
-	 	bytes=NumberTable:GenerateNumberBytes(number,3)->b
-	 		self.memory.writeByte(addr,b)
-	 		addr=addr+1
-	 	|
-	 }
-		
-	 self._2 = Lambda { # n2code ( val addr -- N ) convert value to code, written to addr, returns number of bytes written
-	 	addr=self.pop
-	 	number=self.pop
-	 	bytes=NumberTable:GenerateNumberBytes(number)->b
+	 	bytes=NumberTable:GenerateNumberBytes(number,nbytes)
+	 	bytes->b
 	 		self.memory.writeByte(addr,b)
 	 		addr=addr+1
 	 	|
 	 	self.push(bytes.length)
 	 }
 
-	 self._3 = Lambda { # n2code2 ( val addr -- N ) convert (0-4096) to 2 code bytes, written to addr+
-	 	addr=self.pop
-	 	number=self.pop
-	 	bytes=NumberTable:GenerateNumberBytes(number,2)->b
-	 		self.memory.writeByte(addr,b)
-	 		addr=addr+1
-	 	|
-	 }
-
 	 self._P = Lambda{ # PC ( -- addr )
 	 	self.push(self.PC)
 	 }
-		
+	
+	 self._6 = Lambda { # rfwd? ( bool offset -- ) adds offset to PC - for relocatable forth word code
+	 	offset=self.pop
+	 	cond=self.pop
+	 	if (cond != 0) {
+	 		self.PC=self.PC+offset
+	 	}
+	 }
+	 
+	 self._7 = Lambda { # rback? ( bool offset -- ) subtracts offset from PC - for relocatable forth word code
+	 	offset=self.pop
+	 	cond=self.pop
+	 	if (cond != 0) {
+	 		self.PC=self.PC-offset
+	 	}
+	}
+	
+	self._0 = Lambda { # PANIC ( -- ) Clean up stacks and set PC=0
+		self.PANIC("PANIC instruction called")
+	}
+	 
 		
 /class Interpreter
 
@@ -610,7 +654,7 @@
 
 	bytesPerLine=if(Term.w > 90, 8, 4)
 	
-	lastAddr=startAddr + (Term.h-4)*bytesPerLine
+	lastAddr=startAddr + (Term.h-6)*bytesPerLine
 	if (lastAddr < startAddr+10) lastAddr=startAddr+10
 	if (lastAddr >= memory.HERE) lastAddr=memory.HERE
 		
@@ -624,7 +668,7 @@
 
 		if (offset % bytesPerLine == 0) {
 			println (hex + "  " + info + "  " + dec)
-			print(("   "+addr).last(3) + "  " + addr.hex(4)+" | ")
+			print("  " + addr.hex(4)+" | ")
 			hex=info=dec=""
 		}
 		value=memory.readByte(addr)
@@ -645,22 +689,63 @@
 	println (hex + "  " + info + "  " + dec)
 
 	println
-	readLine("Continue")
 /ShowMemory	
+
+
+
+
+# Show disassembled code
+# --
+	P(1) as int => startAddr
+	P(2) as &Memory => memory
+	P(3) as Dict => metaInfo
+
+	pc=startAddr
+	loop
+		Inner {
+			loop
+				break(pc>=memory.HERE)
+				instr=memory.readByte(pc)
+				if (instr >= 33 && instr <= 127) {
+					ch=Sys.uchar(instr)
+					tryCatch(x=Assembler:InstructionsLookup.get(ch))=>result
+					if (result.ok) {
+						instr=x
+					} else {
+						instr="(data: 0x" + instr.hex(2) + ")"
+					}
+				} else if (instr >= 128) {
+					instr="0x"+instr.hex(2)
+				}
+				
+				report(pc.hex(4), 
+					(metaInfo.get(""+pc,"")+" ".times(25)).first(25), instr)
+					
+				pc=pc+1
+				if (pc-startAddr > Term.h-5) break
+				
+		} _=>rows
+		Lib:ShowRows(rows,null,false)
+		readLine("Enter")
+		break
+
+/ShowDis	
 
 
 # Read memory address
 # --
 	P(1) as Dict => tags
+	P(2) as String => info
 
-	Input("Enter address hex NNNN or tag or part of tag").get =>s
-
-	if (s.?parseInt(16)) {
+	Input("Enter address (" + info + ") as hex NNNN or tag or part of tag, 'q' to abort").get =>s
+	if (s.trim=="-") {
+		null
+	} else if (s.?parseInt(16)) {
 		s.parseInt(16)
 	} else if (tags.has(s)) {
 		tags.get(s)
 	} else {
-		value=0
+		value=null
 		Inner{
 			tags.keys->key
 				#println(key)
@@ -671,11 +756,6 @@
 					break
 				}
 			|
-			if(value==0) {
-				println("No matching tag, using DATA")
-				value=tags.get("DATA")
-				readLine("Enter")
-			}
 		}
 		value
 	}  	
@@ -685,54 +765,8 @@
 
 # Initial forth code
 # --
-<<< EOF
-
-( Current offset in compileBuf )
-: . cr print# ;	
-
-( current offset in compileBuf )
-: _pc 1 global readb immediate ;
-
-( emit dummy word to be patched )
-: _0w 0 emitb 0 emitb immediate ;
-
-( Push compile pos on stack )
-: _ppos _pc immediate ;
-
-: IF 
-	105 emitb   ( not - works the condition )
-	_pc dup .      ( push pc on stack - picked up the THEN )
-	_0w         ( 0 0 - patched by THEN )
-	80 emitb    ( PC )
-	43 emitb    ( add )
-	84 emitb    ( jmp? )
-	immediate
-	;
-	
-: THEN ( only modifies IF to jump here if condition fails )
-	cpush            ( a is the paddress of the _0w field )
-	_pc a sub cpush  ( b = bytes the IF jump should move forward )
-	3 sub            ( compensate three PC++ before running jmp?)
-		a
-			n2code2
-	immediate
-	;
-
-
-: ret?	( if true, return )
-	( 4 PC add jmp? ret ... )
-	196 emitb		( 0xc4 - constant 5 )
-	80 emitb		( PC )
-	43 emitb		( add )
-	84 emitb		( jmp? )
-	82 emitb		( ret )
-	immediate
-	;
-
-: cond not ret? 999 . ;
-
->>> EOF
-	->line
+	Sys.savefile.dir.file("Forth.txt").read->line
+		break(line.trim=="#END")
 		s=line.before("(").trim
 		reject(s=="")
 		out(s)
@@ -741,10 +775,10 @@
 	#readLine("Enter")
 	
 	
-	lines.concat(" ") => str
+	str = lines.concat(" ") + " "  # trigger final word
 	#println(str)
 	#readLine("Enter")
-	str
+	str 
 /GetInitialForthCode
 
 # Test
@@ -777,9 +811,6 @@
 		pc=interpreter.PC
 		if (instr=interpreter.memory.readByte(pc)==118) {  # "v" is readc
 			if (interpreter.bufferedInput=="") {
-				Inner {
-					interpreter.outputLines->line println(line) |
-				}
 
 				elapsedTime=Sys.currentTimeMillis - lastReadTime
 				readLine("[" + elapsedTime + "] Ready")=>s
@@ -814,13 +845,7 @@
 		}
 		
 		if (autorun) {
-			tryCatch(interpreter.executeInstruction) => result
-			if (!result.ok) {
-				println("ERROR: executeInstruction failed: " + result.msg)
-				readLine("Press ENTER")
-				# cancel autorun
-				autorun=false
-			}
+			interpreter.executeInstruction
 			continue
 		}
 		
@@ -851,7 +876,6 @@
 		from=interpreter.PC-(lines div 3)
 		if (from < 0) from=0
 		to=from+lines
-		if (to > symbolsStart) to=symbolsStart
 		
 		Inner {
 			Std.Data.for(from,to,1)->pc
@@ -917,21 +941,30 @@
 			x
 		}
 		print(Prompt:GetColor)
-		println(		
-			localVariables + 
-			if (breakpoint>=0, "bp="+breakpoint.hex(4), "")
-		)
-		println(Curses:Reset)
-
-		command=readLine("==> q=quit, d=dump, b=bp, c=clear-bp, h=hex->dec, r=run s=skip, ENTER=step").trim
+		print(localVariables)
+		print(Curses:Reset)
+		 
+		if (breakpoint>=0) print("bp="+breakpoint.hex(4), "")
+		println
+	
+		command=readLine("==> q=quit, d=dump, D=dis, b=bp, c=clear-bp, h=hex->dec, r=run s=skip, ENTER=step").trim
 		if(command=="q") {
 			break
 		} else if (command=="d") {
 			println
-			addr=ReadMemoryAddress(tags)
-			ShowMemory(addr, interpreter.memory)
+			Inner{
+				loop
+					addr=ReadMemoryAddress(tags,"dump")
+					break(addr==null)
+					ShowMemory(addr, interpreter.memory)
+			}
+		} else if (command=="D") {
+			println
+			addr=ReadMemoryAddress(tags,"dis")
+			ShowDis(addr, interpreter.memory, metaInfo)
 		} else if (command=='b') {
-			addr=ReadMemoryAddress(tags)
+			addr=ReadMemoryAddress(tags,"breakpoint")
+			if (addr==null) addr=-1
 			breakpoint=addr
 		} else if (command=='c') {
 			breakpoint=-1
@@ -946,7 +979,7 @@
 				runUntilCount=-1
 			} else {
 				instrCount=s.parseInt
-				runUntilCount=interpreter.executionCount + instrCount
+				runUntilCount=instrCount
 				monitorByteAddr=-1
 			}
 			autorun=true
@@ -957,8 +990,7 @@
 		} else if (command.trim=="") {
 			tryCatch(interpreter.executeInstruction) => result
 			if (!result.ok) {
-				println("ERROR: executeInstruction failed: " + result.msg)
-				readLine("Press ENTER")
+				error("executeInstruction failed: " + result.msg)
 				# cancel autorun
 				autorun=false
 			}

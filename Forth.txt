@@ -1,0 +1,41 @@
+
+
+: DictionaryHead 0 global ;
+: CompileBuf 1 global ;
+: NextWord   2 global ;
+: NextNumber 3 global ;
+: IsNumber   4 global ;
+: IsWord     5 global ;
+	
+: . cr print# ;
+
+	
+: test 1 2 rfwd? 1 2 3 4 5 ;  (relative forward jump test)
+
+#END
+
+
+( testing with 7 global for the mark, must use separate stack)
+
+: MARK! immediate
+	halt
+	CompileBuf readb  7 global!  (push compileBuf pos on stack)
+	(emit dummy offset data)
+	0 EmitByte
+	0 EmitByte
+	;
+		
+: >MARK@ immediate ( patch forward jump at back address )
+	halt
+	7 global cpush			(a=mark value)
+	CompileBuf readb 		  (current pos)
+		CompileBuf 1 add a add cpush (write pos)
+			2 n2code
+	;
+
+
+: IF not MARK! jmp? ;
+: THEN >MARK@ ;
+
+
+
