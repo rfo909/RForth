@@ -250,6 +250,8 @@
 	
 	rfwd?		:6	;; single byte (0-64) offset jumps (inside word)
 	rback?		:7
+	
+	tag		:8	;; look up address of tag
 
 	PANIC		:0	;; clean up stacks and set PC=0
 	
@@ -271,6 +273,7 @@
 	.str		:C		;; print string
 	streq		:B		;; compare strings ( ptr ptr -- 0/1 )  boolean
 	memcpy		:D		;; ( ptrSrc ptrTarget count -- )
+	
 
 >>> EOF
 	=>list

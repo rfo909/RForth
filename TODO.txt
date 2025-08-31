@@ -3,24 +3,32 @@
 TODO
 ----
 
-- IMMEDIATE words have no meaning outside compile mode, as the modifier
-means "execute immediately" in compile mode.
+Compile stack 
+	- must not require balanced lookups
+	
+	DO ... (cond) IF BREAK THEN... AGAIN
+	
+	DO pushes an address marked with DO
+	BREAK pushes a jump marked with BREAK
+	AGAIN pushes a back-jump to the DO tag, then updates the BREAK jump to current offset
+	
+	The THEN resolves the IF, not the BREAK forward jump. 
+	AGAIN resolves both itself by looking up DO and then resolves BREAK forward jump.
+	At compile time!
 
-So COLON is not immediate, as when we enter it we are in "interpreter" mode,
-executing each word directly.
+	The addresses or the patch locations to be pushed must be tagged with type (1 byte) like
+	
+		IF		(push address of forward jump from IF or ELSE to THEN)
+		DO		(push current address, picked up by AGAIN)
+		BREAK	(push address of forward jump, resolved by AGAIN)
+		
+		
+	When compiling an AGAIN
 
-Certain words, such as CONSTANT have a "data space" address, which gets pushed on the
-stack at execution
 
-: CONSTANT CREATE , DOES> @ ;
-
-The CREATE word takes a symbol from the input stream, creates a dictionary entry
-with it. Then the COMMA takes a value from the stack, allocates memory for it, and
-*compiles* it into code. 
-
-The the DOES> comes along, adding code for reading the value.
-
-Is this right??
+CREATE
+	- &GetNextWord call
+ELSE
 
 
 

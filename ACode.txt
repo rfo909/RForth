@@ -25,25 +25,7 @@
 
 
 
-:Init
-	;; if PANIC restart, preserve dictionary head
-	0 global 0 ne &*keepDictHead jmp?
-		&Dictionary &DictionaryHead !
-		;; Store dictionary head pointer in 0 global for
-		;; access from assembly
-		&DictionaryHead 0 global!
-
-	:*keepDictHead
-	
-	;; Make stuff available to Forth
-	
-	&CompileBuf	1 global!
-	&NextWord	2 global!
-	&NextNumber	3 global!
-	&IsNumber	4 global!
-	&IsWord		5 global!
-	
-	
+:Init	
 	0 &IsCompiling writeb
 	0 &IsCompilingWord writeb	
 
@@ -109,6 +91,27 @@
 		ret
 		
 :ProcessWord
+	;; check for tag lookup
+	&NextWord 1 add readb 38 ne &*notTag jmp?    ;; starts with &
+		; overwrite colon with length - 1 
+		&NextWord readb 1 sub
+			&NextWord 1 add writeb
+		; look up tag
+		&NextWord 1 add
+			tag cpush		;; a
+		
+		a 0 ne &*found jmp?
+		
+		cr "Invalid_tag_ .str &NextWord 1 add .str
+		PANIC
+	
+	:*found
+		a &NextNumber ! 
+		&ProcessNumber call
+		ret
+	
+	:*notTag 
+	
 	;; look up word in dictionary
 	
 	;; cr "Looking_up_ .str &NextWord .str
@@ -374,7 +377,7 @@
 	1 &IsCompilingWordMode writeb
 	ret		
 
-:ShowWords
+:Words
 	&DictionaryHead @ cpush 		;; a=dictionaryFrame
 	0 cpush ;; (b)
 	:*next
@@ -488,9 +491,7 @@
 
 	;; ----------------------------------------------------------
 	
-	%'words		%ShowWords	NORMAL		%NEXT
-	%'GetNextWord	%GetNextWord	NORMAL		%NEXT
-	%'EmitByte	%EmitByte	NORMAL		%NEXT
+	%'words		%Words		NORMAL		%NEXT
 	%':		%COLON		NORMAL		%NEXT
 	HEX:013B	%SEMICOLON	IMMEDIATE	%NEXT
 	%'immediate	%immediate	IMMEDIATE	w0	;; <-- w0 = terminating the linked list

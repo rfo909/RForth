@@ -3,6 +3,7 @@
 # --
 	P(1) as String => hexString
 	P(2) as int => symbolsStart
+	P(3) as Dict => tagLookup
 
 	Term.wrap(true)			# to see full error listings
 	
@@ -30,6 +31,8 @@
 	
 	self.symbolsStart=symbolsStart
 	self.symbolLookupEnd=bytes.length
+	
+	self.tagLookup=tagLookup
 
 	self.PC=0
 	self.haltFlag=false
@@ -586,9 +589,9 @@
 	 	offset=self.pop
 	 	cond=self.pop
 	 	if (cond != 0) {
-	 		println("self.PC",self.PC,"offset",offset)
+	 		#println("self.PC",self.PC,"offset",offset)
 	 		self.PC=self.PC+offset
-	 		println("self.PC",self.PC)
+	 		#println("self.PC",self.PC)
 	 	}
 	 }
 	 
@@ -603,6 +606,23 @@
 	self._0 = Lambda { # PANIC ( -- ) Clean up stacks and set PC=0
 		self.PANIC("PANIC instruction called")
 	}
+	
+	self._8 = Lambda { # tag ( str -- num ) Lookup tag by string, 0 if not found
+		strAddr = self.pop
+		length=self.memory.readByte(strAddr)
+		s=""
+		Std.Data.for(0,length,1)->i
+			s=s+self.memory.readChar(strAddr+1+i)
+		|
+		if (self.tagLookup.has(s)) {
+			self.push(self.tagLookup.get(s))
+		} else {
+			self.push(0)
+		}
+	}
+	
+		
+		
 	 
 		
 /class Interpreter
@@ -797,7 +817,7 @@
 	breakpoint=-1
 	autorun=false
 
-	interpreter=Interpreter(hexBlock, symbolsStart)
+	interpreter=Interpreter(hexBlock, symbolsStart, tags)
 	interpreter.DATA_START=tags.get("PROTECT")
 
 	monitorByteValue=0
