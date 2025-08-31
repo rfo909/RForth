@@ -8,34 +8,41 @@
 : IsWord     5 global ;
 	
 : . cr print# ;
-
 	
-: test 1 2 rfwd? 1 2 3 4 5 ;  (relative forward jump test)
-
-#END
 
 
-( testing with 7 global for the mark, must use separate stack)
+( this is the first working IF-THEN. It does not handle nesting, as it stores)
+( the patch address in global variable 7 )
+( but it works!! )
+( 2025-08-31 RFO )
 
-: MARK! immediate
-	halt
+: IF immediate
+	105 EmitByte		(not - invert false to true for conditional jmp) 
 	CompileBuf readb  7 global!  (push compileBuf pos on stack)
 	(emit dummy offset data)
+	0 EmitByte		(note: if not patched, crashes, since 0 is no valid instruction)
 	0 EmitByte
-	0 EmitByte
+	54 EmitByte 		(rfwd? instruction)
 	;
 		
-: >MARK@ immediate ( patch forward jump at back address )
-	halt
-	7 global cpush			(a=mark value)
-	CompileBuf readb 		  (current pos)
-		CompileBuf 1 add a add cpush (write pos)
+: THEN immediate ( patch forward jump at back address )
+	7 global cpush			(a=mark pos)
+	CompileBuf readb cpush		(b=curr pos)
+	b a sub 2 sub cpush   		(c=offset)
+		( 2 sub for the two bytes of the address - the jump is relative to the rfwd? )
+
+	c
+		CompileBuf 1 add a add   (write pos)
 			2 n2code
+
 	;
 
+: t2 ( cond -- 32 or 32,63...)
+	IF 32 THEN 63 ;
 
-: IF not MARK! jmp? ;
-: THEN >MARK@ ;
+
+words
 
 
+#END
 

@@ -48,7 +48,8 @@
 	data.keys.sort->key
 		error(!available.has(key), "Not found in available keys: " + key)
 		available.set(key,true)
-		report(key,data.get(key))
+		number=key.toHexString.first(2).parseInt(16)
+		report(number, key,data.get(key))
 	| _=>rows
 	Lib:ShowRows(rows)
 

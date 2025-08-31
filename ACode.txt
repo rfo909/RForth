@@ -340,7 +340,9 @@
 					memcpy
 		
 		;; advance dict entry pointer past name
-		b readb b add 1 add cpush					;; c=point to CODE field
+		b readb 
+			b add 
+				1 add cpush					;; c=point to CODE field
 
 		;; write code address and advance c
 		a c !
@@ -374,15 +376,16 @@
 
 :ShowWords
 	&DictionaryHead @ cpush 		;; a=dictionaryFrame
+	0 cpush ;; (b)
 	:*next
+		a 0 eq &*done jmp?
+		a &Dictionary eq &*done jmp?	;; only show Forth words, not standard dictionary
+		
+		a b!			;; b=name
 		cr
-		a &Dictionary @ eq &*done jmp?
-		a .str
-		"_ .str
-		a readb add 1 add a!   		;; past the name
-		a @ print			;; the code address
-		"_ .str
-		a W+ @ print			;; mode
+		a readb a add 1 add a!   		;; past the name
+		a @ print			;; code address
+		"_ .str b .str			;; name
 		a W+ W+ @ a!			;; a=a.next
 		&*next jmp
 	:*done

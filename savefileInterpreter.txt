@@ -45,7 +45,6 @@
 		index=self.outputLines.length-1
 		updatedLine = currOutputLine + s
 		self.outputLines.set(index,updatedLine)
-		println("# " + s)
 	}
 	self.addOutputCR = Lambda {
 		self.outputLines.add("")
@@ -57,6 +56,7 @@
 		Std.Data.for(0,length,1)->i
 			out(Sys.uchar(self.memory.readByte(addr+1+i)))
 		| _.concat => str
+		print(str)
 		self.addOutputText(str)
 	}
 		
@@ -445,18 +445,22 @@
 	}
 	self._W=Lambda{ # print print top value on hex format
 		value=self.pop
+		print("0x"+value.hex(4))
 		self.addOutputText("0x" + value.hex(4))
 	}
 	self._Y=Lambda{ # print# print top value on decimal format
 		value=self.pop
+		print(value)
 		self.addOutputText(""+value)
 	}
 	self._L=Lambda{ # printb print top value on binary format
 		value=self.pop
 		s=value.bin(self.WORDSIZE*8)
+		print(s)
 		self.addOutputText(s.sub(0,8)+"_"+s.sub(8))
 	}
 	self._X=Lambda{ # cr print newline
+		println
 		self.addOutputCR
 	}
 	self._U=Lambda { # printc - print byte as character 
@@ -591,7 +595,9 @@
 	 	offset=self.pop
 	 	cond=self.pop
 	 	if (cond != 0) {
+	 		println("self.PC",self.PC,"offset",offset)
 	 		self.PC=self.PC+offset
+	 		println("self.PC",self.PC)
 	 	}
 	 }
 	 
@@ -813,7 +819,8 @@
 			if (interpreter.bufferedInput=="") {
 
 				elapsedTime=Sys.currentTimeMillis - lastReadTime
-				readLine("[" + elapsedTime + "] Ready")=>s
+				println
+				readLine("[" + elapsedTime + "] Ok")=>s
 				if (s=="q") {
 					interpreter.bufferedInput=" "
 					autorun=false 
@@ -845,8 +852,14 @@
 		}
 		
 		if (autorun) {
-			interpreter.executeInstruction
-			continue
+			tryCatch(interpreter.executeInstruction) => result
+			if (!result.ok) {
+				println(result.msg)
+				readLine("Enter")
+				autoRun=false
+			} else {
+				continue
+			}
 		}
 		
 		# show outputlines
@@ -876,9 +889,12 @@
 		from=interpreter.PC-(lines div 3)
 		if (from < 0) from=0
 		to=from+lines
+		if (to >= interpreter.memory.HERE) to=interpreter.memory.HERE-1
+		
 		
 		Inner {
 			Std.Data.for(from,to,1)->pc
+				
 				mark=""
 				if (pc==interpreter.PC) {
 					if (pc==breakpoint) {
@@ -897,7 +913,10 @@
 					if (result.ok) {
 						instr=x
 					} else {
+						#println("pc=" + pc.hex + " ERROR: " + result.msg)
 						instr="(data: 0x" + instr.hex(2) + ")"
+						#println("instr=" + instr)
+						#readLine("Enter")
 					}
 				} else if (instr >= 128) {
 					instr="0x"+instr.hex(2)
