@@ -484,8 +484,10 @@
 	%'streq         HEX:0042        INLINE      %NEXT        ;; B
 	%'sub           HEX:002D        INLINE      %NEXT        ;; -
 	%'swap          HEX:006D        INLINE      %NEXT        ;; m
+	%'tag           HEX:0038        INLINE      %NEXT        ;; 8
 	%'wordsize      HEX:006B        INLINE      %NEXT        ;; k
 	%'writeb        HEX:0048        INLINE      %NEXT        ;; H
+
 
 
 
