@@ -247,7 +247,6 @@
 	call		:Q  
 	call?		:4 
 	ret		:R
-	ret?		:5	
 	
 	rfwd?		:6	;; single byte (0-64) offset jumps (inside word)
 	rback?		:7

@@ -315,15 +315,6 @@
 
 		self.PC=targetAddr # JMP
 	}
-	self._5 = Lambda { # ret?
-		addr=self.pop
-		cond=self.pop
-		if (cond != 0) {
-			# call regular ret
-			self.push(addr)
-			self._R
-		}
-	}
 		
 	self._R=Lambda{  # ret return
 		self.fpop

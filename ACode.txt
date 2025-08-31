@@ -476,7 +476,6 @@
 	%'readb         HEX:0047        INLINE      %NEXT        ;; G
 	%'readc         HEX:0076        INLINE      %NEXT        ;; v
 	%'ret           HEX:0052        INLINE      %NEXT        ;; R
-	%'ret?          HEX:0035        INLINE      %NEXT        ;; 5
 	%'rfwd?         HEX:0036        INLINE      %NEXT        ;; 6
 	%'show          HEX:0056        INLINE      %NEXT        ;; V
 	%'streq         HEX:0042        INLINE      %NEXT        ;; B
