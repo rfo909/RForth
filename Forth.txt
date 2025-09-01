@@ -1,7 +1,8 @@
 : . cr print# ;
 
-( # Although the COLON word is defined in ACode.txt, we modify compilation )
-( # by using immediate words. )
+( compile stack )
+
+
 
 	
 ( this is the first working IF-THEN. It does not handle nesting, as it stores)

@@ -147,6 +147,7 @@
 	0 &IsCompilingWord writeb
 	0 &IsCompilingWordMode writeb
 	0 &CompileBuf writeb
+	0 &CompileStack writeb
 	ret
 
 :EmitByte   ;; ( byte -- )
@@ -265,7 +266,48 @@
 		0x52 &EmitByte call  		;; add "R" = ret
 		&CompileBuf 1 add call    	;; invoke CompileBuf offset 1 (as byte 0 is the length)
 		ret
+
+; -------------------------------------------
+; Compile stack functions
+; -------------------------------------------
 	
+; Note type=0 is used to invalidate matched values from the stack
+
+:comps! ;; ( type -- )
+	8 << 			; (type is high byte) 
+	&CompileBuf readb orb 	; (pos is low byte)
+		cpush			; (a=data word)
+	
+	&CompileStack readb wordsize mul
+		&CompileStack add 1 add cpush		;(b = write pos )
+		
+	a b !
+	ret
+	
+
+:comps@ ;; (type -- offset)
+	cpush				;(a=type)
+	&CompileBuf readb cpush		;(b=stack pos index)
+	0 cpush				;(make c available)
+	:*next
+		b 0 eq &*notFound jmp?
+		&CompileBuf b 2 mul add 1 add c!	;(b=actual read pos)
+		c @ 8 >> a eq &*found jmp?
+		b 1 sub b!
+		&*next jmp
+	:*notFound
+		"Compile_stack:_ .str
+		"No_matching_type_ .str
+		a print#
+		PANIC
+	:*found
+		c @ 255 andb		;; return value
+		0 c writeb		;; overwrite the entry
+		ret
+	 
+
+
+
 ;; -----------------------------------------------
 ;; Implementations for initial complex words in dictionary
 ;; -----------------------------------------------
@@ -528,12 +570,13 @@
 			w0 w0 w0 w0 w0 w0 w0 w0
 
 
-:NextWord		b w0 w0 w0 w0 w0 w0 w0 w0		;; 16 character stringbuffer
+:NextWord		b0 w0 w0 w0 w0 w0 w0 w0 w0		;; 16 character stringbuffer
 :NextNumber		w0
 :IsNumber		b0
 :IsWord			b0
 
-
+:CompileStack		b0 w0 w0 w0 w0 w0 w0 w0 w0 		
+				;; 8 words each consists of type (1 byte) and offset in CompileBuf (1 byte)
 
 	
 :MemoryEnd
