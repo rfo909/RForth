@@ -1,41 +1,12 @@
 : . cr print# ;
 
-( compile stack )
+: IF immediate &IF call ;
+: THEN immediate &THEN call ;
 
 
+: t1 0 IF 4 THEN 5 ;
+: t2 1 IF 6 THEN 7 ;
 
-	
-( this is the first working IF-THEN. It does not handle nesting, as it stores)
-( the patch address in global variable 7 )
-( but it works!! )
-( 2025-08-31 RFO )
-
-: IF immediate
-	105 &EmitByte call		(not - invert false to true for conditional jmp) 
-	&CompileBuf readb  7 global!  (push compileBuf pos on stack)
-	(emit dummy offset data)
-	0 &EmitByte call		(note: if not patched, crashes, since 0 is no valid instruction)
-	0 &EmitByte call
-	54 &EmitByte call		(rfwd? instruction)
-	;
-		
-: THEN immediate ( patch forward jump at back address )
-	7 global cpush			(a=mark pos)
-	&CompileBuf readb cpush		(b=curr pos)
-	b a sub 2 sub cpush   		(c=offset)
-		( 2 sub for the two bytes of the address - the jump is relative to the rfwd? )
-
-	c
-		&CompileBuf 1 add a add   (write pos)
-			2 n2code
-
-	;
-
-: t2 ( cond -- 32 or 32,63...)
-	IF 32 THEN 63 ;
-
-
-words
 
 
 #END

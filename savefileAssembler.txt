@@ -345,7 +345,7 @@
 		words=Inner{
 			lines->line
 				#println(line)
-				line.trim.before(";").split->word
+				line.before(";").before("(").trim.split->word
 					out(word.trim)
 		}
 		self.words=words+self.words
@@ -365,7 +365,7 @@
 		words=Inner{
 			lines->line
 				#println(line)
-				line.trim.before(";").split->word
+				line.before(";").before("(").trim.split->word
 					out(word.trim)
 		}
 		self.words=self.words+words

@@ -273,38 +273,82 @@
 	
 ; Note type=0 is used to invalidate matched values from the stack
 
-:comps! ;; ( type -- )
-	8 << 			; (type is high byte) 
-	&CompileBuf readb orb 	; (pos is low byte)
-		cpush			; (a=data word)
-	
-	&CompileStack readb wordsize mul
-		&CompileStack add 1 add cpush		;(b = write pos )
-		
+:comps! ( pos type -- )			( p=requires pos parameter )
+	8 << 					(type is high byte) 
+	orb                 	(pos is low byte)
+		cpush				(a=data word)
+
+	&CompileStack readb wordsize mul 1 add
+		&CompileStack add 
+			cpush			(b = write pos )
+
 	a b !
+
+	(increase stack counter)
+	&CompileStack readb 1 add &CompileStack writeb
+	cr "
 	ret
 	
 
 :comps@ ;; (type -- offset)
-	cpush				;(a=type)
-	&CompileBuf readb cpush		;(b=stack pos index)
-	0 cpush				;(make c available)
+	cpush						(a=type)
+	&CompileStack readb 0 eq &*emptyStack jmp?
+	&CompileStack readb 1 sub cpush		(b=stack pos index for counting down)
+	0 cpush						(make variable c available)
 	:*next
-		b 0 eq &*notFound jmp?
-		&CompileBuf b 2 mul add 1 add c!	;(b=actual read pos)
+		&CompileStack b 2 mul add 1 add c!	(c=actual read pos)
+		;cr "compile_stack_read_pos=" .str c print
+		;cr "compile_stack_checking_value= .str c @ print
+
 		c @ 8 >> a eq &*found jmp?
+		b 0 eq &*notFound jmp?		(can count no further down)
 		b 1 sub b!
 		&*next jmp
+	:*emptyStack
+		cr "Compilestack_empty .str
+		PANIC
 	:*notFound
-		"Compile_stack:_ .str
+		cr "Compile_stack:_ .str 
 		"No_matching_type_ .str
 		a print#
 		PANIC
 	:*found
-		c @ 255 andb		;; return value
-		0 c writeb		;; overwrite the entry
+		c @ 255 andb		( return value )
+		0 c writeb			( overwrite the entry so it can't match again )
 		ret
-	 
+
+; CompileStack types
+;
+; IF = 1
+ 
+
+:IF 
+	105 &EmitByte call		( not - invert false to true for conditional jmp ) 
+	&CompileBuf readb 1 &comps! call  (push compileBuf pos on stack)
+	; (emit dummy offset data)
+	0 &EmitByte call		(note: if not patched, crashes, since 0 is no valid instruction)
+	0 &EmitByte call
+	54 &EmitByte call		(rfwd? instruction)
+	ret
+
+:ELSE
+	&CompileBuf readb
+	
+		
+:THEN 			 			( patch forward jump at back address )
+	1 &comps@ call cpush    (a=mark pos) 
+	7 global cpush			(a=mark pos)
+	&CompileBuf readb cpush		(b=curr pos)
+	b a sub 2 sub cpush   		(c=offset)
+		( 2 sub for the two bytes of the address - the jump is relative to the rfwd? )
+
+	c
+		&CompileBuf 1 add a add   (write pos)
+			2 n2code
+
+	ret
+
+
 
 
 
