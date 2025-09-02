@@ -340,15 +340,15 @@
 	c
 		&CompileBuf 1 add a add   (write pos)
 			2 n2code
-
+			
 	ret
 
 :ELSE
 	; (Insert jump to the THEN at end of IF block, if original condition was true)
 	; (But we can not push it on the compile-stack before resolving the first IF fwd jump)
 	
-	&CompileBuf readb cpush  		;(a=location of forward jump to THEN)
 	1 0 &EmitNumber call			;(unconditional)
+	&CompileBuf readb cpush  		;(a=location of forward jump to THEN)
 	0 &EmitByte call			;(jump address)
 	0 &EmitByte call
 	54 &EmitByte call			;(rfwd? instruction)
@@ -361,6 +361,31 @@
 	ret
 
 
+:DO
+	( store current pos in CompileBuf as type 2 on compile stack )
+	
+	&CompileBuf readb 2 &comps! call		( push repeat address as type 2 )
+	ret
+	
+:AGAIN?
+	&CompileBuf readb cpush		(a=curr pos in compilebuf)
+	
+	a
+		2 &comps@ call sub
+		2 add 				(compensate for two bytes of relative jump address below)
+			cpush			(b=back jump count from rback?)
+
+	b 
+		&CompileBuf a add 1 add		(write position)
+			2 n2code		
+
+	(update compile-buf length as n2code doesn't know where it writes output)
+	&CompileBuf readb 2 add &CompileBuf writeb
+
+	55 &EmitByte call			(rback?)
+	ret
+	
+	
 ;; -----------------------------------------------
 ;; Implementations for initial complex words in dictionary
 ;; -----------------------------------------------

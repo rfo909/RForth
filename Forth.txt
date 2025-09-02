@@ -3,12 +3,23 @@
 : IF immediate &IF call ;
 : THEN immediate &THEN call ;
 : ELSE immediate &ELSE call ;
+: DO immediate &DO call ;
+: AGAIN? immediate &AGAIN? call ;
 
 
 
 : test 
 	IF 1 ELSE 2 THEN ;
 
+
+: count
+	0 cpush   (a)
+	DO
+		a .
+		a 1 add a!
+		a 1000 lt AGAIN?
+		
+	;
 
 
 #END
