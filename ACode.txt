@@ -325,8 +325,8 @@
 	105 &EmitByte call		( not - invert false to true for conditional jmp ) 
 	&CompileBuf readb 1 &comps! call  (push compileBuf pos on stack)
 	; (emit dummy offset data)
-	b0 &EmitByte call		(note: if not patched, crashes, since 0 is no valid instruction)
-	b0 &EmitByte call
+	0 &EmitByte call		(note: if not patched, crashes, since 0 is no valid instruction)
+	0 &EmitByte call
 	54 &EmitByte call		(rfwd? instruction)
 	ret
 
@@ -344,22 +344,19 @@
 	ret
 
 :ELSE
-	( ### does not work yet ### )
-	( 0 IF X ELSE Y THEN - results in Y, but giving it 1 results in nothing)
+	; (Insert jump to the THEN at end of IF block, if original condition was true)
+	; (But we can not push it on the compile-stack before resolving the first IF fwd jump)
 	
-	(Insert jump to the THEN at end of IF block, if original condition was true)
-	(But we can not push it on the compile-stack before resolving the first IF fwd jump)
+	&CompileBuf readb cpush  		;(a=location of forward jump to THEN)
+	1 0 &EmitNumber call			;(unconditional)
+	0 &EmitByte call			;(jump address)
+	0 &EmitByte call
+	54 &EmitByte call			;(rfwd? instruction)
 	
-	&CompileBuf readb cpush  (a=location of forward jump to THEN)
-	1 0 &EmitNumber call	(unconditional)
-	b0 &EmitByte call	(jump address)
-	b0 &EmitByte call
-	54 &EmitByte call			(rfwd? instruction)
-	
-	(now resolve the IF-not forward jump to this position)
+	;(now resolve the IF-not forward jump to this position)
 	&THEN call
 	
-	(and push a new IF forward jump for location a)
+	;(and push a new IF forward jump for location a)
 	a 1 &comps! call
 	ret
 
