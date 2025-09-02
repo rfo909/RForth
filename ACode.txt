@@ -286,7 +286,6 @@
 
 	(increase stack counter)
 	&CompileStack readb 1 add &CompileStack writeb
-	cr "
 	ret
 	
 
@@ -297,15 +296,15 @@
 	0 cpush						(make variable c available)
 	:*next
 		&CompileStack b 2 mul add 1 add c!	(c=actual read pos)
-		;cr "compile_stack_read_pos=" .str c print
-		;cr "compile_stack_checking_value= .str c @ print
+		;;cr "Compile_stack:_ .str "read_pos=" .str c print
+		;;cr "Compile_stack:_ .str "checking_value= .str c @ print
 
 		c @ 8 >> a eq &*found jmp?
 		b 0 eq &*notFound jmp?		(can count no further down)
 		b 1 sub b!
 		&*next jmp
 	:*emptyStack
-		cr "Compilestack_empty .str
+		cr "Compile_stack:_ .str "empty .str
 		PANIC
 	:*notFound
 		cr "Compile_stack:_ .str 
@@ -326,18 +325,14 @@
 	105 &EmitByte call		( not - invert false to true for conditional jmp ) 
 	&CompileBuf readb 1 &comps! call  (push compileBuf pos on stack)
 	; (emit dummy offset data)
-	0 &EmitByte call		(note: if not patched, crashes, since 0 is no valid instruction)
-	0 &EmitByte call
+	b0 &EmitByte call		(note: if not patched, crashes, since 0 is no valid instruction)
+	b0 &EmitByte call
 	54 &EmitByte call		(rfwd? instruction)
 	ret
 
-:ELSE
-	&CompileBuf readb
-	
 		
-:THEN 			 			( patch forward jump at back address )
-	1 &comps@ call cpush    (a=mark pos) 
-	7 global cpush			(a=mark pos)
+:THEN 			 		( patch forward jump at back address )
+	1 &comps@ call cpush   		(a=mark pos) 
 	&CompileBuf readb cpush		(b=curr pos)
 	b a sub 2 sub cpush   		(c=offset)
 		( 2 sub for the two bytes of the address - the jump is relative to the rfwd? )
@@ -348,8 +343,25 @@
 
 	ret
 
-
-
+:ELSE
+	( ### does not work yet ### )
+	( 0 IF X ELSE Y THEN - results in Y, but giving it 1 results in nothing)
+	
+	(Insert jump to the THEN at end of IF block, if original condition was true)
+	(But we can not push it on the compile-stack before resolving the first IF fwd jump)
+	
+	&CompileBuf readb cpush  (a=location of forward jump to THEN)
+	1 0 &EmitNumber call	(unconditional)
+	b0 &EmitByte call	(jump address)
+	b0 &EmitByte call
+	54 &EmitByte call			(rfwd? instruction)
+	
+	(now resolve the IF-not forward jump to this position)
+	&THEN call
+	
+	(and push a new IF forward jump for location a)
+	a 1 &comps! call
+	ret
 
 
 ;; -----------------------------------------------

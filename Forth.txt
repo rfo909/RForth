@@ -2,10 +2,12 @@
 
 : IF immediate &IF call ;
 : THEN immediate &THEN call ;
+: ELSE immediate &ELSE call ;
 
 
-: t1 0 IF 4 THEN 5 ;
-: t2 1 IF 6 THEN 7 ;
+
+: test 
+	IF 1 ELSE 2 THEN ;
 
 
 
