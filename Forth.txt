@@ -8,19 +8,39 @@
 
 
 
-: test 
-	IF 1 ELSE 2 THEN ;
-
-
+(single loop test - OK)
 : count
 	0 cpush   (a)
 	DO
 		a .
 		a 1 add a!
-		a 1000 lt AGAIN?
+		a 5000 lt AGAIN?
 		
 	;
 
 
+(nested loops test - OK)
+: mult
+	1 cpush (a)
+	1 cpush (b)
+	DO
+		1 b!
+		DO
+			cr a b mul print#
+			b 1 add b!
+			b 10 lt AGAIN?
+			
+		a 1 add a!
+		a 10 lt AGAIN?
+	;
+	
+
+: t0 IF . THEN ;
+
+: t1 
+	IF 1 ELSE 2 THEN ;
+
 #END
+
+
 
