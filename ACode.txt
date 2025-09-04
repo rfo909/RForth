@@ -23,6 +23,20 @@
 #define DIGIT_0		48
 #define DIGIT_9		57
 
+;; use these in the Dictionary only, as they generate raw memory values, not code!
+
+#define NORMAL 		HEX:0000
+#define IMMEDIATE	HEX:0001
+#define INLINE		HEX:0002	;; code pointer is single-byte instruction: "00xx"
+#define DATA		HEX:0003
+
+;; use these in code
+
+#define MODE_NORMAL	0
+#define MODE_IMMEDIATE	1
+#define MODE_INLINE	2
+#define MODE_DATA	3
+
 
 
 :Init	
@@ -226,15 +240,17 @@
 	
 	&IsCompiling readb not &*NotCompiling jmp?
 		;; --- compiling
-		b 1 eq &*callCode jmp?		;; mode==immediate: call CODE
-		b 0 eq &*generateCall jmp?	;; mode==normal: generate call to CODE
-		b 2 eq &*inlineCode jmp?	;; mode==inline: add single instruction to code
+		b MODE_NORMAL    eq &*generateCall jmp?		;; mode==normal: generate call to CODE
+		b MODE_IMMEDIATE eq &*callCode jmp?		;; mode==immediate: call CODE
+		b MODE_INLINE    eq &*inlineCode jmp?		;; mode==inline: add single instruction to code
+		b MODE_DATA      eq &*inlineData jmp?		;; mode=data, push code pointer on stack as is
 		ret
 	:*NotCompiling
 		;; --- interactive		
-		b 0 eq &*callCode jmp?		;; mode==normal, call the code
-		b 2 eq &*callInline jmp?	;; mode==inline, execute that instruction
-		b 1 eq &*callCode jmp?		;; mode==immediate, call the code
+		b MODE_NORMAL    eq &*callCode jmp?		;; mode==normal, call the code
+		b MODE_IMMEDIATE eq &*callCode jmp?		;; mode==immediate, call the code
+		b MODE_INLINE    eq &*callInline jmp?		;; mode==inline, execute that instruction
+		b MODE_DATA      eq &*executeData jmp?
 
 		ret
 		
@@ -265,6 +281,15 @@
 		;;"ret &EmitOp call
 		0x52 &EmitByte call  		;; add "R" = ret
 		&CompileBuf 1 add call    	;; invoke CompileBuf offset 1 (as byte 0 is the length)
+		ret
+	:*inlineData
+		;; Data word, push code pointer value to stack
+		;; Data words are static, so generating code is ok. For variables, this
+		;; value is typically a memory reference!
+		a 0 &EmitNumber call
+		ret
+	:*executeData
+		a
 		ret
 
 ; -------------------------------------------
@@ -424,6 +449,9 @@
 		&NextWord .str
 		&ResetCompile call
 		PANIC
+
+
+
 		
 :SEMICOLON
 	;; verify compile mode
@@ -492,6 +520,49 @@
 		"No_symbol_defined_for_word .str
 		PANIC
 	
+(variables are memory areas pointed to by named constants)
+(constants are words, stored in the code fielf of the dictionary entry)
+(and recognized via the mode field = DATA)
+
+:CONSTANT (value -- dictionaryentry)
+	cpush						(a=value)
+
+	&GetNextWord call
+	
+	;; allocate dictionary entry
+	HERE cpush					;; b=dictEntry
+	&NextWord readb 1 add				;; length of symbol
+		wordsize 3 mul add			;; code pointer, flags, next
+			allot
+
+	;; copy symbol
+	&NextWord					;; src
+		b					;; target
+			&NextWord readb 1 add		;; byte count
+				memcpy
+	
+	;; write value into code pointer field
+	a						(value)
+		b dup readb add 1 add			(target address)
+			!
+	
+	
+	;; write DATA into mode
+	MODE_DATA
+		b dup readb add 1 add wordsize add		(target address)
+			!
+			
+	;; location of next pointer
+	b dup readb add 1 add wordsize dup add add cpush		(c=next field)
+	
+	;; write next pointer
+	&DictionaryHead @ c !
+
+	;; update DictionaryHead
+	b &DictionaryHead !
+
+	ret
+		
 :immediate
 	;; change the IsCompilingWordMode to immediate
 	1 &IsCompilingWordMode writeb
@@ -525,11 +596,6 @@
 ;;
 ;; Next=0 means terminated
 
-;; use these in the Dictionary only, as they generate raw memory values, not code!
-
-#define NORMAL 		HEX:0000
-#define IMMEDIATE	HEX:0001
-#define INLINE		HEX:0002	;; code pointer is single-byte instruction: "00xx"
 
 ;; Note that the dictionary is protected (appears before the :PROTECT tag), because it is
 ;; a readonly structure. It can still be extended by adding new words that point to it, in

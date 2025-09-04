@@ -7,6 +7,26 @@
 : AGAIN? immediate &AGAIN? call ;
 
 
+(Use: 55 CONSTANT xx)
+(Defines word XX which either puts value on stack or generates code to put value on the stack)
+( -- )
+: CONSTANT 
+	&CONSTANT call   (not immediate)
+	; 
+
+(Use: 55 VARIABLE xx)
+(then read and write it as a pointer)
+( xx @ )
+( newValue xx ! )
+( -- )
+: VARIABLE
+	cpush    		(a=value) 
+	HERE cpush 		(b=pointer)
+	wordsize allot 
+	a b !			(save value) 
+	b CONSTANT 		(create word for the pointer)
+	;
+
 
 (single loop test - OK)
 : count
