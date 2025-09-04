@@ -3,27 +3,15 @@ Forth never ceases to fascinate !
 
 Version 3 (alpha)
 
-2025-08-31 Tag lookup
----------------------
-Forth code can look up data and functions by tag, typically &CompileBuf as well as &GetNextWord. 
 
-2025-08-31 IF THEN
-------------------
-A milestone. Got IF and THEN implemented in Forth. It is kind of messy, doesn't handle
-nesting yet, and no ELSE, but it works, written as IMMEDIATE words, mostly implemented
-in "assembly". 
 
-Underways, I invented two instructions, for jumps inside words, rfwd? and rback? conditional
-relative jumps. These make the compiled code relocatable, as I found it practical to always compile
-to a static CompileBuf, then move the code to a custom length allocated buffer when compilation
-succeeds, at which time we create the dictionary entry.
 
-From there on the code can not be relocated, since additional words calling the word in question
-do so by direct addressing, for speed and simplicity.
+
+
 
 
 Introduction
--------------
+=============
 I'm designing a virtual machine instruction set, stack based. This means many instructions are
 quite similar to Forth primitives. On top of this runs a REPL which implements some Forth
 words like COLON and SEMICOLON.
@@ -35,6 +23,79 @@ instead of a C interpreter.
 
 Realizing how little low level code is required to bring up a REPL has been great fun! The 
 Forth way of extending the compiler is really clever!
+
+Design decision - byte code
+---------------------------
+In order to make the interpreter as simple as possible, like using an array with function pointers
+in C, all instructions are a single byte. Number literals, like addresses of functions, are 
+represented using a scheme as follows:
+
+First off, all non-number opcodes stay below 127, and so far all are printable, which makes
+stuff more readable (range 33-127 to be exact). To represent numeric values, the high bit
+is set to 1, and the second highest bit is set to 1 to indicate pushing a zero to the stack. If not, 
+we assume there is a value on the stack to work with. That value is multiplied by 64, before adding the 
+value of the last 6 bits (0-63).
+
+```
+Example 1
+---------
+0xC1 = 1100 0001 
+
+Push 0 to stack
+Multiply it by 64 and add 1
+
+Result 1
+
+Example 2
+---------
+0xFF = 1111 1111
+
+Push 0 to the stack
+Multiply it by 65 and add 63
+
+Result 63
+
+Example 3
+---------
+
+0xC1 0x82
+
+0xC1 = 1100 0001
+
+Push 0 to stack
+Multiply by 64 and add 1
+
+0x82 = 1000 0010
+Multiply by 64 and add 2
+
+Result 66
+```
+
+For global jumps, addresses are encoded as 3 bytes, or 18 bits. The word size (traditionally called "cells" in Forth) is two bytes.
+
+For jumps inside words, offsets are encoded as 2 bytes, or 12 bits, since max length of compiled words is limited
+to 256. Really, one byte would do (max offset 63). 
+
+
+
+Design decisions - heap / jumps inside words
+--------------------------------------------
+I employ a bit if memory protection, to catch stray pointers. The base code and memory layout
+in ACode.txt contains a tag :PROTECT that prevents writes to addresses below that point, currently
+implemented in the Interpreter.
+
+There is also a check against the HERE value, preventing memory access above it. This means
+data has to be allot'ed before use. This meant I had to use a static compile buffer
+between the PROTECT and the end of allocated memory (HERE). This in turn led me to
+make code relocatable, because once a word is compiled, the code to be copied to permanent
+storage created with allot, and without internal jumps going wild. So I created two conditional
+relative offset jumps, moving forward or backward, since the base code works only with
+unsigned values.
+
+Getting the IF-THEN and ELSE to work with these was a bit fiddly, because patching a number into
+the compile buffer must take into account that it is two bytes long, and that the actual jump
+instruction rfwd? or rback? is the base which the offset is applied to.
+
 
 
 Assembler and interpreter
@@ -48,32 +109,32 @@ I also created an Interpreter in CFT, with various options for inspecting
 data structures etc.
 
 The interpreter is growing in complexity, and it is also relatively slow,
-chewing through 10k assembly instructions per second on my laptop. 
+chewing through 5-10k assembly instructions per second on my laptop. 
 
 That may sound a lot, but with assembly code doing the whole REPL, interpreter and
-compiler, and dictionary lookups, resulting speed is slow. Compiling
-about 1k of Forth source involves executing 60+K instructions ...
+compiler, and dictionary lookups, compilation speed is slow.
 
 Speed?
 ------
 A real microcontroller doing perhaps 100 instructions per simulated assembly
-instruction, running at 133 MHz (Pi Pico), at 1 instruction per clock, should
-result in a throughput of 1.3 M instructions per second, or about 100 times the
+instruction, running at 80 MHz (Pi Pico), at 1 instruction per clock, should
+result in a throughput of 800 K instructions per second, or about 80-160 times the
 speed of my CFT interpreter.
 
-Compiling code is the hardest work, due to the dictionary traversals, so hopefully
-it will be enough for doing actual work on a microcontroller.
+Compiling code is the hardest work, due to the dictionary traversals, but when
+running a tight iteration, it counts and prints values 0-5000 in about 10-12 seconds.
 
-Running a simple test using IF THEN requires about 500 instructions. Realistically
-this simple piece of code should be well below one millisecond. With 1.3 M instr/sec
-those 500 should take about 0.3 millis.
 
 ```
-: t2 ( cond -- 32 or 32,63...)
-	IF 32 THEN 63 ;
-	
-1 t2
+: count
+	0 cpush   (set local variable a)
+	DO
+		a .
+		a 1 add a!
+		a 5000 lt AGAIN?
+	;
 ```
+
 
 Memory map
 ----------
@@ -84,37 +145,9 @@ primitive, as it should be.
 But it also contains notation for allocating static structures (non code).
 
 
-A journey ...
--------------
-
-Writing code, rewriting, pondering, reading and learning ...
-
-The "assembly" level code for the system is in the ACode.txt file, and it has
-been over a few revisions after starting version 3 of RForth. After defining
-the assembly instructions, I needed some time learning how to do things
-in that language, which is QUITE similar to Forth.
-
-It became clear to me that there is no big distinction between the compile
-loop and the interpret loop. Most of the code deals with recognizing numbers,
-isolating words, and traversing the dictionary, looking up words. The difference
-is then to either create code for a call, or do the call. Same with numbers,
-create code that when run puts the number on the stack, or just put it on the
-stack right now. 
-
-Creating and experiencing IMMEDIATE words has been very much fun!
-
-Words have three states, registered in the dictionary:
-
-- NORMAL: invoked in interactive mode, have calls to them generated in compile mode
-- IMMEDIATE: invoked in compile mode, have no meaning interactively??
-- INLINE: like normal, but the code pointer field is used to contain a single instruction, 
-	not a subroutine pointer, from where we expect
-	to be returned by a call to "ret".
-
- 	
-
 Levels of code
 --------------
+
 The project results in code at three different levels. 
 
 - At the bottom there is the simulated CPU that runs a very Forth-like set of instructions. This is the Interpreter.
@@ -123,6 +156,7 @@ The project results in code at three different levels.
 
 The Forth language has access to most of the "assembly" level instructions as well as all 
 functions and data defined in ACode by tag lookups like &CompileBuf etc.
+
 
 Local variables
 ---------------
@@ -157,6 +191,74 @@ the top level Forth code.
 
 
 
+2025-08-31 IF THEN
+------------------
+A milestone. Got IF and THEN implemented in Forth. It is kind of messy, doesn't handle
+nesting yet, and no ELSE, but it works, written as IMMEDIATE words, mostly implemented
+in "assembly". 
+
+Underways, I invented two instructions, for jumps inside words, rfwd? and rback? conditional
+relative jumps. These make the compiled code relocatable, as I found it practical to always compile
+to a static CompileBuf, then move the code to a custom length allocated buffer when compilation
+succeeds, at which time we create the dictionary entry.
+
+From there on the code can not be relocated, since additional words calling the word in question
+do so by direct addressing, for speed and simplicity.
+
+
+2025-08-31 Tag lookup
+---------------------
+Forth code can look up data and functions in ACode.txt by tag, typically &CompileBuf as well as &GetNextWord. 
+
+
+
+2025-09-03 ELSE, DO and AGAIN?
+------------------------------
+Implemented a compile stack in ACode.txt, and got ELSE up together with IF and THEN modified to
+use the stack. Also implemented the loop construct DO ... (bool) AGAIN?
+
+Nested loops works fine, as do nested conditionals. 
+
+
+
+2025-09-04 CONSTANT and VARIABLE
+--------------------------------
+Variables are constants pointing to single word size memory blocks allotted by the VARIABLE word. To
+store bigger structures, manually allot the memory, and store the pointer to that memory as a constant.
+
+```
+55 CONSTANT x
+55 VARIABLE y
+
+y @ .      (prints 55)
+99 y !     (changes variable value)
+```
+
+The Dictionary Entry format is unchanged, and currently eliminates the implementation of the DOES> word
+of Forth, since I reuse the code pointer for data. Each word has a mode, and currently there are four
+different modes:
+
+- NORMAL
+- IMMEDIATE
+- INLINE		(code pointer is a single byte instruction)
+- DATA			(code pointer is a constant data value)
+
+
+The format is as follows:
+
+- symbolLength: 1 byte
+- symbolData: ...
+- codePointer: word (2 bytes)
+- mode: word (2 bytes)
+- next: word (2 bytes)
+
+The dictionary is a linked list, and the top is stored in statically allocated location &DictionaryHead 
+defined in ACode.txt
+
+ 
+
+References
+----------
 
 - [Instruction set](InstructionSet.md) for regular opcodes 33-127
 

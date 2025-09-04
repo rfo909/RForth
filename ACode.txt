@@ -1,9 +1,33 @@
 ;; This file implements a state machine for the REPL and compiler.
 ;;
 ;; The data stack is already defined, as this "pretend assembly" exists on
-;; a virtual stack machine. The return stack also exists, and there are
-;; instructions call and ret which use it. The state machine that follows
-;; only uses jumps.
+;; a virtual stack machine. The call stack also exists, and there are
+;; instructions call and ret which use it. 
+;;
+;; Tags
+;; ----
+;;
+;; This file is both code, data and initial memory map or the Forth REPL
+;; and compiler / interpreter. Tags are defined at two levels, global and
+;; local. Global tags are denoted
+;;
+;;  :Something
+;;
+;; They can only be defined once, but may be referred multiple times from anywhere, 
+;; as &Something.
+;;
+;; Local tags exist between global tags, and are seen as extensions of the previous
+;; global tag. They are used to do conditional and other jumps inside functions,
+;; without polluting global tag space. They are written as
+;;
+;;  :*Something
+;;
+;; To address them, use &*Something
+;;
+;; The compiler automatically handles patching of forward references to tags.
+;; 
+;; Data fields
+;; -----------
 ;;
 ;; Towards the end follows the data fields. Using the following notation to
 ;; create placeholders and values in memory:
@@ -15,27 +39,28 @@
 ;;  b0           - generates a null byte, shortcut for HEX:00
 ;;  w0           - generates a null word, shortcut for HEX:0000
 ;;
-;; Note tags must be defined earlier in the file, as the %tag references are not
-;; part of the resolve scheme implemented in NumberTable
+;; Note tags to be referred via %tag must be defined earlier in the file, as %tag references
+;; are not part of the resolve scheme implemented in NumberTable
 
 ;; ------------ top of file ----------
 
 #define DIGIT_0		48
 #define DIGIT_9		57
 
-;; use these in the Dictionary only, as they generate raw memory values, not code!
-
-#define NORMAL 		HEX:0000
-#define IMMEDIATE	HEX:0001
-#define INLINE		HEX:0002	;; code pointer is single-byte instruction: "00xx"
-#define DATA		HEX:0003
-
 ;; use these in code
 
 #define MODE_NORMAL	0
 #define MODE_IMMEDIATE	1
-#define MODE_INLINE	2
-#define MODE_DATA	3
+#define MODE_INLINE	2	;; code pointer is single-byte instruction: "00xx"
+#define MODE_DATA	3	;; code pointer is constant word to be pushed on stack
+
+
+;; use these in the Dictionary only, as they generate raw memory values, which is not valid code!
+
+#define NORMAL 		HEX:0000
+#define IMMEDIATE	HEX:0001
+#define INLINE		HEX:0002
+#define DATA		HEX:0003
 
 
 

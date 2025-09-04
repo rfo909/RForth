@@ -138,6 +138,8 @@
 	| _.sort->x
 		dict=x.data
 		report(dict.name, dict.desc)
+	| _=>rows
+	Lib:ShowRows(rows,null,false)
 /IDoc
 
 # Generate numeric values for instructions

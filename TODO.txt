@@ -3,33 +3,7 @@
 TODO
 ----
 
-Compile stack 
-	- must not require balanced lookups
-	
-	DO ... (cond) IF BREAK THEN... AGAIN
-	
-	DO pushes an address marked with DO
-	BREAK pushes a jump marked with BREAK
-	AGAIN pushes a back-jump to the DO tag, then updates the BREAK jump to current offset
-	
-	The THEN resolves the IF, not the BREAK forward jump. 
-	AGAIN resolves both itself by looking up DO and then resolves BREAK forward jump.
-	At compile time!
-
-	The addresses or the patch locations to be pushed must be tagged with type (1 byte) like
-	
-		IF		(push address of forward jump from IF or ELSE to THEN)
-		DO		(push current address, picked up by AGAIN)
-		BREAK	(push address of forward jump, resolved by AGAIN)
-		
-		
-	When compiling an AGAIN
-
-
-CREATE
-	- &GetNextWord call
-ELSE
-
+Make the interpreter a bit more robust with regards to errors
 
 
 Make abstract devices for
