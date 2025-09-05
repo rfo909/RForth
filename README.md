@@ -3,21 +3,31 @@ Forth never ceases to fascinate !
 
 Version 3 (alpha)
 
-
+2025-09-05
 
 Introduction
 =============
 I'm designing a virtual machine instruction set, stack based. This means many instructions are
 quite similar to Forth primitives. On top of this runs a REPL which implements some Forth
-words like COLON and SEMICOLON.
+words like COLON, SEMICOLON, IF, THEN, ELSE, CONSTANT and VARIABLE.
 
 The point of this whole project is just to have fun. Although I intend writing C code for
 the Pi Pico, that is as of yet not a high priority. Experiencing how to get a Forth REPL
 up and running from simulated bare metal may just as well pave the way for doing ARM assembly
 instead of a C interpreter.
 
-Realizing how little low level code is required to bring up a REPL has been great fun! The 
-Forth way of extending the compiler is really clever!
+Realizing how little low level code is required to bring up a REPL and a compiler, has been great
+fun! The Forth way of extending the compiler, by using immediate words, is really clever!
+
+Design decision - word size 2 bytes
+-----------------------------------
+To keep code fairly small, the core of the language operates with 2 bytes word size. All stacks
+store word size values, while the byte code instructions are single byte sized. 
+
+To address physical memory, flash, devices, registers on the Pi Pico, which has 32 bits word
+length, we might combine two RForth words to form a base and add an offset to that to address
+bytes or words. The actual workings of interfacing hardware will have to be resolved later.
+
 
 Design decision - byte code
 ---------------------------
@@ -67,10 +77,10 @@ Result 66
 ```
 
 For global jumps, addresses are encoded as 3 bytes, or 18 bits. The word size (traditionally 
-called "cells" in Forth) is two bytes.
+called "cells" in Forth) is two bytes, which allows for addressing 64k of memory. 
 
-For jumps inside words, offsets are encoded as a single byte, or 6 bits, which allows max movement
-forward or back to be 63 positions.
+For jumps inside words, we use relative offsets, for forward and back movements, and those are encoded as a single
+byte, which allows a max jump length of 63 positions.
 
 
 
@@ -81,10 +91,12 @@ in ACode.txt contains a tag :PROTECT that prevents writes to addresses below tha
 enforced in the Interpreter.
 
 There is also a check against the HERE value, preventing any memory access above it. This means
-data has to be allot'ed before use. This meant I had to use a static compile buffer
-between the PROTECT and the end of allocated memory (HERE). This in turn led me to
+data has to be allot'ed before use. I decided to keep using a fixed compile buffer which is
+statically allocated after the PROTECT tag. 
+
+This in turn led me to
 make code relocatable, because once a word is compiled, the code to be copied to permanent
-storage created with allot, and without internal jumps going wild. So I created two conditional
+storage created with allot. This meant internal jumps could not be absolute. So I created two conditional
 relative offset jumps, moving forward or backward, since the base code works only with
 unsigned values.
 
@@ -94,6 +106,14 @@ The compile stack
 A simple word sized compile stack is statically allocated in ACode.txt. Each word
 pushed contains a type in the first byte and an absolute location within the compile
 buffer in the second. The compile buffer is limited to 255 instructions.
+
+This allows both nesting and recognition of different types, so that if we were to 
+allow complex structures like LOOP  (bool) IF BREAK THEN ... ENDLOOP then the 
+compile stack can support it, using different type identifiers to lookup
+different stuff. 
+
+The THEN looks up the conditional forward jump produced by IF, without mixing it up with
+the at that point still unresolved BREAK forward jump, etc.
 
 
 
@@ -108,7 +128,7 @@ I also created an Interpreter in CFT, with various options for inspecting
 data structures etc.
 
 The interpreter is growing in complexity, and it is also relatively slow,
-chewing through 5-10k assembly instructions per second on my laptop. 
+chewing through 5-10k Fdirecassembly instructions per second on my laptop. 
 
 That may sound a lot, but with assembly code doing the whole REPL, interpreter and
 compiler, and dictionary lookups, compilation speed is slow.
@@ -147,8 +167,8 @@ pi pi mul .      (251 ms)
 x			(28 ms)
 ```
 
-Running compiled code is MUCH faster than compiling, and also that interpreting, because
-of directory traversals. Most of the 251 ms is spend looking up the "mul" assembly instruction,
+Running compiled code is MUCH faster than compiling, and also than interpreting, because
+of dictionary traversals. Most of the 251 ms is spent looking up the "mul" assembly instruction,
 because if we eliminate it, we get
 
 ```
@@ -178,10 +198,13 @@ The project results in code at three different levels.
 - Then there is the "assembly" language, which is represented by ACode.txt. It is translated to byte format by the Assembler.
 - And on top, there is the Forth language, read and processed by the REPL written in ACode.txt. 
 
-The initial Forth code is found in Forth.txt
+Separating the "assembly" level from Forth is perhaps not so relevant, since the two mix and mingle pretty tight.
+
+The initial Forth code is found in Forth.txt, piped as input to the REPL before user input.
+
 
 The Forth language has access to most of the "assembly" level instructions as well as all 
-functions and data defined in ACode by tag lookups like &CompileBuf etc.
+functions and data defined in ACode via tag lookups like &CompileBuf etc.
 
 
 Local variables

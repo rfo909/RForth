@@ -628,7 +628,7 @@
 	
 	Inner{
 		dict.numberTable.getTagListSorted->tag
-			report(tag,numberTable.getTagAddress(tag).hex(4))
+			report(tag,numberTable.getTagAddress(tag).hex(4), numberTable.getTagAddress(tag))
 		| _=>rows
 		Lib:ShowRows(rows, null, false)
 	}
