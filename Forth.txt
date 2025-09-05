@@ -1,18 +1,6 @@
 : . cr print# ;
 
-: IF immediate &IF call ;
-: THEN immediate &THEN call ;
-: ELSE immediate &ELSE call ;
-: DO immediate &DO call ;
-: AGAIN? immediate &AGAIN? call ;
 
-
-(Use: 55 CONSTANT xx)
-(Defines word XX which either puts value on stack or generates code to put value on the stack)
-( -- )
-: CONSTANT 
-	&CONSTANT call   (not immediate)
-	; 
 
 (Use: 55 VARIABLE xx)
 (then read and write it as a pointer)
@@ -54,10 +42,6 @@
 	;
 	
 
-: t0 IF . THEN ;
-
-: t1 
-	IF 1 ELSE 2 THEN ;
 
 #END
 

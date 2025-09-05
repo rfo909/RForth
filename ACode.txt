@@ -52,7 +52,7 @@
 #define MODE_NORMAL	0
 #define MODE_IMMEDIATE	1
 #define MODE_INLINE	2	;; code pointer is single-byte instruction: "00xx"
-#define MODE_DATA	3	;; code pointer is constant word to be pushed on stack
+#define MODE_CONSTANT	3	;; code pointer is constant word to be pushed on stack
 
 
 ;; use these in the Dictionary only, as they generate raw memory values, which is not valid code!
@@ -60,7 +60,7 @@
 #define NORMAL 		HEX:0000
 #define IMMEDIATE	HEX:0001
 #define INLINE		HEX:0002
-#define DATA		HEX:0003
+#define CONSTANT		HEX:0003
 
 
 
@@ -268,14 +268,14 @@
 		b MODE_NORMAL    eq &*generateCall jmp?		;; mode==normal: generate call to CODE
 		b MODE_IMMEDIATE eq &*callCode jmp?		;; mode==immediate: call CODE
 		b MODE_INLINE    eq &*inlineCode jmp?		;; mode==inline: add single instruction to code
-		b MODE_DATA      eq &*inlineData jmp?		;; mode=data, push code pointer on stack as is
+		b MODE_CONSTANT      eq &*inlineData jmp?		;; mode=data, push code pointer on stack as is
 		ret
 	:*NotCompiling
 		;; --- interactive		
 		b MODE_NORMAL    eq &*callCode jmp?		;; mode==normal, call the code
 		b MODE_IMMEDIATE eq &*callCode jmp?		;; mode==immediate, call the code
 		b MODE_INLINE    eq &*callInline jmp?		;; mode==inline, execute that instruction
-		b MODE_DATA      eq &*executeData jmp?
+		b MODE_CONSTANT      eq &*executeData jmp?
 
 		ret
 		
@@ -547,7 +547,7 @@
 	
 (variables are memory areas pointed to by named constants)
 (constants are words, stored in the code fielf of the dictionary entry)
-(and recognized via the mode field = DATA)
+(and recognized via the mode field = CONSTANT)
 
 :CONSTANT (value -- dictionaryentry)
 	cpush						(a=value)
@@ -572,8 +572,8 @@
 			!
 	
 	
-	;; write DATA into mode
-	MODE_DATA
+	;; write CONSTANT into mode
+	MODE_CONSTANT
 		b dup readb add 1 add wordsize add		(target address)
 			!
 			
@@ -701,13 +701,19 @@
 
 
 
-
 	;; ----------------------------------------------------------
 	
-	%'words		%Words		NORMAL		%NEXT
+	%'IF		%IF		IMMEDIATE	%NEXT
+	%'THEN		%THEN		IMMEDIATE	%NEXT
+	%'ELSE		%ELSE		IMMEDIATE	%NEXT
+	%'DO		%DO		IMMEDIATE	%NEXT
+	%'AGAIN?	%AGAIN?		IMMEDIATE	%NEXT
+	%'CONSTANT	%CONSTANT	NORMAL		%NEXT
+	
+	%'?		%Words		NORMAL		%NEXT
 	%':		%COLON		NORMAL		%NEXT
 	HEX:013B	%SEMICOLON	IMMEDIATE	%NEXT
-	%'immediate	%immediate	IMMEDIATE	w0	;; <-- w0 = terminating the linked list
+	%'IMMEDIATE	%immediate	IMMEDIATE	w0	;; <-- w0 = terminating the linked list
 :DictionaryEnd
 
 :PROTECT		;; protects data before this point against writes - reads are allowed
