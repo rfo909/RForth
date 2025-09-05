@@ -369,27 +369,39 @@
 ; CompileStack types
 ;
 ; IF = 1
+
+
+; CompileStack types
+
+#define COMPS_TYPE_IF		0 
+#define COMPS_TYPE_DO		1
+
+;; NOTE: using single byte relative offsets, which with the number encoding scheme
+;; means max relative fwd/back is 63 locations. That should be enough for most 
+;; FORTH words
+
  
 
 :IF 
 	105 &EmitByte call		( not - invert false to true for conditional jmp ) 
-	&CompileBuf readb 1 &comps! call  (push compileBuf pos on stack)
+	&CompileBuf readb COMPS_TYPE_IF &comps! call  (push compileBuf pos on stack)
 	; (emit dummy offset data)
 	0 &EmitByte call		(note: if not patched, crashes, since 0 is no valid instruction)
-	0 &EmitByte call
 	54 &EmitByte call		(rfwd? instruction)
 	ret
 
 		
 :THEN 			 		( patch forward jump at back address )
-	1 &comps@ call cpush   		(a=mark pos) 
+	COMPS_TYPE_IF &comps@ call cpush   		(a=mark pos) 
 	&CompileBuf readb cpush		(b=curr pos)
-	b a sub 2 sub cpush   		(c=offset)
-		( 2 sub for the two bytes of the address - the jump is relative to the rfwd? )
+	b a sub 1 sub cpush   		(c=offset)
+		( 1 sub for the offset byte - the jump is relative to the rfwd? )
 
+	(patch the IF forward jump)
 	c
 		&CompileBuf 1 add a add   (write pos)
-			2 n2code
+			1 n2code	( handles values 0-63 only)
+			(don't update buffer count, since this is a patch at an earlier location)
 			
 	ret
 
@@ -399,38 +411,37 @@
 	
 	1 0 &EmitNumber call			;(unconditional)
 	&CompileBuf readb cpush  		;(a=location of forward jump to THEN)
-	0 &EmitByte call			;(jump address)
 	0 &EmitByte call
 	54 &EmitByte call			;(rfwd? instruction)
 	
 	;(now resolve the IF-not forward jump to this position)
 	&THEN call
 	
-	;(and push a new IF forward jump for location a)
-	a 1 &comps! call
+	;(and push a new IF forward jump for location a, to be processed by THEN)
+	a COMPS_TYPE_IF &comps! call
 	ret
 
 
 :DO
 	( store current pos in CompileBuf as type 2 on compile stack )
 	
-	&CompileBuf readb 2 &comps! call		( push repeat address as type 2 )
+	&CompileBuf readb COMPS_TYPE_DO &comps! call		( push repeat address as type 2 )
 	ret
 	
 :AGAIN?
 	&CompileBuf readb cpush		(a=curr pos in compilebuf)
 	
 	a
-		2 &comps@ call sub
-		2 add 				(compensate for two bytes of relative jump address below)
+		COMPS_TYPE_DO &comps@ call sub
+		1 add 				(compensate for one bytes of relative jump address below)
 			cpush			(b=back jump count from rback?)
 
 	b 
 		&CompileBuf a add 1 add		(write position)
-			2 n2code		
+			1 n2code		
 
 	(update compile-buf length as n2code doesn't know where it writes output)
-	&CompileBuf readb 2 add &CompileBuf writeb
+	&CompileBuf readb 1 add &CompileBuf writeb
 
 	55 &EmitByte call			(rback?)
 	ret

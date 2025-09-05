@@ -5,11 +5,6 @@ Version 3 (alpha)
 
 
 
-
-
-
-
-
 Introduction
 =============
 I'm designing a virtual machine instruction set, stack based. This means many instructions are
@@ -51,7 +46,7 @@ Example 2
 0xFF = 1111 1111
 
 Push 0 to the stack
-Multiply it by 65 and add 63
+Multiply it by 64 and add 63
 
 Result 63
 
@@ -66,15 +61,16 @@ Push 0 to stack
 Multiply by 64 and add 1
 
 0x82 = 1000 0010
-Multiply by 64 and add 2
+Multiply value on stack by 64 and add 2
 
 Result 66
 ```
 
-For global jumps, addresses are encoded as 3 bytes, or 18 bits. The word size (traditionally called "cells" in Forth) is two bytes.
+For global jumps, addresses are encoded as 3 bytes, or 18 bits. The word size (traditionally 
+called "cells" in Forth) is two bytes.
 
-For jumps inside words, offsets are encoded as 2 bytes, or 12 bits, since max length of compiled words is limited
-to 256. Really, one byte would do (max offset 63). 
+For jumps inside words, offsets are encoded as a single byte, or 6 bits, which allows max movement
+forward or back to be 63 positions.
 
 
 
@@ -82,9 +78,9 @@ Design decisions - heap / jumps inside words
 --------------------------------------------
 I employ a bit if memory protection, to catch stray pointers. The base code and memory layout
 in ACode.txt contains a tag :PROTECT that prevents writes to addresses below that point, currently
-implemented in the Interpreter.
+enforced in the Interpreter.
 
-There is also a check against the HERE value, preventing memory access above it. This means
+There is also a check against the HERE value, preventing any memory access above it. This means
 data has to be allot'ed before use. This meant I had to use a static compile buffer
 between the PROTECT and the end of allocated memory (HERE). This in turn led me to
 make code relocatable, because once a word is compiled, the code to be copied to permanent
@@ -92,9 +88,12 @@ storage created with allot, and without internal jumps going wild. So I created 
 relative offset jumps, moving forward or backward, since the base code works only with
 unsigned values.
 
-Getting the IF-THEN and ELSE to work with these was a bit fiddly, because patching a number into
-the compile buffer must take into account that it is two bytes long, and that the actual jump
-instruction rfwd? or rback? is the base which the offset is applied to.
+
+The compile stack
+-----------------
+A simple word sized compile stack is statically allocated in ACode.txt. Each word
+pushed contains a type in the first byte and an absolute location within the compile
+buffer in the second. The compile buffer is limited to 255 instructions.
 
 
 
@@ -135,6 +134,31 @@ running a tight iteration, it counts and prints values 0-5000 in about 10-12 sec
 	;
 ```
 
+Another example:
+
+```
+3 CONSTANT pi
+ok
+
+pi pi mul .      (251 ms)
+
+: x pi pi mul . ;   (817 ms)
+
+x			(28 ms)
+```
+
+Running compiled code is MUCH faster than compiling, and also that interpreting, because
+of directory traversals. Most of the 251 ms is spend looking up the "mul" assembly instruction,
+because if we eliminate it, we get
+
+```
+pi .           (71 ms)
+
+: x pi . ;
+
+x              (28 ms)
+```
+
 
 Memory map
 ----------
@@ -151,8 +175,10 @@ Levels of code
 The project results in code at three different levels. 
 
 - At the bottom there is the simulated CPU that runs a very Forth-like set of instructions. This is the Interpreter.
-- Then there is the "assembly" language, which is represented by ACode.txt
-- And on top, there is the Forth language. The initial Forth code is found in Forth.txt
+- Then there is the "assembly" language, which is represented by ACode.txt. It is translated to byte format by the Assembler.
+- And on top, there is the Forth language, read and processed by the REPL written in ACode.txt. 
+
+The initial Forth code is found in Forth.txt
 
 The Forth language has access to most of the "assembly" level instructions as well as all 
 functions and data defined in ACode by tag lookups like &CompileBuf etc.
@@ -244,6 +270,9 @@ different modes:
 - DATA			(code pointer is a constant data value)
 
 
+Dictionary entry format
+-----------------------
+
 The format is as follows:
 
 - symbolLength: 1 byte
@@ -253,7 +282,12 @@ The format is as follows:
 - next: word (2 bytes)
 
 The dictionary is a linked list, and the top is stored in statically allocated location &DictionaryHead 
-defined in ACode.txt
+defined in ACode.txt, which is readable from Forth by
+
+```
+&DictionaryHead @
+```
+
 
  
 
