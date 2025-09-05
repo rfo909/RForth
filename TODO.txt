@@ -3,7 +3,19 @@
 TODO
 ----
 
+Implement 'somestring and "some_string as in the underlying ACode
+Extend NextWord buffer
+Make symbol table for storing strings
+
+Eliminate the symbol Assembler symbol table and store and make strings a "soft" feature in ACode instead of an Assembler feature
+	Can them eliminate the sym2str instruction
+
 Make the interpreter a bit more robust with regards to errors
+
+Consider using faster dictionary lookup at runtime (when compiling words) for the INLINE class of single byte instructions
+which make up most of the dictionary.
+
+Consider "soft" dictionaries as data objects pushed on system dictionary? Everything is possible at the Forth level!
 
 
 Make abstract devices for
