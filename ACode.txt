@@ -208,7 +208,7 @@
 	a 
 		c 
 			b
-				n2code 				;; returns number of bytes generated
+				n2code 			;; returns number of bytes generated
 		
 	;; update CompileBuf length
 	&CompileBuf readb
@@ -324,9 +324,9 @@
 ; Note type=0 is used to invalidate matched values from the stack
 
 :comps! ( pos type -- )			( p=requires pos parameter )
-	8 << 					(type is high byte) 
-	orb                 	(pos is low byte)
-		cpush				(a=data word)
+	8 << 				(type is high byte) 
+	orb        	         	(pos is low byte)
+		cpush			(a=data word)
 
 	&CompileStack readb wordsize mul 1 add
 		&CompileStack add 
@@ -342,10 +342,13 @@
 :comps@ ;; (type -- offset)
 	cpush						(a=type)
 	&CompileStack readb 0 eq &*emptyStack jmp?
-	&CompileStack readb 1 sub cpush		(b=stack pos index for counting down)
+	&CompileStack readb 1 sub cpush			(b=stack pos index for counting down)
 	0 cpush						(make variable c available)
+	
 	:*next
-		&CompileStack b 2 mul add 1 add c!	(c=actual read pos)
+		&CompileStack 
+			b wordsize mul add 
+				1 add c!		(c=actual read pos)
 		;;cr "Compile_stack:_ .str "read_pos=" .str c print
 		;;cr "Compile_stack:_ .str "checking_value= .str c @ print
 
@@ -363,13 +366,13 @@
 		PANIC
 	:*found
 		c @ 255 andb		( return value )
-		0 c writeb			( overwrite the entry so it can't match again )
+		0 c writeb			( overwrite the type entry so it can't match again )
 		ret
 
 ; CompileStack types
 ;
-; IF = 1
-
+; IF = 0
+; DO = 1
 
 ; CompileStack types
 
@@ -384,7 +387,9 @@
 
 :IF 
 	105 &EmitByte call		( not - invert false to true for conditional jmp ) 
-	&CompileBuf readb COMPS_TYPE_IF &comps! call  (push compileBuf pos on stack)
+	&CompileBuf readb 
+		COMPS_TYPE_IF 
+			&comps! call	(push compileBuf pos on stack)
 	; (emit dummy offset data)
 	0 &EmitByte call		(note: if not patched, crashes, since 0 is no valid instruction)
 	54 &EmitByte call		(rfwd? instruction)
@@ -392,15 +397,17 @@
 
 		
 :THEN 			 		( patch forward jump at back address )
-	COMPS_TYPE_IF &comps@ call cpush   		(a=mark pos) 
+	COMPS_TYPE_IF 
+		&comps@ call cpush	(a=mark pos) 
 	&CompileBuf readb cpush		(b=curr pos)
 	b a sub 1 sub cpush   		(c=offset)
 		( 1 sub for the offset byte - the jump is relative to the rfwd? )
 
 	(patch the IF forward jump)
-	c
-		&CompileBuf 1 add a add   (write pos)
-			1 n2code	( handles values 0-63 only)
+	c					(offset)
+		&CompileBuf 1 add
+			a add   		(write pos)
+				1 n2code drop	( handles values 0-63 only)
 			(don't update buffer count, since this is a patch at an earlier location)
 			
 	ret
@@ -423,9 +430,11 @@
 
 
 :DO
-	( store current pos in CompileBuf as type 2 on compile stack )
+	( store current pos in CompileBuf as type DO on compile stack for conditional back jump from AGAIN? )
 	
-	&CompileBuf readb COMPS_TYPE_DO &comps! call		( push repeat address as type 2 )
+	&CompileBuf readb 
+		COMPS_TYPE_DO 
+			&comps! call
 	ret
 	
 :AGAIN?
@@ -438,7 +447,7 @@
 
 	b 
 		&CompileBuf a add 1 add		(write position)
-			1 n2code		
+			1 n2code drop		
 
 	(update compile-buf length as n2code doesn't know where it writes output)
 	&CompileBuf readb 1 add &CompileBuf writeb
