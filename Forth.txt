@@ -16,13 +16,21 @@
 	;
 
 
-(single loop test - OK)
+(single loop test - 11000 ms)
 : count
 	0 cpush   (a)
 	DO
 		a .
 		a 1 add a!
 		a 5000 lt AGAIN?
+	;
+
+: count2  (without local variable - 8950 ms)
+	0
+	DO
+		dup .
+		1 add
+		dup 5000 lt AGAIN?
 	;
 
 
@@ -40,9 +48,21 @@
 		a 1 add a!
 		a 10 lt AGAIN?
 	;
-	
+
 
 #END
 
+: test 34 23 add AS 2 add ;	
+	
+: Arraytest ( n )
+	HERE 
+	swap wordsize mul allot
+	DOES>  
+	wordsize mul add
+	CREATE
+	;
+	
+
+arr HERE swap 2 mul allot CREATE 2 mul add ;
 
 

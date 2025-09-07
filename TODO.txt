@@ -3,12 +3,15 @@
 TODO
 ----
 
+Experiment with custom dictionaries and objects (allot'ed data on which a custom dict operates)
+
 Implement 'somestring and "some_string as in the underlying ACode
 Extend NextWord buffer
-Make symbol table for storing strings
+Make symbol table for storing static strings
 
-Eliminate the symbol Assembler symbol table and store and make strings a "soft" feature in ACode instead of an Assembler feature
-	Can them eliminate the sym2str instruction
+Eliminate the Assembler symbol table and store and make strings a "soft" feature in ACode instead 
+of an Assembler feature
+	Can then eliminate the sym2str instruction
 
 Make the interpreter a bit more robust with regards to errors
 

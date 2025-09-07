@@ -17,7 +17,14 @@ up and running from simulated bare metal may just as well pave the way for doing
 instead of a C interpreter.
 
 Realizing how little low level code is required to bring up a REPL and a compiler, has been great
-fun! The Forth way of extending the compiler, by using immediate words, is really clever!
+fun! And I'm quite sure I'm not even near the optimal way of doing so, as it seems to me when
+searching the internet, that most words are MUCH shorter than mine, because they are using
+a host of other words, designed very smartly.
+
+I find the Forth way of extending the compiler, by using immediate words, to be really clever!
+
+Writing code in Forth, to compile Forth ... that's awesome.
+
 
 Design decision - word size 2 bytes
 -----------------------------------
@@ -79,13 +86,14 @@ Result 66
 For global jumps, addresses are encoded as 3 bytes, or 18 bits. The word size (traditionally 
 called "cells" in Forth) is two bytes, which allows for addressing 64k of memory. 
 
-For jumps inside words, we use relative offsets, for forward and back movements, and those are encoded as a single
+For jumps inside words, I use relative offsets, for forward and back movements, and those are encoded as a single
 byte, which allows a max jump length of 63 positions.
 
 
 
 Design decisions - heap / jumps inside words
 --------------------------------------------
+
 I employ a bit if memory protection, to catch stray pointers. The base code and memory layout
 in ACode.txt contains a tag :PROTECT that prevents writes to addresses below that point, currently
 enforced in the Interpreter.
@@ -105,7 +113,7 @@ The compile stack
 -----------------
 A simple word sized compile stack is statically allocated in ACode.txt. Each word
 pushed contains a type in the first byte and an absolute location within the compile
-buffer in the second. The compile buffer is limited to 255 instructions.
+buffer in the second. The compile buffer is limited to 255 bytes.
 
 This allows both nesting and recognition of different types, so that if we were to 
 allow complex structures like LOOP  (bool) IF BREAK THEN ... ENDLOOP then the 
@@ -135,6 +143,7 @@ compiler, and dictionary lookups, compilation speed is slow.
 
 Speed?
 ------
+
 A real microcontroller doing perhaps 100 instructions per simulated assembly
 instruction, running at 80 MHz (Pi Pico), at 1 instruction per clock, should
 result in a throughput of 800 K instructions per second, or about 80-160 times the
@@ -179,6 +188,9 @@ pi .           (71 ms)
 x              (28 ms)
 ```
 
+Apart from compile times, it is really not a bad idea having an interpreter running at 
+diminished capacity compared to real hardware, because it highlights bottlenecks.
+
 
 Memory map
 ----------
@@ -195,16 +207,18 @@ Levels of code
 The project results in code at three different levels. 
 
 - At the bottom there is the simulated CPU that runs a very Forth-like set of instructions. This is the Interpreter.
-- Then there is the "assembly" language, which is represented by ACode.txt. It is translated to byte format by the Assembler.
+- Then there is the "assembly" language, which is represented by ACode.txt. 
+It is translated to byte format by the Assembler.
 - And on top, there is the Forth language, read and processed by the REPL written in ACode.txt. 
 
-Separating the "assembly" level from Forth is perhaps not so relevant, since the two mix and mingle pretty tight.
+Separating the "assembly" level from Forth is perhaps not so relevant, since the two mix and mingle pretty tight,
+particularly since the assembly language is stack oriented. Like, adding numbers with the "word" add, really
+just means inserting the byte-sized opcode for add, since it is part of the assembly language I invented.
 
 The initial Forth code is found in Forth.txt, piped as input to the REPL before user input.
 
-
 The Forth language has access to most of the "assembly" level instructions as well as all 
-functions and data defined in ACode via tag lookups like &CompileBuf etc.
+functions and data defined in ACode via tag lookups like &CompileBuf etc. 
 
 
 Local variables
@@ -290,7 +304,7 @@ different modes:
 - NORMAL
 - IMMEDIATE
 - INLINE		(code pointer is a single byte instruction)
-- DATA			(code pointer is a constant data value)
+- CONSTANT		(code pointer is a constant data value)
 
 
 Dictionary entry format
@@ -299,14 +313,13 @@ Dictionary entry format
 The format is as follows:
 
 - symbolLength: 1 byte
-- symbolData: ...
+- symbolData: ... (symbolLength bytes)
 - codePointer: word (2 bytes)
 - mode: word (2 bytes)
 - next: word (2 bytes)
 
 The dictionary is a linked list, and the top is stored in statically allocated location &DictionaryHead 
-defined in ACode.txt, which is readable from Forth by
-
+defined in ACode.txt, which is readable from Forth as:
 ```
 &DictionaryHead @
 ```

@@ -463,7 +463,7 @@
 	
 :COLON
 	;; already in compile mode?
-	&IsCompiling readb &*nestedError jmp?
+	;; &IsCompiling readb &*nestedError jmp?
 
 	;; set compile mode
 	1 &IsCompiling writeb
@@ -495,8 +495,7 @@
 		&ResetCompile call
 		PANIC
 
-
-
+		
 		
 :SEMICOLON
 	;; verify compile mode
@@ -741,7 +740,7 @@
 :DictionaryHead %Dictionary
 
 :IsCompiling		b0
-:IsCompilingWord	b w0 w0 w0 w0 w0 w0 w0 w0		;; 16 character stringbuffer
+:IsCompilingWord	b w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0		;; 32 character stringbuffer
 :IsCompilingWordMode	b0					;; NORMAL or IMMEDIATE
 
 :CompileBuf		w0 w0 w0 w0 w0 w0 w0 w0 		;; up to 255 bytes, allocated when hitting a COLON
@@ -765,7 +764,7 @@
 			w0 w0 w0 w0 w0 w0 w0 w0
 
 
-:NextWord		b0 w0 w0 w0 w0 w0 w0 w0 w0		;; 16 character stringbuffer
+:NextWord		b0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0		;; 32 character stringbuffer
 :NextNumber		w0
 :IsNumber		b0
 :IsWord			b0
