@@ -79,7 +79,7 @@
 
 		hex="HEX:00"+char.toHexString("ISO-8859-1")  # code pointer is code
 		s=s+(hex+" ".times(16)).first(16)
-		s=s+"INLINE      "
+		s=s+"INSTR       "
 		s=s+"%NEXT        ;; " + char
 		println(s)
 /InlineDictionary
