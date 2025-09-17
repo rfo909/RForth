@@ -73,22 +73,18 @@
 	
 	cr &NextWord .str
 
-	&IsNumber readb &ProcessNumber call?
-	&IsWord readb &ProcessWord call?
-	;; otherwise ignore (must have been an error)
-	&IsNumber readb not 
-		&IsWord readb not 
-			and &ResetCompile call?	;; something went wrong
-	&REPL jmp
+	&NextWordIsNumber call &*num jmp?
+		&ProcessWord call
+		&REPL jmp
+	:*num
+		&ProcessNumber call
+		&REPL jmp
 
 
 :GetNextWord
 	0 &NextWord writeb
 	0 &NextNumber !
 	
-	1 &IsNumber writeb	; assuming number until non-digit
-	0 &IsWord writeb
-
 	0 cpush  		; using a for next char
 	0 cpush			; using b to keep track of length of current word
 	
@@ -97,16 +93,6 @@
 		a 0x20 eq b 0 eq and &*nextChar jmp? 	;; ignore preceding space
 		a 0x20 eq &*done jmp?			;; word identified
 
-		a DIGIT_0 lt a DIGIT_9 gt or &*notDigit jmp?
-
-		;; digit - update NextNumber
-		&NextNumber @ 10 mul a DIGIT_0 sub add &NextNumber !
-		&*doNext jmp
-	:*notDigit
-		0 &IsNumber writeb
-		1 &IsWord writeb
-		
-	:*doNext
 		;; update NextWord
 		a &NextWord b 1 add add writeb
 		b 1 add b!
@@ -116,6 +102,11 @@
 		b &NextWord writeb
 		ret
 	
+
+:NextWordIsNumber		; if &NextWord is a number, parse it and store in &NextNumber, returns boolean
+	&NextWord &NextNumber atoi ret
+
+		
 	
 :ProcessNumber  
 	&IsCompiling readb &*compile jmp?
@@ -444,7 +435,7 @@
 	;; next word is to be a literal
 	&GetNextWord call
 	
-	&IsNumber readb &*numberError jmp?
+	&NextWordIsNumber call &*numberError jmp?
 	
 	;; copy NextWord to IsCompilingWord buffer
 	&NextWord
@@ -697,15 +688,15 @@
 
 	;; ----------------------------------------------------------
 	
-	%'IF		%IF		IMMEDIATE	%NEXT
+	%'IF		%IF			IMMEDIATE	%NEXT
 	%'THEN		%THEN		IMMEDIATE	%NEXT
 	%'ELSE		%ELSE		IMMEDIATE	%NEXT
-	%'DO		%DO		IMMEDIATE	%NEXT
+	%'DO		%DO			IMMEDIATE	%NEXT
 	%'AGAIN?	%AGAIN?		IMMEDIATE	%NEXT
 	%'CONSTANT	%CONSTANT	NORMAL		%NEXT
 	
-	%'?		%Words		NORMAL		%NEXT
-	%':		%COLON		NORMAL		%NEXT
+	%'?		%Words			NORMAL		%NEXT
+	%':		%COLON			NORMAL		%NEXT
 	HEX:013B	%SEMICOLON	IMMEDIATE	%NEXT
 	%'IMMEDIATE	%immediate	IMMEDIATE	w0	;; <-- w0 = terminating the linked list
 :DictionaryEnd
@@ -740,9 +731,7 @@
 
 
 :NextWord		b0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0		;; 32 character stringbuffer
-:NextNumber		w0
-:IsNumber		b0
-:IsWord			b0
+:NextNumber		w0 w0													;; up to double (4 bytes)
 
 :CompileStack		b0 w0 w0 w0 w0 w0 w0 w0 w0 		
 				;; 8 words each consists of type (1 byte) and offset in CompileBuf (1 byte)

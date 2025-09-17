@@ -544,6 +544,32 @@
 		Std.Data.for(0,byteCount,1)->i
 			self.memory.writeByte(target+i, self.memory.readByte(source+i))
 	}
+
+	self._1=Lambda { # atoi ( strPtr targetPtr -- bool ) 
+		targetPtr=self.pop
+		strPtr=self.pop
+		len=self.memory.readByte(strPtr)
+		Std.Data.for(0,len,1)->i
+				out(Sys.uchar(self.memory.readByte(strPtr+1+i)))
+		| _.concat => str
+
+		value=null
+		if (str.startsWith("0x") && str.sub(2).?parseInt(16)) {
+			value=str.sub(2).parseInt(16)
+		} else if (str.startsWith("b") && str.sub(1).?parseInt(2)) {
+			value=str.sub(1).parseInt(2)
+		} else if (str.?parseInt) {
+			value=str.parseInt
+		} 
+
+		# boolean return value to stack
+		self.push(if(value != null, 1, 0))
+		# write to ptrTarget
+		if (value != null) self.memory.writeWord(targetPtr,value)
+	}
+		
+		
+
 	
 	self.bufferedInput=GetInitialForthCode
 
