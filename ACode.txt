@@ -71,15 +71,21 @@
 :REPL
 	&GetNextWord call
 	
-	cr &NextWord .str
+	; DEBUG
+	; cr &NextWord .str 
 
-	&NextWordIsNumber call &*num jmp?
+	&NextWordIsNumber call &*num jmp?  ;; if true stores number value in &NextNumber
+	&NextWord 1 add readb 34 eq &*str jmp?  ;; starts with double quote
+	&NextWord 1 add readb 39 eq &*str jmp?  ;; starts with single quote
+
 		&ProcessWord call
 		&REPL jmp
 	:*num
 		&ProcessNumber call
 		&REPL jmp
-
+	:*str
+		&ProcessString call
+		&REPL jmp
 
 :GetNextWord
 	0 &NextWord writeb
@@ -120,6 +126,25 @@
 		&NextNumber @ 0 &EmitNumber call
 		ret
 		
+
+:ProcessString
+	; NextWord starts with single or double quote; if double quote, replace _ with space (not implemented yet)
+
+	&NextWord readb 1 sub cpush 			;; a=length of string following quote
+	HERE cpush								;; b=address in memory
+	a 1 add allot							;; allot length of string + length byte
+
+	a b writeb								;; save length of string
+	
+	&NextWord 2 add				;; src
+		b 1 add
+			a memcpy
+	
+	b &NextNumber !
+	&ProcessNumber call
+	ret
+
+
 :ProcessWord
 	;; check for tag lookup
 	&NextWord 1 add readb 38 ne &*notTag jmp?    ;; starts with &
