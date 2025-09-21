@@ -9,7 +9,7 @@
 # --
 	num=0
 	ExampleCode->line
-		if (line.contains(":") || line.contains("&")) report(num,line)
+		if (line.contains(" :") || line.contains("^t:".unEsc) || line.contains("&")) report(num,line)
 		num=num+1
 /ShowTagUse
 
@@ -173,9 +173,6 @@
 	W+		:n	;; wordsize add 
 
 	;; data stack operations
-	dcopy		:M		;; copy stack element n, where 0 is top etc, to top, so #1 dcopy is DUP
-	dget		:N      ;; remove stack element n and push on top
-	
 	drop		:j		;; remove stack top element
 	dup		:l
 	swap		:m
@@ -189,24 +186,17 @@
 	;; call stack: note that "marks" are separate (hidden) structure, not physical on the 
 	;; visible call stack (for example separate frame stack)
 	
-	cpush		:O   ;; push 1 value from data stack to callstack
+	cpush		:O   	;; push 1 value from data stack to callstack
 				;; up to 3 values accessible as local variables a@ a! b@ b! c@ c! (single instructions)
 
-
+	cget		:3	;; copy value off call stack indexed from frame base (must be cpush'ed first)
+	cset		:4	;; set value on call stack (must be cpush'ed first)
+	
 
 	;; the call stack contains local variables + the return PC when calling something. 
 	;; the callFrame stack contains two values; the base of the current frame on the call stack
 	;;		and the number of words pushed with cpush, identifying top-of-stack for callStack
 
-	;; local variable pointer instructions
-
-	a		:a
-	b		:b
-	c		:c
-	a!		:d
-	b!		:e
-	c!		:f
-	
 	;; global variables
 	
 	global		:x		;; read global variable ( N -- value )
@@ -247,7 +237,6 @@
 	jmp		:S
 	jmp?		:T   	;; conditional jump on true	
 	call		:Q  
-	call?		:4 
 	ret		:R
 	
 	rfwd?		:6	;; single byte (0-64) offset jumps (inside word)
@@ -316,8 +305,6 @@
 # --
 	dict=Dict
 		.set("spc",'"_ .str')
-		.set("b0", "HEX:00")
-		.set("w0", "HEX:0000")
 		
 	self.dict=dict
 	

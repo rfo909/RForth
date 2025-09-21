@@ -3,7 +3,7 @@ Forth never ceases to fascinate !
 
 Version 3 (alpha)
 
-2025-09-05
+2025-09-21
 
 Introduction
 =============
@@ -169,11 +169,11 @@ Another example:
 3 CONSTANT pi
 ok
 
-pi pi mul .      (251 ms)
+pi pi mul .      (interpreting: 251 ms)
 
-: x pi pi mul . ;   (817 ms)
+: x pi pi mul . ;   (compiling word: 817 ms)
 
-x			(28 ms)
+x			(calling word: 28 ms)
 ```
 
 Running compiled code is MUCH faster than compiling, and also than interpreting, because
@@ -194,7 +194,7 @@ diminished capacity compared to real hardware, because it highlights bottlenecks
 
 Memory map
 ----------
-The ACode.txt file implements the REPL, which interpretes input and when
+The ACode.txt file implements the REPL, which interprets input and when
 hitting a COLON, enters compile mode, and compiles code. The REPL is fairly 
 primitive, as it should be.
 
@@ -225,8 +225,8 @@ Local variables
 ---------------
 
 The assembly language supports pushing values from the data stack to the call
-stack, with the cpush instruction. The first three values pushed that way
-get avaiable as local variables a, b and c.
+stack, with the cpush instruction. The first four values pushed that way
+get avaiable as local variables a, b, c and d, as follows:
 
 ```
 	45 cpush   # Take value from data stack, push onto call stack
@@ -235,13 +235,28 @@ get avaiable as local variables a, b and c.
 	a          # Read value of variable a (45)
 	a 1 add a! # Update variable a to 46
 	
-	(same for b and c)
+	(same for b, c and d)
 ```
 
-With the cpush and the variable operations being single byte instructions, 
-the generated code compactness rivals the use of traditional stack operations, 
-like dup and swap. 
+Fetching variable values consist of two byte operations, first the index of
+the variable in the current frame on the call stack (0=a, 1=b etc), then the
+cget instruction.
 
+```
+N cget
+```
+
+For updating, there is also two bytes, assuming the value is already on the
+data stack:
+
+```
+N cset
+```
+
+
+Note that local variables are implemented as "inlines" in the assembler, and
+with code in ACode.txt which is pointed to by the default dictionary, for the
+same functionality. 
 
 Debugging
 ---------
@@ -305,6 +320,7 @@ different modes:
 - IMMEDIATE
 - INLINE		(code pointer is a single byte instruction)
 - CONSTANT		(code pointer is a constant data value)
+
 
 
 Dictionary entry format

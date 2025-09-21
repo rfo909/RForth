@@ -1,13 +1,27 @@
-;; This file implements a state machine for the REPL and compiler.
+;; Assembly level for virtual stack machine
+;; ----------------------------------------
 ;;
-;; The data stack is already defined, as this "pretend assembly" exists on
-;; a virtual stack machine. The call stack also exists, and there are
-;; instructions call and ret which use it. 
+;; This file implements the REPL, the colon compiler and the initial dictionary.
+;; It implements IF, THEN and ELSE, and the DO ... AGAIN? loop words. It is sufficient
+;; to get off the ground. It contains both code and data, addressed by tags.
+;;
+;; When running, the data stack, call stack and call frame stack are defined by the
+;; runtime (interpreter). These exist in RAM above the blob of bytes that is the
+;; output from this file. 
+;;
+;; This means that this code, when being executed, runs on a fully featured
+;; virtual stack machine, supporting call and ret. 
+;;
+;; Some implementations refer to the data stack as "parameter stack", and 
+;; the call stack is commonly known as "return stack" in other Forth's. The 
+;; call frame stack keeps track of additional values pushed to the call stack,
+;; like local variables, which means they don't need to be removed before
+;; word return.
 ;;
 ;; Tags
 ;; ----
 ;;
-;; This file is both code, data and initial memory map or the Forth REPL
+;; This file is both code, data and initial memory map of the Forth REPL
 ;; and compiler / interpreter. Tags are defined at two levels, global and
 ;; local. Global tags are denoted
 ;;
@@ -26,8 +40,8 @@
 ;;
 ;; The compiler automatically handles patching of forward references to tags.
 ;; 
-;; Data fields
-;; -----------
+;; Data content
+;; ------------
 ;;
 ;; Towards the end follows the data fields. Using the following notation to
 ;; create placeholders and values in memory:
@@ -41,13 +55,32 @@
 ;;
 ;; Note tags to be referred via %tag must be defined earlier in the file, as %tag references
 ;; are not part of the resolve scheme implemented in NumberTable
+;;
+;; Local variables
+;; ---------------
+;;
+;; The assembler offers some local variables in each (called!) routine, named 
+;; a, b, c, d. Local variables must be defined/initialized with a call to cpush, which
+;; takes a value off the data stack, and pushes it on top of the return address on the
+;; call stack. To make things easy in the assembler code (this file), the assembler defines
+;; six inline symbols, for reading and updating three statically named local variables,
+;; a, b and c. Note that in order to use these, values must be cpush'ed to the call stack
+;; for each. So, after doing a single cpush, we can then use "a" to retrieve that value and
+;; "a!" to update it. Using two more cpush'es we get local variables b and c and so on. Using
+;; more than the 6 predefined variables, we will need to use the cget and cset instructions
+;; manually.
+;;
+;; These are defined below
+
+;; Note that these inline replacement apply to this file, but not to Forth code. 
+;;
+;; The colon compiler should be extended, to keep track of local variables by name,
+;; and handle interactions via cget and cset.  
+;;  
 
 ;; ------------ top of file ----------
 
-#define DIGIT_0		48
-#define DIGIT_9		57
-
-;; use these in code
+;; dictionary entry modes: use these in code
 
 #define MODE_NORMAL	0
 #define MODE_IMMEDIATE	1
@@ -55,14 +88,27 @@
 #define MODE_CONSTANT	3	;; code pointer is constant word to be pushed on stack (directly or with code)
 
 
-;; use these in the Dictionary only, as they generate raw memory values, which is not valid code!
+;; use these in the static Dictionary definition, as they generate raw memory values, which is not valid code!
 
 #define NORMAL 		HEX:0000
 #define IMMEDIATE	HEX:0001
 #define INSTR		HEX:0002
 #define CONSTANT	HEX:0003
 
+;; When executing code, we start at PC=0x0000 (&Init)
 
+#define b0		HEX:00
+#define w0		HEX:0000
+
+#define a		0 cget
+#define b		1 cget
+#define c		2 cget
+#define d		3 cget
+
+#define a!		0 cset
+#define b!		1 cset
+#define c!		2 cset
+#define d!		3 cset
 
 :Init	
 	0 &IsCompiling writeb
@@ -237,6 +283,8 @@
 
 :DictLookup ;; ( str -- dictEntry|null )
 	cpush				;; a=str
+	cr "Looking_up_ .str a .str
+	
 	&DictionaryHead @ cpush		;; b=current dictionary entry
 	:*next
 		b null eq &*notFound jmp?	;; pointer is null, not found
@@ -278,7 +326,7 @@
 		a call 
 		ret
 	:*generateCall
-		cr "generateCall_ .str a print
+		;; cr "generateCall_ .str a print
 		a 0 &EmitNumber call
 
 		;; add the call instruction
@@ -288,7 +336,7 @@
 		ret
 	:*inlineCode
 		;; when inlining, the "code pointer" is the instruction! 00nn!
-		;;cr "inlineCode_ .str a print
+		;; cr "inlineCode_ .str a print
 		a &EmitByte call
 		ret
 	:*callInline
@@ -452,7 +500,7 @@
 	
 :COLON
 	;; already in compile mode?
-	;; &IsCompiling readb &*nestedError jmp?
+	&IsCompiling readb &*nestedError jmp?
 
 	;; set compile mode
 	1 &IsCompiling writeb
@@ -619,6 +667,18 @@
 		&*next jmp
 	:*done
 	ret
+
+;; Create code for access to four variables abcd from Forth, in same way as in this file
+
+:aGet 0 0 &EmitNumber call 51 &EmitByte call ret  		;; 51 = '3' = cget
+:bGet 1 0 &EmitNumber call 51 &EmitByte call ret
+:cGet 2 0 &EmitNumber call 51 &EmitByte call ret
+:dGet 3 0 &EmitNumber call 51 &EmitByte call ret
+
+:aSet 0 0 &EmitNumber call 52 &EmitByte call ret		;; 52 = '4' = cset
+:bSet 1 0 &EmitNumber call 52 &EmitByte call ret
+:cSet 2 0 &EmitNumber call 52 &EmitByte call ret
+:dSet 3 0 &EmitNumber call 52 &EmitByte call ret
 	
 :DATA
 
@@ -639,6 +699,8 @@
 
 
 :Dictionary
+
+
 	;; # --- autogenerated content: Assembler:InlineDictionary
 	;; #
 		
@@ -651,23 +713,17 @@
 	%'PANIC         HEX:0030        INSTR       %NEXT        ;; 0
 	%'PC            HEX:0050        INSTR       %NEXT        ;; P
 	%'W+            HEX:006E        INSTR       %NEXT        ;; n
-	%'a             HEX:0061        INSTR       %NEXT        ;; a
-	%'a!            HEX:0064        INSTR       %NEXT        ;; d
 	%'add           HEX:002B        INSTR       %NEXT        ;; +
 	%'allot         HEX:004B        INSTR       %NEXT        ;; K
 	%'and           HEX:0026        INSTR       %NEXT        ;; &
 	%'andb          HEX:0071        INSTR       %NEXT        ;; q
-	%'b             HEX:0062        INSTR       %NEXT        ;; b
-	%'b!            HEX:0065        INSTR       %NEXT        ;; e
-	%'c             HEX:0063        INSTR       %NEXT        ;; c
-	%'c!            HEX:0066        INSTR       %NEXT        ;; f
+	%'atoi          HEX:0031        INSTR       %NEXT        ;; 1
 	%'call          HEX:0051        INSTR       %NEXT        ;; Q
-	%'call?         HEX:0034        INSTR       %NEXT        ;; 4
+	%'cget          HEX:0033        INSTR       %NEXT        ;; 3
 	%'clear         HEX:0077        INSTR       %NEXT        ;; w
 	%'cpush         HEX:004F        INSTR       %NEXT        ;; O
 	%'cr            HEX:0058        INSTR       %NEXT        ;; X
-	%'dcopy         HEX:004D        INSTR       %NEXT        ;; M
-	%'dget          HEX:004E        INSTR       %NEXT        ;; N
+	%'cset          HEX:0034        INSTR       %NEXT        ;; 4
 	%'div           HEX:002F        INSTR       %NEXT        ;; /
 	%'drop          HEX:006A        INSTR       %NEXT        ;; j
 	%'dump          HEX:0070        INSTR       %NEXT        ;; p
@@ -711,17 +767,33 @@
 
 
 
+
+
+
 	;; ----------------------------------------------------------
+
+	;; local variables in same style as in this file
 	
-	%'IF		%IF			IMMEDIATE	%NEXT
+	%'a		%aGet		IMMEDIATE	%NEXT
+	%'b		%bGet		IMMEDIATE	%NEXT
+	%'c		%cGet		IMMEDIATE	%NEXT
+	%'d		%dGet		IMMEDIATE	%NEXT
+	
+	%'a!		%aSet		IMMEDIATE	%NEXT
+	%'b!		%bSet		IMMEDIATE	%NEXT
+	%'c!		%cSet		IMMEDIATE	%NEXT
+	%'d!		%dSet		IMMEDIATE	%NEXT
+	
+
+	%'IF		%IF		IMMEDIATE	%NEXT
 	%'THEN		%THEN		IMMEDIATE	%NEXT
 	%'ELSE		%ELSE		IMMEDIATE	%NEXT
-	%'DO		%DO			IMMEDIATE	%NEXT
-	%'AGAIN?	%AGAIN?		IMMEDIATE	%NEXT
-	%'CONSTANT	%CONSTANT	NORMAL		%NEXT
+	%'DO		%DO		IMMEDIATE	%NEXT
+	%'AGAIN?	%AGAIN?		IMMEDIATE		%NEXT
+	%'CONSTANT	%CONSTANT	NORMAL			%NEXT
 	
-	%'?		%Words			NORMAL		%NEXT
-	%':		%COLON			NORMAL		%NEXT
+	%'?		%Words		NORMAL		%NEXT
+	%':		%COLON		NORMAL		%NEXT
 	HEX:013B	%SEMICOLON	IMMEDIATE	%NEXT
 	%'IMMEDIATE	%immediate	IMMEDIATE	w0	;; <-- w0 = terminating the linked list
 :DictionaryEnd
@@ -734,7 +806,7 @@
 :IsCompilingWord	b w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0		;; 32 character stringbuffer
 :IsCompilingWordMode	b0					;; NORMAL or IMMEDIATE
 
-:CompileBuf		w0 w0 w0 w0 w0 w0 w0 w0 		;; up to 255 bytes, allocated when hitting a COLON
+:CompileBuf		w0 w0 w0 w0 w0 w0 w0 w0 		;; up to 127 bytes, for the colon compiler
 			w0 w0 w0 w0 w0 w0 w0 w0			;; first byte is length
 			w0 w0 w0 w0 w0 w0 w0 w0
 			w0 w0 w0 w0 w0 w0 w0 w0
@@ -744,24 +816,15 @@
 			w0 w0 w0 w0 w0 w0 w0 w0
 			w0 w0 w0 w0 w0 w0 w0 w0
 
-			w0 w0 w0 w0 w0 w0 w0 w0
-			w0 w0 w0 w0 w0 w0 w0 w0
-			w0 w0 w0 w0 w0 w0 w0 w0
-			w0 w0 w0 w0 w0 w0 w0 w0
-
-			w0 w0 w0 w0 w0 w0 w0 w0
-			w0 w0 w0 w0 w0 w0 w0 w0
-			w0 w0 w0 w0 w0 w0 w0 w0
-			w0 w0 w0 w0 w0 w0 w0 w0
 
 
-:NextWord		b0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0		;; 32 character stringbuffer
-:NextNumber		w0 w0													;; up to double (4 bytes)
+:NextWord		b0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0	;; 32 character stringbuffer
+:NextNumber		w0 							;; single word
 
 :CompileStack		b0 w0 w0 w0 w0 w0 w0 w0 w0 		
 				;; 8 words each consists of type (1 byte) and offset in CompileBuf (1 byte)
+				;; see COMPS_TYPE_* defs
 
-	
 :MemoryEnd
 
 

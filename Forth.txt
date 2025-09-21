@@ -7,13 +7,16 @@
 ( xx @ )
 ( newValue xx ! )
 ( -- )
-: VARIABLE
-	cpush    		(a=value) 
-	HERE cpush 		(b=pointer)
-	wordsize allot 
-	a b !			(save value) 
-	b CONSTANT 		(create word for the pointer)
+: VARIABLE ( value )
+	HERE wordsize allot		(value ptr)
+	swap				(ptr value)
+	over				(ptr value ptr) 
+	!				(ptr)
+	CONSTANT 			(create word for the pointer)
 	;
+
+: x 33 cpush a . ;
+
 
 
 (single loop test - 11000 ms)
@@ -34,6 +37,7 @@
 	;
 
 
+
 (nested loops test - OK)
 : mult
 	1 cpush (a)
@@ -49,20 +53,7 @@
 		a 10 lt AGAIN?
 	;
 
-
 #END
 
-: test 34 23 add AS 2 add ;	
-	
-: Arraytest ( n )
-	HERE 
-	swap wordsize mul allot
-	DOES>  
-	wordsize mul add
-	CREATE
-	;
-	
-
-arr HERE swap 2 mul allot CREATE 2 mul add ;
 
 

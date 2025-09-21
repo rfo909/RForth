@@ -1,4 +1,4 @@
-2025-09-04
+2025-09-21
 
 
 ```
@@ -13,23 +13,17 @@ HERE     | ( -- value )
 PANIC    | ( -- ) Clean up stacks and set PC=0                                                         
 PC       | ( -- addr )                                                                                 
 W+       | ( n -- n+WORDSIZE )                                                                         
-a        | read local variable a ( -- value )                                                          
-a!       | set local variable a ( value -- )                                                           
 add      | ( a b -- a+b )                                                                              
 allot    | ( N -- )                                                                                    
 and      | boolean ( a b -- 0|1 )                                                                      
 andb     | binary and ( a b -- c )                                                                     
-b        | read local variable b ( -- value )                                                          
-b!       | set local variable b ( value -- )                                                           
-c        | read local variable c ( -- value )                                                          
-c!       | set local variable c ( value -- )                                                           
+atoi     | ( strPtr targetPtr -- bool )                                                                
 call     | ( addr -- )                                                                                 
-call?    |                                                                                             
+cget     | ( index -- value ) get value by index from call stack, indexed from call frame base         
 clear    | Clear stack                                                                                 
 cpush    | push value from data stack on call stack ( x -- )                                           
 cr       | print newline                                                                               
-dcopy:   | ( a b c 1 -- a b c b )                                                                      
-dget:    | (a b c 1 -- a c b)                                                                          
+cset     | (value index -- ) set value in stack frame (must have been cpush'ed first)                  
 div      | ( a b -- a/b )                                                                              
 drop     | ( a -- )                                                                                    
 dump     | show stack contents ( -- )                                                                  
@@ -70,8 +64,7 @@ swap     | ( a b -- b a )
 sym2s    | convert symbol offset to string pointer                                                     
 tag      | ( str -- num ) Lookup tag by string, 0 if not found                                         
 wordsize | ( -- N )                                                                                    
-writeb   | write byte ( addr -- value )   
-
+writeb   | write byte ( addr -- value )       
 
 ```
 

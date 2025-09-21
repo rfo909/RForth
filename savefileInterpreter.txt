@@ -144,13 +144,8 @@
 		
 		Lib:Header(msg)
 		println("PC=0x" + self.PC.hex(4),"#count=" + self.executionCount)
-				
-		self.dataStack.reset
-		self.callStack.reset
-		self.frameStack.reset
-		self.PC=0
-		
-		error("PANIC")
+						
+		readLine("PANIC")
 	}
 
 
@@ -213,44 +208,6 @@
 	}
 
 
-	## Local variable instructions a-f
-
-	self._a=Lambda{  # a read local variable a ( -- value )
-		frameInfo=self.fpeek
-		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
-		value=self.memory.readWord(base)
-		self.push(value)
-	}
-	self._b=Lambda{  # b read local variable b ( -- value )
-		frameInfo=self.fpeek
-		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
-		value=self.memory.readWord(base+self.WORDSIZE)
-		self.push(value)
-	}
-	self._c=Lambda{  #  c read local variable c ( -- value )
-		frameInfo=self.fpeek
-		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
-		value=self.memory.readWord(base+self.WORDSIZE*2)
-		self.push(value)
-	}
-	self._d=Lambda{  # a! set local variable a ( value -- )
-		value=self.pop
-		frameInfo=self.fpeek
-		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
-		self.memory.writeWord(base, value)
-	}
-	self._e=Lambda{  # b! set local variable b ( value -- )
-		value=self.pop
-		frameInfo=self.fpeek
-		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
-		self.memory.writeWord(base+self.WORDSIZE, value)
-	}
-	self._f=Lambda{ # c! set local variable c ( value -- )
-		value=self.pop
-		frameInfo=self.fpeek
-		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
-		self.memory.writeWord(base+self.WORDSIZE*2, value)
-	}
 
 	self.set("_+", Lambda{self.push(self.pop+self.pop)}) # add ( a b -- a+b )
 	self.set("_-", Lambda{b=self.pop a=self.pop self.push(a-b)}) # sub ( a b -- a-b )
@@ -291,16 +248,6 @@
 		cond=self.pop 
 		if(cond != 0) self.PC=addr  
 	}  
-	
-	 self._4 = Lambda { # call?
-		targetAddr=self.pop
-		cond=self.pop
-		if (cond != 0) {
-			# call regular call
-			self.push(targetAddr)
-			self._Q
-		}
-	}
 	
 	self._Q=Lambda{  # call ( addr -- )
 		targetAddr=self.pop
@@ -354,19 +301,24 @@
 	self._O=Lambda{  # cpush push value from data stack on call stack ( x -- )
 		self.cpush(self.pop)
 	}
-
-	self._M=Lambda{ # dcopy: ( a b c 1 -- a b c b )
-		offset=self.pop
-		value=self.dataStack.getValue(offset)
-		self.push(value)
+	
+	self._3=Lambda{ # cget ( index -- value ) get value by index from call stack, indexed from call frame base
+		#println("PC=" + self.PC.hex(4))
+		index=self.pop
+		
+		frameInfo=self.fpeek
+		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
+		value=self.memory.readWord(base+self.WORDSIZE*index)
+		self.push(value)		
 	}
+	self._4=Lambda{ # cset (value index -- ) set value in stack frame (must have been cpush'ed first)
+		index=self.pop
+		value=self.pop
 
-	self._N=Lambda{ # dget: (a b c 1 -- a c b)
-		offset=self.pop
-		value=self.dataStack.removeValue(offset)
-		self.push(value)
+		frameInfo=self.fpeek
+		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
+		self.memory.writeWord(base+self.WORDSIZE*index, value)	
 	}
-
 	self._j=Lambda { # drop  ( a -- )
 		self.pop
 	}
@@ -893,6 +845,7 @@
 			if (!result.ok) {
 				println(result.msg)
 				readLine("Enter")
+				interpreter.PANIC(result.msg)
 				autoRun=false
 			} else {
 				continue
