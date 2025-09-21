@@ -174,7 +174,13 @@
 		
 
 :ProcessString
-	; NextWord starts with single or double quote; if double quote, replace _ with space (not implemented yet)
+	; NextWord starts with single or double quote; if double quote, replace _ with space
+	
+	&NextWord 1 add readb 39 eq &*noReplace jmp?  ;; starts with single quote
+
+	&NextWord 'u2spc native				;; replace underscores with space (directly in RAM)
+	
+	:*noReplace
 
 	&NextWord readb 1 sub cpush 			;; a=length of string following quote
 	HERE cpush								;; b=address in memory
@@ -284,7 +290,7 @@
 
 :DictLookup ;; ( str -- dictEntry|null )
 	cpush				;; a=str
-	cr "Looking_up_ .str a .str
+	"Looking_up_ .str a .str cr
 	
 	&DictionaryHead @ cpush		;; b=current dictionary entry
 	:*next
@@ -743,6 +749,7 @@
 	%'memcpy        HEX:0044        INSTR       %NEXT        ;; D
 	%'mul           HEX:002A        INSTR       %NEXT        ;; *
 	%'n2code        HEX:0032        INSTR       %NEXT        ;; 2
+	%'native        HEX:0061        INSTR       %NEXT        ;; a
 	%'ne            HEX:0068        INSTR       %NEXT        ;; h
 	%'not           HEX:0069        INSTR       %NEXT        ;; i
 	%'null          HEX:007A        INSTR       %NEXT        ;; z
@@ -765,6 +772,7 @@
 	%'tag           HEX:0038        INSTR       %NEXT        ;; 8
 	%'wordsize      HEX:006B        INSTR       %NEXT        ;; k
 	%'writeb        HEX:0048        INSTR       %NEXT        ;; H
+
 
 
 

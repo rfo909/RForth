@@ -322,6 +322,14 @@ different modes:
 - CONSTANT		(code pointer is a constant data value)
 
 
+2025-09-21 native
+-----------------
+Added instruction "native", to invoke functions inside the interpreter. Using this
+to implement 'u2spc which converts underscores to spaces in a string, calling it from
+ProcessString in ACode.txt
+
+Note that native commands are not checked for existence at compile time, so use with
+care. They can return a single (optional) int, which may be a value or a pointer.
 
 Dictionary entry format
 -----------------------

@@ -134,6 +134,10 @@
 		self.frameStack.pop
 		self.frameStack.pop
 	}
+	
+	# native interface dictionary
+	
+	self.nativeFunctions=Interpreter:NativeFunctions
 
 	# initialize frame stack these numbers are offsets on the callStack
 
@@ -599,13 +603,83 @@
 		}
 	}
 	
+	self._a = Lambda { # native ( ... str -- ? )
+		namePtr=self.pop
+		length=self.memory.readByte(namePtr)
+		s=""
+		Std.Data.for(0,length,1)->i
+			s=s+self.memory.readChar(namePtr+1+i)
+		|
+		#println("native: " + s)
+		if (!self.nativeFunctions.has(s)) {
+			printn("NATIVE function '" + s + "' not found")
+		}
+		nativeFunction=self.nativeFunctions.get(s)
+		
+		params=List
+		Std.Data.for(0,nativeFunction.inCount,1)->i
+			params.add(self.pop)
+		|
+		# normalize params by reversing
+		params=params.reverse
+		
+		# in CFT since the code is a Lambda inside a Dict, it has been transformed
+		# into a closure, with the dictionary becoming the persistent "self" object
+		result = nativeFunction.code(params, self.memory, s)
+
+		if (Sys.getType(result)=="int") {
+			self.push(result) # must be int, possibly a pointer into memory
+		}
+	}	
+	
 		
 		
 	 
 		
 /class Interpreter
 
+# Native function (written in interpreter implementation language, in this case CFT)
+# --
+	P(1) as int => inCount
+	P(2) as Callable => code
+	
+	SymDict(inCount,code)
+/NativeFunction
 
+
+# Native functions (written in C or as here, in CFT)
+# --
+	Dict
+		# convert underscore to space in string; called from REPL for "xxx_yyy strings 
+		
+		.set("u2spc",
+			NativeFunction(1, Lambda{
+				P(1) as List=>params
+				P(2) as &Memory => memory
+				P(3) => name 
+				
+				ptr=params.first
+				len=memory.readByte(ptr)
+				Std.Data.for(0,len,1)->i
+					pos=ptr+1+i
+					if (memory.readChar(pos)=="_") memory.writeChar(pos," ")
+				|
+				null
+			}
+		))
+
+		# test
+		.set("add",
+			NativeFunction(2,Lambda{
+				P(1) as List=>params
+				P(2) as &Memory => memory
+
+				params.sum
+			}
+		))
+		
+	
+/NativeFunctions
 
 # Show frame stack
 # --

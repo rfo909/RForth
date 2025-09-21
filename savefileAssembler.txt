@@ -246,6 +246,8 @@
 
 	PANIC		:0	;; clean up stacks and set PC=0
 	
+	native		:a	;; call native function by name
+	
 	;; I/O
 	show		:V   ;; ( ptr ptr ... N -- ) - display N STRINGS with space between them
 	print		:W   ;; print any single value in hex
