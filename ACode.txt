@@ -194,19 +194,20 @@
 :ProcessWord
 	;; check for tag lookup
 	&NextWord 1 add readb 38 ne &*notTag jmp?    ;; starts with &
-		; overwrite colon with length - 1 
+		; overwrite amp char with length - 1 
 		&NextWord readb 1 sub
 			&NextWord 1 add writeb
 		; look up tag
 		&NextWord 1 add
 			tag cpush		;; a
 		
-		a 0 ne &*found jmp?
+		a 0 ne &*foundTag jmp?
 		
 		cr "Invalid_tag_ .str &NextWord 1 add .str
 		PANIC
 	
-	:*found
+	:*foundTag
+		; reuse ProcessNumber
 		a &NextNumber ! 
 		&ProcessNumber call
 		ret
