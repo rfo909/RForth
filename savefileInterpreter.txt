@@ -614,7 +614,7 @@
 		|
 		#println("native: " + s)
 		if (!self.nativeFunctions.has(s)) {
-			printn("NATIVE function '" + s + "' not found")
+			println("NATIVE function '" + s + "' not found")
 		}
 		nativeFunction=self.nativeFunctions.get(s)
 		
@@ -854,7 +854,7 @@
 # --
 	Sys.savefile.dir.file("Forth.txt").read->line
 		break(line.trim=="#END")
-		s=line.before("(").trim
+		s=(line.before("(").trim + " " + line.after(")").trim).trim
 		reject(s=="")
 		out(s)
 	| => lines

@@ -290,7 +290,7 @@
 
 :DictLookup ;; ( str -- dictEntry|null )
 	cpush				;; a=str
-	"Looking_up_ .str a .str cr
+	; "Looking_up_ .str a .str cr
 	
 	&DictionaryHead @ cpush		;; b=current dictionary entry
 	:*next

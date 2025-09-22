@@ -1,7 +1,5 @@
 : . cr print#s ;
 
-
-
 (Use: 55 VARIABLE xx)
 (then read and write it as a pointer)
 ( xx @ )
@@ -15,45 +13,134 @@
 	CONSTANT 			(create word for the pointer)
 	;
 
-: x 33 cpush a . ;
+
+( --- example: solar trickle charger --- )
+( A low voltage, low power solar panel is coupled to a capacitor )
+( Since the panel efficiency is best when the load isn't draining it, we only forward current when that cap is above a certain value)
+( The current is forwarded as a pulse through an inductor, via a small resistor )
+( When the current stops, the inductor discharges through a diode into the charge capacitor )
+( When the voltage of the charge cap exceeds the battery voltage by a certain amount, we send a pulse from it to the battery )
+( Unless the battery is full, then we wait until voltage drops below a certain threshold )
+
+( If the input voltage on the solar panel capacitor is too low, then the microcontroller goes to deep sleep )
+( The max duration of this sleep for atmega328p is 8 seconds )
 
 
-(single loop test - 11000 ms)
-: count
-	0 cpush   (a)
-	DO
-		a .
-		a 1 add a!
-		a 5000 lt AGAIN?
+HERE CONSTANT beforeCode
+
+(--- native stuff ---)
+
+: outDigital ( pin value -- ) 	;
+: inAnalog  ( pin ) 			;
+: inDigital  ( pin ) 			;
+
+: writeDigital ( pin value -- ) drop drop  ;
+: readDigital  ( pin -- value ) drop 1 ;
+: readAnalog   ( pin -- value ) drop 512 ;
+
+: pulseMicros  ( pin value -- ) drop drop ;
+
+: sleep8s ( deep sleep 8 seconds ) ;
+: sleepMillis ( millis -- ) ;
+
+(--- pins ---)
+
+4 CONSTANT solarVoltagePin
+5 CONSTANT battVoltagePin
+6 CONSTANT chargeVoltagePin	(charge cap pumped up via inductor)
+8 CONSTANT valveSolar
+8 CONSTANT valveCharge
+9 CONSTANT valveAref
+
+10 CONSTANT ledCharge
+11 CONSTANT ledInductor
+12 CONSTANT ledFull
+
+: init
+	solarVoltagePin inAnalog
+	battVoltagePin  inAnalog
+	chargeVoltagePin inAnalog
+
+	valveSolar 0 outDigital
+	valveCharge 0 outDigital
+	valveAref 1 outDigital
+
+	ledCharge 0 outDigital
+	ledInductor 0 outDigital
+	ledFull 0 outDigital
 	;
 
-: count2  (without local variable - 8950 ms)
-	0
-	DO
-		dup .
-		1 add
-		dup 5000 lt AGAIN?
+: prepareShutdown
+	valveSolar 0 writeDigital
+	valveCharge 0 writeDigital
+	valveAref 0 writeDigital
+
+	ledCharge 0 writeDigital
+	ledInductor 0 writeDigital
 	;
 
+( voltages given 0-1023 analog read value AND voltage divider setups )
+634 CONSTANT solarVoltageOk
+850 CONSTANT battVoltageMax
+		
+: solarVoltage solarVoltagePin readAnalog ;
+: battVoltage battVoltagePin readAnalog ;
+: chargeVoltage chargeVoltagePin readAnalog ;
 
-
-(nested loops test - OK)
-: mult
-	1 cpush (a)
-	1 cpush (b)
-	DO
-		1 b!
-		DO
-			cr a b mul print#
-			b 1 add b!
-			b 10 lt AGAIN?
-			
-		a 1 add a!
-		a 10 lt AGAIN?
+: chargeVoltageOk (? does charge cap contain high enough voltage to charge battery ?)
+	battVoltage 125 add 
+	chargeVoltage
+		gt
 	;
+
+: batteryFull (? is battery voltage at max ?)
+	battVoltage battVoltageMax gt ;
+	;
+
+: charge
+	solarVoltage solarVoltageOk lt IF 
+		prepareShutdown
+		sleep8s
+		ret		(never called, as sleep restarts microcontroller)
+	THEN
+
+	batteryFull IF 
+		ledFull 1 writeDigital
+		ret 
+	THEN
+
+	ledFull 0 writeDigital
 	
+	chargeVoltageOk IF
+		valveCharge 5 1 pulseMicros  (charge battery for 5 us)
+		1 ledCharge writeDigital
+		0 ledInductor writeDigital
+		ret
+	THEN
+
+	0 ledCharge writeDigital
+
+	valveSolar 1 1 pulseMicros ( charge inductor for 1 us)
+
+	1 ledInductor writeDigital
+
+	;
+
+: main init DO 
+	1 sleepMillis 
+	charge 
+	1 AGAIN? ;
+
+
+: dummy cr "starting... .str cr ;
+
+
+
+cr cr "#bytes_ .str HERE beforeCode sub print#
+cr cr
+
+(start running)
+dummy
 
 #END
-
-
 
