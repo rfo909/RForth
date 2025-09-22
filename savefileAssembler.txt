@@ -249,12 +249,12 @@
 	native		:a	;; call native function by name
 	
 	;; I/O
-	show		:V   ;; ( ptr ptr ... N -- ) - display N STRINGS with space between them
 	print		:W   ;; print any single value in hex
 	cr			:X
 	print#		:Y   ;; print value in decimal
 	printb		:L   ;; print value in binary
 	printc		:U   ;; print value as character (if single byte)
+	print#s		:b	 ;; print value as signed decimal
 	
 	halt		:Z   ;; halt automatic execution in interactive interpreter (hard-coded breakpoint)
 				;; on a microcontroller we will just run in a tight forever loop when halted

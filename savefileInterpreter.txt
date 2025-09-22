@@ -376,29 +376,12 @@
 		println
 	}
 	
-	self._V=Lambda{ # show ( sym sym ... count -- )
-		count=self.pop  # number of strings
-
-		Std.Data.for(0,count,1)->i
-			out(self.pop)
-		| _.reverse -> addr
-			length=self.memory.readByte(addr)
-			
-			# read characters
-			Inner{
-				Std.Data.for(0,length,1)->pos
-					ch=self.memory.readChar(addr+1+pos)  # +1 skip length byte
-					out(ch)
-			} _.concat => symbol
-			
-			self.addOutputText(""+symbol+" ")
-	}
 	self._W=Lambda{ # print print top value on hex format
 		value=self.pop
 		print("0x"+value.hex(4))
 		self.addOutputText("0x" + value.hex(4))
 	}
-	self._Y=Lambda{ # print# print top value on decimal format
+	self._Y=Lambda{ # print# print top value on unsigned decimal format
 		value=self.pop
 		print(value)
 		self.addOutputText(""+value)
@@ -409,6 +392,20 @@
 		print(s)
 		self.addOutputText(s.sub(0,8)+"_"+s.sub(8))
 	}
+	self._b=Lambda{ # print#s print top value on signed decimal format
+		value=self.pop
+		if (value.bin(self.WORDSIZE*8).chars.first=="1") {
+			# reverse 2nd complement
+			Inner{
+				(value-1).bin(self.WORDSIZE*8).chars->x
+					if (x=="0") out("1") else out("0")
+			} _.concat.parseInt(2) => value
+
+			value=-value
+		} 
+		print(value)
+		self.addOutputText(""+value)
+	}	
 	self._X=Lambda{ # cr print newline
 		println
 		self.addOutputCR
@@ -501,13 +498,16 @@
 			self.memory.writeByte(target+i, self.memory.readByte(source+i))
 	}
 
-	self._1=Lambda { # atoi ( strPtr targetPtr -- bool ) 
+	self._1=Lambda { # atoi ( strPtr targetPtr -- bool ) decimal, 0x... hex b... binary
 		targetPtr=self.pop
 		strPtr=self.pop
 		len=self.memory.readByte(strPtr)
 		Std.Data.for(0,len,1)->i
 				out(Sys.uchar(self.memory.readByte(strPtr+1+i)))
 		| _.concat => str
+
+		negative = (str.startsWith("-")) 
+		if (negative) str=str.sub(1)
 
 		value=null
 		if (str.startsWith("0x") && str.sub(2).?parseInt(16)) {
@@ -517,6 +517,8 @@
 		} else if (str.?parseInt) {
 			value=str.parseInt
 		} 
+
+		if (negative) value=-value
 
 		# boolean return value to stack
 		self.push(if(value != null, 1, 0))

@@ -50,7 +50,8 @@ or       | boolean ( a b -- 0|1 )
 orb      | binary or ( a b -- c )
 over     | ( a b -- a b a )
 print    | print top value on hex format
-print#   | print top value on decimal format
+print#   | print top value on unsigned decimal format
+print#s  | print top value on signed decimal format
 printb   | print top value on binary format
 printc   | print byte as character
 rback?   | ( bool offset -- ) subtracts offset from PC - for relocatable forth word code
@@ -58,14 +59,14 @@ readb    | read byte ( addr -- value )
 readc    | ( -- byte ) - read single character - blocking
 ret      | return
 rfwd?    | ( bool offset -- ) adds offset to PC - for relocatable forth word code
-show     | ( sym sym ... count -- )
 streq    | compare strings, return 0 if not and 1 if equal
 sub      | ( a b -- a-b )
 swap     | ( a b -- b a )
 sym2s    | convert symbol offset to string pointer
 tag      | ( str -- num ) Lookup tag by string, 0 if not found
 wordsize | ( -- N )
-writeb   | write byte ( addr -- value )      
+writeb   | write byte ( addr -- value )
+ 
 
 ```
 

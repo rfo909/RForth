@@ -1,4 +1,4 @@
-: . cr print# ;
+: . cr print#s ;
 
 
 
