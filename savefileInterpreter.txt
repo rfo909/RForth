@@ -667,6 +667,22 @@
 				null
 			}
 		))
+		.set("calc",
+			NativeFunction(1,Lambda{
+				P(1) as List=>params
+				P(2) as &Memory => memory
+				P(3) => name 
+
+				ptr=params.first
+				len=memory.readByte(ptr)
+				Std.Data.for(0,len,1)->i
+					pos=ptr+1+i
+					out(memory.readChar(pos))
+				| _.concat => expr
+				
+				Sys.eval(expr).i
+			}
+		))
 
 		# test
 		.set("add",

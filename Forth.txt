@@ -18,7 +18,6 @@
 : x 33 cpush a . ;
 
 
-
 (single loop test - 11000 ms)
 : count
 	0 cpush   (a)
@@ -52,6 +51,7 @@
 		a 1 add a!
 		a 10 lt AGAIN?
 	;
+	
 
 #END
 
