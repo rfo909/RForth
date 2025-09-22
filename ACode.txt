@@ -178,7 +178,7 @@
 	
 	&NextWord 1 add readb 39 eq &*noReplace jmp?  ;; starts with single quote
 
-	&NextWord 'u2spc native				;; replace underscores with space (directly in RAM)
+	&NextWord 'u2spc nativec native				;; replace underscores with space (directly in RAM)
 	
 	:*noReplace
 
@@ -678,6 +678,7 @@
 	:*done
 	ret
 
+	
 ;; Create code for access to four variables abcd from Forth, in same way as in this file
 
 :aGet 0 0 &EmitNumber call 51 &EmitByte call ret  		;; 51 = '3' = cget
@@ -753,6 +754,7 @@
 	%'mul           HEX:002A        INSTR       %NEXT        ;; *
 	%'n2code        HEX:0032        INSTR       %NEXT        ;; 2
 	%'native        HEX:0061        INSTR       %NEXT        ;; a
+	%'nativec       HEX:0063        INSTR       %NEXT        ;; c
 	%'ne            HEX:0068        INSTR       %NEXT        ;; h
 	%'not           HEX:0069        INSTR       %NEXT        ;; i
 	%'null          HEX:007A        INSTR       %NEXT        ;; z
@@ -769,17 +771,12 @@
 	%'readc         HEX:0076        INSTR       %NEXT        ;; v
 	%'ret           HEX:0052        INSTR       %NEXT        ;; R
 	%'rfwd?         HEX:0036        INSTR       %NEXT        ;; 6
-	%'show          HEX:0056        INSTR       %NEXT        ;; V
 	%'streq         HEX:0042        INSTR       %NEXT        ;; B
 	%'sub           HEX:002D        INSTR       %NEXT        ;; -
 	%'swap          HEX:006D        INSTR       %NEXT        ;; m
 	%'tag           HEX:0038        INSTR       %NEXT        ;; 8
 	%'wordsize      HEX:006B        INSTR       %NEXT        ;; k
 	%'writeb        HEX:0048        INSTR       %NEXT        ;; H
-
-
-
-
 
 
 

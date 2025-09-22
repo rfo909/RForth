@@ -247,6 +247,7 @@
 	PANIC		:0	;; clean up stacks and set PC=0
 	
 	native		:a	;; call native function by name
+	nativec	:c	;; compile native name to address
 	
 	;; I/O
 	print		:W   ;; print any single value in hex

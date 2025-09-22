@@ -135,9 +135,9 @@
 		self.frameStack.pop
 	}
 	
-	# native interface dictionary
+	# native interface functions list
 	
-	self.nativeFunctions=Interpreter:NativeFunctions
+	self.nativeFunctions=Interpreter:NativeFunctions 
 
 	# initialize frame stack these numbers are offsets on the callStack
 
@@ -605,18 +605,11 @@
 		}
 	}
 	
-	self._a = Lambda { # native ( ... str -- ? )
-		namePtr=self.pop
-		length=self.memory.readByte(namePtr)
-		s=""
-		Std.Data.for(0,length,1)->i
-			s=s+self.memory.readChar(namePtr+1+i)
-		|
-		#println("native: " + s)
-		if (!self.nativeFunctions.has(s)) {
-			println("NATIVE function '" + s + "' not found")
-		}
-		nativeFunction=self.nativeFunctions.get(s)
+	self._a = Lambda { # native ( ... addr -- int? ) - call nativec with string to get the addr value
+		pos=self.pop
+		error(pos<0 || pos > self.nativeFunctions.length, "native: invalid addr " + pos)
+		
+		nativeFunction=self.nativeFunctions.get(pos)
 		
 		params=List
 		Std.Data.for(0,nativeFunction.inCount,1)->i
@@ -627,12 +620,24 @@
 		
 		# in CFT since the code is a Lambda inside a Dict, it has been transformed
 		# into a closure, with the dictionary becoming the persistent "self" object
-		result = nativeFunction.code(params, self.memory, s)
+		result = nativeFunction.code(params, self.memory)
 
 		if (Sys.getType(result)=="int") {
 			self.push(result) # must be int, possibly a pointer into memory
 		}
-	}	
+	}
+	
+	self._c = Lambda { # nativec ( str -- addr ) - compile native reference into numeric format
+		ptr=self.pop
+		
+		len=self.memory.readByte(ptr)
+		Std.Data.for(0,len,1)->i
+			pos=ptr+1+i
+			out(self.memory.readChar(pos))
+		| _.concat => name
+		addr = Interpreter:CompileNativeCall(name)
+		self.push(addr)
+	}
 	
 		
 		
@@ -642,61 +647,66 @@
 
 # Native function (written in interpreter implementation language, in this case CFT)
 # --
-	P(1) as int => inCount
-	P(2) as Callable => code
+	P(1) as String => name
+	P(2) as int => inCount
+	P(3) as Callable => code
 	
-	SymDict(inCount,code)
+	SymDict(name,inCount,code)
 /NativeFunction
 
 
+# Lookup native call, return index into NativeFunctions list
+# --
+	P(1) as String => name
+	#println("CompileNativeCall, name=" + name)
+	
+	found=false
+	pos=0
+	NativeFunctions->f
+		if(f.name==name) {
+			found=true
+			break
+		}
+		pos=pos+1
+	|
+	error(!found,"Native function '" + name + "' not found!")
+	pos
+/CompileNativeCall
+
+	
 # Native functions (written in C or as here, in CFT)
 # --
-	Dict
+	List(
+
 		# convert underscore to space in string; called from REPL for "xxx_yyy strings 
+
+		NativeFunction("u2spc", 1, Lambda{
+			P(1) as List=>params
+			P(2) as &Memory => memory
+			
+			ptr=params.first
+			len=memory.readByte(ptr)
+			Std.Data.for(0,len,1)->i
+				pos=ptr+1+i
+				if (memory.readChar(pos)=="_") memory.writeChar(pos," ")
+			|
+			null
+		}),
 		
-		.set("u2spc",
-			NativeFunction(1, Lambda{
-				P(1) as List=>params
-				P(2) as &Memory => memory
-				P(3) => name 
-				
-				ptr=params.first
-				len=memory.readByte(ptr)
-				Std.Data.for(0,len,1)->i
-					pos=ptr+1+i
-					if (memory.readChar(pos)=="_") memory.writeChar(pos," ")
-				|
-				null
-			}
-		))
-		.set("calc",
-			NativeFunction(1,Lambda{
-				P(1) as List=>params
-				P(2) as &Memory => memory
-				P(3) => name 
+		NativeFunction("calc",1,Lambda{
+			P(1) as List=>params
+			P(2) as &Memory => memory
 
-				ptr=params.first
-				len=memory.readByte(ptr)
-				Std.Data.for(0,len,1)->i
-					pos=ptr+1+i
-					out(memory.readChar(pos))
-				| _.concat => expr
-				
-				Sys.eval(expr).i
-			}
-		))
-
-		# test
-		.set("add",
-			NativeFunction(2,Lambda{
-				P(1) as List=>params
-				P(2) as &Memory => memory
-
-				params.sum
-			}
-		))
-		
-	
+			ptr=params.first
+			len=memory.readByte(ptr)
+			Std.Data.for(0,len,1)->i
+				pos=ptr+1+i
+				out(memory.readChar(pos))
+			| _.concat => expr
+			
+			Sys.eval(expr).i
+		})
+	)	
 /NativeFunctions
 
 # Show frame stack

@@ -1,5 +1,3 @@
-HERE CONSTANT beforeCode
-
 
 : . cr print#s ;
 
@@ -16,6 +14,34 @@ HERE CONSTANT beforeCode
 	CONSTANT 			(create word for the pointer)
 	;
 
+( NATIVE name - calls native function by name - when compiling generates code to call native with correct addr )
+: NATIVE
+	IMMEDIATE
+	'NATIVE_RUNNING .str
+	&GetNextWord call
+	
+	cr "Got_native_func_ .str &NextWord .str	
+
+	&NextWord nativec cpush  (a=native function address)
+	cr "Got_addr_ .str a print#
+	
+	
+	&IsCompiling readb IF
+		(compiling mode)
+		a 0 &EmitNumber call
+		97 &EmitByte call     (native = a = 97)
+	ELSE
+		(interpreting mode)
+		a native
+	THEN
+
+	;
+
+
+
+HERE CONSTANT beforeCode
+
+
 
 ( --- example: solar trickle charger --- )
 ( A low voltage, low power solar panel is coupled to a capacitor )
@@ -29,14 +55,13 @@ HERE CONSTANT beforeCode
 ( The max duration of this sleep for atmega328p is 8 seconds )
 
 
-
 (--- native stuff ---)
 
 : outDigital ( pin value -- ) 	;
 : inAnalog  ( pin ) 			;
 : inDigital  ( pin ) 			;
 
-: writeDigital ( pin value -- ) drop drop  ;
+: writeDigital ( pin value -- ) drop drop ;
 : readDigital  ( pin -- value ) drop 1 ;
 : readAnalog   ( pin -- value ) drop 512 ;
 
