@@ -553,6 +553,9 @@
 		;; add a ret instruction to CompileBuf
 		0x52 &EmitByte call
 
+		"_#bytes= .str
+		&CompileBuf readb print#
+
 		;; allocate permanent code buffer including length byte
 		HERE cpush								;; a=codebuffer
 		&CompileBuf readb 1 add				;; length
