@@ -56,7 +56,9 @@ HERE CONSTANT beforeCode
 11 CONSTANT ledInductor
 12 CONSTANT ledFull
 
-: init
+13 CONSTANT enableLoad
+
+: Init
 	solarVoltagePin inAnalog
 	battVoltagePin  inAnalog
 	chargeVoltagePin inAnalog
@@ -68,50 +70,80 @@ HERE CONSTANT beforeCode
 	ledCharge 0 outDigital
 	ledInductor 0 outDigital
 	ledFull 0 outDigital
+
+	enableLoad 0 outDigital
 	;
 
-: prepareShutdown
+: DeepSleep
 	valveSolar 0 writeDigital
 	valveCharge 0 writeDigital
 	valveAref 0 writeDigital
 
 	ledCharge 0 writeDigital
 	ledInductor 0 writeDigital
+
+	enableLoad 0 writeDigital
+
+	sleep8s
 	;
 
 ( voltages given 0-1023 analog read value AND voltage divider setups )
 634 CONSTANT solarVoltageOk
 850 CONSTANT battVoltageMax
+456 CONSTANT battVoltageLoadMin  (below this, kill external load, signaled via the enableLoad pin)
 		
-: solarVoltage solarVoltagePin readAnalog ;
-: battVoltage battVoltagePin readAnalog ;
-: chargeVoltage chargeVoltagePin readAnalog ;
+: SolarVoltage solarVoltagePin readAnalog ;
+: BattVoltage battVoltagePin readAnalog ;
+: ChargeVoltage chargeVoltagePin readAnalog ;
+: CanPowerLoad  BattVoltage battVoltageLoadMin ge ;
 
-: chargeVoltageOk (? does charge cap contain high enough voltage to charge battery ?)
-	battVoltage 125 add 
-	chargeVoltage
+: ChargeVoltageOk (? does charge cap contain high enough voltage to charge battery ?)
+	BattVoltage 125 add 
+	ChargeVoltage
 		gt
 	;
 
-: batteryFull (? is battery voltage at max ?)
-	battVoltage battVoltageMax gt ;
+: BatteryFull (? is battery voltage at max ?)
+	BattVoltage battVoltageMax gt ;
 	;
 
-: charge
-	solarVoltage solarVoltageOk lt IF 
-		prepareShutdown
-		sleep8s
+
+10000 CONSTANT sleepInterval  ( longer sleep after this number of cycles, to give battery rest )
+sleepInterval VARIABLE sleepCountDown
+
+: MakePause?
+	sleepCountDown 0 eq IF 
+		20000 sleepMillis
+		sleepInterval sleepCountDown !
+	THEN
+	sleepCountDown @ 1 sub sleepCountDown !
+;
+
+
+
+: Charge
+
+	CanPowerLoad IF 
+		enableLoad 1 writeDigital 
+	ELSE 
+		enableLoad 0 writeDigital 
+	THEN
+
+	SolarVoltage solarVoltageOk lt IF 
+		DeepSleep
 		ret		(never called, as sleep restarts microcontroller)
 	THEN
 
-	batteryFull IF 
+	MakePause?
+
+	BatteryFull IF 
 		ledFull 1 writeDigital
 		ret 
 	THEN
 
 	ledFull 0 writeDigital
 	
-	chargeVoltageOk IF
+	ChargeVoltageOk IF
 		valveCharge 5 1 pulseMicros  (charge battery for 5 us)
 		1 ledCharge writeDigital
 		0 ledInductor writeDigital
@@ -126,9 +158,12 @@ HERE CONSTANT beforeCode
 
 	;
 
-: main init DO 
-	1 sleepMillis 
-	charge 
+
+: Main 
+	Init 
+	DO
+		1 sleepMillis 
+		Charge 
 	1 AGAIN? ;
 
 
