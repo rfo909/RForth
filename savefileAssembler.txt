@@ -212,6 +212,7 @@
 	sub		:-
 	mul		:*
 	div		:/
+	1+		:d
 
 	;; logical operations
 	eq		:=	;; 0 or 1

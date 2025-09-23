@@ -121,8 +121,8 @@
 	; cr &NextWord .str 
 
 	&NextWordIsNumber call &*num jmp?  ;; if true stores number value in &NextNumber
-	&NextWord 1 add readb 34 eq &*str jmp?  ;; starts with double quote
-	&NextWord 1 add readb 39 eq &*str jmp?  ;; starts with single quote
+	&NextWord 1+ readb 34 eq &*str jmp?  ;; starts with double quote
+	&NextWord 1+ readb 39 eq &*str jmp?  ;; starts with single quote
 
 		&ProcessWord call
 		&REPL jmp
@@ -133,9 +133,9 @@
 		&ProcessString call
 		&REPL jmp
 
+
 :GetNextWord
 	0 &NextWord writeb
-	0 &NextNumber !
 	
 	0 cpush  		; using a for next char
 	0 cpush			; using b to keep track of length of current word
@@ -146,14 +146,13 @@
 		a 0x20 eq &*done jmp?			;; word identified
 
 		;; update NextWord
-		a &NextWord b 1 add add writeb
-		b 1 add b!
-		b &NextWord writeb
+		a &NextWord b add 1+ writeb
+		b 1+ b!
 		&*nextChar jmp
 	:*done
 		b &NextWord writeb
 		ret
-	
+
 
 :NextWordIsNumber		; if &NextWord is a number, parse it and store in &NextNumber, returns boolean
 	&NextWord &NextNumber atoi ret
@@ -176,41 +175,38 @@
 :ProcessString
 	; NextWord starts with single or double quote; if double quote, replace _ with space
 	
-	&NextWord 1 add readb 39 eq &*noReplace jmp?  ;; starts with single quote
+	&NextWord 1+ readb 39 eq &*noReplace jmp?  ;; starts with single quote
 
 		(replace underscore with space, directly in RAM)
 		&NextWord 'u2spc nativec native
 	
 	:*noReplace
 
-	&NextWord readb 1 sub cpush 		;; a=length of string following quote
-	HERE cpush				;; b=address in memory
-	a 1 add allot				;; allot length of string + length byte
-
-	a b writeb				;; save length of string
+	;; overwrite the quote with length-1
+	&NextWord 1+	cpush			;; a=offset 1
 	
-	&NextWord 2 add				;; src
-		b 1 add
-			a memcpy
+	&NextWord readb 1 sub
+		a writeb
 	
-	b &NextNumber !
-	&ProcessNumber call
+	a &BufCreateCopy call 		( address-of-copy )
+		&NextNumber ! 
+		&ProcessNumber call	;; use the ProcesNumber routine
 	ret
 
 
 :ProcessWord
 	;; check for tag lookup
-	&NextWord 1 add readb 38 ne &*notTag jmp?    ;; starts with &
+	&NextWord 1+ readb 38 ne &*notTag jmp?    ;; starts with &
 		; overwrite amp char with length - 1 
 		&NextWord readb 1 sub
-			&NextWord 1 add writeb
+			&NextWord 1+ writeb
 		; look up tag
-		&NextWord 1 add
+		&NextWord 1+
 			tag cpush		;; a
 		
 		a 0 ne &*foundTag jmp?
 		
-		cr "Invalid_tag_ .str &NextWord 1 add .str
+		cr "Bad_tag_ .str &NextWord 1+ .str
 		PANIC
 	
 	:*foundTag
@@ -230,7 +226,7 @@
 	; ( dictEntryPointer )
 	dup 
 		null eq &*notFound jmp?
-		dup readb add 1 add			;; advance past the string	
+		dup readb add 1+			;; advance past the string	
 	
 	; (dictEntryPointer past the string - pointing at CODE, MODE, NEXT (words)
 	; ( CODE-ptr )
@@ -261,7 +257,7 @@
 
 :EmitByte   ;; ( byte -- )
 	cpush				;; a=bytevalue
-	&CompileBuf readb 1 add cpush	;; b=offset 
+	&CompileBuf readb 1+ cpush	;; b=offset 
 	a b &CompileBuf add writeb
 	b &CompileBuf writeb
 	ret
@@ -272,7 +268,7 @@
 	cpush			;; b=nbytes
 	
 	;; calculate write position
-	&CompileBuf readb 1 add &CompileBuf add cpush    ;; c
+	&CompileBuf readb 1+ &CompileBuf add cpush    ;; c
 	
 	;; generate number as code
 	a 
@@ -299,7 +295,7 @@
 		b a streq &*found jmp?		;; got a match
 		
 		b 
-			b readb add 1 add 	;; byte count past string
+			b readb add 1+ 	;; byte count past string
 				W+ W+			;; past code-pointer and flags
 					@			;; read next pointer
 		b!						;; update b with it
@@ -314,13 +310,13 @@
 	swap
 	cpush 	(a=src)
 	cpush	(b=target)
-	a b a readb 1 add memcpy
+	a b a readb 1+ memcpy
 	ret
 	
 :BufCreateCopy ( src -- ptr --- for buffer with length byte)
 	cpush		(a=src)
 	HERE cpush	(b=ptr)
-	a readb 1 add allot 
+	a readb 1+ allot 
 	a b &BufCopy call
 	b
 	ret
@@ -370,7 +366,7 @@
 		a &EmitByte call
 		;; add the opcode
 		0x52 &EmitByte call  		;; add "R" = ret
-		&CompileBuf 1 add call    	;; invoke CompileBuf offset 1 (as byte 0 is the length)
+		&CompileBuf 1+ call    	;; invoke CompileBuf offset 1 (as byte 0 is the length)
 		ret
 	:*inlineData
 		;; Data word, push code pointer value to stack
@@ -393,14 +389,14 @@
 	orb        	         	(pos is low byte)
 		cpush			(a=data word)
 
-	&CompileStack readb wordsize mul 1 add
+	&CompileStack readb wordsize mul 1+
 		&CompileStack add 
 			cpush			(b = write pos )
 
 	a b !
 
 	(increase stack counter)
-	&CompileStack readb 1 add &CompileStack writeb
+	&CompileStack readb 1+ &CompileStack writeb
 	ret
 	
 
@@ -413,7 +409,7 @@
 	:*next
 		&CompileStack 
 			b wordsize mul add 
-				1 add c!		(c=actual read pos)
+				1+ c!		(c=actual read pos)
 		;;cr "Compile_stack:_ .str "read_pos=" .str c print
 		;;cr "Compile_stack:_ .str "checking_value= .str c @ print
 
@@ -422,12 +418,10 @@
 		b 1 sub b!
 		&*next jmp
 	:*emptyStack
-		cr "Compile_stack:_ .str "empty .str
+		cr "CStack_empty .str
 		PANIC
 	:*notFound
-		cr "Compile_stack:_ .str 
-		"No_matching_type_ .str
-		a print#
+		cr "CStack:_no_type_ .str a print#
 		PANIC
 	:*found
 		c @ 255 andb		( return value )
@@ -470,7 +464,7 @@
 
 	(patch the IF forward jump)
 	c					(offset)
-		&CompileBuf 1 add
+		&CompileBuf 1+
 			a add   		( write pos )
 				1 n2code drop	( generate c as code, handles values 0-63 only )
 					( NOTE: don't update buffer count, since this is a patch of an earlier loc )
@@ -507,7 +501,7 @@
 	
 	a
 		COMPS_TYPE_DO &comps@ call sub	( calculate offset from current pos back to the position stored at DO )
-		1 add 				( compensate for one byte of jump offset )
+		1+ 				( compensate for one byte of jump offset )
 			cpush			( b=back jump count from rback? )
 
 	b 
@@ -541,8 +535,7 @@
 	ret
 
 	:*numberError
-		cr "Can_not_use_number_as_word_name:_ .str
-		&NextWord .str
+		cr "Bad_word_name:_ .str &NextWord .str
 		&ResetCompile call
 		PANIC
 
@@ -555,7 +548,7 @@
 		ret
 	:*ok
 		;; info
-		cr "Finishing_word_ .str &IsCompilingWord .str
+		cr "Word_ .str &IsCompilingWord .str
 
 		;; add a ret instruction to CompileBuf
 		0x52 &EmitByte call
@@ -567,11 +560,11 @@
 		&CompileBuf &BufCreateCopy call cpush            ;; a=codeBuffer
 		
 					
-		a 1 add a!	; skip the length byte
+		a 1+ a!	; skip the length byte
 		
 		;; allocate dictionary entry
 		HERE cpush					;; b=dictEntry
-		&IsCompilingWord readb 1 add			;; length of symbol
+		&IsCompilingWord readb 1+			;; length of symbol
 			wordsize 3 mul add				;; code pointer, flags, next
 				allot
 
@@ -581,7 +574,7 @@
 		;; advance dict entry pointer past name
 		b readb 
 			b add 
-				1 add cpush					;; c=point to CODE field
+				1+ cpush					;; c=point to CODE field
 
 		;; write code address and advance c
 		a c !
@@ -604,10 +597,6 @@
 		;; all done
 		ret
 
-	:*noSymbol
-		"No_symbol_defined_for_word .str
-		PANIC
-
 
 
 (variables are memory areas pointed to by named constants)
@@ -621,7 +610,7 @@
 	
 	;; allocate dictionary entry
 	HERE cpush					;; b=dictEntry
-	&NextWord readb 1 add				;; length of symbol
+	&NextWord readb 1+				;; length of symbol
 		wordsize 3 mul add			;; code pointer, flags, next
 			allot
 
@@ -630,17 +619,17 @@
 	
 	;; write value into code pointer field
 	a						(value)
-		b dup readb add 1 add			(target address)
+		b dup readb add 1+			(target address)
 			!
 	
 	
 	;; write CONSTANT into mode
 	MODE_CONSTANT
-		b dup readb add 1 add wordsize add		(target address)
+		b dup readb add 1+ wordsize add		(target address)
 			!
 			
 	;; location of next pointer
-	b dup readb add 1 add wordsize dup add add cpush		(c=next field)
+	b dup readb add 1+ wordsize dup add add cpush		(c=next field)
 	
 	;; write next pointer
 	&DictionaryHead @ c !
@@ -664,7 +653,7 @@
 		
 		a b!			;; b=name
 		cr
-		a readb a add 1 add a!   		;; past the name
+		a readb a add 1+ a!   		;; past the name
 		a @ print			;; code address
 		"_ .str b .str			;; name
 		a W+ W+ @ a!			;; a=a.next
@@ -673,7 +662,7 @@
 	ret
 
 	
-;; Create code for access to four variables abcd from Forth, in same way as in this file
+;; Create code for access to four variables abcd from Forth, in same way as in this file (compile only)
 
 :aGet 0 0 &EmitNumber call 51 &EmitByte call ret  		;; 51 = '3' = cget
 :bGet 1 0 &EmitNumber call 51 &EmitByte call ret

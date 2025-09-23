@@ -220,6 +220,11 @@
 	self.set("_<", Lambda{b=self.pop a=self.pop value=if(a<b,1,0) self.push(value)}) # lt ( a b -- 0|1 )
 	self.set("_=", Lambda{b=self.pop a=self.pop value=if(a==b,1,0) self.push(value)}) # eq ( a b -- 0|1 )
 	self.set("_>", Lambda{b=self.pop a=self.pop value=if(a>b,1,0) self.push(value)}) # gt ( a b -- 0|1 )
+	
+	self._d=Lambda{ # 1+ ( n -- n+1 )
+		self.push(self.pop+1)
+	}
+	
 	self._h=Lambda{	# ne boolean ( a b -- 0|1 )
 		b=self.pop a=self.pop value=if(a!=b,1,0) self.push(value)
 	}
@@ -289,7 +294,7 @@
 
 		self.PC=targetAddr # JMP
 	}
-	
+
 	self._I=Lambda{  # @ read word
 		addr=self.pop
 		self.push(self.memory.readWord(addr))
@@ -323,6 +328,7 @@
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		self.memory.writeWord(base+self.WORDSIZE*index, value)	
 	}
+	
 	self._j=Lambda { # drop  ( a -- )
 		self.pop
 	}
