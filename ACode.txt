@@ -178,7 +178,8 @@
 	
 	&NextWord 1 add readb 39 eq &*noReplace jmp?  ;; starts with single quote
 
-	&NextWord 'u2spc nativec native		;; replace underscores with space (directly in RAM)
+		(replace underscore with space, directly in RAM)
+		&NextWord 'u2spc nativec native
 	
 	:*noReplace
 
@@ -307,6 +308,22 @@
 		null ret
 	:*found
 		b ret
+		
+		
+:BufCopy ( src target --   --- for buffer with length byte)
+	swap
+	cpush 	(a=src)
+	cpush	(b=target)
+	a b a readb 1 add memcpy
+	ret
+	
+:BufCreateCopy ( src -- ptr --- for buffer with length byte)
+	cpush		(a=src)
+	HERE cpush	(b=ptr)
+	a readb 1 add allot 
+	a b &BufCopy call
+	b
+	ret
 
 :ExecuteWord ;; ( code-ptr-ptr mode-value -- ) ;; decide how to handle word
 	swap @ cpush				; a=code-ptr  
@@ -504,24 +521,18 @@
 ;; Implementations for initial complex words in dictionary
 ;; -----------------------------------------------
 
+
 	
 :COLON
-	;; already in compile mode?
-	&IsCompiling readb &*nestedError jmp?
-
 	;; set compile mode
 	1 &IsCompiling writeb
 
-	;; next word is to be a literal
 	&GetNextWord call
 	
 	&NextWordIsNumber call &*numberError jmp?
 	
 	;; copy NextWord to IsCompilingWord buffer
-	&NextWord
-		&IsCompilingWord
-			&NextWord readb 1 add
-				memcpy
+	&NextWord &IsCompilingWord &BufCopy call
 	
 	;; set compile output length to 0
 	0 &CompileBuf writeb
@@ -529,10 +540,6 @@
 	;; that's all?
 	ret
 
-	:*nestedError
-		cr "Can_not_nest_colons:_ .str "_Ignoring .str
-		PANIC
-	
 	:*numberError
 		cr "Can_not_use_number_as_word_name:_ .str
 		&NextWord .str
@@ -557,29 +564,19 @@
 		&CompileBuf readb print#
 
 		;; allocate permanent code buffer including length byte
-		HERE cpush								;; a=codebuffer
-		&CompileBuf readb 1 add				;; length
-			allot
-
-		;; copy code into codebuffer including the length
-		&CompileBuf 
-			a
-				&CompileBuf readb 1 add
-					memcpy
+		&CompileBuf &BufCreateCopy call cpush            ;; a=codeBuffer
+		
 					
 		a 1 add a!	; skip the length byte
 		
 		;; allocate dictionary entry
-		HERE cpush							;; b=dictEntry
+		HERE cpush					;; b=dictEntry
 		&IsCompilingWord readb 1 add			;; length of symbol
 			wordsize 3 mul add				;; code pointer, flags, next
 				allot
 
 		;; copy symbol
-		&IsCompilingWord					;; src
-			b								;; target
-				&IsCompilingWord readb 1 add	;; byte count
-					memcpy
+		&IsCompilingWord b &BufCopy call
 		
 		;; advance dict entry pointer past name
 		b readb 
@@ -629,10 +626,7 @@
 			allot
 
 	;; copy symbol
-	&NextWord					;; src
-		b					;; target
-			&NextWord readb 1 add		;; byte count
-				memcpy
+	&NextWord b &BufCopy call
 	
 	;; write value into code pointer field
 	a						(value)
