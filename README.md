@@ -322,14 +322,42 @@ different modes:
 - CONSTANT		(code pointer is a constant data value)
 
 
-2025-09-21 native
+2025-09-22 native
 -----------------
-Added instruction "native", to invoke functions inside the interpreter. Using this
-to implement 'u2spc which converts underscores to spaces in a string, calling it from
+Added instructions "nativec" and "native", to invoke functions inside the interpreter. Using this
+to implement function "u2spc" which converts underscores to spaces in a string, calling it from
 ProcessString in ACode.txt
 
-Note that native commands are not checked for existence at compile time, so use with
-care. They can return a single (optional) int, which may be a value or a pointer.
+Note that calling native functions is a two step process. The "nativec" (compile) takes a string,
+and returns an address (int), which is used with the actual call, "native". 
+
+Implemented a NATIVE word in Forth, using these. It handles both compile mode and interpret mode,
+and takes the name of the native function from the input, which saves us from creating a string
+constant each time calling native.
+
+```
+: NATIVE
+	IMMEDIATE
+	&GetNextWord call
+	&NextWord nativec cpush  (a=native function address)
+	&IsCompiling readb IF
+		(compiling mode)
+		a 0 &EmitNumber call
+		97 &EmitByte call     (native = a = 97)
+	ELSE
+		(interpreting mode)
+		a native
+	THEN
+;
+
+: testNative '300/50+10 NATIVE calc . ;
+
+```
+
+This implementation has two purposes: it detects at compile time when trying to call an invalid
+native function, and it speeds up the actual call, as it doesn't have to search the internal
+list of native functions.
+
 
 Dictionary entry format
 -----------------------

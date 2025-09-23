@@ -178,15 +178,15 @@
 	
 	&NextWord 1 add readb 39 eq &*noReplace jmp?  ;; starts with single quote
 
-	&NextWord 'u2spc nativec native				;; replace underscores with space (directly in RAM)
+	&NextWord 'u2spc nativec native		;; replace underscores with space (directly in RAM)
 	
 	:*noReplace
 
-	&NextWord readb 1 sub cpush 			;; a=length of string following quote
-	HERE cpush								;; b=address in memory
-	a 1 add allot							;; allot length of string + length byte
+	&NextWord readb 1 sub cpush 		;; a=length of string following quote
+	HERE cpush				;; b=address in memory
+	a 1 add allot				;; allot length of string + length byte
 
-	a b writeb								;; save length of string
+	a b writeb				;; save length of string
 	
 	&NextWord 2 add				;; src
 		b 1 add
@@ -777,6 +777,7 @@
 	%'tag           HEX:0038        INSTR       %NEXT        ;; 8
 	%'wordsize      HEX:006B        INSTR       %NEXT        ;; k
 	%'writeb        HEX:0048        INSTR       %NEXT        ;; H
+
 
 
 

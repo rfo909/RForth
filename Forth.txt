@@ -1,3 +1,5 @@
+( the #END mark is used to cut the rest of the file off as input to the interpreter )
+( --------------------------------------------------------------------------------- )
 
 : . cr print#s ;
 
@@ -14,18 +16,10 @@
 	CONSTANT 			(create word for the pointer)
 	;
 
-( NATIVE name - calls native function by name - when compiling generates code to call native with correct addr )
 : NATIVE
 	IMMEDIATE
-	'NATIVE_RUNNING .str
 	&GetNextWord call
-	
-	cr "Got_native_func_ .str &NextWord .str	
-
 	&NextWord nativec cpush  (a=native function address)
-	cr "Got_addr_ .str a print#
-	
-	
 	&IsCompiling readb IF
 		(compiling mode)
 		a 0 &EmitNumber call
@@ -34,8 +28,9 @@
 		(interpreting mode)
 		a native
 	THEN
+;
 
-	;
+: testNative '300/50+10 NATIVE calc . ;  (prints 16)
 
 
 
