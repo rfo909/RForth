@@ -340,18 +340,6 @@
 		self.push(2)
 		self._3  # cget
 	}
-	self._M=Lambda{ # a! - set local variable a
-		self.push(0)
-		self._4		# cset
-	}
-	self._N=Lambda{ # n! - set local variable b
-		self.push(1)
-		self._4		# cset
-	}
-	self._V=Lambda{ # c! - set local variable c
-		self.push(2)
-		self._4		# cset
-	}
 	
 	self._j=Lambda { # drop  ( a -- )
 		self.pop
