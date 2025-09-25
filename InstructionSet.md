@@ -1,11 +1,11 @@
-2025-09-22
-
+2025-09-25
 
 ```
 Assembler:IDoc
 
 !        | write word                                                                                  
 .str     | print string                                                                                
+1+       | ( n -- n+1 )                                                                                
 <<       | left shift  ( val n -- val )                                                                
 >>       | right shift  ( val n -- val )                                                               
 @        | read word                                                                                   
@@ -30,8 +30,6 @@ dump     | show stack contents ( -- )
 dup      | ( x -- x x )                                                                                
 eq       | ( a b -- 0|1 )                                                                              
 ge       | ( a b -- 0|1 )                                                                              
-global   | get global variable ( N -- value)                                                           
-global!  | set global variable ( value N -- )                                                          
 gt       | ( a b -- 0|1 )                                                                              
 halt     | terminate execution                                                                         
 inv      | binary not  ( a -- b )                                                                      
@@ -65,8 +63,9 @@ sub      | ( a b -- a-b )
 swap     | ( a b -- b a )                                                                              
 sym2s    | convert symbol offset to string pointer                                                     
 tag      | ( str -- num ) Lookup tag by string, 0 if not found                                         
-wordsize | ( -- N )           
- 
+wordsize | ( -- N )                                                                                    
+writeb   | write byte ( addr -- value )    
+
 
 ```
 

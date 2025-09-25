@@ -15,9 +15,6 @@
 	self.WORDSIZE = 2
 	self.memory=HWSim:Memory(self.WORDSIZE)
 		
-	self.globalVariableCount = 8
-		# global variables, read with instruction 'global' and set with 'global!'
-	
 	# --- write the hex string into memory
 	
 	bytes = Util:HexToBytes(hexString)
@@ -84,11 +81,6 @@
 	self.memory.mallocWords(FSTACK_WORDS)
 	self.frameStack=HWSim:MemStack(self.memory, self.fbase, FSTACK_WORDS, "frames")
 
-	# global variables
-
-	self.globalVariablesBase=self.memory.HERE
-	self.memory.mallocWords(self.globalVariableCount)
-	
 	# --- done with integrating code and setting up system structures on heap
 
 	self.DATA_START=0  	# no protection
@@ -463,19 +455,6 @@
 		self.push(HWSim:Rightshift(value, bits, self.WORDSIZE))
 	}
 	
-	self._x=Lambda { # global - get global variable ( N -- value)
-		n=self.pop
-		error(n<0 || n>=self.globalVariableCount, "global: invalid reference: " + n)
-		addr=self.globalVariablesBase + n*2
-		self.push(self.memory.readWord(addr))
-	}
-	self._y=Lambda { # global! - set global variable ( value N -- )
-		n=self.pop
-		value=self.pop
-		error(n<0 || n>=self.globalVariableCount, "global!: invalid reference: " + n)
-		addr=self.globalVariablesBase + n*2
-		self.memory.writeWord(addr, value)
-	}
 	self._Z=Lambda{  # halt - terminate execution
 		self.haltFlag=true
 	}
@@ -750,16 +729,6 @@
 //ShowWordStack
 
 
-# Show global variables
-# --
-	P(1) as &Interpreter => interpreter
-
-	Std.Data.for(0, interpreter.globalVariableCount, 1)->index
-		out(" " + interpreter.memory.readWord(interpreter.globalVariablesBase + index*interpreter.WORDSIZE).hex(4))
-	| _.concat.trim
-
-/ShowGlobals
-
 
 
 # Show memory content
@@ -882,7 +851,8 @@
 # --
 	Sys.savefile.dir.file("Forth.txt").read->line
 		break(line.trim=="#END")
-		s=(line.before("(").trim + " " + line.after(")").trim).trim
+		s=line.before("\")
+		s=(s.before("(").trim + " " + s.after(")").trim).trim
 		reject(s=="")
 		out(s)
 	| => lines
@@ -1053,8 +1023,7 @@
 		println(
 			"#instr=" + interpreter.executionCount,
 			"DATA_START=" + interpreter.DATA_START.hex(4),
-			"HERE=" + interpreter.memory.HERE.hex(4),
-			"Globals=[" + ShowGlobals(interpreter) + "]"
+			"HERE=" + interpreter.memory.HERE.hex(4)
 			)
 		print(Curses:Reset)
 		

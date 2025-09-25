@@ -3,7 +3,7 @@ Forth never ceases to fascinate !
 
 Version 3 (alpha)
 
-2025-09-21
+2025-09-25
 
 Introduction
 =============
@@ -23,7 +23,7 @@ a host of other words, designed very smartly.
 
 I find the Forth way of extending the compiler, by using immediate words, to be really clever!
 
-Writing code in Forth, to compile Forth ... that's awesome.
+Writing code in Forth, to compile Forth ... that's awesome! 
 
 
 Design decision - word size 2 bytes
@@ -34,6 +34,10 @@ store word size values, while the byte code instructions are single byte sized.
 To address physical memory, flash, devices, registers on the Pi Pico, which has 32 bits word
 length, we might combine two RForth words to form a base and add an offset to that to address
 bytes or words. The actual workings of interfacing hardware will have to be resolved later.
+
+Note: javing added a native interface in order to call specially named functions in the Interpreter
+implementation language, makes it less likely messing about with SPI, I2C and GPIO
+hardware via registers, at least for a while.
 
 
 Design decision - byte code
@@ -136,10 +140,10 @@ I also created an Interpreter in CFT, with various options for inspecting
 data structures etc.
 
 The interpreter is growing in complexity, and it is also relatively slow,
-chewing through 5-10k Fdirecassembly instructions per second on my laptop. 
+chewing through 5-10k assembly instructions per second on my laptop. 
 
 That may sound a lot, but with assembly code doing the whole REPL, interpreter and
-compiler, and dictionary lookups, compilation speed is slow.
+compiler, especially the dictionary lookups, compilation speed is slow.
 
 Speed?
 ------
@@ -149,14 +153,15 @@ instruction, running at 80 MHz (Pi Pico), at 1 instruction per clock, should
 result in a throughput of 800 K instructions per second, or about 80-160 times the
 speed of my CFT interpreter.
 
-Compiling code is the hardest work, due to the dictionary traversals, but when
-running a tight iteration, it counts and prints values 0-5000 in about 10-12 seconds.
+Compiling code is the hardest work, due to the dictionary traversals.
+
+Running a tight iteration, it counts and prints values 0-5000 in about 10-12 seconds.
 
 
 ```
 : count
 	0 cpush   (set local variable a)
-	DO
+	BEGIN
 		a .
 		a 1 add a!
 		a 5000 lt AGAIN?
@@ -225,12 +230,13 @@ Local variables
 ---------------
 
 The assembly language supports pushing values from the data stack to the call
-stack, with the cpush instruction. The first four values pushed that way
-get avaiable as local variables a, b, c and d, as follows:
+stack, with the cpush instruction. These are then accessed and modified with
+cget and cset, via defines in ACode.txt, as well as made available to Forth
+code. 
 
 ```
 	45 cpush   # Take value from data stack, push onto call stack
-	           # The first value is denoted a, the second b, and the third c
+	           # The first value is denoted a, the second b, then c and d
 	          
 	a          # Read value of variable a (45)
 	a 1 add a! # Update variable a to 46
@@ -254,9 +260,10 @@ N cset
 ```
 
 
-Note that local variables are implemented as "inlines" in the assembler, and
-with code in ACode.txt which is pointed to by the default dictionary, for the
-same functionality. 
+Note that local variables are implemented as defines in ACode.txt, and
+with small blocks of "assembly" referred by the dictionary, for the same
+functionality in Forth, at least until bothering making a better solution with
+custom named variables.
 
 Debugging
 ---------
@@ -286,14 +293,14 @@ do so by direct addressing, for speed and simplicity.
 
 2025-08-31 Tag lookup
 ---------------------
-Forth code can look up data and functions in ACode.txt by tag, typically &CompileBuf as well as &GetNextWord. 
+Forth code can look up data and functions in ACode.txt by tag, typically &CompileBuf as well as &GetNextWord, and
+with all the assembly instructions available as words, it can call code as well. 
 
 
-
-2025-09-03 ELSE, DO and AGAIN?
+2025-09-03 ELSE, BEGIN and AGAIN?
 ------------------------------
 Implemented a compile stack in ACode.txt, and got ELSE up together with IF and THEN modified to
-use the stack. Also implemented the loop construct DO ... (bool) AGAIN?
+use the stack. Also implemented the loop construct BEGIN ... (bool) AGAIN?
 
 Nested loops works fine, as do nested conditionals. 
 
@@ -331,25 +338,11 @@ ProcessString in ACode.txt
 Note that calling native functions is a two step process. The "nativec" (compile) takes a string,
 and returns an address (int), which is used with the actual call, "native". 
 
-Implemented a NATIVE word in Forth, using these. It handles both compile mode and interpret mode,
+Implemented a NATIVE word in Forth, using these, then migrated it into ACode.txt It handles both compile mode and interpret mode,
 and takes the name of the native function from the input, which saves us from creating a string
 constant each time calling native.
 
 ```
-: NATIVE
-	IMMEDIATE
-	&GetNextWord call
-	&NextWord nativec cpush  (a=native function address)
-	&IsCompiling readb IF
-		(compiling mode)
-		a 0 &EmitNumber call
-		97 &EmitByte call     (native = a = 97)
-	ELSE
-		(interpreting mode)
-		a native
-	THEN
-;
-
 : testNative '300/50+10 NATIVE calc . ;
 
 ```

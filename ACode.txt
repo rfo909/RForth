@@ -2,7 +2,7 @@
 ;; ----------------------------------------
 ;;
 ;; This file implements the REPL, the colon compiler and the initial dictionary.
-;; It implements IF, THEN and ELSE, and the DO ... AGAIN? loop words. It is sufficient
+;; It implements IF, THEN and ELSE, and the BEGIN ... AGAIN? loop words. It is sufficient
 ;; to get off the ground. It contains both code and data, addressed by tags.
 ;;
 ;; When running, the data stack, call stack and call frame stack are defined by the
@@ -154,6 +154,7 @@
 		&*nextChar jmp
 	:*done
 		b &NextWord writeb
+		;;; cr '> .str &NextWord .str
 		ret
 
 
@@ -413,18 +414,18 @@
 		&CompileStack 
 			b wordsize mul add 
 				1+ c!		(c=actual read pos)
-		;;cr "Compile_stack:_ .str "read_pos=" .str c print
-		;;cr "Compile_stack:_ .str "checking_value= .str c @ print
+		;;cr "CompStack:_ .str "read_pos=" .str c print
+		;;cr "CompStack:_ .str "checking_value= .str c @ print
 
 		c @ 8 >> a eq &*found jmp?
 		b 0 eq &*notFound jmp?		(can count no further down)
 		b 1 sub b!
 		&*next jmp
 	:*emptyStack
-		cr "CStack_empty .str
+		cr "CompStack_empty .str
 		PANIC
 	:*notFound
-		cr "CStack:_no_type_ .str a print#
+		cr "CompStack:_no_type_ .str a print#
 		PANIC
 	:*found
 		c @ 255 andb		( return value )
@@ -439,7 +440,7 @@
 ; CompileStack types
 
 #define COMPS_TYPE_IF		0 
-#define COMPS_TYPE_DO		1
+#define COMPS_TYPE_BEGIN		1
 
 ;; NOTE: using single byte relative offsets, which with the number encoding scheme
 ;; means max relative fwd/back is 63 locations. That should be enough for most 
@@ -491,11 +492,11 @@
 	ret
 
 
-:DO
+:BEGIN
 	( store current pos in CompileBuf as type DO on compile stack for conditional back jump from AGAIN? )
 	
 	&CompileBuf readb 
-		COMPS_TYPE_DO 
+		COMPS_TYPE_BEGIN 
 			&comps! call
 	ret
 	
@@ -503,7 +504,7 @@
 	&CompileBuf readb cpush			( a=curr pos in compilebuf )
 	
 	a
-		COMPS_TYPE_DO &comps@ call sub	( calculate offset from current pos back to the position stored at DO )
+		COMPS_TYPE_BEGIN &comps@ call sub	( calculate offset from current pos back to the position stored at DO )
 		1+ 				( compensate for one byte of jump offset )
 			cpush			( b=back jump count from rback? )
 
@@ -641,7 +642,33 @@
 	b &DictionaryHead !
 
 	ret
-		
+
+(Use: value VARIABLE xx, then read and write it as a pointer to a word)
+:VARIABLE ( value )
+	HERE wordsize allot		(value ptr)
+	swap				(ptr value)
+	over				(ptr value ptr) 
+	!				(ptr)
+	&CONSTANT call 			(create word for the pointer)
+	ret
+	
+:DOT
+	print#s
+	ret
+
+:NATIVE
+	&GetNextWord call
+	&NextWord nativec cpush  (a=native function address)
+	&IsCompiling readb not &*interpreting jmp?
+		(compiling mode)
+		a 0 &EmitNumber call
+		97 &EmitByte call     (native = a = 97)
+		ret
+	:*interpreting
+		a native
+		ret
+
+
 :immediate
 	;; change the IsCompilingWordMode to immediate
 	1 &IsCompilingWordMode writeb
@@ -711,14 +738,11 @@
 	%'PANIC         HEX:0030        BIN_INSTR       %NEXT        ;; 0
 	%'PC            HEX:0050        BIN_INSTR       %NEXT        ;; P
 	%'W+            HEX:006E        BIN_INSTR       %NEXT        ;; n
-	%'a             HEX:0035        BIN_INSTR       %NEXT        ;; 5
 	%'add           HEX:002B        BIN_INSTR       %NEXT        ;; +
 	%'allot         HEX:004B        BIN_INSTR       %NEXT        ;; K
 	%'and           HEX:0026        BIN_INSTR       %NEXT        ;; &
 	%'andb          HEX:0071        BIN_INSTR       %NEXT        ;; q
 	%'atoi          HEX:0031        BIN_INSTR       %NEXT        ;; 1
-	%'b             HEX:0039        BIN_INSTR       %NEXT        ;; 9
-	%'c             HEX:0065        BIN_INSTR       %NEXT        ;; e
 	%'call          HEX:0051        BIN_INSTR       %NEXT        ;; Q
 	%'cget          HEX:0033        BIN_INSTR       %NEXT        ;; 3
 	%'clear         HEX:0077        BIN_INSTR       %NEXT        ;; w
@@ -731,8 +755,6 @@
 	%'dup           HEX:006C        BIN_INSTR       %NEXT        ;; l
 	%'eq            HEX:003D        BIN_INSTR       %NEXT        ;; =
 	%'ge            HEX:0045        BIN_INSTR       %NEXT        ;; E
-	%'global        HEX:0078        BIN_INSTR       %NEXT        ;; x
-	%'global!       HEX:0079        BIN_INSTR       %NEXT        ;; y
 	%'gt            HEX:003E        BIN_INSTR       %NEXT        ;; >
 	%'halt          HEX:005A        BIN_INSTR       %NEXT        ;; Z
 	%'inv           HEX:0073        BIN_INSTR       %NEXT        ;; s
@@ -768,10 +790,6 @@
 	%'wordsize      HEX:006B        BIN_INSTR       %NEXT        ;; k
 	%'writeb        HEX:0048        BIN_INSTR       %NEXT        ;; H
 
-
-
-
-
 	;; ----------------------------------------------------------
 
 	;; local variables in same style as in this file
@@ -786,13 +804,15 @@
 	%'c!		%cSet		BIN_IMMEDIATE	%NEXT
 	%'d!		%dSet		BIN_IMMEDIATE	%NEXT
 	
-
+	%'.		%DOT		BIN_NORMAL	%NEXT
 	%'IF		%IF		BIN_IMMEDIATE	%NEXT
 	%'THEN		%THEN		BIN_IMMEDIATE	%NEXT
 	%'ELSE		%ELSE		BIN_IMMEDIATE	%NEXT
-	%'DO		%DO		BIN_IMMEDIATE	%NEXT
-	%'AGAIN?	%AGAIN?	BIN_IMMEDIATE	%NEXT
+	%'BEGIN		%BEGIN		BIN_IMMEDIATE	%NEXT
+	%'AGAIN?	%AGAIN?		BIN_IMMEDIATE	%NEXT
 	%'CONSTANT	%CONSTANT	BIN_NORMAL	%NEXT
+	%'VARIABLE	%VARIABLE	BIN_NORMAL	%NEXT
+	%'NATIVE	%NATIVE		BIN_IMMEDIATE	%NEXT
 	
 	%'?		%Words		BIN_NORMAL	%NEXT
 	%':		%COLON		BIN_NORMAL	%NEXT

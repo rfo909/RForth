@@ -192,15 +192,6 @@
 	cget		:3	;; copy value off call stack indexed from frame base (must be cpush'ed first)
 	cset		:4	;; set value on call stack (must be cpush'ed first)
 
-
-	;; the call stack contains local variables + the return PC when calling something. 
-	;; the callFrame stack contains two values; the base of the current frame on the call stack
-	;;		and the number of words pushed with cpush, identifying top-of-stack for callStack
-
-	;; global variables
-	
-	global		:x		;; read global variable ( N -- value )
-	global!		:y		;; set global variable ( value N -- )
 	
 	;; compiled numbers
 		
