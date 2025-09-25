@@ -79,7 +79,7 @@
 
 		hex="HEX:00"+char.toHexString("ISO-8859-1")  # code pointer is code
 		s=s+(hex+" ".times(16)).first(16)
-		s=s+"INSTR       "
+		s=s+"BIN_INSTR       "
 		s=s+"%NEXT        ;; " + char
 		println(s)
 /InlineDictionary
@@ -191,12 +191,7 @@
 
 	cget		:3	;; copy value off call stack indexed from frame base (must be cpush'ed first)
 	cset		:4	;; set value on call stack (must be cpush'ed first)
-	
-	
-	;; local variables direct instructions (ab) read
-	a		:5
-	b		:9
-	c		:e
+
 
 	;; the call stack contains local variables + the return PC when calling something. 
 	;; the callFrame stack contains two values; the base of the current frame on the call stack

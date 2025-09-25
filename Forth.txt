@@ -30,7 +30,7 @@
 	THEN
 ;
 
-: testNative '300/50+10 NATIVE calc . ;  (prints 16)
+: testNative '300/50+10 NATIVE calc 16 eq IF cr "testNative_ok .str ELSE cr "testNative_failed .str THEN ; 
 
 
 
@@ -38,7 +38,7 @@ HERE CONSTANT beforeCode
 
 
 
-( --- example: solar trickle charger --- )
+( --- example: solar charger --- )
 ( A low voltage, low power solar panel is coupled to a capacitor )
 ( Since the panel efficiency is best when the load isn't draining it, we only forward current when that cap is above a certain value)
 ( The current is forwarded as a pulse through an inductor, via a small resistor )
@@ -193,6 +193,9 @@ sleepInterval VARIABLE sleepCountDown
 HERE CONSTANT afterCode
 cr cr "#bytes_ .str afterCode beforeCode sub print#
 cr cr
+
+testNative
+cr "SUCCESS:_everything_works .str
 
 (start running)
 dummy
