@@ -386,14 +386,33 @@
 	0 &VARIABLE call
 	ret
 	
-:DictOpen ( dict -- )	
+:DictUse ( dict -- )	
 	&CustomDictionaryHeadPtr !
 	ret		
 	
-:DictClose ( -- )
+:DictClear ( -- )
 	0 &CustomDictionaryHeadPtr !
 	ret		
 
+( Dict -> word - look up word in dict, then execute it )
+:-> ( dict -- )
+	cpush						(a=dict)
+	&GetNextWord call 
+
+	cr "#->_ .str &NextWord .str
+	
+	a &NextWord &DictTraverse call cpush (c=dict-entry)
+
+	c null ne &*found jmp?
+		(not found)
+		cr b .str "_not_found .str
+		PANIC
+		ret
+	:*found
+		c c readb add 1+		(past name, points to code pointer
+			dup W+ @			(mode value)
+				&ExecuteWord call
+	ret
 
 
 		
@@ -839,18 +858,19 @@
 	%'c!		%cSet		BIN_IMMEDIATE	%NEXT
 	%'d!		%dSet		BIN_IMMEDIATE	%NEXT
 	
-	%'.		%DOT		BIN_NORMAL	%NEXT
-	%'IF		%IF		BIN_IMMEDIATE	%NEXT
+	%'.			%DOT		BIN_NORMAL		%NEXT
+	%'IF		%IF			BIN_IMMEDIATE	%NEXT
 	%'THEN		%THEN		BIN_IMMEDIATE	%NEXT
 	%'ELSE		%ELSE		BIN_IMMEDIATE	%NEXT
 	%'BEGIN		%BEGIN		BIN_IMMEDIATE	%NEXT
 	%'AGAIN?	%AGAIN?		BIN_IMMEDIATE	%NEXT
-	%'CONSTANT	%CONSTANT	BIN_NORMAL	%NEXT
-	%'VARIABLE	%VARIABLE	BIN_NORMAL	%NEXT
+	%'CONSTANT	%CONSTANT	BIN_NORMAL		%NEXT
+	%'VARIABLE	%VARIABLE	BIN_NORMAL		%NEXT
 	%'NATIVE	%NATIVE		BIN_IMMEDIATE	%NEXT
-	%'Dict		%Dict		BIN_NORMAL	%NEXT
-	%'DictOpen	%DictOpen	BIN_NORMAL	%NEXT
-	%'DictClose	%DictClose	BIN_NORMAL	%NEXT
+	%'Dict		%Dict		BIN_NORMAL		%NEXT
+	%'DictUse	%DictUse	BIN_NORMAL		%NEXT
+	%'DictClear	%DictClear	BIN_NORMAL		%NEXT
+	%'->		%->			BIN_IMMEDIATE	%NEXT
 	
 	%'?		%Words		BIN_NORMAL	%NEXT
 	%'words		%Words		BIN_NORMAL	%NEXT

@@ -4,6 +4,14 @@
 HERE CONSTANT beforeCode
 
 
+Dict Pins
+Pins DictUse
+: magic cr "magic! .str ;
+DictClear
+
+
+#END
+
 ( --- example: solar charger --- )
 ( A low voltage, low power solar panel is coupled to a capacitor )
 ( Since the panel efficiency is best when the load isn't draining it, we only forward current when that cap is above a certain value)
@@ -19,7 +27,7 @@ HERE CONSTANT beforeCode
 (--- native stuff ---)
 
 Dict pins
-pins DictOpen
+pins DictUse
 
 : outDigital ( pin value -- ) drop drop	;
 : inAnalog  ( pin ) drop		;
@@ -172,7 +180,7 @@ cr cr
 
 cr "SUCCESS:_everything_works .str
 
-DictClose
+DictClear
 
 (start running)
 \ Main

@@ -515,7 +515,7 @@
 			value=str.parseInt
 		} 
 
-		if (negative) value=-value
+		if (negative && value != null) value=-value
 
 		# boolean return value to stack
 		self.push(if(value != null, 1, 0))
