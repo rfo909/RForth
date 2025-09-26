@@ -704,17 +704,23 @@
 	ret		
 
 :Words
-	&DictionaryHead @ cpush 		;; a=dictionaryFrame
-	0 cpush ;; (b)
+	cr
+	&CustomDictionaryHeadPtr @ 0 eq &*noCustom jmp?
+		&CustomDictionaryHeadPtr @ &DictShowWords call
+		cr '-- .str cr
+	:*noCustom
+	&DictionaryHead &DictShowWords call
+	cr
+	ret
+
+:DictShowWords ( dictHead -- )
+	@ cpush 		;; a=dict-entry
 	:*next
 		a 0 eq &*done jmp?
-		a &Dictionary eq &*done jmp?	;; only show Forth words, not standard dictionary
 		
-		a b!			;; b=name
-		cr
+		a .str "_ .str			;; name
+
 		a readb a add 1+ a!   		;; past the name
-		a @ print			;; code address
-		"_ .str b .str			;; name
 		a W+ W+ @ a!			;; a=a.next
 		&*next jmp
 	:*done

@@ -18,6 +18,9 @@ HERE CONSTANT beforeCode
 
 (--- native stuff ---)
 
+Dict pins
+pins DictOpen
+
 : outDigital ( pin value -- ) drop drop	;
 : inAnalog  ( pin ) drop		;
 : inDigital  ( pin ) drop		;
@@ -30,8 +33,6 @@ HERE CONSTANT beforeCode
 
 : sleep8s ( deep sleep 8 seconds ) ;
 : sleepMillis ( millis -- ) ;
-
-#END
 
 (--- pins ---)
 
@@ -47,6 +48,7 @@ HERE CONSTANT beforeCode
 12 CONSTANT ledFull
 
 13 CONSTANT enableLoad
+
 
 : Init
 	solarVoltagePin inAnalog
@@ -169,6 +171,8 @@ cr cr
 
 
 cr "SUCCESS:_everything_works .str
+
+DictClose
 
 (start running)
 \ Main
