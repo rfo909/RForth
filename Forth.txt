@@ -6,7 +6,6 @@ HERE CONSTANT beforeCode
 0 &DebugFlag writeb
 
 
-
 ( --- example: solar charger --- )
 ( A low voltage, low power solar panel is coupled to a capacitor )
 ( Since the panel efficiency is best when the load isn't draining it, we only forward current when that cap is above a certain value)
@@ -37,7 +36,8 @@ Nat DictUse
 : sleep8s ( deep sleep 8 seconds ) ;
 : sleepMillis ( millis -- ) ;
 
-(end of Nat dictionary)
+: magic cr "It's_magic .str ;
+
 DictClear
 
 
@@ -58,32 +58,32 @@ DictClear
 
 
 : Init
-	solarVoltagePin Nat -> inAnalog
-	battVoltagePin  Nat -> inAnalog
-	chargeVoltagePin Nat -> inAnalog
+	solarVoltagePin -> Nat inAnalog
+	battVoltagePin  -> Nat inAnalog
+	chargeVoltagePin -> Nat inAnalog
 
-	valveSolar 0 Nat -> outDigital
-	valveCharge 0 Nat -> outDigital
-	valveAref 1 Nat -> outDigital
+	valveSolar 0 -> Nat outDigital
+	valveCharge 0 -> Nat outDigital
+	valveAref 1 -> Nat outDigital
 
-	ledCharge 0 Nat -> outDigital
-	ledInductor 0 Nat -> outDigital
-	ledFull 0 Nat -> outDigital
+	ledCharge 0 -> Nat outDigital
+	ledInductor 0 -> Nat outDigital
+	ledFull 0 -> Nat outDigital
 
-	enableLoad 0 Nat -> outDigital
+	enableLoad 0 -> Nat outDigital
 	;
 
 : DeepSleep
-	valveSolar 0 Nat -> writeDigital
-	valveCharge 0 Nat -> writeDigital
-	valveAref 0 Nat -> writeDigital
+	valveSolar 0 -> Nat writeDigital
+	valveCharge 0 -> Nat writeDigital
+	valveAref 0 -> Nat writeDigital
 
-	ledCharge 0 Nat -> writeDigital
-	ledInductor 0 Nat -> writeDigital
+	ledCharge 0 -> Nat writeDigital
+	ledInductor 0 -> Nat writeDigital
 
-	enableLoad 0 Nat -> writeDigital
+	enableLoad 0 -> Nat writeDigital
 
-	Nat -> sleep8s
+	-> Nat sleep8s
 	;
 
 ( voltages given 0-1023 analog read value AND voltage divider setups )
@@ -91,9 +91,9 @@ DictClear
 850 CONSTANT battVoltageMax
 456 CONSTANT battVoltageLoadMin  (below this, kill external load, signaled via the enableLoad pin)
 		
-: SolarVoltage solarVoltagePin Nat -> readAnalog ;
-: BattVoltage battVoltagePin Nat -> readAnalog ;
-: ChargeVoltage chargeVoltagePin Nat -> readAnalog ;
+: SolarVoltage solarVoltagePin -> Nat readAnalog ;
+: BattVoltage battVoltagePin -> Nat readAnalog ;
+: ChargeVoltage chargeVoltagePin -> Nat readAnalog ;
 : CanPowerLoad  BattVoltage battVoltageLoadMin ge ;
 
 : ChargeVoltageOk (? does charge cap contain high enough voltage to charge battery ?)
@@ -112,7 +112,7 @@ sleepInterval VARIABLE sleepCountDown
 
 : MakePause?
 	sleepCountDown 0 eq IF 
-		20000 Nat -> sleepMillis
+		20000 -> Nat sleepMillis
 		sleepInterval sleepCountDown !
 	THEN
 	sleepCountDown @ 1 sub sleepCountDown !
@@ -124,7 +124,7 @@ sleepInterval VARIABLE sleepCountDown
 
 	(compiles to 80 bytes :-)
 
-	enableLoad CanPowerLoad Nat -> writeDigital 
+	enableLoad CanPowerLoad -> Nat writeDigital 
 
 	SolarVoltage solarVoltageOk lt IF 
 		DeepSleep
@@ -134,24 +134,24 @@ sleepInterval VARIABLE sleepCountDown
 	MakePause?
 
 	BatteryFull IF 
-		ledFull 1 Nat -> writeDigital
+		ledFull 1 -> Nat writeDigital
 		ret 
 	THEN
 
-	ledFull 0 Nat -> writeDigital
+	ledFull 0 -> Nat writeDigital
 	
 	ChargeVoltageOk IF
-		valveCharge 5 1 Nat -> pulseMicros  (charge battery for 5 us)
-		1 ledCharge Nat -> writeDigital
-		0 ledInductor Nat -> writeDigital
+		valveCharge 5 1 -> Nat pulseMicros  (charge battery for 5 us)
+		1 ledCharge -> Nat writeDigital
+		0 ledInductor -> Nat writeDigital
 		ret
 	THEN
 
-	0 ledCharge Nat -> writeDigital
+	0 ledCharge -> Nat writeDigital
 
-	valveSolar 1 1 Nat -> pulseMicros ( charge inductor for 1 us)
+	valveSolar 1 1 -> Nat pulseMicros ( charge inductor for 1 us)
 
-	1 ledInductor Nat -> writeDigital
+	1 ledInductor -> Nat writeDigital
 
 	;
 
@@ -159,10 +159,17 @@ sleepInterval VARIABLE sleepCountDown
 : Main 
 	Init 
 	BEGIN
-		1 Nat -> sleepMillis 
+		1 -> Nat sleepMillis 
 		Charge 
 	1 AGAIN? ;
 
+
+: testLoop 50 cpush BEGIN
+	cr a print#
+	a 1 sub a!
+	a 0 gt AGAIN?
+	"done .str
+	;
 
 HERE CONSTANT afterCode
 
@@ -170,6 +177,9 @@ cr cr "#bytes_ .str afterCode beforeCode sub print#
 cr cr
 
 
+cr "SUCCESS:_everything_works .str
+
+DictClear
 
 (start running)
 \ Main

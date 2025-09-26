@@ -375,22 +375,26 @@ the global dictionary, and new words are added to it instead of the global.
 After having created a dictionary, we can call words inside it, both interactively and at
 compile time by the "->" word.
 
+Note that the _"->" comes in front of both the dictionary and the word, because it accesses
+both via &GetNextWord. This simplifies the implementation, and makes the code size the exact
+same as if calling a word in the same dictionary or in the global one.
+
 ```
 Dict Something
 Something DictUse
-: magic "It_is_magic .str ;
+: magic "It's_magic .str ;
 DictClear
 
 (interactive)
-Something -> magic
+-> Something magic
 
 (in word)
-:x Something -> magic ;
+:x -> Something magic ;
 x
 ```
 
 The point of dictionaries is bundling related functionality and get it out of the way. To
-look at a custom dictionary:
+look at a custom dictionary, use it, then type the '?' command
 
 ```
 Something DictUse

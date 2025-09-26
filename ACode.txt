@@ -392,7 +392,8 @@
 
 	cr "Word_dict_entry:_ .str a print
 	ret
-
+	
+	
 (allocate a new dictionary head - its just a variable)
 :Dict
 	0 &VARIABLE call
@@ -406,48 +407,37 @@
 	0 &CustomDictionaryHeadPtr !
 	ret		
 
-:ExecuteDictWord ( Dict wordStr -- )
-	swap cpush		(a=Dict)
-	cpush			(b=wordStr)
 
-	a b &DictTraverse call cpush (c=dict-entry)
+:-> ( ... dict word )
+	&GetNextWord call 
+	&NextWord &DictLookup call cpush 	(a=dict-entry for dict)
+	a null eq &*dictNotFound jmp?
+	
+	a dup readb add 1+ cpush 			(b=code)
+	b W+ @ MODE_CONSTANT ne &*notConstant jmp?
 
-	c null ne &*found jmp?
-		(not found)
-		cr b .str "_not_found .str
+	b @ b!		(b=dict-head)
+	
+	&GetNextWord call
+	b &NextWord &DictTraverse call cpush  	(c=dict-entry for word)
+	
+	c c readb add 1+ cpush			(d=ptr to code-bytes)
+	
+	d					(code-ptr-ptr)
+		d W+ @				(mode)
+			&ExecuteWord call
+			
+	ret				
+
+	:*dictNotFound
+		cr "No_dictionary_found_ .str &NextWord .str
 		PANIC
 		ret
-	:*found
-		c c readb add 1+		(past name, points to code pointer
-			dup W+ @			(mode value)
-				&ExecuteWord call
-	ret
-	
-	
-( Dict -> word - look up word in dict, then execute it )
-:-> ( dict -- )
-	&IsCompiling readb &*compileMode jmp?
-		(interactive mode)
-
-		&GetNextWord call
-		
-		(dict)
-			&NextWord &ExecuteDictWord call 
-
-		;; cr "#->_ .str &NextWord .str
+	:*notConstant
+		cr "Invalid_dictionary_ .str &NextWord .str "_:_Not_constant .str
+		PANIC
 		ret
 	
-	:*compileMode
-		(at runtime there will be a dictionary present)
-		&GetNextWord call 
-		&NextWord &BufCreateCopy call
-			0 &EmitNumber call
-			
-		&ExecuteDictWord 
-			0 &EmitNumber call
-			
-		81 &EmitByte call	(call)
-		ret
 
 
 		
@@ -770,7 +760,8 @@
 :.s
 	dump
 	ret
-
+	
+	
 :DictShowWords ( dictHead -- )
 	@ cpush 		;; a=dict-entry
 	:*next
@@ -898,7 +889,6 @@
 	%'d!		%dSet		BIN_IMMEDIATE	%NEXT
 	
 	%'.			%DOT		BIN_NORMAL		%NEXT
-	%'.s		%.s			BIN_NORMAL		%NEXT
 	%'IF		%IF			BIN_IMMEDIATE	%NEXT
 	%'THEN		%THEN		BIN_IMMEDIATE	%NEXT
 	%'ELSE		%ELSE		BIN_IMMEDIATE	%NEXT
@@ -910,10 +900,11 @@
 	%'Dict		%Dict		BIN_NORMAL		%NEXT
 	%'DictUse	%DictUse	BIN_NORMAL		%NEXT
 	%'DictClear	%DictClear	BIN_NORMAL		%NEXT
-	%'->		%->			BIN_IMMEDIATE	%NEXT
+	%'->		%->		BIN_IMMEDIATE	%NEXT
 	%'.W		%.W			BIN_NORMAL		%NEXT    (show DictionaryEntry for word)
-	
+		
 	%'?		%Words		BIN_NORMAL	%NEXT
+	%'.s		%.s		BIN_NORMAL	%NEXT
 	%'words		%Words		BIN_NORMAL	%NEXT
 	%':		%COLON		BIN_NORMAL	%NEXT
 	HEX:013B	%SEMICOLON	BIN_IMMEDIATE	%NEXT
