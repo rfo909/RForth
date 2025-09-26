@@ -31,6 +31,8 @@ HERE CONSTANT beforeCode
 : sleep8s ( deep sleep 8 seconds ) ;
 : sleepMillis ( millis -- ) ;
 
+#END
+
 (--- pins ---)
 
 4 CONSTANT solarVoltagePin

@@ -104,12 +104,16 @@
 #define a		0 cget		
 #define b		1 cget		
 #define c		2 cget		
-#define d		3 cget		
+#define d		3 cget	
+#define e		4 cget
+#define f		5 cget	
 
 #define a!		0 cset
 #define b!		1 cset
 #define c!		2 cset
 #define d!		3 cset
+#define e!		4 cset
+#define f!		5 cset
 
 :Init	
 	0 &IsCompiling writeb
@@ -289,11 +293,78 @@
 
 		
 
+
+:PushDictionaryEntry ( ptr -- )
+	cpush						(a=dictionary-entry)
+
+	&CustomDictionaryHeadPtr @ 0 ne &*custom jmp?
+		( regular dictionary pointer )
+		&DictionaryHead cpush			(b=regular dictionary head)
+		&*continue jmp
+	:*custom
+		(custom dictionary pointer active )
+		&CustomDictionaryHeadPtr @ cpush 		(b=custom dictionary head)
+	:*continue
+	
+	a 
+		a readb add 1 add
+			W+ W+ cpush			(c=next-field)
+
+	;; write next pointer
+	b @ c !
+
+	;; update Dictionary Head
+	a b !
+	ret
+
+
+:CreateDictionaryEntry ( name code mode -- ) (And push it on the dictionary)
+	cpush			(a=mode)
+	cpush			(b=code)
+	cpush			(c=name)
+
+	c readb 1 add cpush	(d=name buffer length incl length byte)
+	HERE cpush		(e=dict entry)
+	
+	d W+ W+ W+ allot		(name code mode next)
+	c e &BufCopy call
+	
+	(code)
+	b 
+		e d add !
+	
+	(mode)
+	a 
+		e d add W+ !
+	
+	e &PushDictionaryEntry call
+	ret 
+
+	
+	
+
 :DictLookup ;; ( str -- dictEntry|null )
+	cpush 						(a=str)
+	&CustomDictionaryHeadPtr @ 0 eq &*defaultDict jmp?
+	
+		&CustomDictionaryHeadPtr @ a &DictTraverse call cpush (b=result)
+		b null eq &*defaultDict jmp?
+		b
+		ret
+	
+	:*defaultDict
+	
+	&DictionaryHead a &DictTraverse call
+	ret
+	
+
+
+:DictTraverse ;; ( dictHead str -- dictEntry|null )
 	cpush				;; a=str
 	; "Looking_up_ .str a .str cr
 	
-	&DictionaryHead @ cpush		;; b=current dictionary entry
+	(dictHead)
+		@ cpush				;; b=current dictionary entry
 	:*next
 		b null eq &*notFound jmp?	;; pointer is null, not found
 		b a streq &*found jmp?		;; got a match
@@ -309,6 +380,22 @@
 	:*found
 		b ret
 		
+
+(allocate a new dictionary head - its just a variable)
+:Dict
+	0 &VARIABLE call
+	ret
+	
+:DictOpen ( dict -- )	
+	&CustomDictionaryHeadPtr !
+	ret		
+	
+:DictClose ( -- )
+	0 &CustomDictionaryHeadPtr !
+	ret		
+
+
+
 		
 :BufCopy ( src target --   --- for buffer with length byte)
 	swap
@@ -432,19 +519,14 @@
 		0 c writeb			( overwrite the type entry so it can't match again )
 		ret
 
-; CompileStack types
-;
-; IF = 0
-; DO = 1
 
 ; CompileStack types
 
 #define COMPS_TYPE_IF		0 
-#define COMPS_TYPE_BEGIN		1
+#define COMPS_TYPE_BEGIN	1
 
 ;; NOTE: using single byte relative offsets, which with the number encoding scheme
-;; means max relative fwd/back is 63 locations. That should be enough for most 
-;; FORTH words
+;; means max relative fwd/back is 63 locations.
 
  
 
@@ -543,8 +625,6 @@
 		&ResetCompile call
 		PANIC
 
-		
-		
 :SEMICOLON
 	;; verify compile mode
 	&IsCompiling readb &*ok jmp?
@@ -552,49 +632,21 @@
 		ret
 	:*ok
 		;; info
-		cr "Word_ .str &IsCompilingWord .str
+		cr &IsCompilingWord .str "_ok_ .str
 
 		;; add a ret instruction to CompileBuf
 		0x52 &EmitByte call
 
-		"_#bytes= .str
-		&CompileBuf readb print#
+		&CompileBuf readb print# "_bytes .str
 
 		;; allocate permanent code buffer including length byte
-		&CompileBuf &BufCreateCopy call cpush            ;; a=codeBuffer
+		&CompileBuf &BufCreateCopy call cpush            (a=codeBuffer)
 		
-					
-		a 1+ a!	; skip the length byte
-		
-		;; allocate dictionary entry
-		HERE cpush					;; b=dictEntry
-		&IsCompilingWord readb 1+			;; length of symbol
-			wordsize 3 mul add				;; code pointer, flags, next
-				allot
-
-		;; copy symbol
-		&IsCompilingWord b &BufCopy call
-		
-		;; advance dict entry pointer past name
-		b readb 
-			b add 
-				1+ cpush					;; c=point to CODE field
-
-		;; write code address and advance c
-		a c !
-		c W+ c!
-
-		;; write mode and advance pointer
-		&IsCompilingWordMode readb c !
-		c W+ c!
-
-		;; write next pointer
-		&DictionaryHead @ 
-			c !
-
-		;; update DictionaryHead
-		b &DictionaryHead !
-
+		&IsCompilingWord 			(name)
+			a 1 add				(code - advance past the length byte)
+			&IsCompilingWordMode readb	(mode)
+				&CreateDictionaryEntry call
+	
 		;; switch off compile mode and clean up
 		&ResetCompile call
 
@@ -607,43 +659,20 @@
 (constants are words, stored in the code fielf of the dictionary entry)
 (and recognized via the mode field = CONSTANT)
 
-:CONSTANT (value -- dictionaryentry)
+:CONSTANT (value -- )
 	cpush						(a=value)
 
 	&GetNextWord call
 	
-	;; allocate dictionary entry
-	HERE cpush					;; b=dictEntry
-	&NextWord readb 1+				;; length of symbol
-		wordsize 3 mul add			;; code pointer, flags, next
-			allot
-
-	;; copy symbol
-	&NextWord b &BufCopy call
-	
-	;; write value into code pointer field
-	a						(value)
-		b dup readb add 1+			(target address)
-			!
-	
-	
-	;; write CONSTANT into mode
-	MODE_CONSTANT
-		b dup readb add 1+ wordsize add		(target address)
-			!
-			
-	;; location of next pointer
-	b dup readb add 1+ wordsize dup add add cpush		(c=next field)
-	
-	;; write next pointer
-	&DictionaryHead @ c !
-
-	;; update DictionaryHead
-	b &DictionaryHead !
-
+	&NextWord	 			(name)
+		a				(code)
+		MODE_CONSTANT			(mode)
+			&CreateDictionaryEntry call
 	ret
 
+
 (Use: value VARIABLE xx, then read and write it as a pointer to a word)
+
 :VARIABLE ( value )
 	HERE wordsize allot		(value ptr)
 	swap				(ptr value)
@@ -813,8 +842,12 @@
 	%'CONSTANT	%CONSTANT	BIN_NORMAL	%NEXT
 	%'VARIABLE	%VARIABLE	BIN_NORMAL	%NEXT
 	%'NATIVE	%NATIVE		BIN_IMMEDIATE	%NEXT
+	%'Dict		%Dict		BIN_NORMAL	%NEXT
+	%'DictOpen	%DictOpen	BIN_NORMAL	%NEXT
+	%'DictClose	%DictClose	BIN_NORMAL	%NEXT
 	
 	%'?		%Words		BIN_NORMAL	%NEXT
+	%'words		%Words		BIN_NORMAL	%NEXT
 	%':		%COLON		BIN_NORMAL	%NEXT
 	HEX:013B	%SEMICOLON	BIN_IMMEDIATE	%NEXT
 	%'IMMEDIATE	%immediate	BIN_IMMEDIATE	w0	;; <-- w0 = terminating the linked list
@@ -823,6 +856,7 @@
 :PROTECT		;; protects data before this point against writes - reads are allowed
 
 :DictionaryHead %Dictionary
+:CustomDictionaryHeadPtr w0
 
 :IsCompiling		b0
 :IsCompilingWord	b w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0		;; 32 character stringbuffer
