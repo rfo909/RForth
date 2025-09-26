@@ -275,6 +275,15 @@ Together with the features of the Interpreter, it is possible to debug both ACod
 the top level Forth code.
 
 
+Important words
+---------------
+```
+?              (list words)
+.s             (show stack, displays values as both uint and hex)
+.W name        (show dictionary entry address for word)
+clear          (delete all stack content)
+```
+
 
 2025-08-31 IF THEN
 ------------------
@@ -350,6 +359,45 @@ constant each time calling native.
 This implementation has two purposes: it detects at compile time when trying to call an invalid
 native function, and it speeds up the actual call, as it doesn't have to search the internal
 list of native functions.
+
+
+2025-09-25 Custom dictionaries
+------------------------------
+Added some code to ACode.txt, which lets us create a custom dictionary. The Dict word creates
+a named dictionary on the current dictionary. That should be the global dictionary in most
+cases.
+
+Then we do a DictUse on it, and define words as usual. When done, we run DictClear. 
+
+There can be only one custom dictionary, which if activated with DictUse is searched before
+the global dictionary, and new words are added to it instead of the global. 
+
+After having created a dictionary, we can call words inside it, both interactively and at
+compile time by the "->" word.
+
+```
+Dict Something
+Something DictUse
+: magic "It_is_magic .str ;
+DictClear
+
+(interactive)
+Something -> magic
+
+(in word)
+:x Something -> magic ;
+x
+```
+
+The point of dictionaries is bundling related functionality and get it out of the way. To
+look at a custom dictionary:
+
+```
+Something DictUse
+?
+```
+
+
 
 
 Dictionary entry format

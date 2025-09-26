@@ -164,21 +164,10 @@ sleepInterval VARIABLE sleepCountDown
 	1 AGAIN? ;
 
 
-: testLoop 50 cpush BEGIN
-	cr a print#
-	a 1 sub a!
-	a 0 gt AGAIN?
-	"done .str
-	;
-
 HERE CONSTANT afterCode
 
 cr cr "#bytes_ .str afterCode beforeCode sub print#
 cr cr
-
-
-cr "SUCCESS:_everything_works .str
-
 
 
 

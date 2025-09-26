@@ -386,6 +386,13 @@
 		b ret
 		
 
+:.W
+	&GetNextWord call
+	&NextWord &DictLookup call cpush (a=dict entry)
+
+	cr "Word_dict_entry:_ .str a print
+	ret
+
 (allocate a new dictionary head - its just a variable)
 :Dict
 	0 &VARIABLE call
@@ -760,6 +767,10 @@
 	cr
 	ret
 
+:.s
+	dump
+	ret
+
 :DictShowWords ( dictHead -- )
 	@ cpush 		;; a=dict-entry
 	:*next
@@ -887,6 +898,7 @@
 	%'d!		%dSet		BIN_IMMEDIATE	%NEXT
 	
 	%'.			%DOT		BIN_NORMAL		%NEXT
+	%'.s		%.s			BIN_NORMAL		%NEXT
 	%'IF		%IF			BIN_IMMEDIATE	%NEXT
 	%'THEN		%THEN		BIN_IMMEDIATE	%NEXT
 	%'ELSE		%ELSE		BIN_IMMEDIATE	%NEXT
@@ -898,7 +910,8 @@
 	%'Dict		%Dict		BIN_NORMAL		%NEXT
 	%'DictUse	%DictUse	BIN_NORMAL		%NEXT
 	%'DictClear	%DictClear	BIN_NORMAL		%NEXT
-	%'->		%->		BIN_IMMEDIATE	%NEXT
+	%'->		%->			BIN_IMMEDIATE	%NEXT
+	%'.W		%.W			BIN_NORMAL		%NEXT    (show DictionaryEntry for word)
 	
 	%'?		%Words		BIN_NORMAL	%NEXT
 	%'words		%Words		BIN_NORMAL	%NEXT
