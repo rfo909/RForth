@@ -161,7 +161,7 @@
 		&DebugFlag readb &*debug jmp?
 		ret
 	:*debug
-		cr '>_ .str &NextWord .str
+		cr ">_ .str &NextWord .str
 		ret
 
 		
@@ -431,17 +431,15 @@
 		ret
 	
 	:*compileMode
-		(dict)
-			0 &EmitNumber call
-			
+		(at runtime there will be a dictionary present)
 		&GetNextWord call 
-		&NextWord &BufCreateCopy 
+		&NextWord &BufCreateCopy call
 			0 &EmitNumber call
 			
 		&ExecuteDictWord 
 			0 &EmitNumber call
 			
-		81 &EmitByte	(call)
+		81 &EmitByte call	(call)
 		ret
 
 

@@ -3,7 +3,7 @@
 
 HERE CONSTANT beforeCode
 
-1 &DebugFlag writeb
+0 &DebugFlag writeb
 
 
 
@@ -37,8 +37,7 @@ Nat DictUse
 : sleep8s ( deep sleep 8 seconds ) ;
 : sleepMillis ( millis -- ) ;
 
-: magic cr "It's_magic .str ;
-
+(end of Nat dictionary)
 DictClear
 
 
@@ -57,7 +56,6 @@ DictClear
 
 13 CONSTANT enableLoad
 
-#END
 
 : Init
 	solarVoltagePin Nat -> inAnalog
@@ -114,7 +112,7 @@ sleepInterval VARIABLE sleepCountDown
 
 : MakePause?
 	sleepCountDown 0 eq IF 
-		20000 sleepMillis
+		20000 Nat -> sleepMillis
 		sleepInterval sleepCountDown !
 	THEN
 	sleepCountDown @ 1 sub sleepCountDown !
@@ -126,7 +124,7 @@ sleepInterval VARIABLE sleepCountDown
 
 	(compiles to 80 bytes :-)
 
-	enableLoad CanPowerLoad writeDigital 
+	enableLoad CanPowerLoad Nat -> writeDigital 
 
 	SolarVoltage solarVoltageOk lt IF 
 		DeepSleep
@@ -136,24 +134,24 @@ sleepInterval VARIABLE sleepCountDown
 	MakePause?
 
 	BatteryFull IF 
-		ledFull 1 writeDigital
+		ledFull 1 Nat -> writeDigital
 		ret 
 	THEN
 
-	ledFull 0 writeDigital
+	ledFull 0 Nat -> writeDigital
 	
 	ChargeVoltageOk IF
-		valveCharge 5 1 pulseMicros  (charge battery for 5 us)
-		1 ledCharge writeDigital
-		0 ledInductor writeDigital
+		valveCharge 5 1 Nat -> pulseMicros  (charge battery for 5 us)
+		1 ledCharge Nat -> writeDigital
+		0 ledInductor Nat -> writeDigital
 		ret
 	THEN
 
-	0 ledCharge writeDigital
+	0 ledCharge Nat -> writeDigital
 
-	valveSolar 1 1 pulseMicros ( charge inductor for 1 us)
+	valveSolar 1 1 Nat -> pulseMicros ( charge inductor for 1 us)
 
-	1 ledInductor writeDigital
+	1 ledInductor Nat -> writeDigital
 
 	;
 
@@ -161,7 +159,7 @@ sleepInterval VARIABLE sleepCountDown
 : Main 
 	Init 
 	BEGIN
-		1 sleepMillis 
+		1 Nat -> sleepMillis 
 		Charge 
 	1 AGAIN? ;
 
@@ -181,7 +179,8 @@ cr cr
 
 cr "SUCCESS:_everything_works .str
 
-DictClear
+
+
 
 (start running)
 \ Main
