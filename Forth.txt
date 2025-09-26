@@ -3,14 +3,9 @@
 
 HERE CONSTANT beforeCode
 
-
-Dict Pins
-Pins DictUse
-: magic cr "magic! .str ;
-DictClear
+1 &DebugFlag writeb
 
 
-#END
 
 ( --- example: solar charger --- )
 ( A low voltage, low power solar panel is coupled to a capacitor )
@@ -26,8 +21,8 @@ DictClear
 
 (--- native stuff ---)
 
-Dict pins
-pins DictUse
+Dict Nat
+Nat DictUse
 
 : outDigital ( pin value -- ) drop drop	;
 : inAnalog  ( pin ) drop		;
@@ -41,6 +36,11 @@ pins DictUse
 
 : sleep8s ( deep sleep 8 seconds ) ;
 : sleepMillis ( millis -- ) ;
+
+: magic cr "It's_magic .str ;
+
+DictClear
+
 
 (--- pins ---)
 
@@ -57,34 +57,35 @@ pins DictUse
 
 13 CONSTANT enableLoad
 
+#END
 
 : Init
-	solarVoltagePin inAnalog
-	battVoltagePin  inAnalog
-	chargeVoltagePin inAnalog
+	solarVoltagePin Nat -> inAnalog
+	battVoltagePin  Nat -> inAnalog
+	chargeVoltagePin Nat -> inAnalog
 
-	valveSolar 0 outDigital
-	valveCharge 0 outDigital
-	valveAref 1 outDigital
+	valveSolar 0 Nat -> outDigital
+	valveCharge 0 Nat -> outDigital
+	valveAref 1 Nat -> outDigital
 
-	ledCharge 0 outDigital
-	ledInductor 0 outDigital
-	ledFull 0 outDigital
+	ledCharge 0 Nat -> outDigital
+	ledInductor 0 Nat -> outDigital
+	ledFull 0 Nat -> outDigital
 
-	enableLoad 0 outDigital
+	enableLoad 0 Nat -> outDigital
 	;
 
 : DeepSleep
-	valveSolar 0 writeDigital
-	valveCharge 0 writeDigital
-	valveAref 0 writeDigital
+	valveSolar 0 Nat -> writeDigital
+	valveCharge 0 Nat -> writeDigital
+	valveAref 0 Nat -> writeDigital
 
-	ledCharge 0 writeDigital
-	ledInductor 0 writeDigital
+	ledCharge 0 Nat -> writeDigital
+	ledInductor 0 Nat -> writeDigital
 
-	enableLoad 0 writeDigital
+	enableLoad 0 Nat -> writeDigital
 
-	sleep8s
+	Nat -> sleep8s
 	;
 
 ( voltages given 0-1023 analog read value AND voltage divider setups )
@@ -92,9 +93,9 @@ pins DictUse
 850 CONSTANT battVoltageMax
 456 CONSTANT battVoltageLoadMin  (below this, kill external load, signaled via the enableLoad pin)
 		
-: SolarVoltage solarVoltagePin readAnalog ;
-: BattVoltage battVoltagePin readAnalog ;
-: ChargeVoltage chargeVoltagePin readAnalog ;
+: SolarVoltage solarVoltagePin Nat -> readAnalog ;
+: BattVoltage battVoltagePin Nat -> readAnalog ;
+: ChargeVoltage chargeVoltagePin Nat -> readAnalog ;
 : CanPowerLoad  BattVoltage battVoltageLoadMin ge ;
 
 : ChargeVoltageOk (? does charge cap contain high enough voltage to charge battery ?)

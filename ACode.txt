@@ -157,9 +157,14 @@
 		b 1+ b!
 		&*nextChar jmp
 	:*done
-		b &NextWord writeb
-		;;; cr '> .str &NextWord .str
+		b &NextWord writeb			( write length byte)
+		&DebugFlag readb &*debug jmp?
 		ret
+	:*debug
+		cr '>_ .str &NextWord .str
+		ret
+
+		
 
 
 :NextWordIsNumber		; if &NextWord is a number, parse it and store in &NextNumber, returns boolean
@@ -394,14 +399,11 @@
 	0 &CustomDictionaryHeadPtr !
 	ret		
 
-( Dict -> word - look up word in dict, then execute it )
-:-> ( dict -- )
-	cpush						(a=dict)
-	&GetNextWord call 
+:ExecuteDictWord ( Dict wordStr -- )
+	swap cpush		(a=Dict)
+	cpush			(b=wordStr)
 
-	cr "#->_ .str &NextWord .str
-	
-	a &NextWord &DictTraverse call cpush (c=dict-entry)
+	a b &DictTraverse call cpush (c=dict-entry)
 
 	c null ne &*found jmp?
 		(not found)
@@ -413,6 +415,34 @@
 			dup W+ @			(mode value)
 				&ExecuteWord call
 	ret
+	
+	
+( Dict -> word - look up word in dict, then execute it )
+:-> ( dict -- )
+	&IsCompiling readb &*compileMode jmp?
+		(interactive mode)
+
+		&GetNextWord call
+		
+		(dict)
+			&NextWord &ExecuteDictWord call 
+
+		;; cr "#->_ .str &NextWord .str
+		ret
+	
+	:*compileMode
+		(dict)
+			0 &EmitNumber call
+			
+		&GetNextWord call 
+		&NextWord &BufCreateCopy 
+			0 &EmitNumber call
+			
+		&ExecuteDictWord 
+			0 &EmitNumber call
+			
+		81 &EmitByte	(call)
+		ret
 
 
 		
@@ -870,7 +900,7 @@
 	%'Dict		%Dict		BIN_NORMAL		%NEXT
 	%'DictUse	%DictUse	BIN_NORMAL		%NEXT
 	%'DictClear	%DictClear	BIN_NORMAL		%NEXT
-	%'->		%->			BIN_IMMEDIATE	%NEXT
+	%'->		%->		BIN_IMMEDIATE	%NEXT
 	
 	%'?		%Words		BIN_NORMAL	%NEXT
 	%'words		%Words		BIN_NORMAL	%NEXT
@@ -880,6 +910,8 @@
 :DictionaryEnd
 
 :PROTECT		;; protects data before this point against writes - reads are allowed
+
+:DebugFlag		b0
 
 :DictionaryHead %Dictionary
 :CustomDictionaryHeadPtr w0
