@@ -927,11 +927,6 @@
 			w0 w0 w0 w0 w0 w0 w0 w0
 			w0 w0 w0 w0 w0 w0 w0 w0
 
-			w0 w0 w0 w0 w0 w0 w0 w0
-			w0 w0 w0 w0 w0 w0 w0 w0
-			w0 w0 w0 w0 w0 w0 w0 w0
-			w0 w0 w0 w0 w0 w0 w0 w0
-
 
 
 :NextWord		b0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0	;; 32 character stringbuffer

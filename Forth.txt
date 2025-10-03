@@ -36,8 +36,6 @@ Nat DictUse
 : sleep8s ( deep sleep 8 seconds ) ;
 : sleepMillis ( millis -- ) ;
 
-: magic cr "It's_magic .str ;
-
 DictClear
 
 
@@ -94,53 +92,39 @@ DictClear
 : SolarVoltage solarVoltagePin -> Nat readAnalog ;
 : BattVoltage battVoltagePin -> Nat readAnalog ;
 : ChargeVoltage chargeVoltagePin -> Nat readAnalog ;
-: CanPowerLoad  BattVoltage battVoltageLoadMin ge ;
 
-: ChargeVoltageOk (? does charge cap contain high enough voltage to charge battery ?)
+: CanPowerLoad? BattVoltage battVoltageLoadMin ge ;
+
+: ChargeVoltageOk? (? does charge cap contain high enough voltage to charge battery ?)
 	BattVoltage 125 add 
 	ChargeVoltage
 		gt
 	;
 
-: BatteryFull (? is battery voltage at max ?)
+: BatteryFull? (? is battery voltage at max ?)
 	BattVoltage battVoltageMax gt ;
 	;
 
 
-10000 CONSTANT sleepInterval  ( longer sleep after this number of cycles, to give battery rest )
-sleepInterval VARIABLE sleepCountDown
-
-: MakePause?
-	sleepCountDown 0 eq IF 
-		20000 -> Nat sleepMillis
-		sleepInterval sleepCountDown !
-	THEN
-	sleepCountDown @ 1 sub sleepCountDown !
-;
-
-
-
 : Charge
 
-	(compiles to 80 bytes :-)
+	(compiles to 77 bytes :-)
 
-	enableLoad CanPowerLoad -> Nat writeDigital 
+	enableLoad CanPowerLoad? -> Nat writeDigital 
 
 	SolarVoltage solarVoltageOk lt IF 
 		DeepSleep
-		ret		(never called, as sleep restarts microcontroller)
+		ret
 	THEN
 
-	MakePause?
-
-	BatteryFull IF 
+	BatteryFull? IF 
 		ledFull 1 -> Nat writeDigital
 		ret 
 	THEN
 
 	ledFull 0 -> Nat writeDigital
 	
-	ChargeVoltageOk IF
+	ChargeVoltageOk? IF
 		valveCharge 5 1 -> Nat pulseMicros  (charge battery for 5 us)
 		1 ledCharge -> Nat writeDigital
 		0 ledInductor -> Nat writeDigital
@@ -164,12 +148,6 @@ sleepInterval VARIABLE sleepCountDown
 	1 AGAIN? ;
 
 
-: testLoop 50 cpush BEGIN
-	cr a print#
-	a 1 sub a!
-	a 0 gt AGAIN?
-	"done .str
-	;
 
 HERE CONSTANT afterCode
 

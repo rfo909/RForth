@@ -155,6 +155,19 @@
 		report(name,code,num)
 /NDoc
 
+# Generate numeric values for instructions
+# --
+	NDoc->row
+		out(Int(row.get(2),row))
+	| _.sort->x
+		out(x.data)  # row
+	| _=>rows
+	rows->row
+		name=row.get(0)
+		value=row.get(2)
+		println("ops["+value+"]=op_" + name + ";")
+/NNDoc
+
 
 # Assembly instructions mapped to "machine code"
 # --

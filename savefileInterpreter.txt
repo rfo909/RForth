@@ -8,9 +8,9 @@
 	Term.wrap(true)			# to see full error listings
 	
 	# number of words
-	DSTACK_WORDS = 50
-	CSTACK_WORDS = 50  # callstack
-	FSTACK_FRAMES = 20  # frame stack contains dictionaries
+	DSTACK_WORDS = 20
+	CSTACK_WORDS = 40  # callstack
+	FSTACK_FRAMES = 20  # frame stack controls content on callstack
 	
 	self.WORDSIZE = 2
 	self.memory=HWSim:Memory(self.WORDSIZE)
@@ -459,7 +459,7 @@
 		self.haltFlag=true
 	}
 
-	self._A=Lambda{  # sym2s - convert symbol offset to string pointer
+	self._A=Lambda{  # sym2s - convert static symbol offset to string pointer
 		offset=self.pop
 		addr=self.symbolsStart + offset
 		self.push(addr)
