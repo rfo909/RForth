@@ -3,8 +3,6 @@
 
 HERE CONSTANT beforeCode
 
-0 &DebugFlag writeb
-
 
 ( --- example: solar charger --- )
 ( A low voltage, low power solar panel is coupled to a capacitor )

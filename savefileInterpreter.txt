@@ -320,18 +320,6 @@
 		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
 		self.memory.writeWord(base+self.WORDSIZE*index, value)	
 	}
-	self._5=Lambda{ # a - get local variable a
-		self.push(0)
-		self._3  # cget
-	}
-	self._9=Lambda{ # b - get local variable b
-		self.push(1)
-		self._3  # cget
-	}
-	self._e=Lambda{ # c - get local variable c
-		self.push(2)
-		self._3  # cget
-	}
 	
 	self._j=Lambda { # drop  ( a -- )
 		self.pop
@@ -586,20 +574,6 @@
 	
 	self._0 = Lambda { # PANIC ( -- ) Clean up stacks and set PC=0
 		self.PANIC("PANIC instruction called")
-	}
-	
-	self._8 = Lambda { # tag ( str -- num ) Lookup tag by string, 0 if not found
-		strAddr = self.pop
-		length=self.memory.readByte(strAddr)
-		s=""
-		Std.Data.for(0,length,1)->i
-			s=s+self.memory.readChar(strAddr+1+i)
-		|
-		if (self.tagLookup.has(s)) {
-			self.push(self.tagLookup.get(s))
-		} else {
-			self.push(0)
-		}
 	}
 	
 	self._a = Lambda { # native ( ... addr -- int? ) - call nativec with string to get the addr value

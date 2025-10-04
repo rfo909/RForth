@@ -208,27 +208,6 @@
 
 
 :ProcessWord
-	;; check for tag lookup
-	&NextWord 1+ readb 38 ne &*notTag jmp?    ;; starts with &
-		; overwrite amp char with length - 1 
-		&NextWord readb 1 sub
-			&NextWord 1+ writeb
-		; look up tag
-		&NextWord 1+
-			tag cpush		;; a
-		
-		a 0 ne &*foundTag jmp?
-		
-		cr "Bad_tag_ .str &NextWord 1+ .str
-		PANIC
-	
-	:*foundTag
-		; reuse ProcessNumber
-		a &NextNumber ! 
-		&ProcessNumber call
-		ret
-	
-	:*notTag 
 	
 	;; look up word in dictionary
 	

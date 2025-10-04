@@ -247,7 +247,7 @@
 	rfwd?		:6	;; single byte (0-64) offset jumps (inside word)
 	rback?		:7
 	
-	tag		:8	;; look up address of tag
+	;;tag		:8	;; look up address of tag
 
 	PANIC		:0	;; clean up stacks and set PC=0
 	
