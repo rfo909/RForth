@@ -161,10 +161,11 @@
 		&DebugFlag readb &*debug jmp?
 		ret
 	:*debug
-		cr ">_ .str &NextWord .str
+		cr &Str_DebugMark .str &NextWord .str
 		ret
 
-		
+:Str_DebugMark %">_
+	
 
 
 :NextWordIsNumber		; if &NextWord is a number, parse it and store in &NextNumber, returns boolean
@@ -183,7 +184,8 @@
 	
 		&NextNumber @ 0 &EmitNumber call
 		ret
-		
+	
+:Str_u2spc %'u2spc	
 
 :ProcessString
 	; NextWord starts with single or double quote; if double quote, replace _ with space
@@ -191,7 +193,7 @@
 	&NextWord 1+ readb 39 eq &*noReplace jmp?  ;; starts with single quote
 
 		(replace underscore with space, directly in RAM)
-		&NextWord 'u2spc nativec native
+		&NextWord &Str_u2spc nativec native
 	
 	:*noReplace
 
@@ -207,11 +209,14 @@
 	ret
 
 
+:Str_Lookup_up_ %"Looking_up_
+:Str_Unknown_word_ %"Unknown_word_
+
 :ProcessWord
 	
 	;; look up word in dictionary
 	
-	;; cr "Looking_up_ .str &NextWord .str
+	;; cr &Str_Lookup_up_ .str &NextWord .str
 	
 	&NextWord &DictLookup call 			;; dictionary entry pointer or null
 	
@@ -230,7 +235,7 @@
 	
 	:*notFound
 		drop					;; dup'ed value before call
-		cr "Unknown_word_ .str	
+		cr &Str_Unknown_word_ .str	
 		&NextWord .str
 		PANIC
 		
@@ -345,7 +350,7 @@
 
 :DictTraverse ;; ( dictHead str -- dictEntry|null )
 	cpush				;; a=str
-	; "Looking_up_ .str a .str cr
+	; &StrLooking_up_ .str a .str cr
 	
 	(dictHead)
 		@ cpush				;; b=current dictionary entry
@@ -365,11 +370,13 @@
 		b ret
 		
 
+:Str_Word_dict_entry_		%"Word_dict_entry:_
+
 :.W
 	&GetNextWord call
 	&NextWord &DictLookup call cpush (a=dict entry)
 
-	cr "Word_dict_entry:_ .str a print
+	cr &Str_Word_dict_entry_ .str a print
 	ret
 	
 	
@@ -386,6 +393,9 @@
 	0 &CustomDictionaryHeadPtr !
 	ret		
 
+:Str_No_dictionary_found_  %"No_dictionary_found_
+:Str_Invalid_dictionary_   %"Invalid_dictionary_
+:Str_Not_constant		%"_:_Not_constant
 
 :-> ( ... dict word )
 	&GetNextWord call 
@@ -409,11 +419,11 @@
 	ret				
 
 	:*dictNotFound
-		cr "No_dictionary_found_ .str &NextWord .str
+		cr &Str_No_dictionary_found_ .str &NextWord .str
 		PANIC
 		ret
 	:*notConstant
-		cr "Invalid_dictionary_ .str &NextWord .str "_:_Not_constant .str
+		cr &Str_Invalid_dictionary_ .str &NextWord .str &Str_Not_constant .str
 		PANIC
 		ret
 	
@@ -514,6 +524,10 @@
 	ret
 	
 
+:Str_CompStack_empty			%"CompStack_empty
+:Str_CompStack_no_type_		%"CompStack:_no_type_
+
+
 :comps@ ;; (type -- offset)
 	cpush						(a=type)
 	&CompileStack readb 0 eq &*emptyStack jmp?
@@ -532,10 +546,10 @@
 		b 1 sub b!
 		&*next jmp
 	:*emptyStack
-		cr "CompStack_empty .str
+		cr &Str_CompStack_empty .str
 		PANIC
 	:*notFound
-		cr "CompStack:_no_type_ .str a print#
+		cr &Str_CompStack_no_type_ .str a print#
 		PANIC
 	:*found
 		c @ 255 andb		( return value )
@@ -625,7 +639,10 @@
 ;; -----------------------------------------------
 
 
-	
+:Str_Bad_word_name_		%"Bad_word_name:_
+:Str_ok_			%"_ok_	
+:Str_bytes			%"_bytes
+
 :COLON
 	;; set compile mode
 	1 &IsCompiling writeb
@@ -644,7 +661,7 @@
 	ret
 
 	:*numberError
-		cr "Bad_word_name:_ .str &NextWord .str
+		cr &Str_Bad_word_name_ .str &NextWord .str
 		&ResetCompile call
 		PANIC
 
@@ -655,12 +672,12 @@
 		ret
 	:*ok
 		;; info
-		cr &IsCompilingWord .str "_ok_ .str
+		cr &IsCompilingWord .str &Str_ok_ .str
 
 		;; add a ret instruction to CompileBuf
 		0x52 &EmitByte call
 
-		&CompileBuf readb print# "_bytes .str
+		&CompileBuf readb print# &Str_bytes .str
 
 		;; allocate permanent code buffer including length byte
 		&CompileBuf &BufCreateCopy call cpush            (a=codeBuffer)
@@ -726,11 +743,14 @@
 	1 &IsCompilingWordMode writeb
 	ret		
 
+:Str_Separator		%'--
+:Str_Space		%"_
+
 :Words
 	cr
 	&CustomDictionaryHeadPtr @ 0 eq &*noCustom jmp?
 		&CustomDictionaryHeadPtr @ &DictShowWords call
-		cr '-- .str cr
+		cr &Str_Separator .str cr
 	:*noCustom
 	&DictionaryHead &DictShowWords call
 	cr
@@ -746,7 +766,7 @@
 	:*next
 		a 0 eq &*done jmp?
 		
-		a .str "_ .str			;; name
+		a .str &Str_Space .str			;; name
 
 		a readb a add 1+ a!   		;; past the name
 		a W+ W+ @ a!			;; a=a.next

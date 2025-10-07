@@ -447,12 +447,6 @@
 		self.haltFlag=true
 	}
 
-	self._A=Lambda{  # sym2s - convert static symbol offset to string pointer
-		offset=self.pop
-		addr=self.symbolsStart + offset
-		self.push(addr)
-	}
-
 	self._C=Lambda{  # .str - print string
 		addr=self.pop
 		self.printString(addr)

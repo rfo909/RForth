@@ -5,6 +5,11 @@
 /ExampleCode
 
 
+# Word size
+# --
+	2
+/WORDSIZE
+
 # Check for risky tagging such as creating tag when meaning to refer to it
 # --
 	num=0
@@ -65,7 +70,7 @@
 # --
 	data=InstructionsLookup
 
-	excluded="sym2s".split
+	excluded=List
 	
 	data.keys.sort->char
 		name=data.get(char)
@@ -268,7 +273,6 @@
 		
 	;; Strings are stored as one length byte and N characters (max 255)
 
-	sym2s		:A		;; convert to string pointer (used by compiler only)
 	.str		:C		;; print string
 	streq		:B		;; compare strings ( ptr ptr -- 0/1 )  boolean
 	memcpy		:D		;; ( ptrSrc ptrTarget count -- )
@@ -441,8 +445,11 @@
 			continue
 		}
 		
-		# -- symbol
+		# -- symbols are no longer supported, must be stored at separate addresses!!
+		# this means the sym2s instruction is no longer needed, as static strings are REAL string pointers
 		if (word.startsWith("'") || word.startsWith('"')) {
+			error("Static symbol " + word + " must be written as :Str_xxx %'xxx -- then referred as &xxx")
+			
 			symbol=word.sub(1)
 			if (word.startsWith('"')) symbol=symbol.replace("_"," ")
 			
@@ -455,7 +462,7 @@
 		# -- %NEXT
 		if (word=="%NEXT") {
 			# point to next word (for static lists)
-			value=bytecode.length+2  # wordsize
+			value=bytecode.length+WORDSIZE
 			bytecode.addRawWord(value)
 			continue
 		}
@@ -464,6 +471,13 @@
 		if (word.startsWith("%'")) {
 			symbol=word.after("'")
 
+			words.push(List("HEX:"+symbol.length.hex(2) + symbol.toHexString("ISO-8859-1")))
+			continue
+		}
+		
+		if (word.startsWith('%"')) {
+			symbol=word.after('"').replace("_"," ")
+			 
 			words.push(List("HEX:"+symbol.length.hex(2) + symbol.toHexString("ISO-8859-1")))
 			continue
 		}
