@@ -185,15 +185,13 @@
 		&NextNumber @ 0 &EmitNumber call
 		ret
 	
-:Str_u2spc %'u2spc	
-
 :ProcessString
 	; NextWord starts with single or double quote; if double quote, replace _ with space
 	
 	&NextWord 1+ readb 39 eq &*noReplace jmp?  ;; starts with single quote
 
 		(replace underscore with space, directly in RAM)
-		&NextWord &Str_u2spc nativec native
+		&NextWord u2spc
 	
 	:*noReplace
 

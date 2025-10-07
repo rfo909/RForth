@@ -451,6 +451,14 @@
 		addr=self.pop
 		self.printString(addr)
 	}
+	
+	self.__=Lambda{ # u2spc - convert underscore to space in string in RAM
+		ptr=self.pop
+		len=self.memory.readByte(ptr)
+		Std.Data.for(0,len,1)->i
+			pos=ptr+1+i
+			if (self.memory.readChar(pos)=="_") self.memory.writeChar(pos," ")
+	}
 
 	self._B=Lambda{ # streq - compare strings, return 0 if not and 1 if equal
 		a=self.pop
@@ -645,19 +653,6 @@
 
 		# convert underscore to space in string; called from REPL for "xxx_yyy strings 
 
-		NativeFunction("u2spc", 1, Lambda{
-			P(1) as List=>params
-			P(2) as &Memory => memory
-			
-			ptr=params.first
-			len=memory.readByte(ptr)
-			Std.Data.for(0,len,1)->i
-				pos=ptr+1+i
-				if (memory.readChar(pos)=="_") memory.writeChar(pos," ")
-			|
-			null
-		}),
-		
 		NativeFunction("calc",1,Lambda{
 			P(1) as List=>params
 			P(2) as &Memory => memory

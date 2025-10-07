@@ -275,6 +275,7 @@
 
 	.str		:C		;; print string
 	streq		:B		;; compare strings ( ptr ptr -- 0/1 )  boolean
+	u2spc		:_	
 	memcpy		:D		;; ( ptrSrc ptrTarget count -- )
 	atoi		:1		;; parse string to integer
 
