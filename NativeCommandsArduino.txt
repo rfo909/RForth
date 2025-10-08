@@ -1,0 +1,70 @@
+
+Sys
+---
+<N>				sys.malloc
+-				sys.deepSleep
+<N>				sys.sleepMillis
+
+Pin
+---
+<pin> <value>	pin.outDigital
+<pin>			pin.inDigital
+<pin>			pin.inDigitalPullup
+<pin>			pin.inAnalog
+
+<pin> <value>	pin.writeDigital
+<pin>			pin.readDigital
+<pin>			pin.readAnalog
+
+<pin> <value>	pin.pulseMicros
+				
+
+i2c
+---
+https://docs.arduino.cc/learn/communication/wire/
+
+
+				i2c.beginMaster
+<addr> 			i2c.beginSlave
+i2c.end
+				i2c.beginTranmission
+				i2c.endTransmission
+				i2c.available
+				i2c.read
+<buf> <size>	i2c.readStr
+<count> <addr>	i2c.requestFrom
+<?> 			i2c.setClock
+
+<?>				i2c.setTimeout
+				i2c.clearTimeout
+
+<data> ... <N>	i2c.writeBytes
+<str>			i2c.writeStr
+				i2c.crlf
+				i2c.lf
+ 
+
+
+spi
+---
+https://docs.arduino.cc/learn/communication/spi/
+
+https://docs.arduino.cc/tutorials/generic/introduction-to-the-serial-peripheral-interface/
+	- serial eeprom example
+
+
+serial
+------
+<str>			serial.writeStr
+<n>				serial.write
+				serial.crlf
+				serial.lf
+
+				serial.read
+				serial.available
+<buf> <len>
+
+				serial.end
+<baud/100> 		serial.begin
+<millis>		serial.setTimeout
+<buf> <len>		serial.readBytes
