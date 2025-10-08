@@ -2,8 +2,7 @@
 # The interpreter
 # --
 	P(1) as String => hexString
-	P(2) as int => symbolsStart
-	P(3) as Dict => tagLookup
+	P(2) as Dict => tagLookup
 
 	Term.wrap(true)			# to see full error listings
 	
@@ -26,7 +25,6 @@
 
 	# -- store information about the imported hex string
 	
-	self.symbolsStart=symbolsStart
 	self.symbolLookupEnd=bytes.length
 	
 	self.tagLookup=tagLookup
@@ -836,7 +834,6 @@
 
 	dict = Db2:Get("RForth","data")
 	hexBlock=dict.hexBlock
-	symbolsStart=dict.symbolsStart
 	tags=dict.tags
 	tagListSorted=dict.tagListSorted
 	metaInfo=dict.metaInfo
@@ -848,7 +845,7 @@
 	breakpoint=-1
 	autorun=false
 
-	interpreter=Interpreter(hexBlock, symbolsStart, tags)
+	interpreter=Interpreter(hexBlock, tags)
 	interpreter.DATA_START=tags.get("PROTECT")
 
 	monitorByteValue=0

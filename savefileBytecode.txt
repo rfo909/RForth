@@ -60,19 +60,15 @@
 		P(1) as int => pos
 		if (self.metaInfo.has(""+pos)) self.metaInfo.get(""+pos) else ""
 	}
-	self.getCodeHex=Lambda{
+	self.getCodeArray=Lambda{
 		self.result->x
 			num=x
 			if (Sys.getType(num)=="String") {
-				num=num.toHexString("ISO-8859-1").parseInt(16)
+				num=num.toHexString("ISO-8859-1").parseInt(16)   # opcodes are characters in self.result
 			}
-			out(num.hex(2))
-		| _.concat
-		=>s
-		if (s.length % 2 == 1) {
-			error("Bytecode hex not even: " + s)
-		}
-		s
+			out(num)
 	}
-
+	self.getHexBlock=Lambda{
+		self.getCodeArray->i out(i.hex(2)) | _.concat
+	}
 /class Bytecode

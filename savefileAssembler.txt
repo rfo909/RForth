@@ -388,7 +388,7 @@
 				name=line.after(" ").before(" ")
 				code=line.after(" ").after(" ")
 				inlines.addSymbol(name,code)
-				println("MACRO:", name)
+				#println("MACRO:", name)
 			} else {
 				out(line)
 		}
@@ -628,10 +628,15 @@
 			bytecode.patch(patchAddress, code)
 	}
 	
-	Disassemble(dict)
+	#Disassemble(dict)
 	
 	metaInfo=dict.bytecode.metaInfo # indexed by ""+PC
 	numberTable=dict.numberTable
+	
+	Lib:Header("Macros")
+	Inner{
+		dict.inlines.dict.keys.sort->symbol println(symbol)
+	}
 	
 	# Display all tags
 	Lib:Header("Tags")
@@ -643,53 +648,53 @@
 		Lib:ShowRows(rows, null, false)
 	}
 	
-	println
-
 	println("bytecode")
-	hexBlock=bytecode.getCodeHex
-	
-	symbolsStart = hexBlock.length div 2
-	hexBlock=hexBlock + numberTable.getSymbolHexString
-	
+	codeArray=bytecode.getCodeArray
+		
 	println
-	println("symbolsStart", symbolsStart.hex(4))
-	println
-	#println("Hexblock length:", hexBlock.length)
-	totBytes=hexBlock.length div 2
+	println("codeArray length:", codeArray.length)
+	totBytes=bytecode.length
 	println("Total #bytes:", totBytes, totBytes.hex(4))
 	
-
+	hexBlock=bytecode.getHexBlock
+	println("hexBlock length:", hexBlock.length)
+	
+	
 	# Store stuff in database for interpreter to pick up automagically
 	tags=numberTable.tags
 	tagListSorted=numberTable.getTagListSorted
 	
-	Db2:Set("RForth", "data", SymDict(hexBlock, symbolsStart, tags, tagListSorted, metaInfo))
+	Db2:Set("RForth", "data", SymDict(hexBlock, tags, tagListSorted, metaInfo))
+
+	# generate C-code
+	println
+	println("const PROGMEM byte FIRMWARE[]={")
+	showFirmware(codeArray)
+	println("};")
+	println("int firmwareSize () { return " + codeArray.length + ";}")
+	println("int firmwareProtectTag () { return " + tags.get("PROTECT") + ";}")
 	
 	println
-	Lib:Header("Macros")
-	Inner{
-		dict.inlines.dict.keys.sort->symbol println(symbol)
-	}
 	
 	"ok"
 	
 /Compile
 
+# Generate bytecode as array in C
+# --
+	P(1) as List => bytes
+	s=""
+	comma=false
+	bytes->b
+		if (comma) s=s+","
+		s=s+b
+		comma=true
+		if (s.length > Term.w-20) { println(s) s="" }
+	|
+	println(s)
+/showFirmware
+		
+
 Compile
 /t
 
-
-# Block format text for copy/paste
-# --
-	P(1) as String => s
-	
-	loop
-		if (s.length > 70) {
-			println(s.sub(0,70))
-			s=s.sub(70)
-			continue
-		} else {
-			println(s)
-			break
-		}
-/BlockFormat
