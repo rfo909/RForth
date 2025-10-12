@@ -22,10 +22,12 @@ char *errorMessage;
 byte hasError=0;
 
 // ------
-// Memory handling: need to duplicate memory from the PROTECT tag, into RAM, updating 
+// Memory handling: need to duplicate "firmware" memory from the PROTECT tag, into RAM, updating 
 // initial HERE value accordingly. For references below the PROTECT tag, we refer
-// to the "FIRMWARE" flash buffer, and for values above, we subtract the PROTECT tag value
+// to the "firmware" flash buffer, and for values above, we subtract the PROTECT tag value
 // and work on the "heap" array defined below.
+//
+// See readByte() function.
 
 byte heap[RAM_SIZE];   // dictionary and data
 
@@ -61,6 +63,23 @@ void populateRAM() {
 
 }
 void loop() {
+  if (*errorMessage != '\0') {
+    // got an error situation
+    Serial.println(errorMessage);
+    Serial.println("(ENTER)");
+    Serial.read();
+
+    // clear error message
+    *errorMessage='\0';
+  }
+  Word pc=programCounter;
+  Word op=readByte(programCounter);
+  if (op & 0x80) {
+    // number literal
+  } else {
+    // look up function in op-array and call it
+  }
+
   // Need a memory model in place, so as to read from Flash and RAM seamlessly
   // Must update the (read|write)(Word|Byte) functions
   //Word op=readByte(programCounter);
