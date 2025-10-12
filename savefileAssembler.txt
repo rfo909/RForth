@@ -668,11 +668,11 @@
 
 	# generate C-code
 	println
-	println("const PROGMEM byte FIRMWARE[]={")
+	println("const int firmwareSize = " + codeArray.length + ";")
+	println("const int firmwareProtectTag = " + tags.get("PROTECT") + ";")
+	println("const PROGMEM byte firmware[]={")
 	showFirmware(codeArray)
 	println("};")
-	println("int firmwareSize () { return " + codeArray.length + ";}")
-	println("int firmwareProtectTag () { return " + tags.get("PROTECT") + ";}")
 	
 	println
 	
