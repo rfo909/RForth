@@ -85,7 +85,7 @@ void loop() {
 		push(w | (op & 0x3F))
 	}
 	return;
-  } else if (op > 128) {
+  } else if (op >= 128) {
 	Serial.print("Invalid op: " + op);
 	Serial.println(" PC=" + programCounter);
 	Serial.prinln("(ENTER)");
