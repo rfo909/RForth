@@ -18,7 +18,6 @@ char temp[10];
 
 // ------
 
-char *errorMessage;
 byte hasError=0;
 
 // ------
@@ -36,12 +35,11 @@ Word programCounter=0;
 
 
 void setError (char *msg) {
-  strcpy(errorMessage,msg);
+  Serial.println(msg);
   hasError=true;
 }
 
 void setup() {
-  errorMessage=(char *) malloc(60);
   Serial.begin(9600);
 
   fpush(0,0);
@@ -51,6 +49,9 @@ void setup() {
 
   Serial.print("(Ready) HERE=");
   Serial.println(HERE);
+
+  Serial.print("firmware[0] ");
+  Serial.println(firmware[0]);
 }
 
 
@@ -63,45 +64,59 @@ void populateRAM() {
 }
 
 void loop() {
+  Serial.print("PC=");
+  Serial.print(programCounter);
+  Serial.print(" HERE=");
+  Serial.print(HERE);
+  Serial.print(" stack=<");
+  for (int i=0; i<dStackNext; i++) {
+    if (i>0) Serial.print(" ");
+    Serial.print(dStack[i]);
+  }
+  Serial.println(">");
+  readSerialChar();
+
   if (hasError) {
     // got an error situation
-    Serial.print("ERROR: ");
-    Serial.println(errorMessage);
-    Serial.println("(ENTER)");
-    Serial.read();
+    Serial.print(F("Press ENTER"));
+    readSerialChar();
 
     // clear error message
-    *errorMessage='\0';
+    //*errorMessage='\0';
     hasError=false;
   }
   Word pc=programCounter;
   Word op=readByte(programCounter);
+  Serial.print("op=");
+  Serial.println(op);
+
   if (op & 0x80) {
     // number literal
-	if (op & 0x40) {
-		push(op & 0x3F);
-	} else {
-		Word w=pop() << 6;
-		push(w | (op & 0x3F))
-	}
-	return;
-  } else if (op >= 128) {
-	Serial.print("Invalid op: " + op);
-	Serial.println(" PC=" + programCounter);
-	Serial.prinln("(ENTER)");
-	Serial.read();
-	return;
-  }
-  (*funcPtr) () = ops[op];
-  if (funcPtr==0) {
-	Serial.println("Null op: " + op);
-	Serial.println("(ENTER)");
-	Serial.read();// look up function in op-array and call it
-	return;
+    if (op & 0x40) {
+      Serial.println("11xxxxxx");
+      push(op & 0x3F);
+    } else {
+      Serial.println("10xxxxxx");
+      Word w=pop() << 6;
+      push(w | (op & 0x3F));
+    }
+  } else {
+    // not number literal
+    void (*funcPtr) () = ops[op];
+    
+    if (funcPtr==0) {
+      Serial.println("Null op: " + op);
+      Serial.println("(ENTER)");
+      readSerialChar();
+      return;
+    }
+
+    // call op
+    funcPtr ();
   }
 
-  // call op
-  funcPtr ();
+  // increase programcounter, unless this op has modified it
+  if (programCounter==pc) programCounter++;
 
 }
 
@@ -117,7 +132,12 @@ void writeWord (Word addr, Word value) {
 }
 
 void writeByte (Word addr, Word value) {
-  if (addr < firmwareProtectTag || addr >= HERE) {setError("writeByte: invalid addr"); return;}
+  if (addr < firmwareProtectTag || addr >= HERE) {
+    Serial.print(F("writeByte: invalid address "));
+    Serial.println(addr);
+    setError("x"); 
+    return;
+  }
   // calculate heap address
   addr=addr-firmwareProtectTag;
   heap[addr]=value & 0xFF;
@@ -128,12 +148,21 @@ Word readWord (Word addr) {
 }
 
 Word readByte (Word addr) {
-  if (addr >= HERE) setError("readByte: invalid addr");
+  if (addr >= HERE) {
+    Serial.print(F("readByte: invalid address "));
+    Serial.println(addr);
+    setError("x");
+    return;
+  }
   if (addr < firmwareProtectTag) {
+    Serial.print("Reading firmware ");
+    Serial.println(addr);
     return firmware[addr];
   } else {
     // calculate heap address
     addr=addr-firmwareProtectTag;
+    Serial.print("Reading heap ");
+    Serial.println(addr);
     return heap[addr];
   }
 }
