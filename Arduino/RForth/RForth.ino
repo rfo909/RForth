@@ -60,36 +60,56 @@ void populateRAM() {
     heap[i] = firmware[i];
   }
   HERE=firmwareSize;  // see read/write functions calculating offset based on firmwareProtectTag
-
 }
+
 void loop() {
-  if (*errorMessage != '\0') {
+  if (hasError) {
     // got an error situation
+    Serial.print("ERROR: ");
     Serial.println(errorMessage);
     Serial.println("(ENTER)");
     Serial.read();
 
     // clear error message
     *errorMessage='\0';
+    hasError=false;
   }
   Word pc=programCounter;
   Word op=readByte(programCounter);
   if (op & 0x80) {
     // number literal
-  } else {
-    // look up function in op-array and call it
+	if (op & 0x40) {
+		push(op & 0x3F);
+	} else {
+		Word w=pop() << 6;
+		push(w | (op & 0x3F))
+	}
+	return;
+  } else if (op > 128) {
+	Serial.print("Invalid op: " + op);
+	Serial.println(" PC=" + programCounter);
+	Serial.prinln("(ENTER)");
+	Serial.read();
+	return;
+  }
+  (*funcPtr) () = ops[op];
+  if (funcPtr==0) {
+	Serial.println("Null op: " + op);
+	Serial.println("(ENTER)");
+	Serial.read();// look up function in op-array and call it
+	return;
   }
 
-  // Need a memory model in place, so as to read from Flash and RAM seamlessly
-  // Must update the (read|write)(Word|Byte) functions
-  //Word op=readByte(programCounter);
-
+  // call op
+  funcPtr ();
 
 }
 
+// ------------------------------------------------------------------------------------------------
 // Memory management: the bytes of the firmware up to the PROTECT tag have addresses starting at 0
 // We copy the data from the firmware array (Flash) from the PROTECT tag to the heap
 // Need to subtract PROTECT tag value from addresses to get heap addresses
+// ------------------------------------------------------------------------------------------------
 
 void writeWord (Word addr, Word value) {
   writeByte(addr,(value>>8) & 0xFF);
@@ -126,6 +146,10 @@ void allot (Word count) {
 
 
 void populateOps() {
+  for (int i=0; i<128; i++) {
+    ops[i]=0;
+  }
+
   ops[38]=&op_and;
   ops[42]=&op_mul;
   ops[43]=&op_add;
