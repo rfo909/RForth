@@ -825,6 +825,8 @@
 	#println(str)
 	#readLine("Enter")
 	str 
+	# empty
+	List
 /GetInitialForthCode
 
 # Test

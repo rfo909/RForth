@@ -90,6 +90,7 @@
 /InlineDictionary
 
 
+
 # Show interpreter instructions
 # --
 	Sys.savefile.dir.file("savefileInterpreter.txt").read->line
@@ -160,7 +161,7 @@
 		report(name,code,num)
 /NDoc
 
-# Generate numeric values for instructions
+# Generate numeric values for instructions in C
 # --
 	NDoc->row
 		out(Int(row.get(2),row))
@@ -172,6 +173,21 @@
 		value=row.get(2)
 		println("ops["+value+"]=op_" + name + ";")
 /NNDoc
+
+
+# Generate names table for instructions in C
+# --
+	list=Std.Data.yes(128,null)
+	NDoc->row
+		name=row.get(0)
+		num=row.get(2)
+		list.set(num,name)
+	|
+	pos=0
+	list->name
+		if (name==null) println('"<undefined>",') else println('"' + name + '",  // ' + pos)
+		pos=pos+1
+/NNTDoc
 
 
 # Assembly instructions mapped to "machine code"
@@ -670,7 +686,7 @@
 	println
 	println("const int firmwareSize = " + codeArray.length + ";")
 	println("const int firmwareProtectTag = " + tags.get("PROTECT") + ";")
-	println("const PROGMEM byte firmware[]={")
+	println("const byte firmware[]={")
 	showFirmware(codeArray)
 	println("};")
 	

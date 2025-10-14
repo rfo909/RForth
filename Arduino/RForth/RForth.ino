@@ -32,6 +32,7 @@ byte heap[RAM_SIZE];   // dictionary and data
 
 Word HERE=0;
 Word programCounter=0;
+Word instructionCount=0;
 
 
 void setError (char *msg) {
@@ -49,9 +50,6 @@ void setup() {
 
   Serial.print("(Ready) HERE=");
   Serial.println(HERE);
-
-  Serial.print("firmware[0] ");
-  Serial.println(firmware[0]);
 }
 
 
@@ -64,21 +62,45 @@ void populateRAM() {
 }
 
 void loop() {
-  Serial.print("PC=");
-  Serial.print(programCounter);
-  Serial.print(" HERE=");
-  Serial.print(HERE);
-  Serial.print(" stack=<");
+  
+  Serial.println();
+  Serial.println("--------------------------");
+  Serial.print("#instr=");
+  Serial.print(instructionCount);
+  Serial.print(" PC=0x");
+  Serial.print(programCounter,16);
+  Serial.print(" HERE=0x");
+  Serial.println(HERE,16);
+
+  Serial.print(" dStack=<");
   for (int i=0; i<dStackNext; i++) {
     if (i>0) Serial.print(" ");
-    Serial.print(dStack[i]);
+    Serial.print("0x");
+    Serial.print(dStack[i],16);
   }
   Serial.println(">");
-  readSerialChar();
 
+  Serial.print(" fStack=<");
+  for (int i=0; i<fStackNext; i++) {
+    if (i>0) Serial.print(" ");
+    Serial.print("0x");
+    Serial.print(fStack[i],16);
+  }
+  Serial.println(">");
+
+  Serial.print(" rStack=<");
+  for (int i=0; i<rStackNext; i++) {
+    if (i>0) Serial.print(" ");
+    Serial.print("0x");
+    Serial.print(rStack[i],16);
+  }
+  Serial.println(">");
+  Serial.println();
+    
   if (hasError) {
     // got an error situation
-    Serial.print(F("Press ENTER"));
+    Serial.print(F("Got ERROR ^^ - Press ENTER"));
+    clearSerialInputBuffer();
     readSerialChar();
 
     // clear error message
@@ -87,27 +109,32 @@ void loop() {
   }
   Word pc=programCounter;
   Word op=readByte(programCounter);
-  Serial.print("op=");
-  Serial.println(op);
 
   if (op & 0x80) {
     // number literal
     if (op & 0x40) {
-      Serial.println("11xxxxxx");
+      Serial.print("op=11xxxxxx -> ");
+      Serial.println(op & 0x3F);
       push(op & 0x3F);
     } else {
-      Serial.println("10xxxxxx");
-      Word w=pop() << 6;
-      push(w | (op & 0x3F));
+      Serial.print("op=10xxxxxx -> ");
+      Serial.println(op & 0x3F);
+      Word w=(pop() << 6) | (op & 0x3F);
+      push(w);
     }
   } else {
     // not number literal
+    Serial.print("op=");
+    Serial.print(op);
+    Serial.print("  ");
+    Serial.println(opNames[op]);
+
+
     void (*funcPtr) () = ops[op];
     
     if (funcPtr==0) {
-      Serial.println("Null op: " + op);
-      Serial.println("(ENTER)");
-      readSerialChar();
+      Serial.println("funcPtr is 0, op=" + op);
+      setError("x");
       return;
     }
 
@@ -117,6 +144,8 @@ void loop() {
 
   // increase programcounter, unless this op has modified it
   if (programCounter==pc) programCounter++;
+
+  instructionCount++;
 
 }
 
@@ -148,6 +177,8 @@ Word readWord (Word addr) {
 }
 
 Word readByte (Word addr) {
+  Serial.print("readByte: ");
+  Serial.println(addr);
   if (addr >= HERE) {
     Serial.print(F("readByte: invalid address "));
     Serial.println(addr);
@@ -156,7 +187,9 @@ Word readByte (Word addr) {
   }
   if (addr < firmwareProtectTag) {
     Serial.print("Reading firmware ");
-    Serial.println(addr);
+    Serial.print(addr);
+    Serial.print(" -> ");
+    Serial.println(firmware[addr]);
     return firmware[addr];
   } else {
     // calculate heap address
@@ -303,8 +336,8 @@ void op_orb () {Word b=pop(); Word a=pop(); push((Word)a | b);}
 void op_inv () {Word x=pop(); push(~x);}
 void op_shift_left () {Word b=pop(); Word a=pop(); push((Word) a<<b);}
 void op_shift_right () {Word b=pop(); Word a=pop(); push((Word) a>>b);}
-void op_readc () {readSerialChar();}
-void op_clear () {dStackNext=0;}
+void op_readc () {Serial.println("ENTER INPUT CHAR"); push(readSerialChar());}
+ void op_clear () {dStackNext=0;}
 void op_null () {push(0);}
 void op_or () {Word b=pop(); Word a=pop(); push(a||b);}
 
@@ -312,7 +345,9 @@ void op_or () {Word b=pop(); Word a=pop(); push(a||b);}
 
 Word pop() {
   if (dStackNext > 0) {
-    return dStack[--dStackNext];
+    Word value=dStack[dStackNext-1];
+    dStackNext--;
+    return value;
   } else {
     setError("data stack underflow");
     return 0;
@@ -366,11 +401,11 @@ void rpush (Word value) {
   if (rStackNext >= RSTACK_SIZE) {
     setError("rStack overflow");
   } else if (fStackNext < 1) {
-    setError("fStack underflow");
+    setError("rPush: fStack underflow");
   } else {
     rStack[rStackNext++] = value;
     // update frame size 
-    int size=fStack[fStackNext-1];
+    Word size=fStack[fStackNext-1];
     fStack[fStackNext-1]=size+1;
   }
 }
@@ -493,37 +528,38 @@ void callCode (Word targetAddr, Word returnAddr) {
   } else if (fStackNext >= FSTACK_SIZE) {
     setError("fStack overflow");
   } else {
-    // posh return address
-    rStack[rStackNext++]=returnAddr;
+    // push return address
+    rpush(returnAddr);
     // calculate next frame base
     Word base=fpeekBase();
     Word size=fpeekSize();
     Word newBase=base+size;
     Word newSize=0;
     // push frame data on frame stack
-    fStack[fStackNext++]=newBase;
-    fStack[fStackNext++]=newSize;
+    fpush(newBase, newSize);
     // update PC
     programCounter=targetAddr;
   }
 }
 
 void returnFromCode () {
-  if (fStackNext < 2) {
-    setError("fStack underflow");
+
+  // pop top frame off frame stack
+  fpop();
+ 
+  // calculate location of return address
+
+  rStackNext=fpeekBase() + fpeekSize() - 1;  // -1 to move below the return address
+  if (rStackNext < 0) {
+    setError("rStack underflow");
+    return;
   } else {
-    // pop top frame off frame stack
-    fStackNext -= 2;
-    // calculate location of return address
-    rStackNext=fpeekBase() + fpeekSize() - 1;
-    if (rStackNext < 0) {
-      setError("rStack underflow");
-      rStackNext=0;
-    } else {
-      programCounter=rStack[rStackNext];
-    }
+    programCounter=rStack[rStackNext];  // the return address
   }
-  // pop frame data from frame stack
+  Word base=fpeekBase();
+  Word size=fpeekSize()-1;
+  fpop();
+  fpush(base,size);
 }
 
 void doMemcpy(Word source, Word target, Word count) {
@@ -564,12 +600,15 @@ void printChar (Word ch) {
   Serial.print(temp);
 }
 
-void readSerialChar () {
+Word readSerialChar () {
   for(;;) {
     int ch=Serial.read();
-    if (ch >= 0) {
-      push((Word) ch);
-      break;
+    if (ch >= 0 && ch != 13 && ch != 10) {  // ignore CR and LF
+      return (Word) ch;
     }
   }
+}
+
+void clearSerialInputBuffer() {
+  while (Serial.available()>0) Serial.read();
 }
