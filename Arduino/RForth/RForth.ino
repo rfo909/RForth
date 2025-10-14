@@ -62,42 +62,41 @@ void populateRAM() {
 }
 
 void loop() {
-  
-  Serial.println();
-  Serial.println("--------------------------");
-  Serial.print("#instr=");
-  Serial.print(instructionCount);
-  Serial.print(" PC=0x");
-  Serial.print(programCounter,16);
-  Serial.print(" HERE=0x");
-  Serial.println(HERE,16);
+  if (hasError) {  
+    Serial.println();
+    Serial.println("--------------------------");
+    Serial.print("#instr=");
+    Serial.print(instructionCount);
+    Serial.print(" PC=0x");
+    Serial.print(programCounter,16);
+    Serial.print(" HERE=0x");
+    Serial.println(HERE,16);
 
-  Serial.print(" dStack=<");
-  for (int i=0; i<dStackNext; i++) {
-    if (i>0) Serial.print(" ");
-    Serial.print("0x");
-    Serial.print(dStack[i],16);
-  }
-  Serial.println(">");
+    Serial.print(" dStack=<");
+    for (int i=0; i<dStackNext; i++) {
+      if (i>0) Serial.print(" ");
+      Serial.print("0x");
+      Serial.print(dStack[i],16);
+    }
+    Serial.println(">");
 
-  Serial.print(" fStack=<");
-  for (int i=0; i<fStackNext; i++) {
-    if (i>0) Serial.print(" ");
-    Serial.print("0x");
-    Serial.print(fStack[i],16);
-  }
-  Serial.println(">");
+    Serial.print(" fStack=<");
+    for (int i=0; i<fStackNext; i++) {
+      if (i>0) Serial.print(" ");
+      Serial.print("0x");
+      Serial.print(fStack[i],16);
+    }
+    Serial.println(">");
 
-  Serial.print(" rStack=<");
-  for (int i=0; i<rStackNext; i++) {
-    if (i>0) Serial.print(" ");
-    Serial.print("0x");
-    Serial.print(rStack[i],16);
-  }
-  Serial.println(">");
-  Serial.println();
-    
-  if (hasError) {
+    Serial.print(" rStack=<");
+    for (int i=0; i<rStackNext; i++) {
+      if (i>0) Serial.print(" ");
+      Serial.print("0x");
+      Serial.print(rStack[i],16);
+    }
+    Serial.println(">");
+    Serial.println();
+      
     // got an error situation
     Serial.print(F("Got ERROR ^^ - Press ENTER"));
     clearSerialInputBuffer();
@@ -113,22 +112,27 @@ void loop() {
   if (op & 0x80) {
     // number literal
     if (op & 0x40) {
-      Serial.print("op=11xxxxxx -> ");
-      Serial.println(op & 0x3F);
+      //Serial.print("op=11xxxxxx -> ");
+      //Serial.println(op & 0x3F);
       push(op & 0x3F);
     } else {
-      Serial.print("op=10xxxxxx -> ");
-      Serial.println(op & 0x3F);
+      //Serial.print("op=10xxxxxx -> ");
+      //Serial.println(op & 0x3F);
       Word w=(pop() << 6) | (op & 0x3F);
       push(w);
     }
   } else {
     // not number literal
+    /*
+    Serial.print("#instr=");
+    Serial.print(instructionCount);
+    Serial.print(" pc=");
+    Serial.print(programCounter);
     Serial.print("op=");
     Serial.print(op);
-    Serial.print("  ");
+    Serial.print(" ");
     Serial.println(opNames[op]);
-
+    */
 
     void (*funcPtr) () = ops[op];
     
@@ -177,8 +181,6 @@ Word readWord (Word addr) {
 }
 
 Word readByte (Word addr) {
-  Serial.print("readByte: ");
-  Serial.println(addr);
   if (addr >= HERE) {
     Serial.print(F("readByte: invalid address "));
     Serial.println(addr);
@@ -186,16 +188,16 @@ Word readByte (Word addr) {
     return;
   }
   if (addr < firmwareProtectTag) {
-    Serial.print("Reading firmware ");
-    Serial.print(addr);
-    Serial.print(" -> ");
-    Serial.println(firmware[addr]);
+    //Serial.print("Reading firmware ");
+    //Serial.print(addr);
+    //Serial.print(" -> ");
+    //Serial.println(firmware[addr]);
     return firmware[addr];
   } else {
     // calculate heap address
     addr=addr-firmwareProtectTag;
-    Serial.print("Reading heap ");
-    Serial.println(addr);
+    //Serial.print("Reading heap ");
+    //Serial.println(addr);
     return heap[addr];
   }
 }
@@ -293,7 +295,7 @@ void op_lt () {Word b=pop(); Word a=pop(); push(a<b);}
 void op_eq () {Word b=pop(); Word a=pop(); push(a==b);}
 void op_gt () {Word b=pop(); Word a=pop(); push(a>b);}
 void op_streq () {Word b=pop(); Word a=pop(); push(_streq(a,b));}
-void op_dot_str () {Word ptr=pop(); Word len=heap[ptr]; for (int i=0; i<len; i++) printChar(heap[ptr+i+1]);}
+void op_dot_str () {Word ptr=pop(); Word len=readByte(ptr); for (int i=0; i<len; i++) printChar(readByte(ptr+i+1));}
 void op_memcpy () {Word count=pop(); Word target=pop(); Word source=pop(); doMemcpy(source,target,count);}
 void op_ge () {Word b=pop(); Word a=pop(); push(a>=b);}
 void op_le () {Word b=pop(); Word a=pop(); push(a<=b);}
@@ -336,7 +338,7 @@ void op_orb () {Word b=pop(); Word a=pop(); push((Word)a | b);}
 void op_inv () {Word x=pop(); push(~x);}
 void op_shift_left () {Word b=pop(); Word a=pop(); push((Word) a<<b);}
 void op_shift_right () {Word b=pop(); Word a=pop(); push((Word) a>>b);}
-void op_readc () {Serial.println("ENTER INPUT CHAR"); push(readSerialChar());}
+void op_readc () {push(readSerialChar());}
  void op_clear () {dStackNext=0;}
 void op_null () {push(0);}
 void op_or () {Word b=pop(); Word a=pop(); push(a||b);}
@@ -601,9 +603,11 @@ void printChar (Word ch) {
 }
 
 Word readSerialChar () {
+  if (Serial.available()==0) Serial.println("ENTER INPUT");
   for(;;) {
     int ch=Serial.read();
-    if (ch >= 0 && ch != 13 && ch != 10) {  // ignore CR and LF
+    if (ch >= 0) {
+      if (ch==13 || ch==10) ch=32; // map to space
       return (Word) ch;
     }
   }
