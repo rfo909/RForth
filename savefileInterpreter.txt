@@ -522,7 +522,7 @@
 	self._v=Lambda{ # readc ( -- byte ) - read single character - blocking
 		if (self.bufferedInput.length==0) {
 			Lib:Header("The REPL is waiting for more input characters!")
-			self.bufferedInput = readLine("Enter input")
+			self.bufferedInput = readLine("Enter input") + " "  # The ENTER key
 		}
 		if (self.bufferedInput.length==0) {
 			self.bufferedInput=" "
