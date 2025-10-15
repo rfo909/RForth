@@ -784,6 +784,13 @@
 :bSet 1 0 &EmitNumber call 52 &EmitByte call ret
 :cSet 2 0 &EmitNumber call 52 &EmitByte call ret
 :dSet 3 0 &EmitNumber call 52 &EmitByte call ret
+
+;; look up data addresses after the PROTECT tag
+
+:GetDictionaryHead &DictionaryHead ret
+:GetDebugFlag &DebugFlag ret
+:GetCompileBuf &CompileBuf ret
+:GetCompileBufEnd &CompileBufEnd ret
 	
 :DATA
 
@@ -899,7 +906,12 @@
 	%'DictClear	%DictClear	BIN_NORMAL		%NEXT
 	%'->		%->		BIN_IMMEDIATE	%NEXT
 	%'.W		%.W			BIN_NORMAL		%NEXT    (show DictionaryEntry for word)
-		
+
+	%'&DictionaryHead %GetDictionaryHead	BIN_NORMAL	%NEXT
+	%'&DebugFlag %GetDebugFlag				BIN_NORMAL	%NEXT
+	%'&CompileBuf %GetCompileBuf			BIN_NORMAL	%NEXT
+	%'&CompileBufEnd %GetCompileBufEnd		BIN_NORMAL	%NEXT
+
 	%'?		%Words		BIN_NORMAL	%NEXT
 	%'.s		%.s		BIN_NORMAL	%NEXT
 	%'words		%Words		BIN_NORMAL	%NEXT
@@ -919,14 +931,18 @@
 :IsCompilingWord	b w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0		;; 32 character stringbuffer
 :IsCompilingWordMode	b0					;; NORMAL or IMMEDIATE
 
-:CompileBuf		w0 w0 w0 w0 w0 w0 w0 w0 		;; up to 127 bytes, for the colon compiler
-			w0 w0 w0 w0 w0 w0 w0 w0			;; first byte is length
-			w0 w0 w0 w0 w0 w0 w0 w0
-			w0 w0 w0 w0 w0 w0 w0 w0
+:CompileBuf		w0 w0 w0 w0 w0 w0 w0 w0 		;; up to 63 bytes, for the colon compiler
+				w0 w0 w0 w0 w0 w0 w0 w0			;; first byte is length
+				w0 w0 w0 w0 w0 w0 w0 w0
+				w0 w0 w0 w0 w0 w0 w0 w0
+:CompileBufEnd
 
 
+:NextWord		b0 
+				w0 w0 w0 w0 w0 w0 w0 w0 
+				w0 w0 w0 w0 w0 w0 w0 w0	;; 32 character stringbuffer
+:NextWordEnd
 
-:NextWord		b0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0	;; 32 character stringbuffer
 :NextNumber		w0 							;; single word
 
 :CompileStack		b0 w0 w0 w0 w0 w0 w0 w0 w0 		

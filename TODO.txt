@@ -1,35 +1,9 @@
 2025-08 v3
 
-TODO
-----
+2025-10-15
 
-Experiment with custom dictionaries and objects (allot'ed data on which a custom dict operates)
-
-Implement 'somestring and "some_string as in the underlying ACode
-Extend NextWord buffer
-Make symbol table for storing static strings
-
-Eliminate the Assembler symbol table and store and make strings a "soft" feature in ACode instead 
-of an Assembler feature
-	Can then eliminate the sym2str instruction
-
-Make the interpreter a bit more robust with regards to errors
-
-Consider using faster dictionary lookup at runtime (when compiling words) for the INLINE class of single byte instructions
-which make up most of the dictionary.
-
-Consider "soft" dictionaries as data objects pushed on system dictionary? Everything is possible at the Forth level!
-
-
-Make abstract devices for
-	GPIO
-	I2c
-	SPI
-
-	-> in order to make high level simulations in the Interpreter script.
-
-C-code
-------
-As with the CFT interpreter, it executes the opcodes of the instruction set. The
-REPL and Forth compiler is written in the corresponding assembly language.
-
+- Get interpreter stable
+- Measure performance, in order to decide best use of external EEPROM
+- Implement native functions for i2c and GPIO (later SPI and Serial)
+- Add external EEPROM
+- Define a way to both automatically run a certain word and some startup condition to enter interactive mode

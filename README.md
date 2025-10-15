@@ -3,7 +3,7 @@ Forth never ceases to fascinate !
 
 Version 3 (alpha)
 
-2025-09-25
+2025-10-15
 
 Introduction
 =============
@@ -11,15 +11,14 @@ I'm designing a virtual machine instruction set, stack based. This means many in
 quite similar to Forth primitives. On top of this runs a REPL which implements some Forth
 words like COLON, SEMICOLON, IF, THEN, ELSE, CONSTANT and VARIABLE.
 
-The point of this whole project is just to have fun. Although I intend writing C code for
-the Pi Pico, that is as of yet not a high priority. Experiencing how to get a Forth REPL
-up and running from simulated bare metal may just as well pave the way for doing ARM assembly
-instead of a C interpreter.
+The point of this whole project is just to have fun. 
 
-Realizing how little low level code is required to bring up a REPL and a compiler, has been great
+REPL and compiler
+-----------------
+Realizing how little low level code was required to bring up a REPL and a compiler, has been great
 fun! And I'm quite sure I'm not even near the optimal way of doing so, as it seems to me when
-searching the internet, that most words are MUCH shorter than mine, because they are using
-a host of other words, designed very smartly.
+searching the internet, that most Forth words are MUCH shorter than mine, as the depend on 
+a host of other words, designed very smartly. 
 
 I find the Forth way of extending the compiler, by using immediate words, to be really clever!
 
@@ -46,45 +45,34 @@ In order to make the interpreter as simple as possible, like using an array with
 in C, all instructions are a single byte. Number literals, like addresses of functions, are 
 represented using a scheme as follows:
 
-First off, all non-number opcodes stay below 127, and so far all are printable, which makes
-stuff more readable (range 33-127 to be exact). To represent numeric values, the high bit
-is set to 1, and the second highest bit is set to 1 to indicate pushing a zero to the stack. If not, 
-we assume there is a value on the stack to work with. That value is multiplied by 64, before adding the 
-value of the last 6 bits (0-63).
+First off, all non-number opcodes stay below 127. To represent numeric values, the high bit
+is set to 1. The second highest bit is set to 1 to indicate pushing the value of the remaining 6 bits
+on to the stack. If second highest bit is 0, then pop a value from the stack, multiply by 64, then add the
+value of the last 6 bits (value 0-63).
 
 ```
 Example 1
 ---------
-0xC1 = 1100 0001 
+0xC5 = 1100 0101 
 
-Push 0 to stack
-Multiply it by 64 and add 1
+The x1xxxxxx bit indicates that the 6 bit value following should be pushed directly to stack
 
-Result 1
+Result 5
 
 Example 2
 ---------
 0xFF = 1111 1111
 
-Push 0 to the stack
-Multiply it by 64 and add 63
-
 Result 63
 
 Example 3
 ---------
+Representing the value 500
 
-0xC1 0x82
+0xC7 = 1100 1111 = Push 7 to stack
+0xB4 = 1011 0100 = Pop 7, shift left 6 places (multiply by 64), add 52
 
-0xC1 = 1100 0001
-
-Push 0 to stack
-Multiply by 64 and add 1
-
-0x82 = 1000 0010
-Multiply value on stack by 64 and add 2
-
-Result 66
+Two bytes on this format can represent values 0-4095.
 ```
 
 For global jumps, addresses are encoded as 3 bytes, or 18 bits. The word size (traditionally 
@@ -92,7 +80,6 @@ called "cells" in Forth) is two bytes, which allows for addressing 64k of memory
 
 For jumps inside words, I use relative offsets, for forward and back movements, and those are encoded as a single
 byte, which allows a max jump length of 63 positions.
-
 
 
 Design decisions - heap / jumps inside words
@@ -140,21 +127,26 @@ I also created an Interpreter in CFT, with various options for inspecting
 data structures etc.
 
 The interpreter is growing in complexity, and it is also relatively slow,
-chewing through 5-10k assembly instructions per second on my laptop. 
+chewing through 5-10k byte code instructions per second on my laptop. 
 
-That may sound a lot, but with assembly code doing the whole REPL, interpreter and
-compiler, especially the dictionary lookups, compilation speed is slow.
+That may sound a lot, but with byte code running the whole REPL, interpreter and
+compiler, especially all the dictionary lookups, compilation speed is slow.
 
 Speed?
 ------
 
-A real microcontroller doing perhaps 100 instructions per simulated assembly
+A real microcontroller doing perhaps 100 machine instructions per simulated assembly
 instruction, running at 80 MHz (Pi Pico), at 1 instruction per clock, should
-result in a throughput of 800 K instructions per second, or about 80-160 times the
+result in a throughput of 800 K byte code instructions per second, or about 80-160 times the
 speed of my CFT interpreter.
+
+*Arduino update:* the Nano Every runs at 20 MHz, which should give about ~200K byte code instructions
+per second, or 20-40x the speed of the CFT interpreter
 
 Compiling code is the hardest work, due to the dictionary traversals.
 
+Examples with the CFT interpreter
+---------------------------------
 Running a tight iteration, it counts and prints values 0-5000 in about 10-12 seconds.
 
 
@@ -193,7 +185,7 @@ pi .           (71 ms)
 x              (28 ms)
 ```
 
-Apart from compile times, it is really not a bad idea having an interpreter running at 
+Apart from compile waits, it is really not a bad idea having an interpreter running at 
 diminished capacity compared to real hardware, because it highlights bottlenecks.
 
 
@@ -204,26 +196,6 @@ hitting a COLON, enters compile mode, and compiles code. The REPL is fairly
 primitive, as it should be.
 
 But it also contains notation for allocating static structures (non code).
-
-
-Levels of code
---------------
-
-The project results in code at three different levels. 
-
-- At the bottom there is the simulated CPU that runs a very Forth-like set of instructions. This is the Interpreter.
-- Then there is the "assembly" language, which is represented by ACode.txt. 
-It is translated to byte format by the Assembler.
-- And on top, there is the Forth language, read and processed by the REPL written in ACode.txt. 
-
-Separating the "assembly" level from Forth is perhaps not so relevant, since the two mix and mingle pretty tight,
-particularly since the assembly language is stack oriented. Like, adding numbers with the "word" add, really
-just means inserting the byte-sized opcode for add, since it is part of the assembly language I invented.
-
-The initial Forth code is found in Forth.txt, piped as input to the REPL before user input.
-
-The Forth language has access to most of the "assembly" level instructions as well as all 
-functions and data defined in ACode via tag lookups like &CompileBuf etc. 
 
 
 Local variables
@@ -417,9 +389,37 @@ The format is as follows:
 
 The dictionary is a linked list, and the top is stored in statically allocated location &DictionaryHead 
 defined in ACode.txt, which is readable from Forth as:
+
 ```
 &DictionaryHead @
 ```
+
+
+2025-10-07 C implementation
+----------------------------
+While originally intended for the Pi Pico, I have instead started out writing code for the Arduino
+Nano Every, with the ATmega4809 processor. This microcontroller has 6 Kbytes of SRAM, and a full
+48 kbytes of flash, with room for plenty of "firmware". 
+
+I also dug out some 32 Kbytes EEPROM chips which I plan to hook up over i2c, for storing source
+and who know what.
+
+But first I need to iron out the kinks of the C bytecode interpreter. It is nice having implemented
+it already in my CFT script language, so I know the bytecode is okay.
+
+Memory model
+------------
+The current memory model is fairly simple. The ACode.txt contains a tag PROTECT, which is meant to
+protect data below that from write. I copy and paste the output from the Assembler script into 
+the Firmware.h file.
+
+The init code then copies bytes from the Protect location to the end (currently 157 bytes), which contains
+variables, into RAM, in the form of a buffer called "heap" in the code.
+
+The readByte() and writeByte() functions examine the given address. If it is below the PROTECT tag, it is 
+a readonly value from the flash data. Otherwise, we subtract the PROTECT tag and have read/write access to
+the RAM buffer. The initial value of HERE is set to the total size of the firmware data.
+
 
 
  
