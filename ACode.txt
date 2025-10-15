@@ -874,7 +874,7 @@
 	%'streq         HEX:0042        BIN_INSTR       %NEXT        ;; B
 	%'sub           HEX:002D        BIN_INSTR       %NEXT        ;; -
 	%'swap          HEX:006D        BIN_INSTR       %NEXT        ;; m
-	%'tag           HEX:0038        BIN_INSTR       %NEXT        ;; 8
+	%'u2spc         HEX:005F        BIN_INSTR       %NEXT        ;; _
 	%'wordsize      HEX:006B        BIN_INSTR       %NEXT        ;; k
 	%'writeb        HEX:0048        BIN_INSTR       %NEXT        ;; H
 
@@ -925,6 +925,7 @@
 :DebugFlag		b0
 
 :DictionaryHead %Dictionary
+
 :CustomDictionaryHeadPtr w0
 
 :IsCompiling		b0

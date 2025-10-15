@@ -41,7 +41,7 @@ void setError (char *msg) {
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   fpush(0,0);
   populateOps();
@@ -56,7 +56,7 @@ void setup() {
 void populateRAM() {
   // copy Flash data from PROTECT location into "heap" (SRAM)
   for (int i=firmwareProtectTag; i<firmwareSize; i++) {
-    heap[i] = firmware[i];
+    heap[i-firmwareProtectTag] = firmware[i];
   }
   HERE=firmwareSize;  // see read/write functions calculating offset based on firmwareProtectTag
 }
@@ -96,7 +96,12 @@ void loop() {
     }
     Serial.println(">");
     Serial.println();
-      
+
+    Serial.println("Press ENTER");
+    readSerialChar();
+  }
+
+  if (hasError) {
     // got an error situation
     Serial.print(F("Got ERROR ^^ - Press ENTER"));
     clearSerialInputBuffer();
@@ -123,12 +128,13 @@ void loop() {
     }
   } else {
     // not number literal
+    
     /*
     Serial.print("#instr=");
     Serial.print(instructionCount);
     Serial.print(" pc=");
     Serial.print(programCounter);
-    Serial.print("op=");
+    Serial.print(" op=");
     Serial.print(op);
     Serial.print(" ");
     Serial.println(opNames[op]);
@@ -165,19 +171,42 @@ void writeWord (Word addr, Word value) {
 }
 
 void writeByte (Word addr, Word value) {
+  //Serial.print("VALUE=");
+  //Serial.println(value);
   if (addr < firmwareProtectTag || addr >= HERE) {
-    Serial.print(F("writeByte: invalid address "));
-    Serial.println(addr);
+    //Serial.print(F("writeByte: invalid address "));
+    //Serial.println(addr);
     setError("x"); 
     return;
   }
   // calculate heap address
-  addr=addr-firmwareProtectTag;
-  heap[addr]=value & 0xFF;
+  heap[addr-firmwareProtectTag]=(value & 0xFF);
+  //Serial.print("writeByte addr=0x");
+  //Serial.print(addr,16);
+  //Serial.print(" value=0x");
+  //Serial.println(value & 0xFF, 16);
+
+/*
+  if (readByte(addr) != (value & 0xFF)) {
+    Serial.write("writeByte: readback failed ");
+    Serial.write(" addr=");
+    Serial.write(addr);
+    Serial.write(" value=");
+    Serial.write(value);
+    setError("writeByte");
+  }
+  */
 }
 
 Word readWord (Word addr) {
-  return readByte(addr) << 8 | readByte(addr+1);
+  Word a=readByte(addr);
+  Word b=readByte(addr+1);
+  Word value = a << 8 | b;
+  Serial.print("readWord 0x");
+  Serial.print(addr,16);
+  Serial.print(" value=0x");
+  Serial.println(value,16);
+  return value;
 }
 
 Word readByte (Word addr) {
@@ -188,17 +217,21 @@ Word readByte (Word addr) {
     return;
   }
   if (addr < firmwareProtectTag) {
-    //Serial.print("Reading firmware ");
-    //Serial.print(addr);
-    //Serial.print(" -> ");
-    //Serial.println(firmware[addr]);
+    //Serial.print("Reading firmware address 0x");
+    //Serial.print(addr,16);
+    //Serial.print(" -> 0x");
+    //Serial.println(firmware[addr], 16);
     return firmware[addr];
   } else {
     // calculate heap address
-    addr=addr-firmwareProtectTag;
-    //Serial.print("Reading heap ");
-    //Serial.println(addr);
-    return heap[addr];
+    Word pos=addr-firmwareProtectTag;
+    //Serial.print("Reading heap address 0x");
+    //Serial.print(addr,16);
+    //Serial.print(" pos=");
+    //Serial.print(pos);
+    //Serial.print(" value=0x");
+    //Serial.println(heap[pos], 16);
+    return heap[pos];
   }
 }
 
@@ -338,8 +371,8 @@ void op_orb () {Word b=pop(); Word a=pop(); push((Word)a | b);}
 void op_inv () {Word x=pop(); push(~x);}
 void op_shift_left () {Word b=pop(); Word a=pop(); push((Word) a<<b);}
 void op_shift_right () {Word b=pop(); Word a=pop(); push((Word) a>>b);}
-void op_readc () {push(readSerialChar());}
- void op_clear () {dStackNext=0;}
+void op_readc () {Serial.println("*** readc ***"); push(readSerialChar());}
+void op_clear () {dStackNext=0;}
 void op_null () {push(0);}
 void op_or () {Word b=pop(); Word a=pop(); push(a||b);}
 
@@ -604,7 +637,6 @@ void printChar (Word ch) {
 }
 
 Word readSerialChar () {
-  if (Serial.available()==0) Serial.println("ENTER INPUT");
   for(;;) {
     int ch=Serial.read();
     if (ch >= 0) {

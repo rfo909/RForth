@@ -701,11 +701,15 @@
 	P(1) as List => bytes
 	s=""
 	comma=false
+	pos=0
+	s="/* 0x" + pos.hex(4) + " */ "
 	bytes->b
 		if (comma) s=s+","
-		s=s+b
+		s=s+"0x"+b.hex(2)
+		pos=pos+1
 		comma=true
-		if (s.length > Term.w-20) { println(s) s="" }
+		if (pos % 16==0) { println(s) s="/* 0x" + pos.hex(4) + " */ " }
+		#if (s.length > Term.w-30) { println(s) s="/* 0x" + pos.hex(4) + " */ " }
 	|
 	println(s)
 /showFirmware
