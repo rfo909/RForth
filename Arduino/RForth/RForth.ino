@@ -276,7 +276,7 @@ void populateOps() {
   ops[124]=&op_or;
 }
 
-void op_and () {Word b=pop(); Word a=pop(); push(a != 00 && b != 0);}
+void op_and () {Word b=pop(); Word a=pop(); push(a != 0 && b != 0);}
 void op_mul () {Word b=pop(); Word a=pop(); push(a*b);}
 void op_add () {Word b=pop(); Word a=pop(); push(a+b);}
 void op_sub () {Word b=pop(); Word a=pop(); push(a-b);}
@@ -570,11 +570,12 @@ void doMemcpy(Word source, Word target, Word count) {
 
 
 Word _streq (Word a, Word b) {
-  if (heap[a] != heap[b]) return 0;    // different length
-  for (Word i=0; i<=heap[a]; i++) {
+  if (readByte(a) != readByte(b)) return 0; // different length
+  byte len=readByte(a);
+  for (byte i=0; i<=len; i++) {
     Word apos=a+1+i;
     Word bpos=b+1+i;
-    if (heap[apos] != heap[bpos]) return 0;
+    if (readByte(apos) != readByte(bpos)) return 0;
   }
   return 1;
 }
