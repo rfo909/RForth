@@ -202,10 +202,12 @@ Word readWord (Word addr) {
   Word a=readByte(addr);
   Word b=readByte(addr+1);
   Word value = a << 8 | b;
+  /*
   Serial.print("readWord 0x");
   Serial.print(addr,16);
   Serial.print(" value=0x");
   Serial.println(value,16);
+  */
   return value;
 }
 
@@ -603,6 +605,8 @@ void doMemcpy(Word source, Word target, Word count) {
 
 
 Word _streq (Word a, Word b) {
+  showStr(a);  // word from dictionary
+  //showStr(b);
   if (readByte(a) != readByte(b)) return 0; // different length
   byte len=readByte(a);
   for (byte i=0; i<=len; i++) {
@@ -634,6 +638,17 @@ void printBinary (Word value) {
 void printChar (Word ch) {
   sprintf(temp,"%c", ch);
   Serial.print(temp);
+}
+
+// for debugging
+void showStr (Word ptr) {
+  Serial.print("showStr: ");
+  Word len=readByte(ptr);
+  for (int i=0; i<len; i++) {
+    Word ch=readByte(ptr+i+1);
+    printChar(ch);
+  }
+  Serial.println();
 }
 
 Word readSerialChar () {
