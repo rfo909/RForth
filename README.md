@@ -313,25 +313,25 @@ different modes:
 
 2025-09-22 native
 -----------------
-Added instructions "nativec" and "native", to invoke functions inside the interpreter. Using this
-to implement function "u2spc" which converts underscores to spaces in a string, calling it from
-ProcessString in ACode.txt
+Added instructions "nativec" and "native", to invoke functions inside the interpreter. It is intended
+for implementing stuff like GPIO, SPI, I2C etc, as well as other system functions. 
 
 Note that calling native functions is a two step process. The "nativec" (compile) takes a string,
 and returns an address (int), which is used with the actual call, "native". 
 
-Implemented a NATIVE word in Forth, using these, then migrated it into ACode.txt It handles both compile mode and interpret mode,
-and takes the name of the native function from the input, which saves us from creating a string
-constant each time calling native.
+Implemented a NATIVE word (defined in ACode.txt) handles this, both compile mode and interpreted. It
+takes the name of the native word from the input as follows (pX are parameters). Native words always
+return a value on the stack.
 
 ```
-: testNative '300/50+10 NATIVE calc . ;
+: testNative p1 p2 .. NATIVE test . ;
 
 ```
 
-This implementation has two purposes: it detects at compile time when trying to call an invalid
-native function, and it speeds up the actual call, as it doesn't have to search the internal
-list of native functions.
+This implementation has two purposes: the "nativec" at compile time detects when trying to call an invalid
+native function, and it speeds up the actual call, as it returns an index into the list of native
+functions, which is what the "native" op expects. This means the actual call is faster than the compile
+step.
 
 
 2025-09-25 Custom dictionaries
@@ -405,11 +405,9 @@ Nano Every, with the ATmega4809 processor. This microcontroller has 6 Kbytes of 
 I also dug out some 32 Kbytes EEPROM chips which I plan to hook up over i2c, for storing source
 and who know what.
 
-But first I need to iron out the kinks of the C bytecode interpreter. It is nice having implemented
-it already in my CFT script language, so I know the bytecode is okay.
-
 Memory model
 ------------
+
 The current memory model is fairly simple. The ACode.txt contains a tag PR115200OTECT, which is meant to
 protect data below that from write. I copy and paste the output from the Assembler script into 
 the Firmware.h file.
@@ -424,14 +422,16 @@ the RAM buffer. The initial value of HERE is set to the total size of the firmwa
 2025-10-16 Nano Every runs RFOrth
 ---------------------------------
 
-650 lines of C code, plus about 320 lines of defines and const-data (firmware and op-names).
+650 lines of C code, plus about 320 lines of defines and const-data. This is the "firmware", which is the
+assembled output of ACode.txt, plus a list of op-names as strings. 
 
-Seems to execute about at an initial speed of 85k bytecode instructions per second.
+Seems to execute about at an initial speed of 85k bytecode instructions per second. Not what I hoped for,
+but acceptable.
 
 2025-10-16 Native functions Arduino
 -----------------------------------
 
-The NATIVE Forth word, which used the "nativec" and "native" instructions, and long since implemented in
+The NATIVE Forth word, which uses the "nativec" and "native" instructions, and long since implemented in
 ACode.txt now works with actual native functions on the Nano Every. There are currently two native functions, 
 the first is called "?" and lists all native functions, including itself. 
 
