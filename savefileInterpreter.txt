@@ -825,10 +825,31 @@
 	#println(str)
 	#readLine("Enter")
 	str 
-	
-	# empty
-	""
 /GetInitialForthCode
+
+# Get initial Forth code as C array
+# --
+	code = GetInitialForthCode
+	println
+	println("// Interpreter:ForthC");
+	println("const int forthCodeLength=" + code.length + ";")
+	println("const byte forthCode[]={")
+	comma=false
+	count=0
+	code.chars->c
+		if (comma) print(",")
+		print("0x"+c.toHexString("ISO-8859-1"))
+		comma=true
+		count=count+1
+		if (count >= 16) {
+			println()
+			count=0
+		}
+	|
+	println("};")
+/ForthC
+	
+	
 
 # Test
 # --

@@ -424,7 +424,7 @@ the RAM buffer. The initial value of HERE is set to the total size of the firmwa
 ---------------------------------
 650 lines of C code, plus about 320 lines of defines and const-data (firmware and op-names).
 
-Seems to execute about at an initial speed of 120k bytecode instructions per second.
+Seems to execute about at an initial speed of 85k bytecode instructions per second.
 
 
 

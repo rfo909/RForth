@@ -1,5 +1,6 @@
 #include "Constants.h"
 #include "Firmware.h"
+#include "Forth.h"
 
 Word dStack[DSTACK_SIZE];
 byte dStackNext=0;
@@ -42,7 +43,7 @@ void setError (char *msg) {
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   fpush(0,0);
   populateOps();
@@ -77,7 +78,7 @@ void populateRAM() {
 void loop() {
   if (hasError) {  
     Serial.println();
-    showStacks();
+    showState();
 
     // got an error situation
     Serial.print(F("Got ERROR, press ENTER"));
@@ -584,8 +585,14 @@ void printChar (Word ch) {
   Serial.print(temp);
 }
 
+int forthPos=0;
 
 Word readSerialChar () {
+  // serve static code first
+  if (forthPos < forthCodeLength) {
+    Word ch=(Word) forthCode[forthPos++];
+    return ch;
+  }
   for(;;) {
     int ch=Serial.read();
     if (ch >= 0) {
@@ -604,21 +611,7 @@ void clearSerialInputBuffer() {
   while (Serial.available()>0) Serial.read();
 }
 
-// -----------------
-// for debugging
-// -----------------
-
-void showStr (Word ptr) {
-  Serial.print("showStr: >");
-  Word len=readByte(ptr);
-  for (int i=0; i<len; i++) {
-    Word ch=readByte(ptr+i+1);
-    printChar(ch);
-  }
-  Serial.println("<");
-}
-
-void showStacks() {
+void showState() {
   Serial.print("#instr=");
   Serial.print(instructionCount);
   Serial.print(" pc=0x");
