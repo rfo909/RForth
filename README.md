@@ -409,7 +409,7 @@ it already in my CFT script language, so I know the bytecode is okay.
 
 Memory model
 ------------
-The current memory model is fairly simple. The ACode.txt contains a tag PROTECT, which is meant to
+The current memory model is fairly simple. The ACode.txt contains a tag PR115200OTECT, which is meant to
 protect data below that from write. I copy and paste the output from the Assembler script into 
 the Firmware.h file.
 
@@ -419,6 +419,12 @@ variables, into RAM, in the form of a buffer called "heap" in the code.
 The readByte() and writeByte() functions examine the given address. If it is below the PROTECT tag, it is 
 a readonly value from the flash data. Otherwise, we subtract the PROTECT tag and have read/write access to
 the RAM buffer. The initial value of HERE is set to the total size of the firmware data.
+
+2025-10-16 Nano Every runs RFOrth
+---------------------------------
+650 lines of C code, plus about 320 lines of defines and const-data (firmware and op-names).
+
+Seems to execute about at an initial speed of 120k bytecode instructions per second.
 
 
 

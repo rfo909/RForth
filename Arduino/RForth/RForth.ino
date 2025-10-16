@@ -76,36 +76,11 @@ void populateRAM() {
   HERE=firmwareSize;  // see read/write functions calculating offset based on firmwareProtectTag
 }
 
-bool isStepping() {
-  return (MAX_STEPS > 0 && instructionCount >= MAX_STEPS);
-}
-
-void debug(char *str) {
-  if (isStepping()) Serial.print(str);
-}
-
-void debugw (Word w) {
-  if (isStepping()) {
-    Serial.print("0x");
-    Serial.print(w,16);
-  }
-}
-
-void debugln() {
-  if (isStepping()) Serial.println();
-}
-
 void loop() {
-  if (isStepping() || hasError) {  
+  if (hasError) {  
     Serial.println();
     showStacks();
 
- 
-    Serial.println("Press ENTER");
-    readSerialChar();
-  }
-
-  if (hasError) {
     // got an error situation
     Serial.print(F("Got ERROR ^^ - Press ENTER"));
     clearSerialInputBuffer();
@@ -120,31 +95,14 @@ void loop() {
   if (op & 0x80) {
     // number literal
     if (op & 0x40) {
-      debug("op=11xxxxxx -> ");
-      debugw(op & 0x3F);
-      debugln();
       push(op & 0x3F);
     } else {
-      debug("op=10xxxxxx -> ");
-      debugw(op & 0x3F);
-      debugln();
       Word w=(pop() << 6) | (op & 0x3F);
       push(w);
     }
   } else {
     // not number literal
     
-    if (isStepping()) {
-      Serial.print("#instr=");
-      Serial.print(instructionCount);
-      Serial.print(" pc=");
-      Serial.print(programCounter);
-      Serial.print(" op=");
-      Serial.print(op);
-      Serial.print(" ");
-      Serial.println(opNames[op]);
-    }
-
     void (*funcPtr) () = ops[op];
     
     if (funcPtr==0) {
@@ -178,8 +136,6 @@ void writeWord (Word addr, Word value) {
 }
 
 void writeByte (Word addr, Word value) {
-  //Serial.print("VALUE=");
-  //Serial.println(value);
   if (addr < firmwareProtectTag || addr >= HERE) {
     Serial.print(F("writeByte: invalid address 0x"));
     Serial.println(addr,16);
@@ -188,33 +144,12 @@ void writeByte (Word addr, Word value) {
   }
   // calculate heap address
   heap[addr-firmwareProtectTag]=(value & 0xFF);
-  //Serial.print("writeByte addr=0x");
-  //Serial.print(addr,16);
-  //Serial.print(" value=0x");
-  //Serial.println(value & 0xFF, 16);
-
-/*
-  if (readByte(addr) != (value & 0xFF)) {
-    Serial.write("writeByte: readback failed ");
-    Serial.write(" addr=");
-    Serial.write(addr);
-    Serial.write(" value=");
-    Serial.write(value);
-    setError("writeByte");
-  }
-  */
 }
 
 Word readWord (Word addr) {
   Word a=readByte(addr);
   Word b=readByte(addr+1);
   Word value = a << 8 | b;
-  /*
-  Serial.print("readWord 0x");
-  Serial.print(addr,16);
-  Serial.print(" value=0x");
-  Serial.println(value,16);
-  */
   return value;
 }
 
@@ -226,20 +161,10 @@ Word readByte (Word addr) {
     return;
   }
   if (addr < firmwareProtectTag) {
-    //Serial.print("Reading firmware address 0x");
-    //Serial.print(addr,16);
-    //Serial.print(" -> 0x");
-    //Serial.println(firmware[addr], 16);
     return firmware[addr];
   } else {
     // calculate heap address
     Word pos=addr-firmwareProtectTag;
-    //Serial.print("Reading heap address 0x");
-    //Serial.print(addr,16);
-    //Serial.print(" pos=");
-    //Serial.print(pos);
-    //Serial.print(" value=0x");
-    //Serial.println(heap[pos], 16);
     return heap[pos];
   }
 }
@@ -391,8 +316,6 @@ Word pop() {
   if (dStackNext > 0) {
     Word value=dStack[dStackNext-1];
     dStackNext--;
-    //Serial.print("pop -> 0x");
-    //Serial.println(value, 16);
     return value;
   } else {
     setError("data stack underflow");
@@ -402,8 +325,6 @@ Word pop() {
 
 void push (Word value) {
   if (dStackNext < DSTACK_SIZE-1) {
-    //Serial.print("push -> 0x");
-    //Serial.println(value, 16);
     dStack[dStackNext++]=value;
   } else {
     setError("data stack overflow");
@@ -446,8 +367,6 @@ Word fpeekBase () {
 }
 
 void rpush (Word value) {
-  //Serial.print("rpush 0x");
-  //Serial.println(value,16);
   if (rStackNext >= RSTACK_SIZE) {
     setError("rStack overflow");
   } else if (fStackNext < 1) {
@@ -621,9 +540,6 @@ void doMemcpy(Word source, Word target, Word count) {
 
 
 Word _streq (Word a, Word b) {
-  //showStr(a);  // word from dictionary
-  //showStr(b);
-
   if (readByte(a) != readByte(b)) return 0; // different length
   byte len=readByte(a);
   for (Word i=0; i<len; i++) {
@@ -660,7 +576,6 @@ void printChar (Word ch) {
 
 
 Word readSerialChar () {
-  //showStacks();
   for(;;) {
     int ch=Serial.read();
     if (ch >= 0) {
