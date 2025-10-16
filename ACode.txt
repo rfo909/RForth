@@ -762,10 +762,17 @@
 	
 :DictShowWords ( dictHead -- )
 	@ cpush 		;; a=dict-entry
+	0 cpush		;; b=chars per line
 	:*next
 		a 0 eq &*done jmp?
 		
 		a .str &Str_Space .str			;; name
+		
+		a readb 1+ b add b!		;; update b with number of characters
+		b 40 lt &*noBreak jmp?
+			cr
+			0 b!
+		:*noBreak
 
 		a readb a add 1+ a!   		;; past the name
 		a W+ W+ @ a!			;; a=a.next

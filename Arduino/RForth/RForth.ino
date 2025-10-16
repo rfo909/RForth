@@ -20,9 +20,6 @@ char temp[10];
 
 byte hasError=0;
 
-const int MAX_STEPS = 0;
-
-
 // ------
 // Memory handling: need to duplicate "firmware" memory from the PROTECT tag, into RAM, updating 
 // initial HERE value accordingly. For references below the PROTECT tag, we refer
@@ -39,6 +36,7 @@ unsigned long instructionCount=0;
 
 
 void setError (char *msg) {
+  Serial.println();
   Serial.println(msg);
   hasError=true;
 }
@@ -82,7 +80,7 @@ void loop() {
     showStacks();
 
     // got an error situation
-    Serial.print(F("Got ERROR ^^ - Press ENTER"));
+    Serial.print(F("Got ERROR, press ENTER"));
     clearSerialInputBuffer();
     readSerialChar();
 
@@ -218,6 +216,7 @@ void populateOps() {
   ops[88]=&op_cr;
   ops[89]=&op_print_decimal_unsigned;
   ops[90]=&op_halt;
+  ops[95]=&op_u2spc;
   ops[97]=&op_native;
   ops[98]=&op_print_decimal_signed;
   ops[99]=&op_nativec;
@@ -248,7 +247,7 @@ void op_mul () {Word b=pop(); Word a=pop(); push(a*b);}
 void op_add () {Word b=pop(); Word a=pop(); push(a+b);}
 void op_sub () {Word b=pop(); Word a=pop(); push(a-b);}
 void op_div () {Word b=pop(); Word a=pop(); push(a/b);}
-void op_PANIC () {setError("panic");}
+void op_PANIC () {setError("PANIC");}
 
 void op_atoi () {Word targetPtr=pop(); Word strPtr=pop(); push(myAtoi(strPtr, targetPtr));}
 void op_n2code () {Word nbytes=pop(); Word addr=pop(); Word num=pop(); push(n2code(num, addr, nbytes)); }
@@ -287,6 +286,7 @@ void op_ret () {returnFromCode();}
 void op_jmp () {programCounter=pop();}
 void op_jmp_optional () {Word addr=pop(); Word cond=pop(); if (cond != 0) programCounter=addr;}
 void op_halt () { Serial.println("Halting"); for(;;) ; }
+void op_u2spc () { Word ptr=pop(); u2spc(ptr); }
 void op_native () {}
 void op_nativec () {}
 void op_1_plus () {push(pop()+1);}
@@ -512,7 +512,6 @@ void callCode (Word targetAddr, Word returnAddr) {
 }
 
 void returnFromCode () {
-
   // pop top frame off frame stack
   fpop();
  
@@ -548,6 +547,17 @@ Word _streq (Word a, Word b) {
     if (readByte(apos) != readByte(bpos)) return 0;
   }
   return 1;
+}
+
+void u2spc (Word ptr) {
+  // convert underlines to spaces for string
+  Word len=readByte(ptr);
+  for (int i=0; i<len; i++) {
+    Word b=readByte(ptr+1+i);
+    if (b=='_') {
+      writeByte(ptr+1+i, 32); // space
+    }
+  }
 }
 
 void printSignedDecimal (Word value) {
@@ -641,3 +651,6 @@ void showStacks() {
   Serial.println();
 
 }
+
+
+
