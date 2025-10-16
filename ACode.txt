@@ -118,6 +118,7 @@
 :Init	
 	0 &IsCompiling writeb
 	0 &IsCompilingWord writeb	
+	0 &NextWord writeb
 
 :REPL
 	&GetNextWord call
@@ -675,7 +676,7 @@
 		;; add a ret instruction to CompileBuf
 		0x52 &EmitByte call
 
-		&CompileBuf readb print# &Str_bytes .str
+		&CompileBuf readb print# &Str_bytes .str cr
 
 		;; allocate permanent code buffer including length byte
 		&CompileBuf &BufCreateCopy call cpush            (a=codeBuffer)

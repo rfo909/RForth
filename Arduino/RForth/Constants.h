@@ -9,6 +9,8 @@
 
 #define RAM_SIZE          4096
 
+const bool READC_ECHO = true;
+
 typedef unsigned int Word;
 
 // Assembler:NNTDoc

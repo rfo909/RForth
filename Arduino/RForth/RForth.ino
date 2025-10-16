@@ -35,7 +35,7 @@ byte heap[RAM_SIZE];   // dictionary and data
 
 Word HERE=0;
 Word programCounter=0;
-Word instructionCount=0;
+unsigned long instructionCount=0;
 
 
 void setError (char *msg) {
@@ -44,15 +44,27 @@ void setError (char *msg) {
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   fpush(0,0);
   populateOps();
-
   populateRAM();
 
   Serial.print("(Ready) HERE=");
   Serial.println(HERE);
+}
+
+void doReset() {
+  dStackNext=0;
+  rStackNext=0;
+  fStackNext=0;
+  fpush(0,0);
+  programCounter=0;
+  hasError=false;
+  Serial.println();
+  Serial.print("(Ready) HERE=");
+  Serial.println(HERE);
+
 }
 
 
@@ -99,9 +111,8 @@ void loop() {
     clearSerialInputBuffer();
     readSerialChar();
 
-    // clear error message
-    //*errorMessage='\0';
-    hasError=false;
+    doReset();
+    return;
   }
   Word pc=programCounter;
   Word op=readByte(programCounter);
@@ -363,7 +374,7 @@ void op_dup () {Word x=pop(); push(x); push(x);}
 void op_swap () {Word b=pop(); Word a=pop(); push(b); push(a);}
 void op_W_plus () {Word x=pop(); push(x+WORDSIZE);}
 void op_over () {Word b=pop(); Word a=pop(); push(a); push(b); push(a);}
-void op_dump () {for (int i=0; i<dStackNext; i++) {Serial.print(dStack[i]); Serial.print(" ");} op_cr();}
+void op_dump () {op_cr(); for (int i=0; i<dStackNext; i++) {Serial.print(dStack[i]); Serial.print(" ");} op_cr();}
 void op_andb () {Word b=pop(); Word a=pop(); push((Word) (a & b));}
 void op_orb () {Word b=pop(); Word a=pop(); push((Word) (a | b));}
 void op_inv () {Word x=pop(); push(~x);}
@@ -602,7 +613,10 @@ void returnFromCode () {
 }
 
 void doMemcpy(Word source, Word target, Word count) {
-  memcpy(heap+target, heap+source,count);
+  for (int i=0; i<count; i++) {
+    byte b=readByte(source+i);
+    writeByte(target+i,b);
+  }
 }
 
 
@@ -650,7 +664,12 @@ Word readSerialChar () {
   for(;;) {
     int ch=Serial.read();
     if (ch >= 0) {
-      if (ch==13 || ch==10) ch=32; // map to space
+      if (ch==13 || ch==10) {
+        if (READC_ECHO) Serial.println();
+        ch=32; // map to space
+      }  else {
+        if (READC_ECHO) printChar(ch);
+      }
       return (Word) ch;
     }
   }
