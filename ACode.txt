@@ -725,6 +725,8 @@
 	ret
 
 :NATIVE
+	(marked as immediate in dictionary below)
+	
 	&GetNextWord call
 	&NextWord nativec cpush  (a=native function address)
 	&IsCompiling readb not &*interpreting jmp?
@@ -735,7 +737,6 @@
 	:*interpreting
 		a native
 		ret
-
 
 :immediate
 	;; change the IsCompilingWordMode to immediate
@@ -769,7 +770,7 @@
 		a .str &Str_Space .str			;; name
 		
 		a readb 1+ b add b!		;; update b with number of characters
-		b 40 lt &*noBreak jmp?
+		b 70 lt &*noBreak jmp?
 			cr
 			0 b!
 		:*noBreak
@@ -799,6 +800,9 @@
 :GetDebugFlag &DebugFlag ret
 :GetCompileBuf &CompileBuf ret
 :GetCompileBufEnd &CompileBufEnd ret
+:GetIsCompiling &IsCompiling ret
+:GetEmitNumber &EmitNumber ret
+:GetEmitByte &EmitByte ret
 	
 :DATA
 
@@ -900,25 +904,29 @@
 	%'c!		%cSet		BIN_IMMEDIATE	%NEXT
 	%'d!		%dSet		BIN_IMMEDIATE	%NEXT
 	
-	%'.			%DOT		BIN_NORMAL		%NEXT
-	%'IF		%IF			BIN_IMMEDIATE	%NEXT
+	%'.		%DOT		BIN_NORMAL		%NEXT
+	%'IF		%IF		BIN_IMMEDIATE	%NEXT
 	%'THEN		%THEN		BIN_IMMEDIATE	%NEXT
 	%'ELSE		%ELSE		BIN_IMMEDIATE	%NEXT
 	%'BEGIN		%BEGIN		BIN_IMMEDIATE	%NEXT
 	%'AGAIN?	%AGAIN?		BIN_IMMEDIATE	%NEXT
 	%'CONSTANT	%CONSTANT	BIN_NORMAL		%NEXT
 	%'VARIABLE	%VARIABLE	BIN_NORMAL		%NEXT
-	%'NATIVE	%NATIVE		BIN_IMMEDIATE	%NEXT
+	%'NATIVE	%NATIVE		BIN_IMMEDIATE		%NEXT
 	%'Dict		%Dict		BIN_NORMAL		%NEXT
 	%'DictUse	%DictUse	BIN_NORMAL		%NEXT
 	%'DictClear	%DictClear	BIN_NORMAL		%NEXT
-	%'->		%->		BIN_IMMEDIATE	%NEXT
-	%'.W		%.W			BIN_NORMAL		%NEXT    (show DictionaryEntry for word)
+	%'->		%->		BIN_IMMEDIATE		%NEXT
+	%'.W		%.W		BIN_NORMAL		%NEXT    (show DictionaryEntry for word)
 
-	%'&DictionaryHead %GetDictionaryHead	BIN_NORMAL	%NEXT
-	%'&DebugFlag %GetDebugFlag				BIN_NORMAL	%NEXT
-	%'&CompileBuf %GetCompileBuf			BIN_NORMAL	%NEXT
-	%'&CompileBufEnd %GetCompileBufEnd		BIN_NORMAL	%NEXT
+	;; -- addresses of stuff that may be useful in Forth --
+	%'&DictionaryHead	%GetDictionaryHead	BIN_NORMAL	%NEXT
+	%'&DebugFlag 		%GetDebugFlag		BIN_NORMAL	%NEXT
+	%'&CompileBuf 		%GetCompileBuf		BIN_NORMAL	%NEXT
+	%'&CompileBufEnd	%GetCompileBufEnd	BIN_NORMAL	%NEXT
+	%'&IsCompiling	%GetIsCompiling			BIN_NORMAL	%NEXT
+	%'&EmitNumber	%GetEmitNumber			BIN_NORMAL	%NEXT
+	%'&EmitByte	%GetEmitByte			BIN_NORMAL	%NEXT
 
 	%'?		%Words		BIN_NORMAL	%NEXT
 	%'.s		%.s		BIN_NORMAL	%NEXT

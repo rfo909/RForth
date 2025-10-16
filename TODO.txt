@@ -1,9 +1,8 @@
 2025-08 v3
 
-2025-10-15
+2025-10-16
 
-- Get interpreter stable
-- Measure performance, in order to decide best use of external EEPROM
 - Implement native functions for i2c and GPIO (later SPI and Serial)
 - Add external EEPROM
 - Define a way to both automatically run a certain word and some startup condition to enter interactive mode
+

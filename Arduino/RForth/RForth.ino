@@ -288,8 +288,8 @@ void op_jmp () {programCounter=pop();}
 void op_jmp_optional () {Word addr=pop(); Word cond=pop(); if (cond != 0) programCounter=addr;}
 void op_halt () { Serial.println("Halting"); for(;;) ; }
 void op_u2spc () { Word ptr=pop(); u2spc(ptr); }
-void op_native () {}
-void op_nativec () {}
+void op_native () { Word pos=pop(); push(callNative(pos));}
+void op_nativec () { Word strPtr=pop(); push(lookupNative(strPtr));}
 void op_1_plus () {push(pop()+1);}
 void op_HERE () {push(HERE);}
 void op_ne () {Word b=pop(); Word a=pop(); push(a!=b);}
@@ -585,6 +585,13 @@ void printChar (Word ch) {
   Serial.print(temp);
 }
 
+void printStr (Word ptr) {
+  Word len=readByte(ptr);
+  for (int i=0; i<len; i++) {
+    printChar(readByte(ptr+i+1));
+  }
+}
+
 int forthPos=0;
 
 Word readSerialChar () {
@@ -646,4 +653,75 @@ void showState() {
 }
 
 
+typedef struct {
+  char *name;
+  Word (*f) ();
+  char *info;
+} NativeFunction;
 
+
+// ----------------------------------------------------------------
+// Native functions - use NATIVE name to call
+// ----------------------------------------------------------------
+
+
+const NativeFunction nativeFunctions[]={
+  {"?",           &natList,       "( -- count) show list of native functions"},
+  {"Sys.Free",    &natSysFree,    "( -- n) return number of free bytes of heap space"},
+  {"",0,""} 
+};
+
+Word natList() {
+  // list native words
+  Word pos=0;
+  for(;;) {
+    if (nativeFunctions[pos].f==0) {
+      return pos;  // count
+    }
+
+    Serial.print(nativeFunctions[pos].name);
+    Serial.print("  ");
+    Serial.println(nativeFunctions[pos].info);
+    pos++;
+  }
+
+}
+Word natSysFree () {
+  Word here=HERE-firmwareProtectTag; // actual index in heap
+  return RAM_SIZE-here;
+}
+
+// The compile part of native calls, looks up the index in the NativeFunctions[] array,
+// sets error flag if not found
+Word lookupNative (Word strPtr) {
+  Word pos=0;
+  for(;;) {
+    if (nativeFunctions[pos].f==0) {
+      Serial.print(F("Unknown native function "));
+      printStr(strPtr);
+      setError("Native");
+      return WORD_INVALID;
+    }
+    if (mixedStreq(strPtr, nativeFunctions[pos].name)) {
+      return pos;
+    }
+    // not found
+    pos++;
+  }
+
+}
+
+Word callNative (Word pos) {
+  return nativeFunctions[pos].f();
+}
+
+int mixedStreq (Word strPtr, char *s) {
+  Word len=readByte(strPtr);
+  if (strlen(s) != len) return 0;
+  for (int i=0; i<len; i++) {
+    byte a=readByte(strPtr+i+1);
+    byte b=s[i];
+    if (a != b) return 0;
+  }
+  return 1;
+}

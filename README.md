@@ -3,7 +3,7 @@ Forth never ceases to fascinate !
 
 Version 3 (alpha)
 
-2025-10-15
+2025-10-16
 
 Introduction
 =============
@@ -254,6 +254,7 @@ Important words
 .s             (show stack, displays values as both uint and hex)
 .W name        (show dictionary entry address for word)
 clear          (delete all stack content)
+NATIVE ?       (list all native functions)
 ```
 
 
@@ -422,12 +423,25 @@ the RAM buffer. The initial value of HERE is set to the total size of the firmwa
 
 2025-10-16 Nano Every runs RFOrth
 ---------------------------------
+
 650 lines of C code, plus about 320 lines of defines and const-data (firmware and op-names).
 
 Seems to execute about at an initial speed of 85k bytecode instructions per second.
 
+2025-10-16 Native functions Arduino
+-----------------------------------
 
+The NATIVE Forth word, which used the "nativec" and "native" instructions, and long since implemented in
+ACode.txt now works with actual native functions on the Nano Every. There are currently two native functions, 
+the first is called "?" and lists all native functions, including itself. 
 
+The other is called "Sys.Free", and returns the number of bytes free on the heap. For use both 
+interpreted and compiled. 
+
+```
+NATIVE ?
+NATIVE Sys.Free .
+```
  
 
 References
