@@ -20,7 +20,7 @@ char temp[10];
 
 byte hasError=0;
 
-const int MAX_STEPS = 10000;
+const int MAX_STEPS = 0;
 
 
 // ------
@@ -65,7 +65,7 @@ void populateRAM() {
 }
 
 bool isStepping() {
-  return (instructionCount >= MAX_STEPS);
+  return (MAX_STEPS > 0 && instructionCount >= MAX_STEPS);
 }
 
 void debug(char *str) {
@@ -340,7 +340,7 @@ void op_allot () {Word count=pop(); allot(count);}
 void op_printb () {Word value=pop(); printBinary(value);}
 void op_printc () {Word ch=pop(); printChar(ch);}
 void op_print () {Word w=pop(); printHex(w);}
-void op_cr () { Serial.print("\r\n");}
+void op_cr () { Serial.println();}
 void op_print_decimal_signed () {Word w=pop(); printSignedDecimal(w);}
 void op_print_decimal_unsigned () {Word w=pop(); printUnsignedDecimal(w);}
 
@@ -369,7 +369,7 @@ void op_orb () {Word b=pop(); Word a=pop(); push((Word) (a | b));}
 void op_inv () {Word x=pop(); push(~x);}
 void op_shift_left () {Word b=pop(); Word a=pop(); push((Word) (a<<b));}
 void op_shift_right () {Word b=pop(); Word a=pop(); push((Word) (a>>b));}
-void op_readc () {Serial.println("*** readc ***"); push(readSerialChar());}
+void op_readc () {push(readSerialChar());}
 void op_clear () {dStackNext=0;}
 void op_null () {push((Word) 0);}
 void op_or () {Word b=pop(); Word a=pop(); push((Word) (a != 0 || b != 0));}
@@ -646,7 +646,7 @@ void printChar (Word ch) {
 
 
 Word readSerialChar () {
-  showStacks();
+  //showStacks();
   for(;;) {
     int ch=Serial.read();
     if (ch >= 0) {
