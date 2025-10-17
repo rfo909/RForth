@@ -43,7 +43,7 @@ void setError (char *msg) {
 }
 
 void setup() {
-  Serial.begin(2400);
+  Serial.begin(9600);
 
   fpush(0,0);
   populateOps();

@@ -7,7 +7,7 @@
 #define WORD_INVALID      0xFFFF
 #define WORD_NULL         0
 
-#define RAM_SIZE          4096
+#define RAM_SIZE          5000
 
 const bool READC_ECHO = true;
 
