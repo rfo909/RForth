@@ -3,24 +3,23 @@ Forth never ceases to fascinate !
 
 Version 3 (alpha)
 
-2025-10-16
+2025-10-17
 
 Introduction
 =============
-I'm designing a virtual machine instruction set, stack based. This means many instructions are
-quite similar to Forth primitives. On top of this runs a REPL which implements some Forth
-words like COLON, SEMICOLON, IF, THEN, ELSE, CONSTANT and VARIABLE.
+In order to create a Forth REPL, I started out defining a virtual stack machine, which executes
+byte code instructions. I then made an assembler for this, which handles addresses. In this assembly
+language I wrote the REPL for Forth, and a few key Forth words, like COLON, SEMICOLON, IF, THEN, ELSE, 
+CONSTANT and VARIABLE.
+
+I created an interpreter in a script language, to play around with and examine memory structures etc.
 
 The point of this whole project is just to have fun. 
 
 REPL and compiler
 -----------------
-Realizing how little low level code was required to bring up a REPL and a compiler, has been great
-fun! And I'm quite sure I'm not even near the optimal way of doing so, as it seems to me when
-searching the internet, that most Forth words are MUCH shorter than mine, as the depend on 
-a host of other words, designed very smartly. 
-
-I find the Forth way of extending the compiler, by using immediate words, to be really clever!
+Realizing how little low level code was required to bring up a REPL and a Forth compiler, has been great
+fun! I also find the Forth way of extending the compiler, by using immediate words, to be really clever!
 
 Writing code in Forth, to compile Forth ... that's awesome! 
 
@@ -90,21 +89,22 @@ in ACode.txt contains a tag :PROTECT that prevents writes to addresses below tha
 enforced in the Interpreter.
 
 There is also a check against the HERE value, preventing any memory access above it. This means
-data has to be allot'ed before use. I decided to keep using a fixed compile buffer which is
+data has to be allot'ed *before use*. I decided to keep using a fixed compile buffer which is
 statically allocated after the PROTECT tag. 
 
 This in turn led me to
-make code relocatable, because once a word is compiled, the code to be copied to permanent
+make code *relocatable*, because once a word is compiled, the code has to be copied to permanent
 storage created with allot. This meant internal jumps could not be absolute. So I created two conditional
 relative offset jumps, moving forward or backward, since the base code works only with
-unsigned values.
+unsigned values (and thus double the range). 
 
 
 The compile stack
 -----------------
+
 A simple word sized compile stack is statically allocated in ACode.txt. Each word
 pushed contains a type in the first byte and an absolute location within the compile
-buffer in the second. The compile buffer is limited to 255 bytes.
+buffer in the second. The compile buffer is limited to 127 bytes.
 
 This allows both nesting and recognition of different types, so that if we were to 
 allow complex structures like LOOP  (bool) IF BREAK THEN ... ENDLOOP then the 
@@ -129,8 +129,10 @@ data structures etc.
 The interpreter is growing in complexity, and it is also relatively slow,
 chewing through 5-10k byte code instructions per second on my laptop. 
 
-That may sound a lot, but with byte code running the whole REPL, interpreter and
-compiler, especially all the dictionary lookups, compilation speed is slow.
+That may sound a lot, but byte code running the whole REPL, interpreter and
+compiler, means it must do the dictionary traversals. And since all of my byte code
+assembly codes are available to Forth, the initial dictionary has about 60 entries just
+for those, plus some 30 others for base Forth words. This means compile is slow.
 
 Speed?
 ------
@@ -147,21 +149,6 @@ Compiling code is the hardest work, due to the dictionary traversals.
 
 Examples with the CFT interpreter
 ---------------------------------
-Running a tight iteration, it counts and prints values 0-5000 in about 10-12 seconds.
-
-
-```
-: count
-	0 cpush   (set local variable a)
-	BEGIN
-		cr a . 
-		a 1 add a!
-		a 5000 lt AGAIN?
-	;
-```
-
-Another example:
-
 ```
 3 CONSTANT pi
 ok
@@ -174,20 +161,7 @@ x			(calling word: 28 ms)
 ```
 
 Running compiled code is MUCH faster than compiling, and also than interpreting, because
-of dictionary traversals. Most of the 251 ms is spent looking up the "mul" assembly instruction,
-because if we eliminate it, we get
-
-```
-pi .           (71 ms)
-
-: x pi . ;
-
-x              (28 ms)
-```
-
-Apart from compile waits, it is really not a bad idea having an interpreter running at 
-diminished capacity compared to real hardware, because it highlights bottlenecks.
-
+of dictionary traversals.
 
 Memory map
 ----------
@@ -195,7 +169,9 @@ The ACode.txt file implements the REPL, which interprets input and when
 hitting a COLON, enters compile mode, and compiles code. The REPL is fairly 
 primitive, as it should be.
 
-But it also contains notation for allocating static structures (non code).
+But it also contains notation for allocating static structures (non code),
+such as the initial dictionary, compile buffer, next word buffer and various
+state.
 
 
 Local variables
@@ -320,17 +296,15 @@ Note that calling native functions is a two step process. The "nativec" (compile
 and returns an address (int), which is used with the actual call, "native". 
 
 Implemented a NATIVE word (defined in ACode.txt) handles this, both compile mode and interpreted. It
-takes the name of the native word from the input as follows (pX are parameters). Native words always
-return a value on the stack.
+takes the name of the native word from the input as follows (pX are parameters). 
 
 ```
 : testNative p1 p2 .. NATIVE test . ;
-
 ```
 
 This implementation has two purposes: the "nativec" at compile time detects when trying to call an invalid
 native function, and it speeds up the actual call, as it returns an index into the list of native
-functions, which is what the "native" op expects. This means the actual call is faster than the compile
+functions, which is what the "native" op expects. This makes the actual call quite faster than the compile
 step.
 
 
@@ -374,9 +348,6 @@ Something DictUse
 ?
 ```
 
-
-
-
 Dictionary entry format
 -----------------------
 
@@ -396,20 +367,21 @@ defined in ACode.txt, which is readable from Forth as:
 ```
 
 
-2025-10-07 C implementation
-----------------------------
+2025-10-07 Arduino 
+------------------
+
 While originally intended for the Pi Pico, I have instead started out writing code for the Arduino
-Nano Every, with the ATmega4809 processor. This microcontroller has 6 Kbytes of SRAM, and a full
+Nano Every, with the ATmega4809 processor, which has 6 Kbytes of SRAM, and a full
 48 kbytes of flash, with room for plenty of "firmware". 
 
 I also dug out some 32 Kbytes EEPROM chips which I plan to hook up over i2c, for storing source
-and who know what.
+and who knows what.
 
 Memory model
 ------------
 
-The current memory model is fairly simple. The ACode.txt contains a tag PR115200OTECT, which is meant to
-protect data below that from write. I copy and paste the output from the Assembler script into 
+The current memory model is fairly simple. The ACode.txt contains a tag PROTECT, which is meant to
+protect data below that address from writes. I copy and paste the output from the Assembler script into 
 the Firmware.h file.
 
 The init code then copies bytes from the Protect location to the end (currently 157 bytes), which contains
@@ -433,7 +405,7 @@ but acceptable.
 
 The NATIVE Forth word, which uses the "nativec" and "native" instructions, and long since implemented in
 ACode.txt now works with actual native functions on the Nano Every. There are currently two native functions, 
-the first is called "?" and lists all native functions, including itself. 
+the first is called "?", which lists all native functions, including itself. 
 
 The other is called "Sys.Free", and returns the number of bytes free on the heap. For use both 
 interpreted and compiled. 
@@ -445,15 +417,14 @@ NATIVE Sys.Free .
 
 2025-10-17 Blink
 ----------------
-Added a few native functions, enabling the traditional blink code.
+Added a few native functions related to GPIO pins on Arduino, enabling the traditional blink example.
 
 ```
+: pOut NATIVE Pin.ModeOut ;
+: pW   NATIVE Pin.WriteDigital ;
+: zzz  NATIVE Sys.Delay ;
 
-: pOut NATIVE Pin.ModeOut drop ;
-: pW   NATIVE Pin.WriteDigital drop ;
-: delay NATIVE Sys.Delay drop ;
-
-: blink 13 pOut 0 cpush BEGIN a 13 pW 500 delay a not a! 1 AGAIN? ;
+: blink 13 pOut 0 cpush BEGIN a 13 pW 500 zzz a not a! 1 AGAIN? ;
 ```
 
 

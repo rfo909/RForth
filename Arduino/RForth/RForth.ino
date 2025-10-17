@@ -655,7 +655,7 @@ void showState() {
 
 typedef struct {
   char *name;
-  Word (*f) ();
+  void (*f) ();
   char *info;
 } NativeFunction;
 
@@ -666,15 +666,23 @@ typedef struct {
 
 
 const NativeFunction nativeFunctions[]={
-  {"?",           &natList,                 "( -- count) show list of native functions"},
+  {"?",           &natList,                 "( -- ) show list of native functions"},
   {"Sys.Free",    &natSysFree,              "( -- n) return number of free bytes of heap space"},
-  {"Sys.Delay",   &natSysDelay,             "(ms -- 0) sleep a number of millis"},
-  {"Pin.ModeOut", &natPinModeOut,           "(pin -- ) set pin mode, returns 0"},
-  {"Pin.WriteDigital", &natPinWriteDigital, "(value pin --) returns 0"},
+  {"Sys.Delay",   &natSysDelay,             "(ms -- ) sleep a number of millis"},
+  {"Sys.DelayUs",   &natSysDelayUs,         "(us -- ) sleep a number of microseconds"},
+  {"Pin.ModeOut", &natPinModeOut,           "(pin -- ) set pin mode"},
+  {"Pin.ModeIn",  &natPinModeIn,            "(pin -- ) set pin mode"},
+  {"Pin.ModeInPullup",  &natPinModeInPullup,"(pin -- ) set pin mode"},
+  {"Pin.WriteDigital", &natPinWriteDigital, "(value pin --)"},
+  {"Pin.WriteAnalog",  &natPinWriteAnalog,  "(value pin --) value is 0-255"},
+  {"Pin.PulseDigitalMs", &natPinPulseDigitalMs, "(ms value pin -- ) pulse digital pin / milliseconds"},
+  {"Pin.PulseDigitalUs", &natPinPulseDigitalUs, "(us value pin -- ) pulse digital pin / microseconds"},
+  {"Pin.ReadDigital",  &natPinReadDigital,  "(pin -- value) returns 0 or 1"},
+  {"Pin.ReadAnalog",   &natPinReadAnalog,   "(pin -- value) returns 0-1023"},
   {"",0,""} 
 };
 
-Word natList() {
+void natList() {
   // list native words
   Word pos=0;
   for(;;) {
@@ -689,29 +697,92 @@ Word natList() {
   }
 
 }
-Word natSysFree () {
+void natSysFree () {
   Word here=HERE-firmwareProtectTag; // actual index in heap
-  return RAM_SIZE-here;
+  push(RAM_SIZE-here);
 }
 
-Word natSysDelay() {
+void natSysDelay() {
   Word ms=pop();
   delay(ms);
-  return 0;
 }
 
-Word natPinModeOut () {
+void natSysDelayUs() {
+  Word us=pop();
+  delayMicroseconds(us);
+}
+
+void natPinModeOut () {
   Word pin=pop();
   pinMode(pin, OUTPUT);
-  return 0;
 }
 
-Word natPinWriteDigital () {
+void natPinModeIn () {
+  Word pin=pop();
+  pinMode(pin, INPUT);
+}
+
+void natPinModeInPullup () {
+  Word pin=pop();
+  pinMode(pin, INPUT_PULLUP);
+}
+
+void natPinWriteDigital () {
   Word pin=pop();
   Word value=pop();
   digitalWrite(pin,value==0 ? LOW : HIGH);
-  return 0;
 }
+
+void natPinWriteAnalog () {
+	Word pin=pop();
+	Word value=pop();
+	analogWrite(pin,value);
+}
+
+void natPinPulseDigitalMs () {
+	Word pin=pop();
+	Word value=pop();
+	Word ms=pop();
+
+	if (value==0) {
+		digitalWrite(pin, LOW);
+		delay(ms);
+		digitalWrite(pin, HIGH);
+	} else {
+		digitalWrite(pin, HIGH);
+		delay(ms);
+		digitalWrite(pin, LOW);
+	}
+}
+
+void natPinPulseDigitalUs () {
+	Word pin=pop();
+	Word value=pop();
+	Word us=pop();
+
+	if (value==0) {
+		digitalWrite(pin, LOW);
+		delayMicroseconds(us);
+		digitalWrite(pin, HIGH);
+	} else {
+		digitalWrite(pin, HIGH);
+		delayMicroseconds(us);
+		digitalWrite(pin, LOW);
+	}
+}
+
+
+
+void natPinReadDigital () {
+	Word pin=pop();
+	push(digitalRead(pin));
+}
+
+void natPinReadDigital () {
+	Word pin=pop();
+	push(analogRead(pin));
+}
+
 
 // The compile part of native calls, looks up the index in the NativeFunctions[] array,
 // sets error flag if not found
@@ -734,7 +805,7 @@ Word lookupNative (Word strPtr) {
 }
 
 Word callNative (Word pos) {
-  return nativeFunctions[pos].f();
+  nativeFunctions[pos].f();
 }
 
 int mixedStreq (Word strPtr, char *s) {
