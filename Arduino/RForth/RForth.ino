@@ -288,7 +288,7 @@ void op_jmp () {programCounter=pop();}
 void op_jmp_optional () {Word addr=pop(); Word cond=pop(); if (cond != 0) programCounter=addr;}
 void op_halt () { Serial.println("Halting"); for(;;) ; }
 void op_u2spc () { Word ptr=pop(); u2spc(ptr); }
-void op_native () { Word pos=pop(); push(callNative(pos));}
+void op_native () { Word pos=pop(); callNative(pos);}
 void op_nativec () { Word strPtr=pop(); push(lookupNative(strPtr));}
 void op_1_plus () {push(pop()+1);}
 void op_HERE () {push(HERE);}
@@ -778,7 +778,7 @@ void natPinReadDigital () {
 	push(digitalRead(pin));
 }
 
-void natPinReadDigital () {
+void natPinReadAnalog () {
 	Word pin=pop();
 	push(analogRead(pin));
 }
