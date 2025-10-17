@@ -154,7 +154,7 @@ Running a tight iteration, it counts and prints values 0-5000 in about 10-12 sec
 : count
 	0 cpush   (set local variable a)
 	BEGIN
-		a .
+		cr a . 
 		a 1 add a!
 		a 5000 lt AGAIN?
 	;
@@ -442,6 +442,21 @@ interpreted and compiled.
 NATIVE ?
 NATIVE Sys.Free .
 ```
+
+2025-10-17 Blink
+----------------
+Added a few native functions, enabling the traditional blink code.
+
+```
+
+: pOut NATIVE Pin.ModeOut drop ;
+: pW   NATIVE Pin.WriteDigital drop ;
+: delay NATIVE Sys.Delay drop ;
+
+: blink 13 pOut 0 cpush BEGIN a 13 pW 500 delay a not a! 1 AGAIN? ;
+```
+
+
  
 
 References

@@ -43,7 +43,7 @@ void setError (char *msg) {
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(2400);
 
   fpush(0,0);
   populateOps();
@@ -666,8 +666,11 @@ typedef struct {
 
 
 const NativeFunction nativeFunctions[]={
-  {"?",           &natList,       "( -- count) show list of native functions"},
-  {"Sys.Free",    &natSysFree,    "( -- n) return number of free bytes of heap space"},
+  {"?",           &natList,                 "( -- count) show list of native functions"},
+  {"Sys.Free",    &natSysFree,              "( -- n) return number of free bytes of heap space"},
+  {"Sys.Delay",   &natSysDelay,             "(ms -- 0) sleep a number of millis"},
+  {"Pin.ModeOut", &natPinModeOut,           "(pin -- ) set pin mode, returns 0"},
+  {"Pin.WriteDigital", &natPinWriteDigital, "(value pin --) returns 0"},
   {"",0,""} 
 };
 
@@ -689,6 +692,25 @@ Word natList() {
 Word natSysFree () {
   Word here=HERE-firmwareProtectTag; // actual index in heap
   return RAM_SIZE-here;
+}
+
+Word natSysDelay() {
+  Word ms=pop();
+  delay(ms);
+  return 0;
+}
+
+Word natPinModeOut () {
+  Word pin=pop();
+  pinMode(pin, OUTPUT);
+  return 0;
+}
+
+Word natPinWriteDigital () {
+  Word pin=pop();
+  Word value=pop();
+  digitalWrite(pin,value==0 ? LOW : HIGH);
+  return 0;
 }
 
 // The compile part of native calls, looks up the index in the NativeFunctions[] array,
