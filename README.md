@@ -421,13 +421,12 @@ Added a few native functions related to GPIO pins on Arduino, enabling the tradi
 
 ```
 : pOut NATIVE Pin.ModeOut ;
-: pW   NATIVE Pin.WriteDigital ;
-: zzz  NATIVE Sys.Delay ;
-
-: blink 13 pOut 0 cpush BEGIN a 13 pW 500 zzz a not a! 1 AGAIN? ;
+: flash cpush 50 1 a NATIVE Pin.PulseDigitalMs ;
+: Z NATIVE Sys.Delay ;
+: blink 13 pOut BEGIN 13 flash 500 Z 1 AGAIN? ;
 ```
 
-
+Compiling this consumes 78 bytes, which stores both the compiled code and the dictionary entries.
  
 
 References

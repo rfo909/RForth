@@ -1,8 +1,16 @@
 2025-08 v3
 
-2025-10-16
+2025-10-17
 
-- Implement native functions for i2c and GPIO (later SPI and Serial)
-- Add external EEPROM
-- Define a way to both automatically run a certain word and some startup condition to enter interactive mode
+- Implement native functions for i2c (later SPI and Serial)
+
+- Add external 24FC256-I/P EEPROM, save code to it via "screens" editor (in firmware)
+
+- Move stacks from C heap into Forth heap (byte array), to enable saving state by dumping that array to EEPROM
+
+- Create a disassembler (code length byte at index -1 already in place)
+
+- Define a way to both automatically run a certain word, and some startup condition to enter interactive mode instead
+
+- Consider moving interactive REPL to SoftSerial at 9600 baud or lower (?) to free up hardware serial
 
