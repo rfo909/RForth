@@ -1,3 +1,5 @@
+#include <Wire.h>
+
 #include "Constants.h"
 #include "Firmware.h"
 #include "Forth.h"
@@ -44,12 +46,13 @@ void setError (char *msg) {
 
 void setup() {
   Serial.begin(9600);
+  Wire.begin();
 
   fpush(0,0);
   populateOps();
   populateRAM();
 
-  Serial.print("(Ready) HERE=");
+  Serial.print(F("(Ready) HERE="));
   Serial.println(HERE);
 }
 
@@ -61,7 +64,7 @@ void doReset() {
   programCounter=0;
   hasError=false;
   Serial.println();
-  Serial.print("(Ready) HERE=");
+  Serial.print(F("(Ready) HERE="));
   Serial.println(HERE);
 
 }
@@ -105,7 +108,8 @@ void loop() {
     void (*funcPtr) () = ops[op];
     
     if (funcPtr==0) {
-      Serial.println("funcPtr is 0, op=" + op);
+      Serial.print(F("funcPtr is 0, op="));
+      Serial.println( op);
       setError("x");
       return;
     }
@@ -664,6 +668,12 @@ typedef struct {
 // Native functions - use NATIVE name to call
 // ----------------------------------------------------------------
 
+// Doing i2c requires buffers. Since this is a runtime operations, we may use:
+//
+// &CompileBuf - 64 bytes
+// &NextWord - 32 bytes
+//
+// These can be partitioned any way we like and double as scratch memory 
 
 const NativeFunction nativeFunctions[]={
   {"?",           &natList,                 "( -- ) show list of native functions"},
@@ -679,6 +689,11 @@ const NativeFunction nativeFunctions[]={
   {"Pin.PulseDigitalUs", &natPinPulseDigitalUs, "(us value pin -- ) pulse digital pin / microseconds"},
   {"Pin.ReadDigital",  &natPinReadDigital,  "(pin -- value) returns 0 or 1"},
   {"Pin.ReadAnalog",   &natPinReadAnalog,   "(pin -- value) returns 0-1023"},
+
+  {"I2C.MasterSend",   &natI2CMasterSend,   "(sendBufPtr addr -- )"},
+  {"I2C.MasterRecv",   &natI2CMasterRecv,   "(count recvBufPtr addr -- )"},
+  {"I2C.MasterSendRecv", &natI2CMasterSendRecv, "(sendBufPtr count recvBufPtr addr -- )"},
+
   {"",0,""} 
 };
 
@@ -697,6 +712,11 @@ void natList() {
   }
 
 }
+
+// -------------------------------
+// Sys.*
+// -------------------------------
+
 void natSysFree () {
   Word here=HERE-firmwareProtectTag; // actual index in heap
   push(RAM_SIZE-here);
@@ -711,6 +731,10 @@ void natSysDelayUs() {
   Word us=pop();
   delayMicroseconds(us);
 }
+
+// -------------------------------
+// Pin.*
+// -------------------------------
 
 void natPinModeOut () {
   Word pin=pop();
@@ -771,8 +795,6 @@ void natPinPulseDigitalUs () {
 	}
 }
 
-
-
 void natPinReadDigital () {
 	Word pin=pop();
 	push(digitalRead(pin));
@@ -783,8 +805,47 @@ void natPinReadAnalog () {
 	push(analogRead(pin));
 }
 
+// -------------------------------
+// I2C.*
+// -------------------------------
 
-// The compile part of native calls, looks up the index in the NativeFunctions[] array,
+void natI2CMasterSend() {
+  Word addr=pop();
+  Word sendBuf=pop();
+  Word sendCount=readByte(sendBuf);
+  Wire.beginTransmission((byte) addr);
+  for (byte i=0; i<sendCount; i++) {
+    Wire.write((byte)readByte(sendBuf+i+1));
+  }
+  Wire.endTransmission();
+}
+
+void natI2CMasterRecv() {
+  Word addr=pop();
+  Word recvBuf=pop();
+  Word count=pop();
+
+  Wire.requestFrom((int) addr, (int) count);
+  Word i=0;
+  while (Wire.available()) {
+    byte b = Wire.read();
+    writeByte(recvBuf+i+1, b);
+    i++;
+  }
+  writeByte(recvBuf, i); // length byte
+}
+
+void natI2CMasterSendRecv() {
+  Word addr=pop();
+  Word recvBuf=pop();
+  Word count=pop();
+  Word sendBuf=pop();
+
+  // do we need this?
+}
+
+
+// The nativec (compile) op, looks up the index in the NativeFunctions[] array,
 // sets error flag if not found
 Word lookupNative (Word strPtr) {
   Word pos=0;
@@ -804,9 +865,11 @@ Word lookupNative (Word strPtr) {
 
 }
 
+// The native (call) op
 Word callNative (Word pos) {
   nativeFunctions[pos].f();
 }
+
 
 int mixedStreq (Word strPtr, char *s) {
   Word len=readByte(strPtr);

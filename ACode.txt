@@ -721,7 +721,8 @@
 	ret
 	
 :DOT
-	print#s
+	print#s 
+	&Str_Space .str
 	ret
 
 :NATIVE
@@ -796,13 +797,15 @@
 
 ;; look up data addresses after the PROTECT tag
 
-:GetDictionaryHead &DictionaryHead ret
-:GetDebugFlag &DebugFlag ret
-:GetCompileBuf &CompileBuf ret
-:GetCompileBufEnd &CompileBufEnd ret
-:GetIsCompiling &IsCompiling ret
-:GetEmitNumber &EmitNumber ret
-:GetEmitByte &EmitByte ret
+:GetAddrDictionaryHead &DictionaryHead ret
+:GetAddrDebugFlag &DebugFlag ret
+:GetAddrCompileBuf &CompileBuf ret
+:GetAddrCompileBufEnd &CompileBufEnd ret
+:GetAddrNextWord &NextWord ret
+:GetAddrNextWordEnd &NextWordEnd ret
+:GetAddrIsCompiling &IsCompiling ret
+:GetAddrEmitNumber &EmitNumber ret
+:GetAddrEmitByte &EmitByte ret
 	
 :DATA
 
@@ -905,11 +908,11 @@
 	%'d!		%dSet		BIN_IMMEDIATE	%NEXT
 	
 	%'.		%DOT		BIN_NORMAL		%NEXT
-	%'IF		%IF		BIN_IMMEDIATE	%NEXT
-	%'THEN		%THEN		BIN_IMMEDIATE	%NEXT
-	%'ELSE		%ELSE		BIN_IMMEDIATE	%NEXT
-	%'BEGIN		%BEGIN		BIN_IMMEDIATE	%NEXT
-	%'AGAIN?	%AGAIN?		BIN_IMMEDIATE	%NEXT
+	%'IF		%IF		BIN_IMMEDIATE		%NEXT
+	%'THEN		%THEN		BIN_IMMEDIATE		%NEXT
+	%'ELSE		%ELSE		BIN_IMMEDIATE		%NEXT
+	%'BEGIN		%BEGIN		BIN_IMMEDIATE		%NEXT
+	%'AGAIN?	%AGAIN?		BIN_IMMEDIATE		%NEXT
 	%'CONSTANT	%CONSTANT	BIN_NORMAL		%NEXT
 	%'VARIABLE	%VARIABLE	BIN_NORMAL		%NEXT
 	%'NATIVE	%NATIVE		BIN_IMMEDIATE		%NEXT
@@ -920,13 +923,15 @@
 	%'.W		%.W		BIN_NORMAL		%NEXT    (show DictionaryEntry for word)
 
 	;; -- addresses of stuff that may be useful in Forth --
-	%'&DictionaryHead	%GetDictionaryHead	BIN_NORMAL	%NEXT
-	%'&DebugFlag 		%GetDebugFlag		BIN_NORMAL	%NEXT
-	%'&CompileBuf 		%GetCompileBuf		BIN_NORMAL	%NEXT
-	%'&CompileBufEnd	%GetCompileBufEnd	BIN_NORMAL	%NEXT
-	%'&IsCompiling	%GetIsCompiling			BIN_NORMAL	%NEXT
-	%'&EmitNumber	%GetEmitNumber			BIN_NORMAL	%NEXT
-	%'&EmitByte	%GetEmitByte			BIN_NORMAL	%NEXT
+	%'&DictionaryHead	%GetAddrDictionaryHead		BIN_NORMAL	%NEXT
+	%'&DebugFlag 		%GetAddrDebugFlag		BIN_NORMAL	%NEXT
+	%'&CompileBuf 		%GetAddrCompileBuf		BIN_NORMAL	%NEXT
+	%'&CompileBufEnd	%GetAddrCompileBufEnd		BIN_NORMAL	%NEXT
+	%'&NextWord		%GetAddrNextWord		BIN_NORMAL	%NEXT
+	%'&NextWordEnd		%GetAddrNextWordEnd		BIN_NORMAL	%NEXT
+	%'&IsCompiling		%GetAddrIsCompiling		BIN_NORMAL	%NEXT
+	%'&EmitNumber		%GetAddrEmitNumber		BIN_NORMAL	%NEXT
+	%'&EmitByte		%GetAddrEmitByte		BIN_NORMAL	%NEXT
 
 	%'?		%Words		BIN_NORMAL	%NEXT
 	%'.s		%.s		BIN_NORMAL	%NEXT
@@ -948,19 +953,21 @@
 :IsCompilingWord	b w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0		;; 32 character stringbuffer
 :IsCompilingWordMode	b0					;; NORMAL or IMMEDIATE
 
-:CompileBuf		w0 w0 w0 w0 w0 w0 w0 w0 		;; up to 63 bytes, for the colon compiler
-				w0 w0 w0 w0 w0 w0 w0 w0			;; first byte is length
-				w0 w0 w0 w0 w0 w0 w0 w0
-				w0 w0 w0 w0 w0 w0 w0 w0
+:CompileBuf		b0 					;; length byte
+			w0 w0 w0 w0 w0 w0 w0 w0 		;; up to 64 bytes
+			w0 w0 w0 w0 w0 w0 w0 w0			;; 
+			w0 w0 w0 w0 w0 w0 w0 w0			;; For colon compiler
+			w0 w0 w0 w0 w0 w0 w0 w0			;; and as scratch buffer at runtime
+
 :CompileBufEnd
 
 
 :NextWord		b0 
-				w0 w0 w0 w0 w0 w0 w0 w0 
-				w0 w0 w0 w0 w0 w0 w0 w0	;; 32 character stringbuffer
+			w0 w0 w0 w0 w0 w0 w0 w0 		;; 32 chars string buffer
+			w0 w0 w0 w0 w0 w0 w0 w0			;; and scratch buffer at runtime
 :NextWordEnd
 
-:NextNumber		w0 							;; single word
+:NextNumber		w0 					;; single word
 
 :CompileStack		b0 w0 w0 w0 w0 w0 w0 w0 w0 		
 				;; 8 words each consists of type (1 byte) and offset in CompileBuf (1 byte)
