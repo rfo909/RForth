@@ -30,7 +30,9 @@ VIN               o       o          TX
 24FC256-I/P EEPROM 32 KBytes
 ----------------------------
 		
-Address = 1010 A2 A1 A0
-WP = write protect, has internal pulldown which means no protect
+Address = 1010 A2 A1 A0 (7 bits(
+WP = write protect, has internal pulldown which means no protect (so NC)
 Hooking A-lines to GND
+
+b1010000 CONSTANT eeAddr
 

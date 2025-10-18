@@ -427,6 +427,53 @@ Added a few native functions related to GPIO pins on Arduino, enabling the tradi
 ```
 
 Compiling this consumes 78 bytes, which stores both the compiled code and the dictionary entries.
+
+
+
+2025-10-18 save Forth heap to EEPROM - cforce
+---------------------------------------------
+
+I want to save the heap with all compiled words and the dictionary entries for those. 
+
+I thought moving the stacks from the C heap to Forth heap would make sense, in terms of
+saving current state. But it turns out to be the opposite, because in order to save and
+restore a runnable image, we need to execute code. That code must exist in the "firmware"
+part (below the PROTECT tag), which means it lives only in flash.
+
+Local variables and parameters require the three stacks to operate, so they must exist 
+outside the block of memory being saved or loaded back in.
+
+The actual stack content should not be necessary to restart the system. If it starts
+running with PC=0, it should then operate normally. The code should be extended to reading a
+start word from somewhere, unless some pin X is HIGH or LOW, deciding between automatic
+running or interactive mode. 
+
+The Forth heap contains the following:
+
+- compiled code: words, constants and variables
+- dictionary entries
+- data between the PROTECT tag and the end of the firmware (ACode.txt run through assembler).
+
+Calling code from compiled Forth to load an image means the return address back to that Forth word
+becomes invalid. To fix this, I added a bytecode op, "cforce", which takes an address (usually zero).
+
+It clears all three stacks, then "fakes" the given return address on to the call stack. It
+keeps local variables from current frame, but when returning from current frame, we instead
+return to the address given as parameter to the cforce op, typically 0.
+
+Example:
+
+```
+: test 0xcafe cpush 0xface cpush 0 cforce cr a print cr b print ;
+: xx test "return_from_test cr .str ;
+```
+
+Calling xx in turn calls test. It pushes two values on the call stack, 
+then calls 0 cforce. The code continues, running normally, as demonstrated by printing
+the variables a and b, but when it returns, it does not return to the xx word, 
+instead it picks up from address 0, which re-initiates the REPL.
+
+
  
 
 References

@@ -4,13 +4,28 @@
 
 - Implement native functions for i2c (later SPI and Serial)
 
+- Implement breakable loops, like BEGIN ... cond BREAK ... cond BREAK ... AGAIN
+	(or create conditional return op: ret?)
+
 - Add external 24FC256-I/P EEPROM, save code to it via "screens" editor (in firmware)
 
-- Move stacks from C heap into Forth heap (byte array), to enable saving state by dumping that array to EEPROM
+- Create a disassembler (code length byte at index -1 already in place) (?)
 
-- Create a disassembler (code length byte at index -1 already in place)
-
-- Define a way to both automatically run a certain word, and some startup condition to enter interactive mode instead
+- Define a way to both automatically run a certain word, and some startup condition to enter interactive 
+	mode instead, like a pin reading HIGH or LOW
 
 - Consider moving interactive REPL to SoftSerial at 9600 baud or lower (?) to free up hardware serial
+
+
+
+Saving source
+-------------
+When there are changes to the firmware, addresses in flash change, and we can no longer restore an
+image of the Forth heap successfully. For this purpose, we need instead to recompile and
+execute the original code, and create a new image.
+
+To do this, the code must be saved to the EEPROM. This is where some version of a "screen"
+editor comes in. 
+
+
 

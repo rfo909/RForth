@@ -2,13 +2,12 @@
 
 #include "Constants.h"
 #include "Firmware.h"
-#include "Forth.h"
 
 Word dStack[DSTACK_SIZE];
 byte dStackNext=0;
 
-Word rStack[RSTACK_SIZE];
-byte rStackNext=0;
+Word cStack[CSTACK_SIZE];
+byte cStackNext=0;
 
 Word fStack[FSTACK_SIZE];
 byte fStackNext=0;
@@ -58,13 +57,46 @@ void setup() {
 
 void doReset() {
   dStackNext=0;
-  rStackNext=0;
+  cStackNext=0;
   fStackNext=0;
   fpush(0,0);
   programCounter=0;
   hasError=false;
   Serial.println();
   Serial.print(F("(Ready) HERE="));
+  Serial.println(HERE);
+
+}
+
+void cforce (Word addr) {
+  // clear data stack, then modify call stack and frame stack so that
+  // local variables are preserved, but next "ret" returns to given
+  // address, typically 0.
+  dStackNext=0;
+
+  // identify local variables in current frame
+  Word base=fpeekBase();
+  Word size=fpeekSize(); // #locals
+
+  // push single return address on cstack 
+  cStackNext=0;
+
+  // (can not use cpush, as it manages the frame stack)
+  cStack[cStackNext++]=addr; 
+ 
+  // preserve local variables on cstack (if any)
+  for (int i=0; i<size; i++) {
+    cStack[cStackNext++]=cStack[base+i];
+  }
+  
+  // push two frames on frame stack
+  fStackNext=0;
+  fpush(0,1);  // return address frame
+  fpush(1,size);
+
+  showState();
+  Serial.println();
+  Serial.print(F("(cforce ready) HERE="));
   Serial.println(HERE);
 
 }
@@ -210,7 +242,7 @@ void populateOps() {
   ops[74]=&op_write;
   ops[75]=&op_allot;
   ops[76]=&op_printb;
-  ops[79]=&op_rpush;
+  ops[79]=&op_cpush;
   ops[80]=&op_PC;
   ops[81]=&op_call;
   ops[82]=&op_ret;
@@ -226,6 +258,7 @@ void populateOps() {
   ops[98]=&op_print_decimal_signed;
   ops[99]=&op_nativec;
   ops[100]=&op_1_plus;
+  ops[102]=&op_cforce;
   ops[103]=&op_HERE;
   ops[104]=&op_ne;
   ops[105]=&op_not;
@@ -257,8 +290,8 @@ void op_PANIC () {setError("PANIC");}
 void op_atoi () {Word targetPtr=pop(); Word strPtr=pop(); push(myAtoi(strPtr, targetPtr));}
 void op_n2code () {Word nbytes=pop(); Word addr=pop(); Word num=pop(); push(n2code(num, addr, nbytes)); }
 
-void op_rget () {Word index=pop(); Word base=fpeekBase(); Word value=rStack[base+index]; push(value);}
-void op_rset () {Word index=pop(); Word value=pop(); Word base=fpeekBase(); rStack[base+index]=value;}
+void op_rget () {Word index=pop(); Word base=fpeekBase(); Word value=cStack[base+index]; push(value);}
+void op_rset () {Word index=pop(); Word value=pop(); Word base=fpeekBase(); cStack[base+index]=value;}
 
 void op_rfwd_opt () {Word x=pop(); Word cond=pop(); if(cond) programCounter=programCounter+x;}
 void op_rback_opt () {Word x=pop(); Word cond=pop(); if(cond) programCounter=programCounter-x;}
@@ -284,7 +317,7 @@ void op_cr () { Serial.println();}
 void op_print_decimal_signed () {Word w=pop(); printSignedDecimal(w);}
 void op_print_decimal_unsigned () {Word w=pop(); printUnsignedDecimal(w);}
 
-void op_rpush () {Word value=pop(); rpush(value);}
+void op_cpush () {Word value=pop(); cpush(value);}
 void op_PC () {push(programCounter);}
 void op_call () {Word targetAddr=pop(); Word returnAddr=programCounter+1; callCode(targetAddr, returnAddr);}
 void op_ret () {returnFromCode();}
@@ -295,6 +328,7 @@ void op_u2spc () { Word ptr=pop(); u2spc(ptr); }
 void op_native () { Word pos=pop(); callNative(pos);}
 void op_nativec () { Word strPtr=pop(); push(lookupNative(strPtr));}
 void op_1_plus () {push(pop()+1);}
+void op_cforce () {Word addr=pop(); cforce(addr);}
 void op_HERE () {push(HERE);}
 void op_ne () {Word b=pop(); Word a=pop(); push(a!=b);}
 void op_not () {Word x=pop(); push(!x);}
@@ -371,13 +405,13 @@ Word fpeekBase () {
   }
 }
 
-void rpush (Word value) {
-  if (rStackNext >= RSTACK_SIZE) {
-    setError("rStack overflow");
+void cpush (Word value) {
+  if (cStackNext >= CSTACK_SIZE) {
+    setError("cStack overflow");
   } else if (fStackNext < 1) {
-    setError("rPush: fStack underflow");
+    setError("cpush: fStack underflow");
   } else {
-    rStack[rStackNext++] = value;
+    cStack[cStackNext++] = value;
     // update frame size 
     Word size=fStack[fStackNext-1];
     fStack[fStackNext-1]=size+1;
@@ -497,13 +531,13 @@ Word n2code (Word num, Word addr, Word nbytes) {  // returns number of bytes gen
 }
 
 void callCode (Word targetAddr, Word returnAddr) {
-  if (rStackNext >= RSTACK_SIZE-1) {
-    setError("rStack overflow");
+  if (cStackNext >= CSTACK_SIZE-1) {
+    setError("cStack overflow");
   } else if (fStackNext >= FSTACK_SIZE) {
     setError("fStack overflow");
   } else {
     // push return address
-    rpush(returnAddr);
+    cpush(returnAddr);
     // calculate next frame base
     Word base=fpeekBase();
     Word size=fpeekSize();
@@ -522,18 +556,19 @@ void returnFromCode () {
  
   // calculate location of return address
 
-  rStackNext=fpeekBase() + fpeekSize() - 1;  // -1 to move below the return address
-  if (rStackNext < 0) {
-    setError("rStack underflow");
+  cStackNext=fpeekBase() + fpeekSize() - 1;  // -1 to move below the return address
+  if (cStackNext < 0) {
+    setError("cStack underflow");
     return;
   } else {
-    programCounter=rStack[rStackNext];  // the return address
+    programCounter=cStack[cStackNext];  // the return address
   }
   Word base=fpeekBase();
   Word size=fpeekSize()-1;
   fpop();
   fpush(base,size);
 }
+
 
 void doMemcpy(Word source, Word target, Word count) {
   for (int i=0; i<count; i++) {
@@ -596,14 +631,7 @@ void printStr (Word ptr) {
   }
 }
 
-int forthPos=0;
-
 Word readSerialChar () {
-  // serve static code first
-  if (forthPos < forthCodeLength) {
-    Word ch=(Word) forthCode[forthPos++];
-    return ch;
-  }
   for(;;) {
     int ch=Serial.read();
     if (ch >= 0) {
@@ -645,11 +673,11 @@ void showState() {
   }
   Serial.println(">");
 
-  Serial.print(" rStack=<");
-  for (int i=0; i<rStackNext; i++) {
+  Serial.print(" cStack=<");
+  for (int i=0; i<cStackNext; i++) {
     if (i>0) Serial.print(" ");
     Serial.print("0x");
-    Serial.print(rStack[i],16);
+    Serial.print(cStack[i],16);
   }
   Serial.println(">");
   Serial.println();

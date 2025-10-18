@@ -119,6 +119,7 @@
 	0 &IsCompiling writeb
 	0 &IsCompilingWord writeb	
 	0 &NextWord writeb
+	0 &CompileBuf writeb
 
 :REPL
 	&GetNextWord call
@@ -847,6 +848,7 @@
 	%'andb          HEX:0071        BIN_INSTR       %NEXT        ;; q
 	%'atoi          HEX:0031        BIN_INSTR       %NEXT        ;; 1
 	%'call          HEX:0051        BIN_INSTR       %NEXT        ;; Q
+	%'cforce        HEX:0066        BIN_INSTR       %NEXT        ;; f
 	%'cget          HEX:0033        BIN_INSTR       %NEXT        ;; 3
 	%'clear         HEX:0077        BIN_INSTR       %NEXT        ;; w
 	%'cpush         HEX:004F        BIN_INSTR       %NEXT        ;; O
