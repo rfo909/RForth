@@ -677,9 +677,11 @@ typedef struct {
 
 const NativeFunction nativeFunctions[]={
   {"?",           &natList,                 "( -- ) show list of native functions"},
+
   {"Sys.Free",    &natSysFree,              "( -- n) return number of free bytes of heap space"},
   {"Sys.Delay",   &natSysDelay,             "(ms -- ) sleep a number of millis"},
   {"Sys.DelayUs",   &natSysDelayUs,         "(us -- ) sleep a number of microseconds"},
+
   {"Pin.ModeOut", &natPinModeOut,           "(pin -- ) set pin mode"},
   {"Pin.ModeIn",  &natPinModeIn,            "(pin -- ) set pin mode"},
   {"Pin.ModeInPullup",  &natPinModeInPullup,"(pin -- ) set pin mode"},
@@ -692,7 +694,6 @@ const NativeFunction nativeFunctions[]={
 
   {"I2C.MasterSend",   &natI2CMasterSend,   "(sendBufPtr addr -- )"},
   {"I2C.MasterRecv",   &natI2CMasterRecv,   "(count recvBufPtr addr -- )"},
-  {"I2C.MasterSendRecv", &natI2CMasterSendRecv, "(sendBufPtr count recvBufPtr addr -- )"},
 
   {"",0,""} 
 };
@@ -832,17 +833,10 @@ void natI2CMasterRecv() {
     writeByte(recvBuf+i+1, b);
     i++;
   }
+  Wire.endTransmission();
   writeByte(recvBuf, i); // length byte
 }
 
-void natI2CMasterSendRecv() {
-  Word addr=pop();
-  Word recvBuf=pop();
-  Word count=pop();
-  Word sendBuf=pop();
-
-  // do we need this?
-}
 
 
 // The nativec (compile) op, looks up the index in the NativeFunctions[] array,

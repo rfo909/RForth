@@ -954,7 +954,7 @@
 :IsCompilingWordMode	b0					;; NORMAL or IMMEDIATE
 
 :CompileBuf		b0 					;; length byte
-			w0 w0 w0 w0 w0 w0 w0 w0 		;; up to 64 bytes
+			w0 w0 w0 w0 w0 w0 w0 w0 		;; + up to 64 data bytes
 			w0 w0 w0 w0 w0 w0 w0 w0			;; 
 			w0 w0 w0 w0 w0 w0 w0 w0			;; For colon compiler
 			w0 w0 w0 w0 w0 w0 w0 w0			;; and as scratch buffer at runtime

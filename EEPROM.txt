@@ -1,0 +1,36 @@
+
+Arduino Nano Every
+------------------            
+                     USB
+                     |-|
+SCK               o       o          D12/CIPO/MISO
+3V3               o       o          D11/COPI/MOSI
+AREF              o       o          ~D10
+D14/A0            o       o          ~D9 
+D15/A1            o       o          D8
+D16/A2            o       o          D7
+D17/A3            o       o          ~D6
+SDA               o       o          ~D5
+SCL               o       o          D4
+D20/A6            o       o          ~D3
+D21/A7            o       o          D2
+5V                o       o          GND
+RESET             o       o          RESET
+GND               o       o          RX
+VIN               o       o          TX
+
+
+
+ A0                o. u  o           VCC
+ A1                o     o           WP
+ A2                o     o           SCL
+ VSS               o     o           SDA
+(GND)		
+		
+24FC256-I/P EEPROM 32 KBytes
+----------------------------
+		
+Address = 1010 A2 A1 A0
+WP = write protect, has internal pulldown which means no protect
+Hooking A-lines to GND
+
