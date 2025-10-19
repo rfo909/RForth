@@ -34,5 +34,136 @@ Address = 1010 A2 A1 A0 (7 bits(
 WP = write protect, has internal pulldown which means no protect (so NC)
 Hooking A-lines to GND
 
+Created these NATIVE functions
+
+I2C.MasterSend  (sendBufPtr addr -- )
+I2C.MasterWaitWriteComplete  (addr -- )
+I2C.MasterRecv  (count recvBufPtr addr -- )
+
+                             V
 b1010000 CONSTANT eeAddr
+&CompileBuf CONSTANT buf
+
+: bufAdd (byte -- ) 
+  buf readb cpush (a = len)
+  a buf add writeb 
+  a 1+ buf writeb ;
+  
+: eewByte (byte -- ) 
+  0 buf writeb (clear)
+  eeAddr 8 >> 0xFF andb 
+    bufAdd
+  eeAddr 0xFF andb 
+    bufAdd
+  (byte) bufAdd
+  buf eeAddr
+    NATIVE I2C.MasterSend
+  ;
+  
+	
+
+
+Code from ChatGPT
+-----------------
+- Must use external pullups on SDA and SCL (2k or lower for 400 kHz)
+ 
+- Includes timing considerations external to I2C protocol
+--
+
+#include <Wire.h>
+
+#define EEPROM_I2C_ADDR  0x50   // Base address, adjust if A0/A1/A2 pins are tied differently
+#define EEPROM_PAGE_SIZE 64     // Typical for 24LC256, check your datasheet
+
+// Waits until the EEPROM acknowledges, meaning its internal write cycle is done
+void eeprom_wait_for_write_complete() {
+  while (true) {
+    Wire.beginTransmission(EEPROM_I2C_ADDR);
+    uint8_t err = Wire.endTransmission();
+    if (err == 0) break;  // ACK received
+    delay(1);            // Small delay to avoid hammering the bus
+  }
+}
+
+// Writes a single byte to the EEPROM
+void eeprom_write_byte(uint16_t addr, uint8_t value) {
+  Wire.beginTransmission(EEPROM_I2C_ADDR);
+  Wire.write((addr >> 8) & 0xFF);   // High address byte
+  Wire.write(addr & 0xFF);          // Low address byte
+  Wire.write(value);
+  Wire.endTransmission();
+
+  eeprom_wait_for_write_complete();
+}
+
+// Reads a single byte from the EEPROM
+uint8_t eeprom_read_byte(uint16_t addr) {
+  Wire.beginTransmission(EEPROM_I2C_ADDR);
+  Wire.write((addr >> 8) & 0xFF);
+  Wire.write(addr & 0xFF);
+  Wire.endTransmission();
+
+  Wire.requestFrom(EEPROM_I2C_ADDR, 1);
+  if (Wire.available()) {
+    return Wire.read();
+  }
+  return 0xFF;  // default if nothing returned
+}
+
+// Writes up to 'length' bytes starting at 'addr'.
+// Automatically splits across page boundaries if needed.
+void eeprom_write_buffer(uint16_t addr, const uint8_t *buffer, size_t length) {
+  while (length > 0) {
+    uint16_t pageOffset = addr % EEPROM_PAGE_SIZE;
+    uint16_t spaceInPage = EEPROM_PAGE_SIZE - pageOffset;
+    uint16_t bytesThisPage = (length < spaceInPage) ? length : spaceInPage;
+
+    Wire.beginTransmission(EEPROM_I2C_ADDR);
+    Wire.write((addr >> 8) & 0xFF);
+    Wire.write(addr & 0xFF);
+    Wire.write(buffer, bytesThisPage);
+    Wire.endTransmission();
+
+    eeprom_wait_for_write_complete();
+
+    addr   += bytesThisPage;
+    buffer += bytesThisPage;
+    length -= bytesThisPage;
+  }
+}
+
+// Reads 'length' bytes starting at 'addr' into 'buffer'
+void eeprom_read_buffer(uint16_t addr, uint8_t *buffer, size_t length) {
+  Wire.beginTransmission(EEPROM_I2C_ADDR);
+  Wire.write((addr >> 8) & 0xFF);
+  Wire.write(addr & 0xFF);
+  Wire.endTransmission();
+
+  Wire.requestFrom(EEPROM_I2C_ADDR, (uint8_t)length);
+  size_t i = 0;
+  while (Wire.available() && i < length) {
+    buffer[i++] = Wire.read();
+  }
+}
+
+void setup() {
+  Wire.begin();
+  Serial.begin(115200);
+  delay(100);
+
+  // Example: write a string to EEPROM
+  const char msg[] = "Hello EEPROM!";
+  eeprom_write_buffer(0x0000, (const uint8_t*)msg, sizeof(msg));
+
+  // Read it back
+  char buf[sizeof(msg)] = {0};
+  eeprom_read_buffer(0x0000, (uint8_t*)buf, sizeof(buf));
+  Serial.print("Read back: ");
+  Serial.println(buf);
+}
+
+void loop() {
+  // nothing
+}
+
 

@@ -44,8 +44,9 @@ void setError (char *msg) {
 }
 
 void setup() {
-  Serial.begin(9600);
   Wire.begin();
+  Serial.begin(9600);
+  delay(100);
 
   fpush(0,0);
   populateOps();
@@ -721,7 +722,10 @@ const NativeFunction nativeFunctions[]={
   {"Pin.ReadAnalog",   &natPinReadAnalog,   "(pin -- value) returns 0-1023"},
 
   {"I2C.MasterSend",   &natI2CMasterSend,   "(sendBufPtr addr -- )"},
+  {"I2C.MasterWaitWriteComplete",   &natI2CMasterWaitWriteComplete,   "(addr -- )"},
   {"I2C.MasterRecv",   &natI2CMasterRecv,   "(count recvBufPtr addr -- )"},
+
+  {"Test.EEPROM",   &natTestEEPROM,   "(i2cAddr memAddr -- )"},
 
   {"",0,""} 
 };
@@ -849,6 +853,17 @@ void natI2CMasterSend() {
   Wire.endTransmission();
 }
 
+// EEPROM's are sometimes slow at doing page writes etc (thank you, ChatGPT)
+void natI2CMasterWaitWriteComplete () {  
+  Word addr=pop();
+  while (true) {
+    Wire.beginTransmission((int) addr);
+    uint8_t err = Wire.endTransmission();
+    if (err == 0) break;  // ACK received
+    delay(1);            // Small delay to avoid hammering the bus
+  }
+}
+
 void natI2CMasterRecv() {
   Word addr=pop();
   Word recvBuf=pop();
@@ -863,6 +878,51 @@ void natI2CMasterRecv() {
   }
   Wire.endTransmission();
   writeByte(recvBuf, i); // length byte
+}
+
+// -------------------------------
+// Test.*
+// -------------------------------
+
+// This works, even without external pullup resistors; delays for 3ms (zzz) after each write :-)
+void natTestEEPROM () {
+  int memAddr = (int) pop();
+  int i2cAddr=(int) pop();
+  for (uint8_t value=1; value<255; value++) {
+    // write one byte
+    Wire.beginTransmission(i2cAddr);
+    Wire.write((memAddr >> 8) & 0xFF);   // High address byte
+    Wire.write(memAddr & 0xFF);          // Low address byte
+    Wire.write(value);
+    Wire.endTransmission();
+
+    // wait for write to complete
+    while (true) {
+      Wire.beginTransmission(i2cAddr);
+      uint8_t err = Wire.endTransmission();
+      if (err == 0) break;  // ACK received
+      Serial.print("z");
+      delay(1);            // Small delay to avoid hammering the bus
+    }
+    Serial.println();
+
+    // read back value - set address
+    Wire.beginTransmission(i2cAddr);
+    Wire.write((memAddr >> 8) & 0xFF);
+    Wire.write(memAddr & 0xFF);
+    Wire.endTransmission();
+
+    // read value
+    uint8_t rvalue=0;
+    Wire.requestFrom(i2cAddr, 1);
+    if (Wire.available()) {
+      rvalue=Wire.read();
+    }
+    Serial.print("Expected ");
+    Serial.print(value);
+    Serial.print(" got ");
+    Serial.println(rvalue);
+  } // for
 }
 
 
@@ -884,8 +944,8 @@ Word lookupNative (Word strPtr) {
     // not found
     pos++;
   }
-
 }
+
 
 // The native (call) op
 Word callNative (Word pos) {
