@@ -301,7 +301,7 @@
 		self.cpush(self.pop)
 	}
 	
-	self._f = Lambda { # cforce modify call stack
+	self._f = Lambda { # cforce (addr -- ) modify stacks, so "ret" returns to given addr
 		# not implemented here, only in Arduino
 	}
 	
@@ -580,7 +580,7 @@
 		self.PANIC("PANIC instruction called")
 	}
 	
-	self._a = Lambda { # native ( ... addr -- int? ) - call nativec with string to get the addr value
+	self._a = Lambda { # native ( ... addr -- int? ) - call native function, see nativec
 		pos=self.pop
 		error(pos<0 || pos > self.nativeFunctions.length, "native: invalid addr " + pos)
 		
