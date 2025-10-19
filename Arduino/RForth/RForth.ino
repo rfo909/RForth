@@ -727,7 +727,6 @@ const NativeFunction nativeFunctions[]={
   {"Pin.ReadAnalog",   &natPinReadAnalog,   "(pin -- value) returns 0-1023"},
 
   {"I2C.MasterSend",   &natI2CMasterSend,   "(sendBufPtr addr -- )"},
-  {"I2C.MasterWaitWriteComplete",   &natI2CMasterWaitWriteComplete,   "(addr -- )"},
   {"I2C.MasterRecv",   &natI2CMasterRecv,   "(count recvBufPtr addr -- )"},
 
   {"Test.EEPROM",   &natTestEEPROM,   "(i2cAddr memAddr -- )"},
@@ -895,16 +894,17 @@ void natI2CMasterSend() {
   Word addr=pop();
   Word sendBuf=pop();
   Word sendCount=readByte(sendBuf);
+  
   Wire.beginTransmission((byte) addr);
   for (byte i=0; i<sendCount; i++) {
     Wire.write((byte)readByte(sendBuf+i+1));
   }
   Wire.endTransmission();
+  I2CMasterWaitWriteComplete(addr);
 }
 
 // EEPROM's are sometimes slow at doing page writes etc (thank you, ChatGPT)
-void natI2CMasterWaitWriteComplete () {  
-  Word addr=pop();
+void I2CMasterWaitWriteComplete (Word addr) {  
   while (true) {
     Wire.beginTransmission((int) addr);
     uint8_t err = Wire.endTransmission();
@@ -961,6 +961,10 @@ void natTestEEPROM () {
     Wire.write(memAddr & 0xFF);
     Wire.endTransmission();
 
+    // don't need to wqit here, because the two first
+    // bytes are stored in the address registers and are
+    // not written to the memory, so no delay
+    
     // read value
     uint8_t rvalue=0;
     Wire.requestFrom(i2cAddr, 1);

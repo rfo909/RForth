@@ -37,34 +37,7 @@ Hooking A-lines to GND
 Created these NATIVE functions
 
 I2C.MasterSend  (sendBufPtr addr -- )
-I2C.MasterWaitWriteComplete  (addr -- )
 I2C.MasterRecv  (count recvBufPtr addr -- )
-
-                             V
-b1010000 CONSTANT eeAddr
-&CompileBuf CONSTANT eeBuf
-
-
-
-: eeClr ( -- ) 0 eeBuf writeb ;
-
-: eeAdd (byte -- ) 
-  eeBuf readb cpush (a = len)
-  a buf add writeb 
-  a 1+ buf writeb ;
-  
-: eewByte (byte -- ) 
-  0 buf writeb (clear)
-  eeAddr 8 >> 0xFF andb 
-    bufAdd
-  eeAddr 0xFF andb 
-    bufAdd
-  (byte) bufAdd
-  buf eeAddr
-    NATIVE I2C.MasterSend
-  ;
-  
-	
 
 
 Code from ChatGPT

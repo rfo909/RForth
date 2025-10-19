@@ -829,7 +829,7 @@
 	#println(str)
 	#readLine("Enter")
 	str
-	"" 
+
 /GetInitialForthCode
 
 # Get initial Forth code as C array

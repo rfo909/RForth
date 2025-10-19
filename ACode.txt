@@ -813,6 +813,8 @@
 :GetAddrEmitNumber &EmitNumber ret
 :GetAddrEmitByte &EmitByte ret
 
+;; Utility Forth words for buffer processing
+
 :BufReset ( bufPtr -- )
 	cpush
 	0 a writeb 
@@ -822,10 +824,63 @@
 	cpush	(a=bufPtr)
 	a readb cpush (b=len)
 	(byte)
-		a b add 1+ writeb
+	a b add 1+ writeb
+	(update length)
 	b 1+ a writeb
 	ret
-	
+
+
+:str_I2c.MasterSend   
+  %'I2C.MasterSend
+  
+;; Source code in EEPROM
+;; (and testing 30ch lines)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;V
+
+(write 0x00 0x00 first)
+:eeInitBlock 
+  (i2cAddr memPos -- )
+  cpush (a=memPos)
+  cpush (b=i2cAddr)
+  ;; -- prepare buffer
+  &CompileBuf cpush (c=buf)
+  c &BufReset call
+  ;; -- add memPos
+  a 8 >> 0xFF andb
+    c &BufAdd call
+  a 0xFF andb
+    c &BufAdd call
+  ;; -- 0x00 0x00
+  0 c &BufAdd call
+  0 c &BufAdd call
+  ;; -- send over i2c
+  c b &str_I2c.MasterSend 
+    nativec native
+  ret
+  
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;V
+
+;; Initialize 32 byte blocks
+;; writing 0x00 into two
+;; first bytes
+;; --
+:eeInit32 (blocks i2cAddr --) 
+  0 cpush (a=count)
+  cpush (b=i2cAddr)
+  cpush (c=blockCount) 
+  :*again
+    cr a print#
+    b
+      a 32 mul
+        &eeInitBlock call
+    ;; again?
+    a 1+ a!
+    a c ge &*done jmp?
+    &*again jmp
+  :*done
+  ret
+
+ 
 :DATA
 
 ;; The dictionary entry has the following format:
@@ -944,6 +999,7 @@
 	
 	%'BufReset	%BufReset	BIN_NORMAL		%NEXT
 	%'BufAdd	%BufAdd		BIN_NORMAL		%NEXT
+	%'eeInit32 	%eeInit32	BIN_NORMAL		%NEXT
 
 	;; -- addresses of stuff that may be useful in Forth --
 	%'&DictionaryHead	%GetAddrDictionaryHead		BIN_NORMAL	%NEXT
