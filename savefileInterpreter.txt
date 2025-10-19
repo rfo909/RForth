@@ -191,12 +191,12 @@
 		addr=self.pop
 		self.push(self.memory.readByte(addr))
 	}
-	self._H=Lambda{ # writeb write byte ( addr -- value )
+	self._H=Lambda{ # writeb write byte ( value addr -- )
 		addr=self.pop
+		value=self.pop
 		if (addr < self.DATA_START) {
 			error("writeb: writing below DATA_START: 0x" + addr.hex(4))
 		} else {
-			value=self.pop
 			self.memory.writeByte(addr,value)
 		}
 	}
@@ -828,7 +828,8 @@
 	str = lines.concat(" ") + " "  # trigger final word
 	#println(str)
 	#readLine("Enter")
-	str 
+	str
+	"" 
 /GetInitialForthCode
 
 # Get initial Forth code as C array

@@ -42,10 +42,14 @@ I2C.MasterRecv  (count recvBufPtr addr -- )
 
                              V
 b1010000 CONSTANT eeAddr
-&CompileBuf CONSTANT buf
+&CompileBuf CONSTANT eeBuf
 
-: bufAdd (byte -- ) 
-  buf readb cpush (a = len)
+
+
+: eeClr ( -- ) 0 eeBuf writeb ;
+
+: eeAdd (byte -- ) 
+  eeBuf readb cpush (a = len)
   a buf add writeb 
   a 1+ buf writeb ;
   

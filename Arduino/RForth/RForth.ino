@@ -172,10 +172,15 @@ void writeWord (Word addr, Word value) {
 }
 
 void writeByte (Word addr, Word value) {
-  if (addr < firmwareProtectTag || addr >= HERE) {
-    Serial.print(F("writeByte: invalid address 0x"));
+  if (addr < firmwareProtectTag) {
+    Serial.print(F("writeByte: protected memory address 0x"));
     Serial.println(addr,16);
-    setError("x"); 
+    setError("writeByte");
+    return;
+  } else if (addr >= HERE) {
+    Serial.print(F("writeByte: unallocated memory address 0x"));
+    Serial.println(addr,16);
+    setError("writeByte"); 
     return;
   }
   // calculate heap address
@@ -193,7 +198,7 @@ Word readByte (Word addr) {
   if (addr >= HERE) {
     Serial.print(F("readByte: invalid address 0x"));
     Serial.println(addr,16);
-    setError("x");
+    setError("> HERE");
     return;
   }
   if (addr < firmwareProtectTag) {
@@ -730,6 +735,50 @@ const NativeFunction nativeFunctions[]={
   {"",0,""} 
 };
 
+
+
+// The nativec (compile) op, looks up the index in the NativeFunctions[] array,
+// sets error flag if not found
+Word lookupNative (Word strPtr) {
+  Word pos=0;
+  for(;;) {
+    if (nativeFunctions[pos].f==0) {
+      // end of list
+      Serial.print(F("Unknown native function "));
+      printStr(strPtr);
+      setError("Native");
+      return WORD_INVALID;
+    }
+    if (mixedStreq(strPtr, nativeFunctions[pos].name)) {
+      return pos;
+    }
+    // not found
+    pos++;
+  }
+}
+
+
+// The native (call) op
+Word callNative (Word pos) {
+  nativeFunctions[pos].f();
+}
+
+
+int mixedStreq (Word strPtr, char *s) {
+  Word len=readByte(strPtr);
+  if (strlen(s) != len) return 0;
+  for (int i=0; i<len; i++) {
+    byte a=readByte(strPtr+i+1);
+    byte b=s[i];
+    if (a != b) return 0;
+  }
+  return 1;
+}
+
+// -------------------------------
+// List native functions
+// -------------------------------
+
 void natList() {
   // list native words
   Word pos=0;
@@ -925,41 +974,3 @@ void natTestEEPROM () {
   } // for
 }
 
-
-
-// The nativec (compile) op, looks up the index in the NativeFunctions[] array,
-// sets error flag if not found
-Word lookupNative (Word strPtr) {
-  Word pos=0;
-  for(;;) {
-    if (nativeFunctions[pos].f==0) {
-      Serial.print(F("Unknown native function "));
-      printStr(strPtr);
-      setError("Native");
-      return WORD_INVALID;
-    }
-    if (mixedStreq(strPtr, nativeFunctions[pos].name)) {
-      return pos;
-    }
-    // not found
-    pos++;
-  }
-}
-
-
-// The native (call) op
-Word callNative (Word pos) {
-  nativeFunctions[pos].f();
-}
-
-
-int mixedStreq (Word strPtr, char *s) {
-  Word len=readByte(strPtr);
-  if (strlen(s) != len) return 0;
-  for (int i=0; i<len; i++) {
-    byte a=readByte(strPtr+i+1);
-    byte b=s[i];
-    if (a != b) return 0;
-  }
-  return 1;
-}

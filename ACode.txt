@@ -148,9 +148,10 @@
 	
 	0 cpush  		; using a for next char
 	0 cpush			; using b to keep track of length of current word
-	
+
 	:*nextChar
 		readc a!
+		a 0x28 eq &*comment jmp?		;; start of comment
 		a 0x20 eq b 0 eq and &*nextChar jmp? 	;; ignore preceding space
 		a 0x20 eq &*done jmp?			;; word identified
 
@@ -158,6 +159,10 @@
 		a &NextWord b add 1+ writeb
 		b 1+ b!
 		&*nextChar jmp
+	:*comment
+		readc a!			
+		a 0x29 eq &*nextChar jmp?		;; end of comment
+		&*comment jmp
 	:*done
 		b &NextWord writeb			( write length byte)
 		&DebugFlag readb &*debug jmp?
@@ -807,6 +812,19 @@
 :GetAddrIsCompiling &IsCompiling ret
 :GetAddrEmitNumber &EmitNumber ret
 :GetAddrEmitByte &EmitByte ret
+
+:BufReset ( bufPtr -- )
+	cpush
+	0 a writeb 
+	ret
+
+:BufAdd ( byte bufPtr -- )
+	cpush	(a=bufPtr)
+	a readb cpush (b=len)
+	(byte)
+		a b add 1+ writeb
+	b 1+ a writeb
+	ret
 	
 :DATA
 
@@ -923,6 +941,9 @@
 	%'DictClear	%DictClear	BIN_NORMAL		%NEXT
 	%'->		%->		BIN_IMMEDIATE		%NEXT
 	%'.W		%.W		BIN_NORMAL		%NEXT    (show DictionaryEntry for word)
+	
+	%'BufReset	%BufReset	BIN_NORMAL		%NEXT
+	%'BufAdd	%BufAdd		BIN_NORMAL		%NEXT
 
 	;; -- addresses of stuff that may be useful in Forth --
 	%'&DictionaryHead	%GetAddrDictionaryHead		BIN_NORMAL	%NEXT
