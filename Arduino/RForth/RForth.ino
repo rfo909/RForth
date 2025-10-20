@@ -726,8 +726,9 @@ const NativeFunction nativeFunctions[]={
   {"Pin.ReadDigital",  &natPinReadDigital,  "(pin -- value) returns 0 or 1"},
   {"Pin.ReadAnalog",   &natPinReadAnalog,   "(pin -- value) returns 0-1023"},
 
-  {"I2C.MasterSend",   &natI2CMasterSend,   "(sendBufPtr addr -- )"},
-  {"I2C.MasterRecv",   &natI2CMasterRecv,   "(count recvBufPtr addr -- )"},
+  {"I2C.MasterWrite",   &natI2CMasterWrite,   "(sendBufPtr addr -- )"},
+  {"I2C.MasterWWait",   &natI2CMasterWWait,   "(addr -- ) wait for write (eeprom) to complete"},
+  {"I2C.MasterRead",    &natI2CMasterRead,    "(count recvBufPtr addr -- )"},
 
   {"Test.EEPROM",   &natTestEEPROM,   "(i2cAddr memAddr -- )"},
 
@@ -890,7 +891,7 @@ void natPinReadAnalog () {
 // I2C.*
 // -------------------------------
 
-void natI2CMasterSend() {
+void natI2CMasterWrite() {
   Word addr=pop();
   Word sendBuf=pop();
   Word sendCount=readByte(sendBuf);
@@ -900,11 +901,11 @@ void natI2CMasterSend() {
     Wire.write((byte)readByte(sendBuf+i+1));
   }
   Wire.endTransmission();
-  I2CMasterWaitWriteComplete(addr);
 }
 
 // EEPROM's are sometimes slow at doing page writes etc (thank you, ChatGPT)
-void I2CMasterWaitWriteComplete (Word addr) {  
+void natI2CMasterWWait () {
+  Word addr=pop();  
   while (true) {
     Wire.beginTransmission((int) addr);
     uint8_t err = Wire.endTransmission();
@@ -913,7 +914,7 @@ void I2CMasterWaitWriteComplete (Word addr) {
   }
 }
 
-void natI2CMasterRecv() {
+void natI2CMasterRead() {
   Word addr=pop();
   Word recvBuf=pop();
   Word count=pop();

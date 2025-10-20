@@ -830,14 +830,18 @@
 	ret
 
 
-:str_I2c.MasterSend   
-  %'I2C.MasterSend
+:str_I2C.MasterWrite  
+  %'I2C.MasterWrite
+  
+:str_I2C.MasterWWait
+  %'I2C.MasterWWait
   
 ;; Source code in EEPROM
 ;; (and testing 30ch lines)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;V
 
-(write 0x00 0x00 first)
+(write 0x00 0x00 into two)
+(first bytes)
 :eeInitBlock 
   (i2cAddr memPos -- )
   cpush (a=memPos)
@@ -854,7 +858,10 @@
   0 c &BufAdd call
   0 c &BufAdd call
   ;; -- send over i2c
-  c b &str_I2c.MasterSend 
+  c b &str_I2C.MasterWrite 
+    nativec native
+  ;; -- ee writes take time
+  b &str_I2C.MasterWWait
     nativec native
   ret
   
