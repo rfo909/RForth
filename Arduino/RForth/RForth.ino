@@ -726,9 +726,9 @@ const NativeFunction nativeFunctions[]={
   {"Pin.ReadDigital",  &natPinReadDigital,  "(pin -- value) returns 0 or 1"},
   {"Pin.ReadAnalog",   &natPinReadAnalog,   "(pin -- value) returns 0-1023"},
 
-  {"I2C.MasterWrite",   &natI2CMasterWrite,   "(sendBufPtr addr -- )"},
-  {"I2C.MasterWWait",   &natI2CMasterWWait,   "(addr -- ) wait for write (eeprom) to complete"},
-  {"I2C.MasterRead",    &natI2CMasterRead,    "(count recvBufPtr addr -- )"},
+  {"I2C.MasterWrite",   &natI2CMasterWrite,   "(sendBufPtr sendCount addr -- )"},
+  {"I2C.MasterWWait",   &natI2CMasterWWait,   "(addr -- ) wait for data write (eeprom) to complete"},
+  {"I2C.MasterRead",    &natI2CMasterRead,    "(count recvBufPtr addr -- recvCount)"},
 
   {"Test.EEPROM",   &natTestEEPROM,   "(i2cAddr memAddr -- )"},
 
@@ -891,10 +891,11 @@ void natPinReadAnalog () {
 // I2C.*
 // -------------------------------
 
+// (sendBufPtr sendCount addr -- )
 void natI2CMasterWrite() {
   Word addr=pop();
+  Word sendCount=pop();
   Word sendBuf=pop();
-  Word sendCount=readByte(sendBuf);
   
   Wire.beginTransmission((byte) addr);
   for (byte i=0; i<sendCount; i++) {
@@ -914,6 +915,7 @@ void natI2CMasterWWait () {
   }
 }
 
+// count recvBufPtr addr -- recvCount)
 void natI2CMasterRead() {
   Word addr=pop();
   Word recvBuf=pop();
@@ -921,13 +923,13 @@ void natI2CMasterRead() {
 
   Wire.requestFrom((int) addr, (int) count);
   Word i=0;
-  while (Wire.available()) {
+  while (i<count && Wire.available()) {
     byte b = Wire.read();
     writeByte(recvBuf+i+1, b);
     i++;
   }
   Wire.endTransmission();
-  writeByte(recvBuf, i); // length byte
+  push(i);  // received count
 }
 
 // -------------------------------

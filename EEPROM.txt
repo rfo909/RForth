@@ -30,22 +30,35 @@ VIN               o       o          TX
 24FC256-I/P EEPROM 32 KBytes
 ----------------------------
 		
-Address = 1010 A2 A1 A0 (7 bits(
+Address = 1010 A2 A1 A0 (7 bits)
 WP = write protect, has internal pulldown which means no protect (so NC)
 Hooking A-lines to GND
 
 Created these NATIVE functions
 
-I2C.MasterSend  (sendBufPtr addr -- )
-I2C.MasterRecv  (count recvBufPtr addr -- )
+I2C.MasterWrite
+I2C.MasterRead
 
-
-Code from ChatGPT
+Forth code editor
 -----------------
+Organizing EEPROM as a sequence of 32 byte blocks. For each block the
+two first bytes are control bytes, and the remaining 30 are code.
+
+The first block is used for control purposes; it contains a pointer to the
+list of free blocks and another to the list of code lines in use.
+
+Each list is a linked list, using the two first bytes to point to the next.
+
+Initially we clear and assign 10 lines with blank strings, as in use.
+
+
+
+
+Wire code from ChatGPT
+----------------------
 - Must use external pullups on SDA and SCL (2k or lower for 400 kHz)
  
 - Includes timing considerations external to I2C protocol
---
 
 #include <Wire.h>
 
