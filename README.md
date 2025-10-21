@@ -3,7 +3,7 @@ Forth never ceases to fascinate !
 
 Version 3 (alpha)
 
-2025-10-17
+2025-10-21
 
 Introduction
 =============
@@ -476,8 +476,36 @@ then calls 0 cforce. The code continues, running normally, as demonstrated by pr
 the variables a and b, but when it returns, it does not return to the xx word, 
 instead it picks up from address 0, which re-initiates the REPL.
 
+Still a work in progress ...
 
- 
+
+2025-10-21 Forth local variables
+---------------------------------
+Implemented proper local variables inside COLON-words. Removed the automatic names
+a,b,c,d for the four first values on the call stack (over the return address). 
+
+```
+: x (a b -- a * b) 
+  => b => a a b mul ; ;
+
+: x 0 
+  => count BEGIN count . count 1+ => count count 100 lt AGAIN? ;
+```
+
+The colon compiler maintains a symbol table for local variables, in the LVBuf buffer.
+It is 32 bytes long, and variable names are stored on the format:
+
+```
+N...N...0
+```
+Their position in the sequence corresponds to the indexed value on the call stack,
+created with cpush and accessed via cget and cset.
+
+Note that local variables don't work interactively. Variable names are limited
+to 7 characters (8 bytes).
+
+In ACode.txt it is still the old abcd... variables. 
+
 
 References
 ----------
