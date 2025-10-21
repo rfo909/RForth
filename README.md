@@ -12,7 +12,10 @@ byte code instructions. I then made an assembler for this, which handles address
 language I wrote the REPL for Forth, and a few key Forth words, like COLON, SEMICOLON, IF, THEN, ELSE, 
 CONSTANT and VARIABLE.
 
-I created an interpreter in a script language, to play around with and examine memory structures etc.
+The "assembly" code is found ACode.txt
+
+I created an interpreter in a script language, to play around with, stepping through code, setting break
+points, examine memory structures etc.
 
 The point of this whole project is just to have fun. 
 
