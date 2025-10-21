@@ -79,18 +79,42 @@ Note that all the "assembly" instructions are directly available to RFOrth.
 See the [Instruction set](InstructionSet.md).
 
 Note that I prefer names over symbols, so where a traditional Forth would use the words + - * /,
-I use add, sub, mul and div. This goes for most of the assembly instructions, as it makes
-code more readable to me. 
+I use add, sub, mul and div. This makes code more readable to me. 
+
+```
++	add
+-	sub
+*	mul
+/	div
+%	mod
+
+==	eq
+!=	ne
+>	gt
+<	lt
+>=	ge
+<=	le
+!	not	(logical)
+~	neg	(bitwise)
+
+&&	and	(logical)
+||	or
+	
+&	andb	(bitwise)
+|	orb
+```
+
 
 Non-standard
 ------------
 The RFOrth implementation has no intention of following Forth standards. It is a toy
 language, even as I plan to use it on microcontrollers.
 
-It currently (2025-10) does not implement the CREATE DOES> but it still can do the same
+It currently (2025-10) does not implement the CREATE ... DOES> but it still can do the same
 by means of reading the &IsCompiling status byte, and depending on its value do
-one thing at compile time, and another at runtime. See the ACode.txt implementation
-of the NATIVE word for an example.
+one thing at compile time, and another at runtime. 
+
+See implementation of the NATIVE word for an example at tag :NATIVE in ACode.txt.
 
 Interactive
 -----------
