@@ -214,14 +214,23 @@
 	ret
 
 
-:Str_Lookup_up_ %"Looking_up_
+:Str_Looking_up_ %"Looking_up_
 :Str_Unknown_word_ %"Unknown_word_
 
 :ProcessWord
+
+	;; check for local variable
+	&IsCompiling readb not &*noLocal jmp?
 	
+		&ProcessLVRef call not &*noLocal jmp?
+			;; ok
+			ret
+	
+	:*noLocal
+
 	;; look up word in dictionary
 	
-	;; cr &Str_Lookup_up_ .str &NextWord .str
+	;; cr &Str_Looking_up_ .str &NextWord .str
 	
 	&NextWord &DictLookup call 			;; dictionary entry pointer or null
 	
@@ -245,6 +254,38 @@
 		PANIC
 		
 
+
+:ProcessLVRef ( -- bool)  ;; (&NextWord - check for local variable ref, if so generate code to retrieve it)
+	;; compile mode only
+	0 cpush (a=index of word)
+	0 cpush (b=pos)
+
+	:*again
+		;; end of list?
+		&LVBuf b add readb 0 eq  
+			&*notFound jmp?
+
+		;; match?
+		&NextWord &LVBuf b add 
+			streq &*found jmp?
+
+		;; go to next
+		b &LVBuf readb add 1+ b!
+		a 1+ a!
+
+		;; repeat
+		&*again jmp
+
+	:*notFound
+		0 ret
+
+	:*found
+		;; generate code to read variable
+		a 0 &EmitNumber call    ;; number
+		51 &EmitByte call		;; cget
+		1 ret
+
+
 ;; -----------------------------------------------
 ;; Utility subroutines, invoked with call
 ;; -----------------------------------------------
@@ -256,6 +297,29 @@
 	0 &CompileBuf writeb
 	0 &CompileStack writeb
 	ret
+
+:FillZeroes ( buf count )
+	cpush (a=count)
+	cpush (b=buf)
+	:*again
+		a 1 sub a!
+		0 b a add writeb
+		a 0 gt &*again jmp?
+	ret
+
+:ShowBuffer (buf size) 
+	cpush (a=size)
+	cpush (b=buf)
+	0 cpush (c=count)
+	:*again
+		c print# 
+		&Str_Space .str 
+		b c add readb print# 
+		cr
+		c 1+ c!
+		c a le &*again jmp?
+	ret
+
 
 :EmitByte   ;; ( byte -- )
 	cpush				;; a=bytevalue
@@ -278,8 +342,9 @@
 			b
 				n2code 			;; returns number of bytes generated
 		
-	;; update CompileBuf length
-	&CompileBuf readb
+	;; update CompileBuf length from number of bytes generated 
+	(#bytes)
+		&CompileBuf readb
 		add
 			&CompileBuf writeb
 			
@@ -450,7 +515,7 @@
 	b
 	ret
 
-:ExecuteWord ;; ( code-ptr-ptr mode-value -- ) ;; decide how to handle word
+:ExecuteWord ;; ( code-ptr-ptr mode-value -- ) ;; decide how to handle normal word
 	swap @ cpush				; a=code-ptr  
 	cpush    				; b=mode-value
 	
@@ -648,9 +713,11 @@
 :Str_ok_			%"_ok_	
 :Str_bytes			%"_bytes
 
+
 :COLON
 	;; set compile mode
 	1 &IsCompiling writeb
+	&LVBuf 32 &FillZeroes call
 
 	&GetNextWord call
 	
@@ -669,6 +736,79 @@
 		cr &Str_Bad_word_name_ .str &NextWord .str
 		&ResetCompile call
 		PANIC
+
+:Str_NoInteractiveLocals
+	%"No_interactive_locals
+
+:Str_LocalsMaxLength
+	%"Locals_max_length:_7
+
+;; ---------------------------------------------------------
+;; Local variables
+;; ---------------------------------------------------------
+
+:LVSet ;; => (immediate word)
+	&GetNextWord call
+	&IsCompiling readb not &*interactive jmp?
+		&NextWord readb 7 gt &*length jmp?
+			&NextWord &LVSetOrAdd call
+			
+			;; DEBUG
+			;cr &NextWord .str
+			;cr &LVBuf 32 &ShowBuffer call
+			ret
+	:*interactive
+			cr &Str_NoInteractiveLocals .str
+			PANIC
+	:*length
+			cr &Str_LocalsMaxLength .str
+			PANIC
+
+
+
+:LVSetOrAdd ;; &NextWord (called from :LVSet)
+	;; LVBuf:  N...N...0
+	0 cpush (a=index of word)
+	0 cpush (b=pos)
+	&NextWord readb cpush (c=len)
+
+	:*again
+		;; end of list?
+		&LVBuf b add readb 0 eq  
+			&*add jmp?
+
+		;; match?
+		&NextWord &LVBuf b add 
+			streq &*found jmp?
+
+		;; go to next
+		b &LVBuf readb add 1+ b!
+		a 1+ a!
+
+		;; repeat
+		&*again jmp
+
+	:*add
+		(b is at the terminating 0)
+
+		&NextWord
+			&LVBuf b add
+				c 1+ memcpy
+
+		;; generate code
+		79 &EmitByte call		;; cpush
+		ret
+
+	:*found
+		;; generate code
+		a 0 &EmitNumber call
+		52 &EmitByte call		;; cset
+		ret
+
+	
+	
+	
+	
 
 :SEMICOLON
 	;; verify compile mode
@@ -789,17 +929,6 @@
 	ret
 
 	
-;; Create code for access to four variables abcd from Forth, in same way as in this file (compile only)
-
-:aGet 0 0 &EmitNumber call 51 &EmitByte call ret  		;; 51 = '3' = cget
-:bGet 1 0 &EmitNumber call 51 &EmitByte call ret
-:cGet 2 0 &EmitNumber call 51 &EmitByte call ret
-:dGet 3 0 &EmitNumber call 51 &EmitByte call ret
-
-:aSet 0 0 &EmitNumber call 52 &EmitByte call ret		;; 52 = '4' = cset
-:bSet 1 0 &EmitNumber call 52 &EmitByte call ret
-:cSet 2 0 &EmitNumber call 52 &EmitByte call ret
-:dSet 3 0 &EmitNumber call 52 &EmitByte call ret
 
 ;; look up data addresses after the PROTECT tag
 
@@ -977,32 +1106,20 @@
 
 	;; ----------------------------------------------------------
 
-	;; local variables in same style as in this file
-	
-	%'a		%aGet		BIN_IMMEDIATE	%NEXT
-	%'b		%bGet		BIN_IMMEDIATE	%NEXT
-	%'c		%cGet		BIN_IMMEDIATE	%NEXT
-	%'d		%dGet		BIN_IMMEDIATE	%NEXT
-	
-	%'a!		%aSet		BIN_IMMEDIATE	%NEXT
-	%'b!		%bSet		BIN_IMMEDIATE	%NEXT
-	%'c!		%cSet		BIN_IMMEDIATE	%NEXT
-	%'d!		%dSet		BIN_IMMEDIATE	%NEXT
-	
-	%'.		%DOT		BIN_NORMAL		%NEXT
-	%'IF		%IF		BIN_IMMEDIATE		%NEXT
+	%'.			%DOT		BIN_NORMAL			%NEXT
+	%'IF		%IF			BIN_IMMEDIATE		%NEXT
 	%'THEN		%THEN		BIN_IMMEDIATE		%NEXT
 	%'ELSE		%ELSE		BIN_IMMEDIATE		%NEXT
 	%'BEGIN		%BEGIN		BIN_IMMEDIATE		%NEXT
 	%'AGAIN?	%AGAIN?		BIN_IMMEDIATE		%NEXT
-	%'CONSTANT	%CONSTANT	BIN_NORMAL		%NEXT
-	%'VARIABLE	%VARIABLE	BIN_NORMAL		%NEXT
+	%'CONSTANT	%CONSTANT	BIN_NORMAL			%NEXT
+	%'VARIABLE	%VARIABLE	BIN_NORMAL			%NEXT
 	%'NATIVE	%NATIVE		BIN_IMMEDIATE		%NEXT
-	%'Dict		%Dict		BIN_NORMAL		%NEXT
-	%'DictUse	%DictUse	BIN_NORMAL		%NEXT
-	%'DictClear	%DictClear	BIN_NORMAL		%NEXT
-	%'->		%->		BIN_IMMEDIATE		%NEXT
-	%'.W		%.W		BIN_NORMAL		%NEXT    (show DictionaryEntry for word)
+	%'Dict		%Dict		BIN_NORMAL			%NEXT
+	%'DictUse	%DictUse	BIN_NORMAL			%NEXT
+	%'DictClear	%DictClear	BIN_NORMAL			%NEXT
+	%'->		%->			BIN_IMMEDIATE		%NEXT
+	%'.W		%.W			BIN_NORMAL			%NEXT    ;; show DictionaryEntry for word
 	
 	%'BufReset	%BufReset	BIN_NORMAL		%NEXT
 	%'BufAdd	%BufAdd		BIN_NORMAL		%NEXT
@@ -1019,10 +1136,11 @@
 	%'&EmitNumber		%GetAddrEmitNumber		BIN_NORMAL	%NEXT
 	%'&EmitByte		%GetAddrEmitByte		BIN_NORMAL	%NEXT
 
-	%'?		%Words		BIN_NORMAL	%NEXT
-	%'.s		%.s		BIN_NORMAL	%NEXT
+	%'?			%Words		BIN_NORMAL	%NEXT
+	%'.s		%.s			BIN_NORMAL	%NEXT
 	%'words		%Words		BIN_NORMAL	%NEXT
-	%':		%COLON		BIN_NORMAL	%NEXT
+	%':			%COLON		BIN_NORMAL	%NEXT
+	%'=>		%LVSet		BIN_IMMEDIATE	%NEXT
 	HEX:013B	%SEMICOLON	BIN_IMMEDIATE	%NEXT
 	%'IMMEDIATE	%immediate	BIN_IMMEDIATE	w0	;; <-- w0 = terminating the linked list
 :DictionaryEnd
@@ -1048,10 +1166,15 @@
 :CompileBufEnd
 
 
-:NextWord		b0 
+:NextWord	b0 
 			w0 w0 w0 w0 w0 w0 w0 w0 		;; 32 chars string buffer
 			w0 w0 w0 w0 w0 w0 w0 w0			;; and scratch buffer at runtime
 :NextWordEnd
+
+:LVBuf		b0
+			w0 w0 w0 w0 w0 w0 w0 w0 		;; local variables in colon compiler
+			w0 w0 w0 w0 w0 w0 w0 w0
+:LVBufEnd
 
 :NextNumber		w0 					;; single word
 
