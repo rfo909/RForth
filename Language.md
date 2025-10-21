@@ -10,7 +10,7 @@ with an invented assembly language. The file ACode.txt forms a "firmware" level,
 by implementing the necessary elements to run a Forth-like language.
 
 The virtual machine executes *bytecode* generated both by the Assembler (a script) and
-by the internal compiler of the Forth-like language.
+by the internal compiler of the language.
 
 
 Stack language
@@ -24,7 +24,12 @@ and it uses a dictionary.
 2 3 add 4 mul .
 ```
 
-Should print 20 (the "." word means print top value from the stack)
+Should print 20.
+
+The "." word means: print top value from the stack as signed decimal followed by a space.
+It is implemented in ACode.txt under tag :DOT and linked into the static initial dictionary
+which starts at :Dictionary tag.
+
 
 
 The stacks
@@ -46,20 +51,30 @@ local variables have been added to the call stack, for each word invocation. The
 no primitives in Forth to interact with it.
 
 The fourth stack, which is considered internal, is a compile stack. It is used to
-implement control structures, such as IF THEN and BEGIN AGAIN?.
+implement control structures, such as IF THEN and BEGIN AGAIN?
+
+First use
+---------
+
+```
+?		;; list words in dictionary (can also use "words")
+.s		;; show stack content
+clear		;; clear stack
+NATIVE ?	;; list native words
+```
+
 
 The assembly level
 ------------------
 The RFOrth REPL is written in a virtual assembly language, which is run through an Assembler
-script (written in CFT), which in turn outputs binary data. These are interpreted by a C program
-that runs on Arduino, but can also run with an Interpreter script, in order to step through code,
-view memory, etc. 
+script (written in [CFT](https://github.com/rfo909/CFT)), which in turn outputs binary data.
+These are interpreted by a C program that runs on Arduino. 
 
 The ACode.txt file is the "assembly" base code, also referred to as "firmware", because most of
-it resices in Flash when put onto an Arduino. It implements the REPL, the COLON compiler
+it recides in Flash when put onto an Arduino. It implements the REPL, the COLON compiler
 and a few more key features available in Forth.
 
-But also, all the "assembly" instructions are directly available to RFOrth.
+Note that all the "assembly" instructions are directly available to RFOrth.
 
 See the [Instruction set](InstructionSet.md).
 
