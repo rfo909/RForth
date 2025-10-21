@@ -60,23 +60,21 @@
 ;; ---------------
 ;;
 ;; The assembler offers some local variables in each (called!) routine, named 
-;; a, b, c, d. Local variables must be defined/initialized with a call to cpush, which
+;; a, b, c, d, e and f. Local variables must be defined/initialized with a call to cpush, which
 ;; takes a value off the data stack, and pushes it on top of the return address on the
-;; call stack. To make things easy in the assembler code (this file), the assembler defines
-;; six inline symbols, for reading and updating three statically named local variables,
-;; a, b and c. Note that in order to use these, values must be cpush'ed to the call stack
-;; for each. So, after doing a single cpush, we can then use "a" to retrieve that value and
+;; call stack. 
+;;
+;; Note that before a local variable can be used or updated, a value must be cpush'ed to the call
+;; stack. After doing a single cpush, we can then use "a" to retrieve that value and
 ;; "a!" to update it. Using two more cpush'es we get local variables b and c and so on. Using
-;; more than the 6 predefined variables, we will need to use the cget and cset instructions
-;; manually.
+;; more than the 6 predefined variables, it is time to split up the function.
 ;;
-;; These are defined below
-
-;; Note that these inline replacement apply to this file, but not to Forth code. 
+;; 2025-10-20
 ;;
-;; The colon compiler should be extended, to keep track of local variables by name,
-;; and handle interactions via cget and cset.  
-;;  
+;; The colon compiler has extended the concept of local variables, supporting custom
+;; names, via the => word, which create and update a local variable, which can then
+;; be referred directly in code. It is implemented via cpush / cset / cget, as for
+;; the abcd... functionality in this file.
 
 ;; ------------ top of file ----------
 
@@ -85,7 +83,7 @@
 #define MODE_NORMAL	0
 #define MODE_IMMEDIATE	1
 #define MODE_INSTR	2	;; code pointer is single-byte instruction: "00xx"
-#define MODE_CONSTANT	3	;; code pointer is constant word to be pushed on stack (directly or with code)
+#define MODE_CONSTANT	3	;; code pointer is constant word to be pushed on stack
 
 
 ;; use these in the static Dictionary definition, as they generate raw memory values, which is not valid code!
@@ -94,8 +92,6 @@
 #define BIN_IMMEDIATE		HEX:0001
 #define BIN_INSTR		HEX:0002
 #define BIN_CONSTANT		HEX:0003
-
-;; When executing code, we start at PC=0x0000 (&Init)
 
 #define b0		HEX:00
 #define w0		HEX:0000
@@ -114,6 +110,10 @@
 #define d!		3 cset
 #define e!		4 cset
 #define f!		5 cset
+
+
+
+;; When executing code, we start at PC=0x0000 (&Init)
 
 :Init	
 	0 &IsCompiling writeb
