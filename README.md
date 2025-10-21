@@ -15,9 +15,9 @@ by the internal compiler of the language.
 
 Stack language
 --------------
-Like traditional Forth, RForth is also stack oriented. As with Forth,
+Like traditional Forth, RFOrth is also stack oriented. As with Forth,
 it is a language without syntax, everything is a word. Words are separated
-by whitespace. RFOrth supports native words, which augment the compiler,
+by whitespace. RFOrth supports immediate words, which augment the compiler,
 and it uses a dictionary.
 
 ```
@@ -35,7 +35,7 @@ which starts at :Dictionary tag.
 The stacks
 ----------
 
-RFOrth has three major stacks, plus one very internal. 
+RFOrth has two main stacks, plus two internal. 
 
 The main stack is the *data stack*. Sometimes it is called parameter stack. This 
 is where we put parameters to words, and get values back. As programmers we interact
@@ -46,12 +46,14 @@ Then there is the *call stack*, which is usually called the return stack.
 When one word calls another, we push the return address here, but in addition,
 it also contains local variables. It can be managed manually, but rarely will be.
 
-The third major stack, is a system stack, called *frame stack*. It keeps track of how many
+The third stack, is a system stack, called *frame stack*. It keeps track of how many
 local variables have been added to the call stack, for each word invocation. There exist
-no primitives in Forth to interact with it.
+no primitives in Forth to interact with it. This means we don't need to pop values
+off the call stack; it is taken care of when returning. It is managed by C code.
 
 The fourth stack, which is considered internal, is a compile stack. It is used to
-implement control structures, such as IF THEN and BEGIN AGAIN?
+implement control structures, such as IF THEN and BEGIN AGAIN? It is managed
+inside ACode.txt
 
 First use
 ---------
@@ -86,7 +88,6 @@ I use add, sub, mul and div. This makes code more readable to me.
 -	sub
 *	mul
 /	div
-%	mod
 
 ==	eq
 !=	ne
@@ -95,7 +96,6 @@ I use add, sub, mul and div. This makes code more readable to me.
 >=	ge
 <=	le
 !	not	(logical)
-~	neg	(bitwise)
 
 &&	and	(logical)
 ||	or
@@ -108,7 +108,8 @@ I use add, sub, mul and div. This makes code more readable to me.
 Non-standard
 ------------
 The RFOrth implementation has no intention of following Forth standards. It is a toy
-language, even as I plan to use it on microcontrollers.
+language, for discovering what can be done with some stacks and bytecode, but I still
+plan to put it to real use.
 
 It currently (2025-10) does not implement the CREATE ... DOES> but it still can do the same
 by means of reading the &IsCompiling status byte, and depending on its value do
@@ -119,7 +120,7 @@ See implementation of the NATIVE word for an example at tag :NATIVE in ACode.txt
 Interactive
 -----------
 As usual with Forth, RFOrth implements a REPL (read-eval-print-loop), which takes input, processes
-it and repeats. In Forth the "print" part is implemented as the DOT word (".")
+it and repeats. 
 
 ```
 3 5 add .
@@ -133,11 +134,16 @@ As in normal Forth, RFOrth has a colon compiler, which lets us define new words.
 : NewWord .... ;
 ```
 
-The colon must be space separated from the name of the new word, and the colon definition
-is terminated by a semicolon. 
+The colon must be space separated from the name of the new word and the colon definition
+is terminated by a semicolon. I mention this, because in ACode.txt the colon is *not* separate
+from the name, because in that file, those are *tags* for the Assembler, not invocations of
+the colon compiler. The colon compiler is initiated at tag :COLON in ACode.
+
+In ACode the returning from a function is done with the assembly code "ret". The SEMICOLON word
+in Forth calls "ret" as well, after doing various housekeeping.
 
 The colon compiler sets a flag at address &IsCompiling, which affects how each word following
-the name of the new word, and the semicolon, is processed. 
+the name of the new word, up to the semicolon, is processed. 
 
 ### Compile mode
 
@@ -160,7 +166,7 @@ Close to assembly
 -----------------
 Forth to me is like some hefty macro assembler. Words are the macros, and much of base code
 is assembly. So also in RFOrth, where the virtual "assembly" operations, which are used to
-write ACode.txt is also available in the RFOrth language. 
+write ACode.txt, are also available in the RFOrth language. 
 
 This means words like "add" are really assembly words, that correspond to single byte
 operations. 
@@ -183,6 +189,8 @@ creating 32-bit values.
 If or when physical acccess to register bits and SRAM, new bytecode ops will have to be introduced, 
 which for wider architectures may comprise a base register plus an offset value to produce
 32 bit addresses. 
+
+### NATIVE = written in C
 
 For now, the only interface to hardware goes through the NATIVE interface. Native functions
 are written in C, and are listed in a table in the C code. These have access to the stacks, 
