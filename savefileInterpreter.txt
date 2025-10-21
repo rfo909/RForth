@@ -515,11 +515,9 @@
 		if (value != null) self.memory.writeWord(targetPtr,value)
 	}
 		
+
+	self.bufferedInput=""
 		
-
-	
-	self.bufferedInput=GetInitialForthCode
-
 	# "42 dup add " <-- 1584 instructions to process this in interactive mode
 	# ": rf 2 3 add ; rf print " # <-- 7455 instructions
 	
@@ -812,49 +810,7 @@
 
 
 
-# Initial forth code
-# --
-	Sys.savefile.dir.file("Forth.txt").read->line
-		break(line.trim=="#END")
-		s=line.before("\")
-		s=(s.before("(").trim + " " + s.after(")").trim).trim
-		reject(s=="")
-		out(s)
-	| => lines
-	#lines.print
-	#readLine("Enter")
-	
-	
-	str = lines.concat(" ") + " "  # trigger final word
-	#println(str)
-	#readLine("Enter")
-	str
-	# empty
-	""
-/GetInitialForthCode
 
-# Get initial Forth code as C array
-# --
-	code = GetInitialForthCode
-	println
-	println("// Interpreter:ForthC");
-	println("const int forthCodeLength=" + code.length + ";")
-	println("const byte forthCode[]={")
-	comma=false
-	count=0
-	code.chars->c
-		if (comma) print(",")
-		print("0x"+c.toHexString("ISO-8859-1"))
-		comma=true
-		count=count+1
-		if (count >= 16) {
-			println()
-			count=0
-		}
-	|
-	println("};")
-/ForthC
-	
 	
 
 # Test

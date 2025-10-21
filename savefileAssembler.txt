@@ -19,6 +19,13 @@
 /ShowTagUse
 
 
+# Show main tags
+# --
+	ExampleCode->line
+		assert(line.startsWith(":"))
+		println(line.before(" "))
+/MainTags
+
 # List all instructions
 # --
 	Instructions.keys.sort
