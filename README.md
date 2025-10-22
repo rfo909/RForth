@@ -18,19 +18,22 @@ The code below consumes 131 bytes of heap space when compiled.
 : POut (pin --) 
   NATIVE Pin.ModeOut ;
   
-: Flash (--) 50 1 Led 
+: Flash (--) 
+  50 1 Led 
   NATIVE Pin.PulseDigitalMs ;
   
 : Sleep (ms --) 
   NATIVE Sys.Delay ;
   
-: Flashes (count--) => count 
+: Flashes (count--) 
+  => count 
   BEGIN Flash 50 Sleep 
     count 1 sub dup => count 
   AGAIN? ;
   
 (generate seq. of 5 flashes)
-: Blinks (count--) => count 
+: Blinks (count--) 
+  => count 
   Led POut 
   BEGIN 
     5 Flashes 
@@ -41,6 +44,8 @@ The code below consumes 131 bytes of heap space when compiled.
 (run example)
 10 Blinks
 ```
+
+The "=> name" creates or updates a local variable with value from the data stack.
 
 
 Bytecode virtual machine
