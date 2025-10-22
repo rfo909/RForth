@@ -3,20 +3,14 @@ RFOrth - a Forth like language
 
 2025-10-21 RFO
 
-Revised blink example, turning on and off the the Led (pin 13) on Arduino Nano Every.
+Starting with some code
+-----------------------
 
-It should work on other Arduino's with at least 6 KBytes of SRAM, provided pin 13 is hooked up to 
-to the (onboard) Led. 
+RFOrth requires an Arduino with at least 6 KBytes of SRAM, and the example assumes pin 13 is hooked
+up to the (onboard) Led.
 
-The code below consumes 131 bytes of heap space, but the RFOrth runtime buffers consume another
-190 bytes, and the C code currently allocates the RFOrth heap to be 4096 bytes. To run on 
-a traditional Nano (2 KBytes of SRAM), adjust the RAM_SIZE define in Constants.c
+The code below consumes 131 bytes of heap space when compiled.
 
-```
-10 Blinks
-```
-
-This produces 10 sequences of five short blinks.
 
 ```
 13 CONSTANT Led
@@ -43,6 +37,9 @@ This produces 10 sequences of five short blinks.
     500 Sleep 
     count 1 sub => count
     count AGAIN? ;
+
+(run example)
+10 Blinks
 ```
 
 
