@@ -1,12 +1,7 @@
-Forth never ceases to fascinate !
-=================================
 
-Version 3 (alpha)
+Development log
+===============
 
-2025-10-21
-
-Introduction
-=============
 In order to create a Forth REPL, I started out defining a virtual stack machine, which executes
 byte code instructions. I then made an assembler for this, which handles addresses. In this assembly
 language I wrote the REPL for Forth, and a few key Forth words, like COLON, SEMICOLON, IF, THEN, ELSE, 
@@ -45,11 +40,14 @@ Design decision - byte code
 ---------------------------
 In order to make the interpreter as simple as possible, like using an array with function pointers
 in C, all instructions are a single byte. Number literals, like addresses of functions, are 
-represented using a scheme as follows:
+represented as single bytes as well.
+
+
+### Number literals
 
 First off, all non-number opcodes stay below 127. To represent numeric values, the high bit
 is set to 1. The second highest bit is set to 1 to indicate pushing the value of the remaining 6 bits
-on to the stack. If second highest bit is 0, then pop a value from the stack, multiply by 64, then add the
+on to the stack. If second highest bit is 0, then instead pop a value from the stack, multiply by 64, then add the
 value of the last 6 bits (value 0-63).
 
 ```
