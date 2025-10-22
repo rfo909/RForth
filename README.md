@@ -1,7 +1,7 @@
 RFOrth - a Forth like language
 ==============================
 
-2025-10-21 RFO
+2025-10-22 RFO
 
 Starting with some code
 -----------------------
@@ -9,7 +9,7 @@ Starting with some code
 RFOrth requires an Arduino with at least 6 KBytes of SRAM, and the example assumes pin 13 is hooked
 up to the (onboard) Led.
 
-The code below consumes 131 bytes of heap space when compiled.
+The code below consumes 131 bytes of heap space to hold the compiled code and dictionary entries.
 
 
 ```
@@ -57,6 +57,186 @@ Unlike traditional Forth's, this language is case sensitive. That means the word
 be written "constant", and so on.
 
 
+Introduction to Forth
+=====================
+
+Words
+-----
+Functions in Forth are called words. Creating a Forth program means creating words. Words call
+other words, by putting parameters, if there are any, on the stack, call the word, and pick
+up the result, if any, from the stack.
+
+Available words are listed in a dictionary memory structure. It consists of dictionary entries
+which point to the word as a string, and to the code of that word, a status code, which redefines
+the meaning of the code pointer for some cases, and finally a pointer to the previously defined
+word. 
+
+The dictionary is a linked list, and new words are always added to the top. 
+
+Naming
+------
+Words in Forth do not need to follow classic "identifier" syntax. They can consist of any
+sequence of letters, apart from whitespace, and apart from looking like numbers. Special characters
+are frequently used in traditional Forth, such as
+
+```
+R>
+>R
+.
+,
+```
+
+The two first interact with the return stack in traditional Forth. The comma means "copy value from stack,
+allocate memory for it, and copy it there", more or less, and the single dot means remove and display top
+value from the stack.
+
+Of these four, RFOrth implements the DOT word. The two first are irrelevant due to how local variables
+are implemented, and the COMMA, well, maybe some day. There are other central words missing, like CREATE
+and DOES>, but that's an advanced topic.
+
+Syntax
+------
+Forth is a language that has no syntax. Syntax is traditionally defined via words written in Forth, 
+implementing control structures. RFOrth has only two control structures, the IF-ELSE-THEN and BEGIN-AGAIN?
+for conditionals and loops. These were implemented in RFOrth initially, but were then migrated into
+the "firmware", which is found in ACode.txt.
+
+This code is "assembled" offline, and generates an array of bytes, which is patched into the C code,
+forming the REPL. This implements the COLON compiler, the mentioned control structures, and a few
+other useful words.
+
+Compiled?
+---------
+Forth is unique in that it is interactive *and* compiled. To define new words in Forth, the syntax
+is as follows:
+
+```
+: name ... ;
+```
+
+Hence, the compiler is normally referred to as the colon compiler. Example:
+
+```
+: number 42 ;
+```
+
+This creates word called "number". When we call it, it puts the value 42 on the stack.
+
+```
+number
+.
+```
+
+The second line is a single dot ("."), which is a Forth word which takes the top value off
+the stack and prints it. It should result in displaying 42.
+
+Interactive
+-----------
+Forth is an interactive programming language. Usually one connects to the running instance
+via a serial terminal. This is the same for RFOrth. 
+
+This gives us the ability to debug code, word by word, in the actual environment, which is
+particularly useful on microcontrollers, which is the target system for RFOrth. With a sufficient
+*dictionary* of useful words, one can probe and inspect the state, find and fix bugs, and run
+parts of the code from the command line, to verify the output.
+
+Until the Pi Pico and its scaled down Python came along, as far as I know Forth was the only
+programming environment that could do this on microcontrollers.
+
+Tiny
+----
+Traditionally, Forth was tiny. Forth systems were constructed using a few kilobytes of
+machine code, implementing the REPL, the colon compiler, and a number of standard words
+for managing memory, etc. 
+
+RFOrth is not written in real assembly. Instead it runs on a virtual machine defined by
+around 60 single byte instructions (plus 128 for representing numeric literals). Short names
+have been defined for each of these instructions, together with simple syntax for defining
+and looking up tags. This essentially forms a virtual assembly language. 
+
+An assembler program runs through the assembly code (in the file ACode.txt) and
+generates byte code, which implements the REPL, colon compiler and some other stuff. It
+does this in about 3000 bytes. The low byte count follows not only from the base simplicity
+of Forth, but also from the virtual machine design. 
+
+The virtual machine architecture is ... surprise, a stack machine. So the assembly operations
+are essentially Forth words. 
+
+Actually, when setting up the default dictionary, which is done in the ACode file, 
+all the assembly op's are added as words, which correspond to single byte instructions
+instead of pointers to code, as for "normal" Forth words. 
+
+Why the assembly level?
+-----------------------
+With assembly operations being Forth words, why bother with the assembler to produce byte code,
+and not just go straight to Forth.
+
+The answer is two fold. 
+
+First, it is hard to define the colon compiler using a colon, so it must be defined in an
+environment where a single colon does not yet have any meaning. 
+
+Second, targeting devices with very little RAM, it is important to shuffle as much functionality
+away from that RAM. The ACode gets assembled into a byte buffer in C, of type "const", which
+means it gets located in Flash when the code is copied to the microcontroller.
+
+RAM is used for three (?) things, basically.
+
+- Stacks and system buffers
+- System status fields
+- Compiled Forth words
+
+The third refers to words where we enter a colon definition. When this happens, if the word compiles
+correctly, a dictionary entry is allocated, and its next field points to the predefined initial
+dictionary, which at runtime resides in flash. 
+
+To make this work, the implementation makes Flash and RAM into a continous address space, after copying
+some of the buffers defined in ACode into RAM, since Flash is basically read only.
+
+
+Immediate words
+---------------
+The control structures such as IF THEN and loops, could be implemented in Forth itself, through a
+mechanism called IMMEDIATE. It is really just a status flag in the dictionary entry for a
+word, but this single thing is one of the defining characteristics of Forth. Because with it
+we can extend the compiler.
+
+The Forth base compiler is very primitive. It consumes a sequence of characters, using space
+to identify words, and then basically does the following:
+
+- does the word look like a number, then generate code which puts that number on the stack at runtime
+- otherwise look the word up in the dictionary
+- if the word is tagged as IMMEDIATE, *call it* - that's right!
+- otherwise, generate code to call the word
+
+This is the RFOrth compiler. Traditional Forth allows words to look like numbers, and instead
+saying that only if dictionary lookup fails, if it is a number, then generate code that
+pushed it on the stack at runtime. Basically moving the first point last. 
+
+The power of IMMEDIATE words is immense! 
+
+For example, defining a word IF and making it IMMEDIATE, means that when we compile code,
+and come across an IF, we call code which may not only generate some code, but also modify
+the compiler state, or introduce new state variables, lists and stacks.
+
+We then create the word THEN, which is also IMMEDIATE. Its code can then pick up on the state
+and data saved by the IF, and so manage conditional and unconditional jumps forwards and
+backwards in the output of the compiler.
+
+IF THEN
+-------
+The notation for conditionals in Forth is a bit special, since it is a stack language.
+
+```
+<cond> IF ... (if true) ... THEN ... 
+<cond> IF ... (if true) ... ELSE ... (if false) ... THEN ...
+```
+
+
+
+Implementation
+==============
+
 Bytecode virtual machine
 ------------------------
 RFOrth is an experiment, and a toy language, implemented as a virtual machine 
@@ -89,25 +269,35 @@ which starts at :Dictionary tag.
 The stacks
 ----------
 
-RFOrth has two main stacks, plus two internal. 
+RFOrth has four stacks, but as a programmer we deal only with one.
 
-The main stack is the *data stack*. Sometimes it is called parameter stack. This 
-is where we put parameters to words, and get values back. As programmers we interact
-directly with the data stack all the time.
+That's the *data stack*. Sometimes it is called parameter stack. This is where
+we put parameters to words, and get values back from words. Programming in
+Forth we interact with the stack all the time.
 
-Then there is the *call stack*, which is usually called the return stack.
+### Those we don't need to care about
 
-When one word calls another, we push the return address here, but in addition,
-it also contains local variables. It can be managed manually, but rarely will be.
+The second stack, is named the *call stack* in RFOrth. In traditional Forth's it
+is called the return stack. When a word calls another word, the return address
+is pushed on this stack. It is also used, both in traditional Forth and in RFOrth
+or local variables. In RFOrth, local variables are fully handled in an abstracted
+way by the colon compiler, so there should be very little need to interact with this
+stack in code. 
 
-The third stack, is a system stack, called *frame stack*. It keeps track of how many
-local variables have been added to the call stack, for each word invocation. There exist
-no primitives in Forth to interact with it. This means we don't need to pop values
-off the call stack; it is taken care of when returning. It is managed by C code.
+The third stack, which we also don't need to care about, is the *frame stack*. It keeps
+track of invocation frames on the call stack. Whenever defining a new local variable,
+it registers on the frame stack, so that when we return from the current word, it
+knows how to find the return address in the code that called the word. There are no
+words in RFOrth to manipulate this stack; it is handled by system words call and ret, as
+well as cpush, which is used to define a new local variable on the call stack.
 
-The fourth stack, which is considered internal, is a compile stack. It is used to
-implement control structures, such as IF THEN and BEGIN AGAIN? It is managed
-inside ACode.txt
+The fourth and final stack (so far) is the *compile stack*. It is used when compiling
+code, to keep track of forward and backward jumps within the code for a word, like
+conditionals and loops. 
+
+At runtime, the three first stacks are managed by the C code, while the fourth is 
+managed by the ACode.txt, which is where the colon compiler is defined.
+
 
 First use
 ---------
