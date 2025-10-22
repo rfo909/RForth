@@ -227,7 +227,7 @@ an array of bytes in C.
 Its address space combines a readonly flash part, which is the result
 from assembling ACode, and the SRAM part, which is read/write.
 
-RFOrth uses 16 bit words (called "cells" in normal Forth), and though it could easily address
+RFOrth uses 16 bit (data) words (called "cells" in normal Forth), and though it could easily address
 real memory and registers on the smaller 8-bit architectures, it is not capable of directly
 creating 32-bit values. 
 
@@ -290,8 +290,10 @@ Buffers and strings
 -------------------
 Strings are stored in buffers, up to 255 bytes of length. The first byte is the length.
 
-This is also the case for the &CompileBuf and &NextWord buffers, which are used by
-the colon compiler, and are available for other uses at runtime.
+This is also the case for the &CompileBuf, &NextWord and &LVBuf buffers, which are used by
+the colon compiler, and are available for other uses at runtime. The notation for addresses
+is the same as used in ACode, but those available for Forth are explicitly defined in the
+Dictionary. 
 
 String literals are written in two ways in RFOrth, using single or double quotes; the
 difference is that with double quites, the underscore character get replaced by space.
@@ -302,7 +304,8 @@ To print a string, use the ".str" word.
 cr "Welcome_to_this_program .str
 ```
 
-The "cr" word means carriage return.
+The "cr" word means carriage return. It is Forth tradition to do carriage return before
+printing something instead of after.
 
 
 
@@ -312,22 +315,33 @@ As in regular Forth, RFOrth uses the word "HERE" to return the next address on t
 and "allot" to allocate bytes of heap.
 
 Differing from regular Forth, RFOrth does not allow memory access at HERE or beyond,
-so memory must be allot'ed before used.
+so memory must be allot'ed before used. The "allot" word just advanced the HERE value,
+making new memory available for use.
 
-```
-HERE 20 allot CONSTANT buf
-```
-
-Note that the ordering is important here. The following fails horribly:
+Note a little piece of subtlety that cost me half an hour of serious doubts. If one wants
+to allocate a 20 byte buffer, and store a reference to it as a constant, it would seem one 
+could do this:
 
 ```
 HERE CONSTANT buf
 20 allot
 ```
 
-The reason is that the "CONSTANT buf" also allocated memory to create a new
+It seems logical that storing the value of HERE in a constant and then advancing the HERE by
+allocating 20 bytes, should work just fine.
+
+The problem is that the "CONSTANT" word also allocates memory to create a new
 dictionary entry, and the value of HERE that gets stored as the constant "buf"
-now refers to that dictionary entry.
+now refers to that dictionary entry. Writing to it corrupts the top dictionary entry,
+and with it the link to the rest of the dictionary. 
+
+The correct way is as follows:
+
+```
+HERE 20 allot CONSTANT buf
+```
+
+:-)
 
 
 Global variables and constants
@@ -336,18 +350,29 @@ We saw constants in action above. Global variables follow a similar pattern.
 
 ```
 "Hello CONSTANT greeting
+
 0 VARIABLE x
 ```
 
-There is no differing between bytes and word values; all constants, variables,
-and stack entries, are word-sized values (2 bytes). The only time we operate
+Note that all variables and constants, as well as all stack content, are
+data words (2 bytes), not bytes. 
+
+The only time we operate
 on bytes, is when using "readb" or "writeb" to read or write single bytes.
 
-To read and update a variable:
+To retrieve the value of a constant, just enter the constant name; that will push
+the value of the constant on the stack. 
+
+For variables, entering the name of the variable pushes a "constant" on the stack as well,
+but this time it is an *address* to where the data is stored, which can then be read and 
+written.
 
 ```
+"Hello CONSTANT greeting
+greeting .
+
 0 VARIABLE x
-x @			;; read variable
+x @ 			;; read variable
 5 x !			;; write variable
 ```
 
@@ -371,14 +396,70 @@ BEGIN .... bool AGAIN?
   ;
 ```
 
+### Structure
+
+These words add a certain syntax to Forth, and work as follows:
+
+```
+: max (a b -- n)
+  => b => a
+  b a gt IF
+    b
+  ELSE
+    a
+  THEN
+;
+```
+The condition comes first, followed by IF, and then comes the code that executes if
+the condition is true. Then comes ELSE and the else-code, and finally the THEN word,
+which indicates the end of the structure, like "... and then we continue with ..."
+
+The ELSE is optional, can also use just IF ... THEN.
+
+```
+: count (max -- )
+  => max 
+  0 => counter
+  BEGIN
+    cr counter .
+    counter 1+ => counter
+    counter max lt AGAIN?
+  ;
+```
+
+The word "AGAIN?" is a condition jump back to BEGIN. The condition is that counter is
+less than max. 
+
+### Break?
+
+The BEGIN ... AGAIN? currently (October 2025) is the only loop construct, and it does
+not support breaking out of the loop other than supplying false to the AGAIN? word.
+
+There is a way somewhat around this, which is the assembly instruction "ret", which means
+return from current word. Granted, it's not the same as a break, which would imply 
+continuing code after the AGAIN?, but since words should be kept short and do small
+incremental stuff towards an end-goal, doing much after an AGAIN? isn't necessarily
+a good idea.
+
+```
+: someWord
+  ...
+  x y eq IF ret THEN
+  ...
+  ;
+```
+
+
+
 Extending the compiler
 ----------------------
 As in regular Forth, immediate words are used to extend the compiler. To make
-a word native, include the word NATIVE anywhere *inside* the colon definition. Not
+a word immediate, include the word IMMEDIATE anywhere *inside* the colon definition. Not
 after as in normal Forth, but inside. 
 
 The COLON word initiates compile mode, by setting a state variable at &IsCompiling,
 which affects how words are compiled, until hitting the SEMICOLON word, which terminates
-the compile mode, creates the word and cleans up.
+the compile mode, creates the word and cleans up. The IMMEDIATE words changes a state variable
+which is picked up by the SEMICOLON word, when adding the new word to the dictionary.
 
 
