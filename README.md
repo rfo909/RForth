@@ -60,6 +60,37 @@ be written "constant", and so on.
 Introduction to Forth
 =====================
 
+Stack language
+--------------
+Forth (and RFOrth) are stack languages. This means they do things differently. Instead of
+
+```
+2+3
+```
+which is how expressions are written in most other languages, Forth uses *postfix* notation,
+where each element either puts something on a stack, or takes something from it, doing something
+with it, and putting the result back.
+
+```
+2 3 add
+```
+
+First the value 2 is pushed on the stack. Then the value 3. The stack now looks like this
+
+```
+3
+2
+```
+
+The operation "add" is defined as: take the two topmost values off the stack, add them together
+and push the result on the stack. The result:
+
+```
+5 
+```
+
+
+
 Words
 -----
 Functions in Forth are called words. Creating a Forth program means creating words. Words call
