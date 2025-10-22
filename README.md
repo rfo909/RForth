@@ -171,16 +171,26 @@ Why the assembly level?
 With assembly operations being Forth words, why bother with the assembler to produce byte code,
 and not just go straight to Forth.
 
-The answer is two fold. 
+The answer is both simple and complex. The simple answer it that it was fun doing it this way,
+and got me up to speed programming both the assembly language and programming *in* the assembly
+language pretty fast. I created an assembler and an interpreter in a scripting language (which
+I wrote myself).
 
-First, it is hard to define the colon compiler using a colon, so it must be defined in an
-environment where a single colon does not yet have any meaning. 
+The more complex answer is that it is hard to define the colon compiler using a colon, so
+it must be defined in an environment where a single colon does not yet have any meaning. I also
+wanted as much of the program to be portable. Writing real functionality in virtual assembly
+meant the interpreter (both the first one and the C version) would be simpler.
 
 Second, targeting devices with very little RAM, it is important to shuffle as much functionality
 away from that RAM. The ACode gets assembled into a byte buffer in C, of type "const", which
 means it gets located in Flash when the code is copied to the microcontroller.
 
-RAM is used for three (?) things, basically.
+Developing in the "assembly" language of the ACode file is pretty close to programming in Forth,
+with some exceptions, like no control structures, just jumps to tags, and very primitive
+support for local variables. 
+
+
+In RFOrth, RAM is used for three (?) things, basically.
 
 - Stacks and system buffers
 - System status fields
@@ -191,7 +201,12 @@ correctly, a dictionary entry is allocated, and its next field points to the pre
 dictionary, which at runtime resides in flash. 
 
 To make this work, the implementation makes Flash and RAM into a continous address space, after copying
-some of the buffers defined in ACode into RAM, since Flash is basically read only.
+some of the buffers defined towards the end in ACode into RAM, since Flash is basically read only.
+
+Of the around 3k bytes generated from ACode, only about 190 bytes represent dynamic values, and that 
+range is copied into RAM when the system boots. 
+
+Simple and complex.
 
 
 Immediate words
