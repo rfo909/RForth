@@ -45,7 +45,16 @@ The code below consumes 131 bytes of heap space when compiled.
 10 Blinks
 ```
 
+(...) are comments in Forth. The first comment following the ": something" describes what
+is expected to be found on the stack, and if it returns data on the stack, following the "--" separator.
+
 The "=> name" creates or updates a local variable with value from the data stack.
+
+
+### Case sensitive
+
+Unlike traditional Forth's, this language is case sensitive. That means the word CONSTANT can not
+be written "constant", and so on.
 
 
 Bytecode virtual machine
@@ -307,7 +316,30 @@ cr "Welcome_to_this_program .str
 The "cr" word means carriage return. It is Forth tradition to do carriage return before
 printing something instead of after.
 
+### Available buffers
 
+At runtime, when executing code (not compiling), the following buffers are available for general
+use: 
+
+- &CompileBuf
+- &LVBuf
+- &NextWord
+
+Each is fitted with an end-tag to calculate available bytes:
+
+```
+&CompileBufEnd &CompileBuf sub .   (64)
+&LVBufEnd &LVBuf sub .             (32)
+&NextWordEnd &NextWord sub .       (32)
+```
+
+For additional flexibility, all data fields related to the interpreter and compiler,
+are placed next to each other in memory. To use all this memory as a single buffer,
+called &AllBuffers:
+
+```
+&AllBuffersEnd &AllBuffers sub .    (180)
+```
 
 Allocating memory
 -----------------
@@ -327,8 +359,11 @@ HERE CONSTANT buf
 20 allot
 ```
 
+
 It seems logical that storing the value of HERE in a constant and then advancing the HERE by
 allocating 20 bytes, should work just fine.
+
+### This crashes horribly!
 
 The problem is that the "CONSTANT" word also allocates memory to create a new
 dictionary entry, and the value of HERE that gets stored as the constant "buf"
@@ -463,3 +498,24 @@ the compile mode, creates the word and cleans up. The IMMEDIATE words changes a 
 which is picked up by the SEMICOLON word, when adding the new word to the dictionary.
 
 
+Strings
+-------
+The notation for string constants is as follows:
+
+```
+'Name
+"Your_name
+```
+
+The difference is that the second form replaces underscores with space. 
+
+### String compare?
+
+There currently exists only one string operation, which compares to strings
+and returns 1 if they are equal, otherwise 0. It is an assembly level function.
+
+```
+"test 'test streq .
+```
+
+This should print a 1
