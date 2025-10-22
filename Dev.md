@@ -522,13 +522,6 @@ than the CompileBuf
 ```
 
 
-```
-: pOut NATIVE Pin.ModeOut ;
-: flash cpush 50 1 a NATIVE Pin.PulseDigitalMs ;
-: Z NATIVE Sys.Delay ;
-: blink 13 pOut BEGIN 13 flash 500 Z 1 AGAIN? ;
-
-
 
 
 References
