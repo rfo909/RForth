@@ -25,14 +25,14 @@ The code below consumes 131 bytes of heap space when compiled.
 : Sleep (ms --) 
   NATIVE Sys.Delay ;
   
-: Flashes (count--) 
+: Flashes (count --) 
   => count 
   BEGIN Flash 50 Sleep 
     count 1 sub dup => count 
   AGAIN? ;
   
 (generate seq. of 5 flashes)
-: Blinks (count--) 
+: Blinks (count --) 
   => count 
   Led POut 
   BEGIN 
