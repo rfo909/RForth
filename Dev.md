@@ -510,17 +510,6 @@ Added code to check that the colon compiler doesn't generate compiled words long
 than the CompileBuf
 
 
-2025-10-22 Revised blink
-------------------------
-```
-13 CONSTANT Led
-: Out (pin --) NATIVE Pin.ModeOut ;
-: Flash (--) 50 1 Led NATIVE Pin.PulseDigitalMs ;
-: Sleep (ms --) NATIVE Sys.Delay ;
-: Flashes (count--) => count BEGIN Flash 50 Sleep count 1 sub dup => count AGAIN? ;
-: Blink (count--) => count Led Out BEGIN Flashes 500 Sleep count 1 sub dub => count AGAIN? ;
-```
-
 
 
 
