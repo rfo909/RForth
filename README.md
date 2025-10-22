@@ -3,6 +3,49 @@ RFOrth - a Forth like language
 
 2025-10-21 RFO
 
+Revised blink example, turning on and off the the Led (pin 13) on Arduino Nano Every.
+
+It should work on other Arduino's with at least 6 KBytes of SRAM, provided pin 13 is hooked up to 
+to the (onboard) Led. 
+
+The code below consumes 131 bytes of heap space, but the RFOrth runtime buffers consume another
+190 bytes, and the C code currently allocates the RFOrth heap to be 4096 bytes. To run on 
+a traditional Nano (2 KBytes of SRAM), adjust the RAM_SIZE define in Constants.c
+
+```
+10 Blinks
+```
+
+This produces 10 sequences of five short blinks.
+
+```
+13 CONSTANT Led
+
+: POut (pin --) 
+  NATIVE Pin.ModeOut ;
+  
+: Flash (--) 50 1 Led 
+  NATIVE Pin.PulseDigitalMs ;
+  
+: Sleep (ms --) 
+  NATIVE Sys.Delay ;
+  
+: Flashes (count--) => count 
+  BEGIN Flash 50 Sleep 
+    count 1 sub dup => count 
+  AGAIN? ;
+  
+(generate seq. of 5 flashes)
+: Blinks (count--) => count 
+  Led POut 
+  BEGIN 
+    5 Flashes 
+    500 Sleep 
+    count 1 sub => count
+    count AGAIN? ;
+```
+
+
 Bytecode virtual machine
 ------------------------
 RFOrth is an experiment, and a toy language, implemented as a virtual machine 

@@ -502,9 +502,29 @@ Their position in the sequence corresponds to the indexed value on the call stac
 created with cpush and accessed via cget and cset.
 
 Note that local variables don't work interactively. Variable names are limited
-to 7 characters (8 bytes).
+to 7 characters (8 bytes). 
 
-In ACode.txt it is still the old abcd... variables. 
+In ACode.txt it is still the old abcdef variables. 
+
+2025-10-22 Revised blink
+------------------------
+```
+13 CONSTANT Led
+: Out (pin --) NATIVE Pin.ModeOut ;
+: Flash (--) 50 1 Led NATIVE Pin.PulseDigitalMs ;
+: Sleep (ms --) NATIVE Sys.Delay ;
+: Flashes (count--) => count BEGIN Flash 50 Sleep count 1 sub dup => count AGAIN? ;
+: Blink (count--) => count Led Out BEGIN Flashes 500 Sleep count 1 sub dub => count AGAIN? ;
+```
+
+
+```
+: pOut NATIVE Pin.ModeOut ;
+: flash cpush 50 1 a NATIVE Pin.PulseDigitalMs ;
+: Z NATIVE Sys.Delay ;
+: blink 13 pOut BEGIN 13 flash 500 Z 1 AGAIN? ;
+
+
 
 
 References
