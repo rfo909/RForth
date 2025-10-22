@@ -506,6 +506,12 @@ to 7 characters (8 bytes).
 
 In ACode.txt it is still the old abcdef variables. 
 
+2025-10-21 CompileBuf limit test
+--------------------------------
+Added code to check that the colon compiler doesn't generate compiled words longer
+than the CompileBuf
+
+
 2025-10-22 Revised blink
 ------------------------
 ```

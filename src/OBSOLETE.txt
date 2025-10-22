@@ -1,6 +1,0 @@
-2025-10
-
-This code is obsolete. It was written for Pi Pico some years ago, in the second
-attempt at creating a Forth. It was abandoned and is kept for reference only.
-
-See ../Arduino for updated code.

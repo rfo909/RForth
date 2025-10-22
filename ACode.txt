@@ -152,6 +152,10 @@
 	:*nextChar
 		readc a!
 		a 0x28 eq &*comment jmp?		;; start of comment
+		a 0x09 ne &*notTab jmp?
+			(tab)
+			0x20 a!    ;; replace with space
+		:*notTab
 		a 0x20 eq b 0 eq and &*nextChar jmp? 	;; ignore preceding space
 		a 0x20 eq &*done jmp?			;; word identified
 
@@ -318,8 +322,25 @@
 	ret
 
 
+:CompileBufSize
+	&CompileBufEnd &CompileBuf sub
+	ret
+
+:Str_CompileBufOverflow %'CompileBuf_overflow
+
 :EmitByte   ;; ( byte -- )
 	cpush				;; a=bytevalue
+
+	;; check for space
+	&CompileBufSize call 1 sub (<-- limit, room for at least 1 byte)
+		&CompileBuf readb (used)
+			gt &*spaceOk jmp?
+
+		&Str_CompileBufOverflow .str 
+		PANIC 
+
+	:*spaceOk
+			
 	&CompileBuf readb 1+ cpush	;; b=offset 
 	a b &CompileBuf add writeb
 	b &CompileBuf writeb
@@ -329,6 +350,16 @@
 	swap 
 	cpush			;; a=number
 	cpush			;; b=nbytes
+
+	;; check for space
+	&CompileBufSize call 4 sub (<-- limit - room for at least 3 bytes number data and one byte ret)
+		&CompileBuf readb (used)
+			gt &*spaceOk jmp?
+
+			&Str_CompileBufOverflow .str
+			PANIC
+
+	:*spaceOk
 	
 	;; calculate write position
 	&CompileBuf readb 1+ &CompileBuf add cpush    ;; c
@@ -497,14 +528,14 @@
 
 
 		
-:BufCopy ( src target --   --- for buffer with length byte)
+:BufCopy ( src target -- ) (for buffer with length byte)
 	swap
 	cpush 	(a=src)
 	cpush	(b=target)
 	a b a readb 1+ memcpy
 	ret
 	
-:BufCreateCopy ( src -- ptr --- for buffer with length byte)
+:BufCreateCopy ( src -- ptr) (for buffer with length byte)
 	cpush		(a=src)
 	HERE cpush	(b=ptr)
 	a readb 1+ allot 
@@ -712,9 +743,15 @@
 
 
 :COLON
-	;; set compile mode
+	;; --- init
+	0 &NextWord writeb
+	0 &IsCompilingWord writeb
+	MODE_NORMAL &IsCompilingWordMode writeb
+
+	;; --- set compile mode
 	1 &IsCompiling writeb
 	&LVBuf 32 &FillZeroes call
+
 
 	&GetNextWord call
 	
@@ -936,11 +973,10 @@
 :GetAddrNextWord &NextWord ret
 :GetAddrNextWordEnd &NextWordEnd ret
 :GetAddrIsCompiling &IsCompiling ret
-:GetAddrEmitNumber &EmitNumber ret
-:GetAddrEmitByte &EmitByte ret
-
 :GetAddrLVBuf &LVBuf ret
 :GetAddrLVBufEnd &LVBufEnd ret
+:GetAddrAllBuffers &AllBuffers ret
+:GetAddrAllBuffersEnd &AllBuffersEnd ret
 
 ;; Utility Forth words for buffer processing
 
@@ -1063,9 +1099,14 @@
 	%'->		%->			BIN_IMMEDIATE		%NEXT
 	%'.W		%.W			BIN_NORMAL			%NEXT    ;; show DictionaryEntry for word
 	
-	%'BufReset	%BufReset	BIN_NORMAL		%NEXT
-	%'BufAdd	%BufAdd		BIN_NORMAL		%NEXT
-	%'ShowBuffer	%ShowBuffer	BIN_NORMAL		%NEXT
+	;; ----------------------------------------------------------
+
+	%'BufReset		%BufReset		BIN_NORMAL		%NEXT
+	%'BufAdd		%BufAdd			BIN_NORMAL		%NEXT
+	%'ShowBuffer	%ShowBuffer		BIN_NORMAL		%NEXT
+	%'BufCopy		%BufCopy		BIN_NORMAL		%NEXT
+	%'EmitNumber	%EmitNumber		BIN_NORMAL		%NEXT
+	%'EmitByte		%EmitByte		BIN_NORMAL		%NEXT
 
 	;; -- addresses of stuff that may be useful in Forth --
 	%'&DictionaryHead	%GetAddrDictionaryHead		BIN_NORMAL	%NEXT
@@ -1076,10 +1117,9 @@
 	%'&LVBufEnd		%GetAddrLVBufEnd		BIN_NORMAL	%NEXT
 	%'&NextWord		%GetAddrNextWord		BIN_NORMAL	%NEXT
 	%'&NextWordEnd		%GetAddrNextWordEnd		BIN_NORMAL	%NEXT
+	%'&AllBuffers		%GetAddrAllBuffers		BIN_NORMAL	%NEXT
+	%'&AllBuffersEnd	%GetAddrAllBuffersEnd	BIN_NORMAL	%NEXT
 	%'&IsCompiling		%GetAddrIsCompiling		BIN_NORMAL	%NEXT
-
-	%'&EmitNumber		%GetAddrEmitNumber		BIN_NORMAL	%NEXT
-	%'&EmitByte		%GetAddrEmitByte		BIN_NORMAL	%NEXT
 
 	%'?			%Words		BIN_NORMAL	%NEXT
 	%'.s		%.s			BIN_NORMAL	%NEXT
@@ -1098,33 +1138,46 @@
 
 :CustomDictionaryHeadPtr w0
 
+;;; ---------------------------------------------------------------------------------
+;;; buffers used to process input and compile code - available for scratch use
+;;; at normal runtime, not compiling, either separately, or together (as they
+;;; are placed next to each other in memory). Including the NextNumber and the
+;;; CompileStack, we get a AllBuffers of 137 bytes
+;;; ---------------------------------------------------------------------------------
+
+
+
 :IsCompiling		b0
-:IsCompilingWord	b w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0		;; 32 character stringbuffer
 :IsCompilingWordMode	b0					;; NORMAL or IMMEDIATE
 
-:CompileBuf		b0 					;; length byte
-			w0 w0 w0 w0 w0 w0 w0 w0 		;; + up to 64 data bytes
+:AllBuffers
+
+:IsCompilingWord	b0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0		;; 32 character stringbuffer
+
+
+:CompileBuf	w0 w0 w0 w0 w0 w0 w0 w0 		;; + up to 63 code bytes (1 byte length)
 			w0 w0 w0 w0 w0 w0 w0 w0			;; 
 			w0 w0 w0 w0 w0 w0 w0 w0			;; For colon compiler
 			w0 w0 w0 w0 w0 w0 w0 w0			;; and as scratch buffer at runtime
 
 :CompileBufEnd
 
-
-:NextWord	b0 
-			w0 w0 w0 w0 w0 w0 w0 w0 		;; 32 chars string buffer
+:NextWord	w0 w0 w0 w0 w0 w0 w0 w0 		;; 32 bytes string buffer
 			w0 w0 w0 w0 w0 w0 w0 w0			;; and scratch buffer at runtime
 :NextWordEnd
 
-:LVBuf			w0 w0 w0 w0 w0 w0 w0 w0 		;; local variables in colon compiler (32 bytes
-			w0 w0 w0 w0 w0 w0 w0 w0
+:LVBuf		w0 w0 w0 w0 w0 w0 w0 w0 		;; local variables in colon compiler - 32 bytes
+			w0 w0 w0 w0 w0 w0 w0 w0		    ;; and scratch buffer at runtime
 :LVBufEnd
+
 
 :NextNumber		w0 					;; single word
 
 :CompileStack		b0 w0 w0 w0 w0 w0 w0 w0 w0 		
 				;; 8 words each consists of type (1 byte) and offset in CompileBuf (1 byte)
 				;; see COMPS_TYPE_* defs
+
+:AllBuffersEnd
 
 :MemoryEnd
 

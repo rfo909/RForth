@@ -1,0 +1,63 @@
+(----------------------------)
+Dict Str
+Str DictUse
+
+&CompileBuf CONSTANT buf
+&CompileBufEnd &CompileBuf sub CONSTANT Available
+
+(=============================
+NOTE: Using the compile
+buffer is safe as long as 
+inside running code. Its 
+content may change when using
+the REPL
+=============================)
+
+: clear (--) 0 buf writeb ;
+
+: Length (-- n) buf readb ;
+
+: add (str --)
+  => str
+  str readb => strLen
+  Length => bufLen
+
+  strLen Length add Available gt IF
+    "Str:_Buffer_overflow .str 
+    PANIC
+  THEN
+  (-- copy str into buf --)
+  str 1+ (source)
+    buf Length add 1+ (target)
+    strLen (#bytes)
+      memcpy
+  (-- update buf length --)
+  Length strLen add
+    buf writeb
+;  
+
+(-- for debug --)
+: .b buf Available ShowBuffer ;
+
+DictClear
+(172 bytes)
+
+
+(----------------------------)
+
+
+
+(----------------------------)
+(TEST CODE)
+
+: SClr () -> Str clear ;
+: S+ (str) -> Str add ;
+: S> (--ptr) -> Str buf ;
+: S. S> .str ;
+
+: test 
+  SClr 
+  "test_ S+ 
+  "tust_ S+ 
+  S. ;
+
