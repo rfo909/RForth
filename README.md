@@ -117,8 +117,8 @@ R>
 ,
 ```
 
-The two first interact with the return stack in traditional Forth. The comma means "copy value from stack,
-allocate memory for it, and copy it there", more or less, and the single dot means remove and display top
+The two first interact with the return stack in traditional Forth. The comma means "pop value from stack,
+allocate memory for it, and write value there" (more or less), and the single dot means remove and display top
 value from the stack.
 
 Of these four, RFOrth implements the DOT word. The two first are irrelevant due to how local variables
@@ -127,14 +127,16 @@ and DOES>, but that's an advanced topic.
 
 Syntax
 ------
-Forth is a language that has no syntax. Syntax is traditionally defined via words written in Forth, 
-implementing control structures. RFOrth has only two control structures, the IF-ELSE-THEN and BEGIN-AGAIN?
+Forth is a language that has no syntax. It is just a stream of characters. Sequences of non-space are called
+words. Additional syntax is raditionally defined via words written in Forth, implementing control structures. 
+
+RFOrth has only two control structures, the IF-ELSE-THEN and BEGIN-AGAIN?
 for conditionals and loops. These were implemented in RFOrth initially, but were then migrated into
 the "firmware", which is found in ACode.txt.
 
-This code is "assembled" offline, and generates an array of bytes, which is patched into the C code,
-forming the REPL. This implements the COLON compiler, the mentioned control structures, and a few
-other useful words.
+This code is "assembled" offline, and generates a sequence of bytes, which is patched into the C code,
+as an array of bytes. This code implements the REPL, the COLON compiler, conditionals and loops, as mentioned, 
+and a few other useful words.
 
 Compiled?
 ---------
@@ -314,7 +316,6 @@ this, and at the same time allows for nested structures, both for conditionals
 and loops.
 
 
-
 Implementation
 ==============
 
@@ -491,10 +492,15 @@ Close to assembly
 -----------------
 Forth to me is like some hefty macro assembler. Words are the macros, and much of base code
 is assembly. So also in RFOrth, where the virtual "assembly" operations, which are used to
-write ACode.txt, are also available in the RFOrth language. 
+program the "firmware" (ACode.txt), are also available in the RFOrth language. 
 
 This means words like "add" are really assembly words, that correspond to single byte
 operations. 
+
+Forth makes no distinction between different types of words. Be it a library function, an
+assembly token, or a Forth word you just created. As long as code interacts via the stack
+and has a known name, Forth can use it.
+
 
 Hardware - NATIVE functions
 ---------------------------
