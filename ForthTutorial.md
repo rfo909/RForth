@@ -47,6 +47,23 @@ word.
 
 The dictionary is a linked list, and new words are always added to the top. 
 
+To list all words on the dictionary, type a "?" and press Enter.
+
+```
+?
+
+! .str 1+ << >> @ HERE PANIC PC CELL+ add allot and andb atoi call cforce 
+cget clear cpush cr cset div drop dump dup eq ge gt halt inv jmp jmp? 
+le lt memcpy mul n2code native nativec ne not null or orb over print print# 
+print#s printb printc rback? readb readc ret rfwd? streq sub swap u2spc 
+cellsize writeb . IF THEN ELSE BEGIN AGAIN? CONSTANT VARIABLE NATIVE Dict 
+DictUse DictClear -> .W CELL CELLS BufReset BufAdd ShowBuffer BufCopy 
+EmitNumber EmitByte &DictionaryHead &DebugFlag &CompileBuf &CompileBufEnd 
+&LVBuf &LVBufEnd &NextWord &NextWordEnd &AllBuffers &AllBuffersEnd &IsCompiling 
+? .s words : => ; IMMEDIATE 
+```
+
+
 Naming
 ------
 Word names in Forth do not need to follow classic "identifier" syntax. They can consist of any

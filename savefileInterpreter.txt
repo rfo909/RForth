@@ -183,15 +183,15 @@
 	self._k=Lambda{ # cellsize ( -- N )
 		self.push(self.WORDSIZE)
 	}
-	self._K=Lambda{ # allot  ( N -- )
+	self._K=Lambda{ # allot  ( N -- ) increase HERE value by N
 		byteCount=self.pop
 		self.memory.malloc(byteCount)
 	}
-	self._G=Lambda{ # readb read byte ( addr -- value )
+	self._G=Lambda{ # readb ( addr -- value ) read byte
 		addr=self.pop
 		self.push(self.memory.readByte(addr))
 	}
-	self._H=Lambda{ # writeb write byte ( value addr -- )
+	self._H=Lambda{ # writeb ( value addr -- ) write byte 
 		addr=self.pop
 		value=self.pop
 		if (addr < self.DATA_START) {
@@ -215,7 +215,7 @@
 		self.push(self.pop+1)
 	}
 	
-	self._h=Lambda{	# ne boolean ( a b -- 0|1 )
+	self._h=Lambda{	# ne ( a b -- 0/1 )  boolean
 		b=self.pop a=self.pop value=if(a!=b,1,0) self.push(value)
 	}
 	self._i=Lambda{ # not boolean ( x -- 0|1 )
@@ -265,7 +265,7 @@
 		self.PC=targetAddr # JMP
 	}
 		
-	self._R=Lambda{  # ret return
+	self._R=Lambda{  # ret ( -- ) return
 		self.fpop
 
 		frameInfo=self.fpeek  # previous frame
@@ -285,19 +285,19 @@
 		self.PC=targetAddr # JMP
 	}
 
-	self._I=Lambda{  # @ read cell
+	self._I=Lambda{  # @ ( addr -- value ) read cell
 		addr=self.pop
 		self.push(self.memory.readWord(addr))
 	}
 	
-	self._J=Lambda{  # ! write cell
+	self._J=Lambda{  # ! (value addr -- ) write cell
 		addr=self.pop
 		if (addr < self.DATA_START) error("!: writing below DATA_START: 0x" + addr.hex(4))
 		value=self.pop
 		self.memory.writeWord(addr,value)
 	}
 
-	self._O=Lambda{  # cpush push value from data stack on call stack ( x -- )
+	self._O=Lambda{  # cpush ( value -- ) push value from data stack on call stack ( x -- )
 		self.cpush(self.pop)
 	}
 	
