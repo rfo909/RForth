@@ -43,7 +43,9 @@ be made to run on less, possibly even the original Nano and Uno's with 2 KBytes 
 adjusting the Forth heap size, defined in Constants.h. The example above also assumes that pin 13
 is hooked up to the onboard Led.
 
-The "=> name" creates or updates a local variable with value from the data stack.
+The "=> name" creates or updates a local variable with value from the data stack. Locals are pushed
+on the *call stack* which corresponds to the return stack of other Forth implementations. It can be
+managed manually, but there's no point with explicitly named local variables.
 
 ### Case sensitive
 
@@ -71,45 +73,26 @@ The virtual machine executes *bytecode* generated both by the Assembler (a scrip
 by the internal compiler of the language.
 
 
-Stack language
---------------
-Like traditional Forth, RFOrth is also stack oriented. As with Forth,
-it is a language without syntax, everything is a word. Words are separated
-by whitespace. RFOrth supports immediate words, which augment the compiler,
-and it uses a dictionary.
-
-```
-2 3 add 4 mul .
-```
-
-Should print 20.
-
-The "." word means: print top value from the stack as signed decimal followed by a space.
-It is implemented in ACode.txt under tag :DOT and linked into the static initial dictionary
-which starts at :Dictionary tag.
-
-
-
 The stacks
 ----------
 
-RFOrth has four stacks, but as a programmer we deal only with one.
-
-That's the *data stack*. Sometimes it is called parameter stack. This is where
+RFOrth has four stacks, but as a programmer we deal only with one, which
+is the *data stack*. Sometimes it is called parameter stack. This is where
 we put parameters to words, and get values back from words. Programming in
 Forth we interact with the stack all the time.
 
-### Those we don't need to care about
+### The other three
 
 The second stack, is named the *call stack* in RFOrth. In traditional Forth's it
 is called the return stack. When a word calls another word, the return address
 is pushed on this stack. It is also used, both in traditional Forth and in RFOrth
 or local variables. In RFOrth, local variables are fully handled in an abstracted
-way by the colon compiler, so there should be very little need to interact with this
-stack in code. 
+way by the colon compiler, by name, so there should be very little need to interact with
+this stack in code. The operations for doing so are cpush, cget and cset. 
 
-The third stack, which we also don't need to care about, is the *frame stack*. It keeps
-track of invocation frames on the call stack. Whenever defining a new local variable,
+The third stack is the *frame stack*.
+
+It keeps track of invocation frames on the call stack. Whenever defining a new local variable,
 it registers on the frame stack, so that when we return from the current word, it
 knows how to find the return address in the code that called the word. There are no
 words in RFOrth to manipulate this stack; it is handled by system words call and ret, as
@@ -123,7 +106,7 @@ At runtime, the three first stacks are managed by the C code, while the fourth i
 managed by the ACode.txt, which is where the colon compiler is defined.
 
 
-First use
+Key words
 ---------
 
 ```
@@ -131,6 +114,20 @@ First use
 .s		;; show stack content
 clear		;; clear stack
 NATIVE ?	;; list native words
+```
+
+The initial dictionary of RFOrth is as follows:
+
+```
+! .str 1+ << >> @ HERE PANIC PC W+ add allot and andb atoi call cforce
+cget clear cpush cr cset div drop dump dup eq ge gt halt inv jmp jmp?
+le lt memcpy mul n2code native nativec ne not null or orb over print print#
+print#s printb printc rback? readb readc ret rfwd? streq sub swap u2spc
+wordsize writeb . IF THEN ELSE BEGIN AGAIN? CONSTANT VARIABLE NATIVE Dict
+DictUse DictClear -> .W BufReset BufAdd ShowBuffer BufCopy EmitNumber
+EmitByte &DictionaryHead &DebugFlag &CompileBuf &CompileBufEnd &LVBuf
+&LVBufEnd &NextWord &NextWordEnd &AllBuffers &AllBuffersEnd &IsCompiling
+? .s words : => ; IMMEDIATE
 ```
 
 
@@ -144,7 +141,8 @@ The ACode.txt file is the "assembly" base code, also referred to as "firmware", 
 it recides in Flash when put onto an Arduino. It implements the REPL, the COLON compiler
 and a few more key features available in Forth.
 
-Note that all the "assembly" instructions are directly available to RFOrth.
+Note that all the "assembly" instructions are directly available to RFOrth, via the dictionary,
+as are some select functions and addresses from ACode.
 
 See the [Instruction set](InstructionSet.md).
 
@@ -259,18 +257,19 @@ RFOrth uses 16 bit (data) words (called "cells" in normal Forth), and though it 
 real memory and registers on the smaller 8-bit architectures, it is not capable of directly
 creating 32-bit values. 
 
-If or when physical acccess to register bits and SRAM, new bytecode ops will have to be introduced, 
-which for wider architectures may comprise a base register plus an offset value to produce
-32 bit addresses. 
+If or when physical acccess to register bits and SRAM becomes desirable, new bytecode ops will have 
+to be introduced, which for wider architectures may comprise a base register plus an offset value to
+produce 32 bit addresses. 
 
 ### NATIVE = written in C
 
 For now, the only interface to hardware goes through the NATIVE interface. Native functions
 are written in C, and are listed in a table in the C code. These have access to the stacks, 
-for grabbing parameters, and for leaving return values to the RFOrth runtime. 
+for grabbing parameters, and for leaving return values to the RFOrth runtime, as well as the 
+Forth heap.
 
 Currently native words have been created for Pin control and the i2c ("Wire") library on
-Arduino.
+Arduino. 
 
 To list all native words, run the native word called "?" - it lists all native words
 available, with descriptions
@@ -294,8 +293,9 @@ addr @                 ;; read word-sized value
 
 Values
 ------
-All values on the data stack are *words*, which in RFOrth means 2 bytes. The REPL recognizes
-number literals on the following formats:
+All values on the data stack are *2 byte words*. 
+
+The REPL recognizes number literals on the following formats:
 
 ```
 0xCAFE			;; hex
@@ -316,7 +316,8 @@ Similarly, there are four ways to print values off the stack:
 
 Buffers and strings
 -------------------
-Strings are stored in buffers, up to 255 bytes of length. The first byte is the length.
+Strings are stored in buffers, up to 256 bytes of length. The first byte is the length, followed
+by up to 255 single byte characters. 
 
 This is also the case for the &CompileBuf, &NextWord and &LVBuf buffers, which are used by
 the colon compiler, and are available for other uses at runtime. The notation for addresses
@@ -332,8 +333,6 @@ To print a string, use the ".str" word.
 cr "Welcome_to_this_program .str
 ```
 
-The "cr" word means carriage return. It is Forth tradition to do carriage return before
-printing something instead of after.
 
 ### Available buffers
 
@@ -437,22 +436,9 @@ Control structures
 bool IF ... THEN ...
 bool IF ... ELSE ... THEN ...
 BEGIN .... bool AGAIN?
-
-: example ( -- ) 
-  (prints numbers 0-9)
-  0 => count
-  BEGIN
-     cr count .
-     count 1+ => count
-     count 10 lt 
-     AGAIN?
-     "done .str
-  ;
 ```
 
-### Structure
-
-These words add a certain syntax to Forth, and work as follows:
+### Examples
 
 ```
 : max (a b -- n)
@@ -463,14 +449,7 @@ These words add a certain syntax to Forth, and work as follows:
     a
   THEN
 ;
-```
-The condition comes first, followed by IF, and then comes the code that executes if
-the condition is true. Then comes ELSE and the else-code, and finally the THEN word,
-which indicates the end of the structure, like "... and then we continue with ..."
 
-The ELSE is optional, can also use just IF ... THEN.
-
-```
 : count (max -- )
   => max 
   0 => counter
@@ -481,8 +460,7 @@ The ELSE is optional, can also use just IF ... THEN.
   ;
 ```
 
-The word "AGAIN?" is a condition jump back to BEGIN. The condition is that counter is
-less than max. 
+The word "AGAIN?" is a conditional jump back to BEGIN.
 
 ### Break?
 

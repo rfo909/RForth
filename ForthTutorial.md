@@ -78,7 +78,7 @@ for conditionals and loops. These were implemented in RFOrth initially, but were
 the "firmware", which is found in ACode.txt.
 
 This code is "assembled" offline, and generates a sequence of bytes, which is patched into the C code,
-as an array of bytes. This code implements the REPL, the COLON compiler, conditionals and loops, as mentioned, 
+as an array of bytes. This code implements the interactive REPL, the COLON compiler, conditionals and loops, as mentioned, 
 and a few other useful words.
 
 Compiled?
@@ -110,6 +110,8 @@ Interactive
 -----------
 Forth is an interactive programming language. Usually one connects to the running instance
 via a serial terminal. This is the same for RFOrth. 
+
+The interactive interface is usually just referred to as the REPL (read, execute, print, loop).
 
 This gives us the ability to debug code, word by word, in the actual environment, which is
 particularly useful on microcontrollers, which is the target system for RFOrth. With a sufficient
@@ -238,7 +240,7 @@ The notation for conditionals in Forth is a bit special, since it is a stack lan
 <cond> IF ... (if true) ... ELSE ... (if false) ... THEN ...
 ```
 
-### Making it work
+### How they work
 
 Defining a word IF and making it IMMEDIATE, means that when we compile code,
 and come across an IF, instead of creating code to call the IF word, we call it immediately. This
