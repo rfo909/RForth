@@ -172,7 +172,8 @@ particularly useful on microcontrollers, which is the target system for RFOrth. 
 parts of the code from the command line, to verify the output.
 
 Until the Pi Pico and its scaled down Python came along, as far as I know Forth was the only
-programming environment that could do this on microcontrollers.
+programming environment that could do this on microcontrollers. LISP is of course also interactive, 
+but I don't think it fits into typical small microcontrollers with a few KBytes of RAM.
 
 Tiny
 ----
@@ -202,55 +203,74 @@ Why the assembly level?
 With assembly operations being Forth words, why bother with the assembler to produce byte code,
 and not just go straight to Forth.
 
-The answer is both simple and complex. The simple answer it that it was fun doing it this way,
-and got me up to speed programming both the assembly language and programming *in* the assembly
-language pretty fast. I created an assembler and an interpreter in a scripting language (which
-I wrote myself).
+The answer is both simple and complex. 
+
+
+### Simple (the real reason?)
+
+The simple answer it that it was *fun* doing it this way, and got me up to speed programming both
+the assembly language and programming *in* the assembly language pretty fast. I created an assembler 
+and an interpreter in a scripting language (which I wrote myself). It allows me to step through code,
+inspect simulated memory, set break points etc. 
+
+The Interpreter script has been invaluable for debugging the ACode, in a way an actual C implementation
+running on an actual microcontroller can hardly be.
+
+### Complex (also important)
 
 The more complex answer is that it is hard to define the colon compiler using a colon, so
-it must be defined in an environment where a single colon does not yet have any meaning. I also
-wanted as much of the program to be portable. Writing real functionality in virtual assembly
-meant the interpreter (both the first one and the C version) would be simpler.
+it must be defined in an environment where a single colon does not yet have any meaning. Of course
+it could have been written in C, but I also wanted as much as possible of the system to be 
+portable. Writing real functionality in virtual assembly meant the interpreter (both the first one,
+and the C version) would be simpler.
+
+The interpreters don't know about Forth words at all; they handle stacks and address space, and execute the
+single byte instructions of code. Yes, it is slower than implementing the REPL and compiler in
+C, but it doesn't really matter much. What does matter is execution speed when running the compiled
+ application code. Besides, as was mentioned above: great fun!!
 
 Second, targeting devices with very little RAM, it is important to shuffle as much functionality
 away from that RAM. The ACode gets assembled into a byte buffer in C, of type "const", which
-means it gets located in Flash when the code is copied to the microcontroller.
+means it gets located in Flash when the code is copied to the microcontroller. 
+
+(Side note: some
+Arduinos require such data to be both "const" and marked with "PROGMEM", but for the Nano Every, 
+that combination fails, and "const" alone works perfectly)
 
 Developing in the "assembly" language of the ACode file is pretty close to programming in Forth,
-with some exceptions, like no control structures, just jumps to tags, and very primitive
-support for local variables. 
+with some exceptions, like no control structures, just conditional and unconditional jumps to tags,
+which represent addresses, and very primitive support for local variables. 
 
+### RAM
 
-In RFOrth, RAM is used for three (?) things, basically.
+In RFOrth, RAM is used for three things, basically.
 
 - Stacks and system buffers
 - System status fields
-- Compiled Forth words
+- Compiled Forth words: code and dictionary entries
 
-The third refers to words where we enter a colon definition. When this happens, if the word compiles
-correctly, a dictionary entry is allocated, and its next field points to the predefined initial
-dictionary, which at runtime resides in flash. 
+The third refers to words where we enter a colon definition. When we compile the very first colon
+word, if it compiles correctly, a dictionary entry is allocated, and its next field points to the
+predefined initial dictionary, which at runtime resides in flash. 
 
-To make this work, the implementation makes Flash and RAM into a continous address space, after copying
-some of the buffers defined towards the end in ACode into RAM, since Flash is basically read only.
-
-Of the around 3k bytes generated from ACode, only about 190 bytes represent dynamic values, and that 
-range is copied into RAM when the system boots. 
+To make this work, the C implementation makes Flash and RAM into a continous address space, after copying
+the buffers and state variables defined in ACode into RAM (some 190 bytes), as the Flash part of the address
+space is read only.
 
 Simple and complex.
 
 
 Immediate words
 ---------------
-The control structures such as IF THEN and loops, could be implemented in Forth itself, through a
-mechanism called IMMEDIATE. It is really just a status flag in the dictionary entry for a
+The control structures such as conditionals and loops, can always be implemented in Forth itself, through a
+mechanism called IMMEDIATE. This is really just a status flag in the dictionary entry for a
 word, but this single thing is one of the defining characteristics of Forth. Because with it
 we can extend the compiler.
 
 The Forth base compiler is very primitive. It consumes a sequence of characters, using space
 to identify words, and then basically does the following:
 
-- does the word look like a number, then generate code which puts that number on the stack at runtime
+- if the word looks like a number, then generate code which puts that value on the stack at runtime
 - otherwise look the word up in the dictionary
 - if the word is tagged as IMMEDIATE, *call it* - that's right!
 - otherwise, generate code to call the word
@@ -259,24 +279,39 @@ This is the RFOrth compiler. Traditional Forth allows words to look like numbers
 saying that only if dictionary lookup fails, if it is a number, then generate code that
 pushed it on the stack at runtime. Basically moving the first point last. 
 
+I suspect the reason for that ordering, is one of efficiency, not that it is useful defining words
+that look like numbers. 
+
 The power of IMMEDIATE words is immense! 
 
-For example, defining a word IF and making it IMMEDIATE, means that when we compile code,
-and come across an IF, we call code which may not only generate some code, but also modify
-the compiler state, or introduce new state variables, lists and stacks.
+### IF THEN
 
-We then create the word THEN, which is also IMMEDIATE. Its code can then pick up on the state
-and data saved by the IF, and so manage conditional and unconditional jumps forwards and
-backwards in the output of the compiler.
-
-IF THEN
--------
 The notation for conditionals in Forth is a bit special, since it is a stack language.
 
 ```
 <cond> IF ... (if true) ... THEN ... 
 <cond> IF ... (if true) ... ELSE ... (if false) ... THEN ...
 ```
+
+### Making it work
+
+Defining a word IF and making it IMMEDIATE, means that when we compile code,
+and come across an IF, instead of creating code to call the IF word, we call it immediately. This
+lets us write code which not only generates some (binary) code, but also modifies
+the compiler state, or even introduce new state variables, lists and stacks.
+
+In RFOrth, the ACode has a small reserved stack called the compile stack. The IF word 
+needs to create a forward jump to either ELSE or THEN, if the condition preceding the
+IF, is false. 
+
+Similarly the words THEN and ELSE are also immediate. They access the compile stack 
+and use the information to patch the forward conditional jump at the IF location,
+to jump to the correct address within the compiled code, which now is known.
+
+Loops are simpler in that they only contain a back jump, to from the bottom of the 
+loop to the top, but still need to know where that top is. The compile stack does
+this, and at the same time allows for nested structures, both for conditionals
+and loops.
 
 
 
