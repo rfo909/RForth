@@ -22,13 +22,13 @@ fun! I also find the Forth way of extending the compiler, by using immediate wor
 Writing code in Forth, to compile Forth ... that's awesome! 
 
 
-Design decision - word size 2 bytes
+Design decision - cell size 2 bytes
 -----------------------------------
-To keep code fairly small, the core of the language operates with 2 bytes word size. All stacks
+To keep code fairly small, the core of the language operates with 2 bytes cell size. All stacks
 store word size values, while the byte code instructions are single byte sized. 
 
 To address physical memory, flash, devices, registers on the Pi Pico, which has 32 bits word
-length, we might combine two RForth words to form a base and add an offset to that to address
+length, we might combine two RForth cells to form a base and add an offset in order to address
 bytes or words. The actual workings of interfacing hardware will have to be resolved later.
 
 Note: javing added a native interface in order to call specially named functions in the Interpreter
@@ -75,8 +75,8 @@ Representing the value 500
 Two bytes on this format can represent values 0-4095.
 ```
 
-For global jumps, addresses are encoded as 3 bytes, or 18 bits. The word size (traditionally 
-called "cells" in Forth) is two bytes, which allows for addressing 64k of memory. 
+For global jumps, addresses are encoded as 3 bytes, or 18 bits. The cell size
+is two bytes, which allows for addressing 64k of memory. 
 
 For jumps inside words, I use relative offsets, for forward and back movements, and those are encoded as a single
 byte, which allows a max jump length of 63 positions.
@@ -103,7 +103,7 @@ unsigned values (and thus double the range).
 The compile stack
 -----------------
 
-A simple word sized compile stack is statically allocated in ACode.txt. Each word
+A simple cell sized compile stack is statically allocated in ACode.txt. Each value
 pushed contains a type in the first byte and an absolute location within the compile
 buffer in the second. The compile buffer is limited to 127 bytes.
 
@@ -255,6 +255,8 @@ do so by direct addressing, for speed and simplicity.
 Forth code can look up data and functions in ACode.txt by tag, typically &CompileBuf as well as &GetNextWord, and
 with all the assembly instructions available as words, it can call code as well. 
 
+(Note: this was easily implemented in the scripted Interpreter, but has not been brought into the C implementation).
+
 
 2025-09-03 ELSE, BEGIN and AGAIN?
 ------------------------------
@@ -267,7 +269,7 @@ Nested loops works fine, as do nested conditionals.
 
 2025-09-04 CONSTANT and VARIABLE
 --------------------------------
-Variables are constants pointing to single word size memory blocks allotted by the VARIABLE word. To
+Variables are constants pointing to single cell sized memory blocks allotted by the VARIABLE word. To
 store bigger structures, manually allot the memory, and store the pointer to that memory as a constant.
 
 ```

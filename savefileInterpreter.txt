@@ -180,7 +180,7 @@
 		self.executionCount=self.executionCount+1
 	}
 
-	self._k=Lambda{ # wordsize ( -- N )
+	self._k=Lambda{ # cellsize ( -- N )
 		self.push(self.WORDSIZE)
 	}
 	self._K=Lambda{ # allot  ( N -- )
@@ -285,12 +285,12 @@
 		self.PC=targetAddr # JMP
 	}
 
-	self._I=Lambda{  # @ read word
+	self._I=Lambda{  # @ read cell
 		addr=self.pop
 		self.push(self.memory.readWord(addr))
 	}
 	
-	self._J=Lambda{  # ! write word
+	self._J=Lambda{  # ! write cell
 		addr=self.pop
 		if (addr < self.DATA_START) error("!: writing below DATA_START: 0x" + addr.hex(4))
 		value=self.pop
@@ -344,7 +344,7 @@
 		self.dataStack.reset
 	}
 	
-	self._n=Lambda{ # W+   ( n -- n+WORDSIZE )
+	self._n=Lambda{ # CELL+   ( n -- n+WORDSIZE )
 		value=self.pop
 		self.push(value+self.WORDSIZE)
 	}

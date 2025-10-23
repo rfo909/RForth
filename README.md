@@ -53,6 +53,17 @@ Unlike traditional Forth's, this language is case sensitive. That means the word
 be written "constant", and so on.
 
 
+Important words
+---------------
+
+```
+?           ;; list words in dictionary (can also use "words")
+.s	        ;; show stack content
+clear       ;; clear stack
+NATIVE ?    ;; list native words
+```
+
+
 Introduction to Forth?
 ----------------------
 
@@ -62,6 +73,15 @@ If the above example makes little or no sense, perhaps read my [Introduction to 
 
 Implementation
 ==============
+
+Cells
+-----
+RFOrth uses a 2-byte cell size, which is the size of all stack values. The same goes for variables
+and constants; those are also cell sized values. 
+
+Variables are constants that point to an allocated cell containing the value, as I believe is how
+it works in other Forth's as well.
+
 
 Bytecode virtual machine
 ------------------------
@@ -73,15 +93,16 @@ The virtual machine executes *bytecode* generated both by the Assembler (a scrip
 by the internal compiler of the language.
 
 
-The stacks
-----------
+The data stack
+--------------
 
 RFOrth has four stacks, but as a programmer we deal only with one, which
 is the *data stack*. Sometimes it is called parameter stack. This is where
 we put parameters to words, and get values back from words. Programming in
 Forth we interact with the stack all the time.
 
-### The other three
+The other stacks
+----------------
 
 The second stack, is named the *call stack* in RFOrth. In traditional Forth's it
 is called the return stack. When a word calls another word, the return address
@@ -103,32 +124,9 @@ code, to keep track of forward and backward jumps within the code for a word, li
 conditionals and loops. 
 
 At runtime, the three first stacks are managed by the C code, while the fourth is 
-managed by the ACode.txt, which is where the colon compiler is defined.
+managed by the ACode.txt, when compiling certain immediate words like conditionals and loops.
 
 
-Key words
----------
-
-```
-?		;; list words in dictionary (can also use "words")
-.s		;; show stack content
-clear		;; clear stack
-NATIVE ?	;; list native words
-```
-
-The initial dictionary of RFOrth is as follows:
-
-```
-! .str 1+ << >> @ HERE PANIC PC W+ add allot and andb atoi call cforce
-cget clear cpush cr cset div drop dump dup eq ge gt halt inv jmp jmp?
-le lt memcpy mul n2code native nativec ne not null or orb over print print#
-print#s printb printc rback? readb readc ret rfwd? streq sub swap u2spc
-wordsize writeb . IF THEN ELSE BEGIN AGAIN? CONSTANT VARIABLE NATIVE Dict
-DictUse DictClear -> .W BufReset BufAdd ShowBuffer BufCopy EmitNumber
-EmitByte &DictionaryHead &DebugFlag &CompileBuf &CompileBufEnd &LVBuf
-&LVBufEnd &NextWord &NextWordEnd &AllBuffers &AllBuffersEnd &IsCompiling
-? .s words : => ; IMMEDIATE
-```
 
 
 The assembly level
@@ -287,13 +285,13 @@ is that array of bytes defined in C.
 value addr writeb      ;; write byte
 addr readb             ;; read byte
 
-value addr !           ;; write word-sized value (2 bytes) 
-addr @                 ;; read word-sized value
+value addr !           ;; write cell value (2 bytes) 
+addr @                 ;; read cell value
 ```
 
 Values
 ------
-All values on the data stack are *2 byte words*. 
+All values on the data stack are *2 byte cells*. 
 
 The REPL recognizes number literals on the following formats:
 
@@ -516,3 +514,77 @@ and returns 1 if they are equal, otherwise 0. It is an assembly level function.
 ```
 
 This should print a 1
+
+
+Custom dictionaries
+-------------------
+RFOrth lets us define custom dictionaries.
+
+```
+Dict Accumulator
+Accumulator DictUse
+
+0 VARIABLE count
+
+: add (n --) count @ add count ! ;
+
+DictClear
+```
+
+The first line creates a dictionary and stores in on the global dictionary under the name Accumulator.
+We then call the word, which puts a pointer on the stack, and call DictUse.
+
+It puts the link to the Accumulator dictionary into a special field for one "extra" dictionary, which
+if defined, is traversed first, when looking for a symbol. 
+
+We then go ahead and define content as usual, before calling DictClear, which nulls the "extra" dictionary field.
+
+Listing the words with "?" will now show the "Accumulator" word only.
+
+### Reason
+
+The point of separate dictionaries is two fold. It frees us from inventing unique names, and in doing
+so it helps avoid polluting the global dictionary name space. 
+
+### View
+
+To view the content of a custom dictionary, just use it with "DictUse", then type "?" - the "extra" dictionary
+is listed, followed by a separator and then the global dictionary. 
+
+### Use in code
+
+RFOrth implements an immediate word "->" which takes the two following words from the input stream
+as the name of the dictionary, and the word inside.
+
+```
+10 -> Accumulator add    (calls the "add" word inside the custom dictionary, NOT the addition op)
+-> Accumulator count @ . (should now print 10)
+```
+
+This code works both interactively and from inside compiled words. 
+
+### No call overhead
+
+The "->" word is implemented in ACode (tag :->), where it just identifies the dictionary entry within the
+custom dictionary, then leaves the processing to the same &ExecuteWord that is used elsewhere. 
+
+It is tagged as an IMMEDIATE word in the Forth initial dictionary, near the end of ACode.txt.
+
+What this means is that there is no overhead calling a word inside a dictionary; the reference is 
+resolved fully at compile time, just as for words in the global dictionary.
+
+```
+: showAcc (--) -> Accumulator count @ . ;
+```
+
+Type checking
+-------------
+Hah hah hah ... :-)
+
+Seriously though, the system enforces some pointer validation for the read/write operations, ensuring
+we can not access memory above HERE. Also, since custom dictionaries are constants, the DictUse word
+actually checks that the word given as name of dictionary, refers to a constant. 
+
+Other than that: nope!
+
+This is firmly within the Forth tradition, I think!

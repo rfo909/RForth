@@ -245,7 +245,7 @@
 	
 	; (dictEntryPointer past the string - pointing at CODE, MODE, NEXT (words)
 	; ( CODE-ptr )
-	dup W+ @  
+	dup CELL+ @  
 		; (CODE-ptr-ptr MODE-value) 
 		&ExecuteWord call
 	
@@ -395,7 +395,7 @@
 	
 	a 
 		a readb add 1 add
-			W+ W+ cpush			(c=next-field)
+			CELL+ CELL+ cpush			(c=next-field)
 
 	;; write next pointer
 	b @ c !
@@ -413,7 +413,7 @@
 	c readb 1 add cpush	(d=name buffer length incl length byte)
 	HERE cpush		(e=dict entry)
 	
-	d W+ W+ W+ allot		(name code mode next)
+	d CELL+ CELL+ CELL+ allot		(name code mode next)
 	c e &BufCopy call
 	
 	(code)
@@ -422,7 +422,7 @@
 	
 	(mode)
 	a 
-		e d add W+ !
+		e d add CELL+ !
 	
 	e &PushDictionaryEntry call
 	ret 
@@ -458,7 +458,7 @@
 		
 		b 
 			b readb add 1+ 	;; byte count past string
-				W+ W+			;; past code-pointer and flags
+				CELL+ CELL+			;; past code-pointer and flags
 					@			;; read next pointer
 		b!						;; update b with it
 		&*next jmp
@@ -495,13 +495,13 @@
 :Str_Invalid_dictionary_   %"Invalid_dictionary_
 :Str_Not_constant		%"_:_Not_constant
 
-:-> ( ... dict word )
+:-> (dictWord word -- ? )
 	&GetNextWord call 
 	&NextWord &DictLookup call cpush 	(a=dict-entry for dict)
 	a null eq &*dictNotFound jmp?
 	
 	a dup readb add 1+ cpush 			(b=code)
-	b W+ @ MODE_CONSTANT ne &*notConstant jmp?
+	b CELL+ @ MODE_CONSTANT ne &*notConstant jmp?
 
 	b @ b!		(b=dict-head)
 	
@@ -511,7 +511,7 @@
 	c c readb add 1+ cpush			(d=ptr to code-bytes)
 	
 	d					(code-ptr-ptr)
-		d W+ @				(mode)
+		d CELL+ @				(mode)
 			&ExecuteWord call
 			
 	ret				
@@ -611,7 +611,7 @@
 	orb        	         	(pos is low byte)
 		cpush			(a=data word)
 
-	&CompileStack readb wordsize mul 1+
+	&CompileStack readb cellsize mul 1+
 		&CompileStack add 
 			cpush			(b = write pos )
 
@@ -634,7 +634,7 @@
 	
 	:*next
 		&CompileStack 
-			b wordsize mul add 
+			b cellsize mul add 
 				1+ c!		(c=actual read pos)
 		;;cr "CompStack:_ .str "read_pos=" .str c print
 		;;cr "CompStack:_ .str "checking_value= .str c @ print
@@ -893,7 +893,7 @@
 (Use: value VARIABLE xx, then read and write it as a pointer to a word)
 
 :VARIABLE ( value )
-	HERE wordsize allot		(value ptr)
+	HERE cellsize allot		(value ptr)
 	swap				(ptr value)
 	over				(ptr value ptr) 
 	!				(ptr)
@@ -941,6 +941,9 @@
 	dump
 	ret
 	
+
+:CELL 2 ret
+:CELLS 2 mul ret
 	
 :DictShowWords ( dictHead -- )
 	@ cpush 		;; a=dict-entry
@@ -957,7 +960,7 @@
 		:*noBreak
 
 		a readb a add 1+ a!   		;; past the name
-		a W+ W+ @ a!			;; a=a.next
+		a CELL+ CELL+ @ a!			;; a=a.next
 		&*next jmp
 	:*done
 	ret
@@ -1028,7 +1031,7 @@
 	%'HERE          HEX:0067        BIN_INSTR       %NEXT        ;; g
 	%'PANIC         HEX:0030        BIN_INSTR       %NEXT        ;; 0
 	%'PC            HEX:0050        BIN_INSTR       %NEXT        ;; P
-	%'W+            HEX:006E        BIN_INSTR       %NEXT        ;; n
+	%'CELL+            HEX:006E        BIN_INSTR       %NEXT        ;; n
 	%'add           HEX:002B        BIN_INSTR       %NEXT        ;; +
 	%'allot         HEX:004B        BIN_INSTR       %NEXT        ;; K
 	%'and           HEX:0026        BIN_INSTR       %NEXT        ;; &
@@ -1079,7 +1082,7 @@
 	%'sub           HEX:002D        BIN_INSTR       %NEXT        ;; -
 	%'swap          HEX:006D        BIN_INSTR       %NEXT        ;; m
 	%'u2spc         HEX:005F        BIN_INSTR       %NEXT        ;; _
-	%'wordsize      HEX:006B        BIN_INSTR       %NEXT        ;; k
+	%'cellsize      HEX:006B        BIN_INSTR       %NEXT        ;; k
 	%'writeb        HEX:0048        BIN_INSTR       %NEXT        ;; H
 
 	;; ----------------------------------------------------------
@@ -1098,6 +1101,8 @@
 	%'DictClear	%DictClear	BIN_NORMAL			%NEXT
 	%'->		%->			BIN_IMMEDIATE		%NEXT
 	%'.W		%.W			BIN_NORMAL			%NEXT    ;; show DictionaryEntry for word
+	%'CELL		%CELL		BIN_NORMAL			%NEXT
+	%'CELLS		%CELLS		BIN_NORMAL			%NEXT
 	
 	;; ----------------------------------------------------------
 

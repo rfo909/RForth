@@ -208,10 +208,10 @@
 
 	allot		:K
 	HERE		:g
-	wordsize	:k
+	cellsize	:k
 	PC		:P		;; push PC word on stack
 	
-	W+		:n	;; wordsize add 
+	CELL+		:n	;; cellsize add 
 
 	;; data stack operations
 	drop		:j		;; remove stack top element

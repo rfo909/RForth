@@ -2,7 +2,7 @@
 #define CSTACK_SIZE       30    // call stack
 #define FSTACK_SIZE       20    // call stack frames: each frame is 2 values
 
-#define WORDSIZE    2
+#define CELLSIZE    2
 
 #define WORD_INVALID      0xFFFF
 #define WORD_NULL         0

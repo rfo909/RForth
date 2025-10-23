@@ -269,10 +269,10 @@ void populateOps() {
   ops[104]=&op_ne;
   ops[105]=&op_not;
   ops[106]=&op_drop;
-  ops[107]=&op_wordsize;
+  ops[107]=&op_cellsize;
   ops[108]=&op_dup;
   ops[109]=&op_swap;
-  ops[110]=&op_W_plus;
+  ops[110]=&op_CELL_plus;
   ops[111]=&op_over;
   ops[112]=&op_dump;
   ops[113]=&op_andb;
@@ -339,10 +339,10 @@ void op_HERE () {push(HERE);}
 void op_ne () {Word b=pop(); Word a=pop(); push(a!=b);}
 void op_not () {Word x=pop(); push(!x);}
 void op_drop () {pop();}
-void op_wordsize () {push(WORDSIZE);}
+void op_cellsize () {push(CELLSIZE);}
 void op_dup () {Word x=pop(); push(x); push(x);}
 void op_swap () {Word b=pop(); Word a=pop(); push(b); push(a);}
-void op_W_plus () {Word x=pop(); push(x+WORDSIZE);}
+void op_CELL_plus () {Word x=pop(); push(x+CELLSIZE);}
 void op_over () {Word b=pop(); Word a=pop(); push(a); push(b); push(a);}
 void op_dump () {op_cr(); for (int i=0; i<dStackNext; i++) {Serial.print(dStack[i]); Serial.print(" ");} op_cr();}
 void op_andb () {Word b=pop(); Word a=pop(); push((Word) (a & b));}

@@ -41,7 +41,7 @@ other words, by putting parameters, if there are any, on the stack, call the wor
 up the result, if any, from the stack.
 
 Available words are listed in a dictionary memory structure. It consists of dictionary entries
-which point to the word as a string, and to the code of that word, a status code, which redefines
+which point to the string representation for the word, to the code of that word, a status code, which redefines
 the meaning of the code pointer for some cases, and finally a pointer to the previously defined
 word. 
 
@@ -49,7 +49,7 @@ The dictionary is a linked list, and new words are always added to the top.
 
 Naming
 ------
-Words in Forth do not need to follow classic "identifier" syntax. They can consist of any
+Word names in Forth do not need to follow classic "identifier" syntax. They can consist of any
 sequence of letters, apart from whitespace, and apart from looking like numbers. Special characters
 are frequently used in traditional Forth, such as
 
@@ -81,9 +81,10 @@ This code is "assembled" offline, and generates a sequence of bytes, which is pa
 as an array of bytes. This code implements the interactive REPL, the COLON compiler, conditionals and loops, as mentioned, 
 and a few other useful words.
 
+
 Compiled?
 ---------
-Forth is unique in that it is interactive *and* compiled. To define new words in Forth, the syntax
+Forth is unique in that it is *interactive and compiled*! To define new words in Forth, the syntax
 is as follows:
 
 ```
@@ -105,6 +106,116 @@ number
 
 The second line is a single dot ("."), which is a Forth word which takes the top value off
 the stack and prints it. It should result in displaying 42.
+
+
+Memory
+------
+Forth has system words for managing memory. Traditionally memory is organized in terms of
+two sizes, the CELL and single bytes. 
+
+The RFOrth CELL size is 2 bytes; on other Forth's it may differ. The point of the CELL definition
+is that this is the size of addresses, which in turn defines the address space. 
+
+### Read and write
+
+```
+<value> <addr> !            (write cell value to address)
+<addr> @                    (read cell value from address)
+
+<value> <addr> writeb       (write byte value to address)
+<addr> readb                (read byte value from address)
+```
+
+The values that are read from memory are put on the data stack.
+
+### Constants and variables
+
+Forth lets us define both constants and (global) variables. Their names are put onto the 
+dictionary, but practical use differs a little:
+
+```
+42 CONSTANT const
+42 VARIABLE var
+```
+
+To use the value of a constant, just refer its name:
+
+```
+c .
+```
+
+This will print 42.
+
+The variable is different, as it is really a constant as well, but the constant value is
+the address of a location in memory where the dynamic value is stored. To read and update it,
+we use the words for read and write:
+
+```
+v @ .       (prints 42)
+55 v !      (changes variable value)
+v @ .       (prints 55)
+```
+
+### Allocating memory
+
+All Forth's implement two words for managing memory, specifically for allocating data from
+the heap.
+
+```
+HERE         (returns the current top of the heap)
+<n> allot    (allocate n bytes)
+```
+
+In RFOrth, the HERE value is the next available byte on the heap, and RFOrth enforces a
+simple memory protection, so that trying to read or write to addresses starting from the
+HERE value, is detected and fails with an error. 
+
+The "allot" word simply increases the HERE value, up until all available heap space is 
+used.
+
+Example, building a linked list (stack) of values
+
+```
+0 VARIABLE ListHead
+
+: listAdd (value -- ) 
+  (store parameter in local variable)
+  => value
+
+  (store HERE into data local variable)
+  HERE => data
+
+  (allocate 2 cells worth of data - advanced HERE by 4 bytes)
+  2 CELLS allot
+
+  (write value into the first cell)
+  value data !
+
+  (write ListHead value into second cell - this is the next-pointer)
+  ListHead @
+    data CELL+ !
+
+  (store pointer to the new list element in ListHead variable)
+  data ListHead !
+;
+
+: showList (--)
+  ListHead @ => ptr
+  BEGIN
+    ptr 0 ne IF 
+      cr ptr @ . 
+      ptr CELL+ @ => ptr
+    THEN
+    ptr AGAIN?
+;
+
+4 listAdd
+5 listAdd
+showList
+```
+
+    
+
 
 Interactive
 -----------
@@ -259,4 +370,3 @@ Loops are simpler in that they only contain a back jump, to from the bottom of t
 loop to the top, but still need to know where that top is. The compile stack does
 this, and at the same time allows for nested structures, both for conditionals
 and loops.
-
