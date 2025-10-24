@@ -1112,6 +1112,8 @@
 	%'BufCopy		%BufCopy		BIN_NORMAL		%NEXT
 	%'EmitNumber	%EmitNumber		BIN_NORMAL		%NEXT
 	%'EmitByte		%EmitByte		BIN_NORMAL		%NEXT
+	%'GetNextWord	%GetNextWord	BIN_NORMAL		%NEXT
+    %'ResetCompile  %ResetCompile   BIN_NORMAL		%NEXT
 
 	;; -- addresses of stuff that may be useful in Forth --
 	%'&DictionaryHead	%GetAddrDictionaryHead		BIN_NORMAL	%NEXT
@@ -1164,6 +1166,8 @@
 			w0 w0 w0 w0 w0 w0 w0 w0			;; 
 			w0 w0 w0 w0 w0 w0 w0 w0			;; For colon compiler
 			w0 w0 w0 w0 w0 w0 w0 w0			;; and as scratch buffer at runtime
+			w0 w0 w0 w0 w0 w0 w0 w0
+			w0 w0 w0 w0 w0 w0 w0 w0
 
 :CompileBufEnd
 

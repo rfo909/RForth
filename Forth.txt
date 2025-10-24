@@ -1,3 +1,110 @@
+(CREATE and DOES>)
+
+(TODO: 
+
+Implement CREATE and use it from COLON. Modify SEMICOLON to work with latest DictEntry
+
+Possibly Implement a state store, where we put HERE and DictionaryHead in order to save a failing
+compile from eating up a DictEntry worth of space, something like a manual MARK REGRET COMMIT
+
+Move IMMEDIATE outside the colon def
+
+For now, using the <DONE for the new SEMICOLON implementation
+
+)
+
+
+
+
+
+
+(----------------------------)
+0 VARIABLE CREATE-HERE
+
+: CREATE (--)
+  IMMEDIATE
+  GetNextWord
+
+  (allocate dictionary entry)
+  HERE => DE
+  &NextWord readb 1+ => name#
+  name# 6 add allot
+  &NextWord DE name# memcpy
+
+  (store 0 in code pointer)
+  0 
+	DE name# add !
+  (store CONSTANT in status)
+  3
+    DE name# add CELL+ !
+  (set next)
+  &DictionaryHead @
+	DE name# add CELL 2 mul add !
+  (and update dict head)
+  DE &DictionaryHead !
+
+  (store HERE for DOES>)
+  HERE CREATE-HERE !
+;
+
+: DOES>
+  IMMEDIATE
+
+  0 &CompileBuf writeb 
+  HERE CREATE-HERE @ ne IF
+    CREATE-HERE @ EmitNumber
+  THEN
+;
+
+
+: <DONE (test)
+  IMMEDIATE
+
+  &IsCompiling readb not IF 
+    "Not_in_compile_mode cr .str
+    ret 
+  THEN
+  0x52 EmitByte  (ret)
+
+  (locate top dict-entry)
+  &DictionaryHead @ 
+    => DE
+  DE .str "_ok_ .str
+  &CompileBuf readb 
+    print# "_bytes .str cr
+  (allocate code buffer)
+  HERE => code
+  &CompileBuf readb 1+ 
+    => code#
+  code# allot
+
+  (copy code + length byte)
+  &CompileBuf code code# 
+    memcpy
+
+  code 1+ (past length)
+    DE dup readb add 1+ !
+
+  ResetCompile
+; 
+
+: Array (n -- )
+  IMMEDIATE 
+  CREATE 
+    CELLS allot 
+  DOES> 
+    CELLS add 
+  <DONE ;
+
+   
+  
+(DOES>'nt work yet)
+
+
+
+####################################################
+(Using buffers for string ops)
+
 (----------------------------)
 Dict Str
 Str DictUse
@@ -60,4 +167,7 @@ DictClear
   "test_ S+ 
   "tust_ S+ 
   S. ;
+
+
+
 
