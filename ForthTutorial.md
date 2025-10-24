@@ -66,37 +66,48 @@ EmitNumber EmitByte &DictionaryHead &DebugFlag &CompileBuf &CompileBufEnd
 
 Naming
 ------
-Word names in Forth do not need to follow classic "identifier" syntax. They can consist of any
-sequence of letters, apart from whitespace, and apart from looking like numbers. Special characters
-are frequently used in traditional Forth, such as
+Word names in Forth do not need to follow classic "identifier" rules. They can consist of any
+sequence of letters, apart from whitespace, and apart from looking like numbers. The following
+are examples of valid word names
 
 ```
-R>
->R
+:
 .
-,
+;
+R>
+DOES>
+my:something
+x/y-%
+name#
 ```
 
-The two first interact with the return stack in traditional Forth. The comma means "pop value from stack,
-allocate memory for it, and write value there" (more or less), and the single dot means remove and display top
-value from the stack.
 
-Of these four, RFOrth implements the DOT word. The two first are irrelevant due to how local variables
-are implemented, and the COMMA, well, maybe some day, when I decide to implement CREATE and DOES>, but that's
-a bit of an advanced topic.
+Comments
+--------
+Text written inside parantheses is considered a comment in Forth:
+
+```
+(this word does so and so)
+: myWord  ... ;
+```
+
+It is customary to follow the new word with a special comment that identifies
+the values that the word consumes from the stack, followed by two dashes, and then
+the values it puts back. It is still just a comment, but very useful.
+
+```
+: times (count string -- string) ... ;
+```
 
 Syntax
 ------
-Forth is a language that has no syntax. It is just a stream of characters. Sequences of non-space are called
-words. Additional syntax is defined via words written in Forth, implementing control structures. 
+Forth is a language that has no syntax. It is just a stream of words separated by space. 
+
+What syntax there is, is defined by creating words, written in Forth, implementing control structures. 
 
 RFOrth has only two control structures, the IF-ELSE-THEN and BEGIN-AGAIN?
 for conditionals and loops. These were implemented in RFOrth initially, but were then migrated into
 the "firmware", which is found in ACode.txt, mainly to save precious RAM.
-
-The ACode file is "assembled" offline, which generates a sequence of bytes. Those are pasted into the C code,
-as an array of bytes. This code implements the interactive REPL, the COLON compiler, conditionals and loops, as mentioned, 
-and a few other useful words.
 
 
 Compiled?
