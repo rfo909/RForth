@@ -976,6 +976,9 @@
 :GetAddrNextWord &NextWord ret
 :GetAddrNextWordEnd &NextWordEnd ret
 :GetAddrIsCompiling &IsCompiling ret
+:GetAddrIsCompilingWord &IsCompilingWord ret
+:GetAddrIsCompilingWordMode &IsCompilingWordMode ret
+:GetAddrSEMICOLON &SEMICOLON ret
 :GetAddrLVBuf &LVBuf ret
 :GetAddrLVBufEnd &LVBufEnd ret
 :GetAddrAllBuffers &AllBuffers ret
@@ -1108,12 +1111,12 @@
 
 	%'BufReset		%BufReset		BIN_NORMAL		%NEXT
 	%'BufAdd		%BufAdd			BIN_NORMAL		%NEXT
-	%'ShowBuffer	%ShowBuffer		BIN_NORMAL		%NEXT
+	%'ShowBuffer		%ShowBuffer		BIN_NORMAL		%NEXT
 	%'BufCopy		%BufCopy		BIN_NORMAL		%NEXT
-	%'EmitNumber	%EmitNumber		BIN_NORMAL		%NEXT
+	%'EmitNumber		%EmitNumber		BIN_NORMAL		%NEXT
 	%'EmitByte		%EmitByte		BIN_NORMAL		%NEXT
-	%'GetNextWord	%GetNextWord	BIN_NORMAL		%NEXT
-    %'ResetCompile  %ResetCompile   BIN_NORMAL		%NEXT
+	%'GetNextWord		%GetNextWord		BIN_NORMAL		%NEXT
+    	%'ResetCompile  	%ResetCompile		BIN_NORMAL		%NEXT
 
 	;; -- addresses of stuff that may be useful in Forth --
 	%'&DictionaryHead	%GetAddrDictionaryHead		BIN_NORMAL	%NEXT
@@ -1125,8 +1128,13 @@
 	%'&NextWord		%GetAddrNextWord		BIN_NORMAL	%NEXT
 	%'&NextWordEnd		%GetAddrNextWordEnd		BIN_NORMAL	%NEXT
 	%'&AllBuffers		%GetAddrAllBuffers		BIN_NORMAL	%NEXT
-	%'&AllBuffersEnd	%GetAddrAllBuffersEnd	BIN_NORMAL	%NEXT
+	%'&AllBuffersEnd	%GetAddrAllBuffersEnd		BIN_NORMAL	%NEXT
 	%'&IsCompiling		%GetAddrIsCompiling		BIN_NORMAL	%NEXT
+	
+	%'&IsCompilingWordMode	%GetAddrIsCompilingWordMode	BIN_NORMAL	%NEXT
+	%'&IsCompilingWord	%GetAddrIsCompilingWord		BIN_NORMAL	%NEXT
+	
+	%'&SEMICOLON		%GetAddrSEMICOLON		BIN_NORMAL	%NEXT
 
 	%'?			%Words		BIN_NORMAL	%NEXT
 	%'.s		%.s			BIN_NORMAL	%NEXT

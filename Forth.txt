@@ -1,102 +1,75 @@
-(CREATE and DOES>)
+# CREATE and DOES>
 
-(TODO: 
+I have made a CREATE non immediate word, which works, as well as the COMMA word, and now I'm pondering on DOES>. This is the logic I have come up with.
 
-Implement CREATE and use it from COLON. Modify SEMICOLON to work with latest DictEntry
+CREATE stores a copy of HERE in field CREATE_HERE.
 
-Possibly Implement a state store, where we put HERE and DictionaryHead in order to save a failing
-compile from eating up a DictEntry worth of space, something like a manual MARK REGRET COMMIT
+DOES> is immediate, and sets a compiler flag USING_DOES, then generates code to call an ACTUAL_DOES> word.
 
-Move IMMEDIATE outside the colon def
+The SEMICOLON, when it finds the USING_DOES flag, adds a special NOP bytecode to the compile buffer, before the return opcode, and then proceeds as before, managing state.
 
-For now, using the <DONE for the new SEMICOLON implementation
+The ACTUAL_DOES checks that HERE > CREATE_HERE, then resets the compile buffer.
+It emits the CREATE_HERE value as code into the compile buffer.
 
-)
+It then looks up the return address back into the code where it was called, which is the word with the NOP special bytecode at the end. It searches from the return address ahead until it finds the NOP, then appends those bytes into the compile buffer
 
-
-
+It resets USING_DOES to false, and invokes the SEMICOLON code, which takes care of adding the final "return" op to the compile buffer, and clean up.
 
 
 
 (----------------------------)
-0 VARIABLE CREATE-HERE
 
-: CREATE (--)
-  IMMEDIATE
+0 VARIABLE CREATE-HERE
+0 VARIABLE USES-DOES
+
+
+: CREATE
   GetNextWord
 
-  (allocate dictionary entry)
-  HERE => DE
   &NextWord readb 1+ => name#
-  name# 6 add allot
-  &NextWord DE name# memcpy
-
-  (store 0 in code pointer)
-  0 
-	DE name# add !
-  (store CONSTANT in status)
-  3
-    DE name# add CELL+ !
-  (set next)
-  &DictionaryHead @
-	DE name# add CELL 2 mul add !
-  (and update dict head)
-  DE &DictionaryHead !
-
-  (store HERE for DOES>)
+  &NextWord &IsCompilingWord name# memcpy
+  
+  (store HERE for DOES> to pick up)
   HERE CREATE-HERE !
 ;
 
+: , (val--)
+  HERE CELL allot ! ;
+  
+  
 : DOES>
-  IMMEDIATE
+  cr "DOES>_ .str &IsCompilingWord .str
 
-  0 &CompileBuf writeb 
-  HERE CREATE-HERE @ ne IF
-    CREATE-HERE @ EmitNumber
+  (enable compile mode)
+  1 &IsCompiling writeb
+  0 &CompileBuf writeb
+  0 &IsCompilingWordMode writeb (NORMAL) 
+
+  CREATE-HERE @ => ch
+  ch 0 ne ch HERE ne and IF
+    cr "EmitNumber_ .str ch .
+    ch 0 EmitNumber
+    0 CREATE-HERE !
+  ELSE
+    cr "DOES>_No_data .str 
+    PANIC
   THEN
 ;
 
 
-: <DONE (test)
-  IMMEDIATE
+: <DONE
+  &SEMICOLON call
+;
 
-  &IsCompiling readb not IF 
-    "Not_in_compile_mode cr .str
-    ret 
-  THEN
-  0x52 EmitByte  (ret)
+: CONST CREATE , DOES> . <DONE  ;
 
-  (locate top dict-entry)
-  &DictionaryHead @ 
-    => DE
-  DE .str "_ok_ .str
-  &CompileBuf readb 
-    print# "_bytes .str cr
-  (allocate code buffer)
-  HERE => code
-  &CompileBuf readb 1+ 
-    => code#
-  code# allot
 
-  (copy code + length byte)
-  &CompileBuf code code# 
-    memcpy
 
-  code 1+ (past length)
-    DE dup readb add 1+ !
 
-  ResetCompile
-; 
 
-: Array (n -- )
-  IMMEDIATE 
-  CREATE 
-    CELLS allot 
-  DOES> 
-    CELLS add 
-  <DONE ;
 
-   
+
+
   
 (DOES>'nt work yet)
 
