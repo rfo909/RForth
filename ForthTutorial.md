@@ -1,7 +1,7 @@
 Introduction to Forth
 =====================
 
-2025-10-22
+2025-10-24
 
 Stack language
 --------------
@@ -82,33 +82,34 @@ allocate memory for it, and write value there" (more or less), and the single do
 value from the stack.
 
 Of these four, RFOrth implements the DOT word. The two first are irrelevant due to how local variables
-are implemented, and the COMMA, well, maybe some day. There are other central words missing, like CREATE
-and DOES>, but that's an advanced topic.
+are implemented, and the COMMA, well, maybe some day, when I decide to implement CREATE and DOES>, but that's
+a bit of an advanced topic.
 
 Syntax
 ------
 Forth is a language that has no syntax. It is just a stream of characters. Sequences of non-space are called
-words. Additional syntax is raditionally defined via words written in Forth, implementing control structures. 
+words. Additional syntax is defined via words written in Forth, implementing control structures. 
 
 RFOrth has only two control structures, the IF-ELSE-THEN and BEGIN-AGAIN?
 for conditionals and loops. These were implemented in RFOrth initially, but were then migrated into
-the "firmware", which is found in ACode.txt.
+the "firmware", which is found in ACode.txt, mainly to save precious RAM.
 
-This code is "assembled" offline, and generates a sequence of bytes, which is patched into the C code,
+The ACode file is "assembled" offline, which generates a sequence of bytes. Those are pasted into the C code,
 as an array of bytes. This code implements the interactive REPL, the COLON compiler, conditionals and loops, as mentioned, 
 and a few other useful words.
 
 
 Compiled?
 ---------
-Forth is unique in that it is *interactive and compiled*! To define new words in Forth, the syntax
+Forth is unique in that it is both *interactive and compiled!* To define new words in Forth, the syntax
 is as follows:
 
 ```
 : name ... ;
 ```
 
-Hence, the compiler is normally referred to as the colon compiler. Example:
+This is called a colon definition, and the colon initiates the compile mode, and is called
+the colon compiler. Example:
 
 ```
 : number 42 ;
@@ -131,7 +132,7 @@ Forth has system words for managing memory. Traditionally memory is organized in
 two sizes, the CELL and single bytes. 
 
 The RFOrth CELL size is 2 bytes; on other Forth's it may differ. The point of the CELL definition
-is that this is the size of addresses, which in turn defines the address space. 
+is that this is the size of addresses, which in turn defines the addressable space. 
 
 ### Read and write
 
@@ -158,7 +159,7 @@ dictionary, but practical use differs a little:
 To use the value of a constant, just refer its name:
 
 ```
-c .
+const .
 ```
 
 This will print 42.
@@ -168,9 +169,9 @@ the address of a location in memory where the dynamic value is stored. To read a
 we use the words for read and write:
 
 ```
-v @ .       (prints 42)
-55 v !      (changes variable value)
-v @ .       (prints 55)
+var @ .       (prints 42)
+55 var !      (changes variable value)
+var @ .       (prints 55)
 ```
 
 ### Allocating memory
@@ -183,9 +184,9 @@ HERE         (returns the current top of the heap)
 <n> allot    (allocate n bytes)
 ```
 
-In RFOrth, the HERE value is the next available byte on the heap, and RFOrth enforces a
-simple memory protection, so that trying to read or write to addresses starting from the
-HERE value, is detected and fails with an error. 
+In RFOrth, the HERE value is the next available byte on the heap. It grows upward,
+and RFOrth enforces a simple memory protection, so that trying to read or write to addresses 
+starting from the HERE value, is detected and fails with an error. 
 
 The "allot" word simply increases the HERE value, up until all available heap space is 
 used.
@@ -202,7 +203,7 @@ Example, building a linked list (stack) of values
   (store HERE into data local variable)
   HERE => data
 
-  (allocate 2 cells worth of data - advanced HERE by 4 bytes)
+  (allocate 2 cells worth of data - advances HERE by 4 bytes)
   2 CELLS allot
 
   (write value into the first cell)

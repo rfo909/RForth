@@ -1,7 +1,7 @@
 RFOrth - a Forth like language
 ==============================
 
-2025-10-22 RFO
+2025-10-24 RFO
 
 ```
 13 CONSTANT Led
@@ -38,6 +38,15 @@ RFOrth - a Forth like language
 
 This code consumes 131 bytes of heap space to hold the compiled code and dictionary entries.
 
+Introduction to Forth?
+----------------------
+
+If the above example makes little or no sense, perhaps read my [Introduction to Forth](ForthTutorial.md).
+
+Implementation
+==============
+
+
 RFOrth is currently being developed for the Arduino Nano Every. It has 6 KBytes of SRAM. The code can
 be made to run on less, possibly even the original Nano and Uno's with 2 KBytes of SRAM only, by
 adjusting the Forth heap size, defined in Constants.h. The example above also assumes that pin 13
@@ -64,15 +73,6 @@ NATIVE ?    ;; list native words
 ```
 
 
-Introduction to Forth?
-----------------------
-
-If the above example makes little or no sense, perhaps read my [Introduction to Forth](ForthTutorial.md).
-
-
-
-Implementation
-==============
 
 Cells
 -----
