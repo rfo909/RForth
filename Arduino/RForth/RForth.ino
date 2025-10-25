@@ -69,38 +69,6 @@ void doReset() {
 
 }
 
-void cforce (Word addr) {
-  // clear data stack, then modify call stack and frame stack so that
-  // local variables are preserved, but next "ret" returns to given
-  // address, typically 0.
-  dStackNext=0;
-
-  // identify local variables in current frame
-  Word base=fpeekBase();
-  Word size=fpeekSize(); // #locals
-
-  // push single return address on cstack 
-  cStackNext=0;
-
-  // (can not use cpush, as it manages the frame stack)
-  cStack[cStackNext++]=addr; 
- 
-  // preserve local variables on cstack (if any)
-  for (int i=0; i<size; i++) {
-    cStack[cStackNext++]=cStack[base+i];
-  }
-  
-  // push two frames on frame stack
-  fStackNext=0;
-  fpush(0,1);  // return address frame
-  fpush(1,size);
-
-  showState();
-  Serial.println();
-  Serial.print(F("(cforce ready) HERE="));
-  Serial.println(HERE);
-
-}
 
 
 void populateRAM() {
@@ -237,6 +205,7 @@ void populateOps() {
   ops[60]=&op_lt;
   ops[61]=&op_eq;
   ops[62]=&op_gt;
+  ops[65]=&op_crget;
   ops[66]=&op_streq;
   ops[67]=&op_dot_str;
   ops[68]=&op_memcpy;
@@ -304,6 +273,7 @@ void op_rback_opt () {Word x=pop(); Word cond=pop(); if(cond) programCounter=pro
 void op_lt () {Word b=pop(); Word a=pop(); push(a<b);}
 void op_eq () {Word b=pop(); Word a=pop(); push(a==b);}
 void op_gt () {Word b=pop(); Word a=pop(); push(a>b);}
+void op_crget() {push(callReturnAddrGet());}
 void op_streq () {Word b=pop(); Word a=pop(); push(_streq(a,b));}
 void op_dot_str () {Word ptr=pop(); Word len=readByte(ptr); for (int i=0; i<len; i++) printChar(readByte(ptr+i+1));}
 void op_memcpy () {Word count=pop(); Word target=pop(); Word source=pop(); doMemcpy(source,target,count);}
@@ -575,6 +545,45 @@ void returnFromCode () {
   fpush(base,size);
 }
 
+
+void cforce (Word addr) {
+  // clear data stack, then modify call stack and frame stack so that
+  // local variables are preserved, but next "ret" returns to given
+  // address, typically 0.
+  dStackNext=0;
+
+  // identify local variables in current frame
+  Word base=fpeekBase();
+  Word size=fpeekSize(); // #locals
+
+  // push single return address on cstack 
+  cStackNext=0;
+
+  // (can not use cpush, as it manages the frame stack)
+  cStack[cStackNext++]=addr; 
+ 
+  // preserve local variables on cstack (if any)
+  for (int i=0; i<size; i++) {
+    cStack[cStackNext++]=cStack[base+i];
+  }
+  
+  // push two frames on frame stack
+  fStackNext=0;
+  fpush(0,1);  // return address frame
+  fpush(1,size);
+
+  showState();
+  Serial.println();
+  Serial.print(F("(cforce ready) HERE="));
+  Serial.println(HERE);
+
+}
+
+
+Word callReturnAddrGet () {
+  Word base=fpeekBase();
+  return cStack[base-1];    
+}
 
 void doMemcpy(Word source, Word target, Word count) {
   for (int i=0; i<count; i++) {

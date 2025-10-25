@@ -78,6 +78,8 @@
 
 ;; ------------ top of file ----------
 
+#define CELL 2
+
 ;; dictionary entry modes: use these in code
 
 #define MODE_NORMAL	0
@@ -294,12 +296,26 @@
 ;; Utility subroutines, invoked with call
 ;; -----------------------------------------------
 
-:ResetCompile
+:PreCompile
+	0 &IsCompilingWord writeb
+	0 &CompileStack writeb
+	0 &CompileBuf writeb
+
+	&LVBuf 32 &FillZeroes call
+           ;; local variable names
+	
+	MODE_NORMAL &IsCompilingWordMode writeb
+
+	1 &IsCompiling writeb
+	ret
+	
+:PostCompile
 	0 &IsCompiling writeb			;; set IsCompiling flag = 0 - set to 1 when compiling a word
 	0 &IsCompilingWord writeb
 	0 &IsCompilingWordMode writeb
 	0 &CompileBuf writeb
 	0 &CompileStack writeb
+	0 &LVBuf writeb
 	ret
 
 :FillZeroes ( buf count )
@@ -467,14 +483,20 @@
 	:*found
 		b ret
 		
-
-:Str_Word_dict_entry_		%"Word_dict_entry:_
-
+(print DE ptr for word in hex)
 :.W
 	&GetNextWord call
-	&NextWord &DictLookup call cpush (a=dict entry)
-
-	cr &Str_Word_dict_entry_ .str a print
+	&NextWord &DictLookup call cr print
+	ret
+	
+:>>str (ptr -- ptr) (skip past str)
+	dup readb add 1+
+	ret
+	
+:?C (str -- addr)
+	&DictLookup call	
+	&>>str call 
+	@
 	ret
 	
 	
@@ -737,39 +759,19 @@
 ;; -----------------------------------------------
 
 
-:Str_Bad_word_name_		%"Bad_word_name:_
 :Str_ok_			%"_ok_	
 :Str_bytes			%"_bytes
 
 
+	
 :COLON
-	;; --- init
-	0 &NextWord writeb
-	0 &IsCompilingWord writeb
-	MODE_NORMAL &IsCompilingWordMode writeb
-
-	;; --- set compile mode
-	1 &IsCompiling writeb
-	&LVBuf 32 &FillZeroes call
-
-
+	&PreCompile call
 	&GetNextWord call
-	
-	&NextWordIsNumber call &*numberError jmp?
-	
-	;; copy NextWord to IsCompilingWord buffer
 	&NextWord &IsCompilingWord &BufCopy call
-	
-	;; set compile output length to 0
-	0 &CompileBuf writeb
-
-	;; that's all?
 	ret
 
-	:*numberError
-		cr &Str_Bad_word_name_ .str &NextWord .str
-		&ResetCompile call
-		PANIC
+
+
 
 :Str_NoInteractiveLocals
 	%"No_interactive_locals
@@ -839,38 +841,74 @@
 		52 &EmitByte call		;; cset
 		ret
 
+
+;; ---------------------------------------------------------
+;; CREATE , DOES>
+;; ---------------------------------------------------------
 	
 	
-	
-	
+:CREATE
+  &GetNextWord call
+
+  &NextWord &IsCompilingWord &BufCopy call 
+  HERE &CREATE-HERE !
+  ret
+
+:COMMA (val--)
+  HERE CELL allot !
+  ret
+  
+:DODOES (non-public)
+  &PreCompile call
+  (data pointer)
+  &CREATE-HERE @ 0 &EmitNumber call
+  
+  (return address + 1 = past ret generated in DOES>)
+  crget 1+ 0 &EmitNumber call
+  82 &EmitByte call (jmp) 
+  
+  &SEMICOLON call
+  ret
+
+
+:DOES>
+  (immediate)
+  (build call to DODOES)
+  &DODOES 0 &EmitNumber call
+  81 &EmitByte call (call) 
+  82 &EmitByte call (ret) (<-- this is the return addr inside DODOES)
+  ret
+
 
 :SEMICOLON
+	(immediate)
 	;; verify compile mode
 	&IsCompiling readb &*ok jmp?
 		;; ignore it
 		ret
 	:*ok
-		;; info
-		cr &IsCompilingWord .str &Str_ok_ .str
 
-		;; add a ret instruction to CompileBuf
-		0x52 &EmitByte call
+	;; info
+	cr &IsCompilingWord .str &Str_ok_ .str
 
-		&CompileBuf readb print# &Str_bytes .str cr
+	;; add a ret instruction to CompileBuf
+	0x52 &EmitByte call
 
-		;; allocate permanent code buffer including length byte
-		&CompileBuf &BufCreateCopy call cpush            (a=codeBuffer)
-		
-		&IsCompilingWord 			(name)
-			a 1 add				(code - advance past the length byte)
-			&IsCompilingWordMode readb	(mode)
-				&CreateDictionaryEntry call
+	&CompileBuf readb print# &Str_bytes .str cr
+
+	;; allocate permanent code buffer including length byte
+	&CompileBuf &BufCreateCopy call cpush            (a=codeBuffer)
 	
-		;; switch off compile mode and clean up
-		&ResetCompile call
+	&IsCompilingWord 			(name)
+		a 1 add				(code - advance past the length byte)
+		&IsCompilingWordMode readb	(mode)
+			&CreateDictionaryEntry call
 
-		;; all done
-		ret
+	;; switch off compile mode and clean up
+	&PostCompile call
+
+	;; all done
+	ret
 
 
 
@@ -942,8 +980,8 @@
 	ret
 	
 
-:CELL 2 ret
-:CELLS 2 mul ret
+:CELL CELL ret
+:CELLS CELL mul ret
 	
 :DictShowWords ( dictHead -- )
 	@ cpush 		;; a=dict-entry
@@ -1031,21 +1069,23 @@
 	%'<<            HEX:0074        BIN_INSTR       %NEXT        ;; t
 	%'>>            HEX:0075        BIN_INSTR       %NEXT        ;; u
 	%'@             HEX:0049        BIN_INSTR       %NEXT        ;; I
+	%'CELL+         HEX:006E        BIN_INSTR       %NEXT        ;; n
 	%'HERE          HEX:0067        BIN_INSTR       %NEXT        ;; g
 	%'PANIC         HEX:0030        BIN_INSTR       %NEXT        ;; 0
 	%'PC            HEX:0050        BIN_INSTR       %NEXT        ;; P
-	%'CELL+            HEX:006E        BIN_INSTR       %NEXT        ;; n
 	%'add           HEX:002B        BIN_INSTR       %NEXT        ;; +
 	%'allot         HEX:004B        BIN_INSTR       %NEXT        ;; K
 	%'and           HEX:0026        BIN_INSTR       %NEXT        ;; &
 	%'andb          HEX:0071        BIN_INSTR       %NEXT        ;; q
 	%'atoi          HEX:0031        BIN_INSTR       %NEXT        ;; 1
 	%'call          HEX:0051        BIN_INSTR       %NEXT        ;; Q
+	%'cellsize      HEX:006B        BIN_INSTR       %NEXT        ;; k
 	%'cforce        HEX:0066        BIN_INSTR       %NEXT        ;; f
 	%'cget          HEX:0033        BIN_INSTR       %NEXT        ;; 3
 	%'clear         HEX:0077        BIN_INSTR       %NEXT        ;; w
 	%'cpush         HEX:004F        BIN_INSTR       %NEXT        ;; O
 	%'cr            HEX:0058        BIN_INSTR       %NEXT        ;; X
+	%'crget         HEX:0041        BIN_INSTR       %NEXT        ;; A
 	%'cset          HEX:0034        BIN_INSTR       %NEXT        ;; 4
 	%'div           HEX:002F        BIN_INSTR       %NEXT        ;; /
 	%'drop          HEX:006A        BIN_INSTR       %NEXT        ;; j
@@ -1085,13 +1125,14 @@
 	%'sub           HEX:002D        BIN_INSTR       %NEXT        ;; -
 	%'swap          HEX:006D        BIN_INSTR       %NEXT        ;; m
 	%'u2spc         HEX:005F        BIN_INSTR       %NEXT        ;; _
-	%'cellsize      HEX:006B        BIN_INSTR       %NEXT        ;; k
 	%'writeb        HEX:0048        BIN_INSTR       %NEXT        ;; H
 
-	;; ----------------------------------------------------------
 
-	%'.			%DOT		BIN_NORMAL			%NEXT
-	%'IF		%IF			BIN_IMMEDIATE		%NEXT
+	;; ----------------------------------------------------------
+	;; Upper case system words
+
+	%'.		%DOT		BIN_NORMAL			%NEXT
+	%'IF		%IF		BIN_IMMEDIATE		%NEXT
 	%'THEN		%THEN		BIN_IMMEDIATE		%NEXT
 	%'ELSE		%ELSE		BIN_IMMEDIATE		%NEXT
 	%'BEGIN		%BEGIN		BIN_IMMEDIATE		%NEXT
@@ -1102,23 +1143,35 @@
 	%'Dict		%Dict		BIN_NORMAL			%NEXT
 	%'DictUse	%DictUse	BIN_NORMAL			%NEXT
 	%'DictClear	%DictClear	BIN_NORMAL			%NEXT
-	%'->		%->			BIN_IMMEDIATE		%NEXT
-	%'.W		%.W			BIN_NORMAL			%NEXT    ;; show DictionaryEntry for word
+	%'->		%->		BIN_IMMEDIATE			%NEXT
+	%'.W		%.W		BIN_NORMAL			%NEXT    ;; show addr to DE for word
+	%'>>str		%>>str		BIN_NORMAL			%NEXT
+	%'?C		%?C		BIN_NORMAL			%NEXT    ;; get code ptr for word
+
 	%'CELL		%CELL		BIN_NORMAL			%NEXT
 	%'CELLS		%CELLS		BIN_NORMAL			%NEXT
 	
+	%'CREATE	%CREATE		BIN_NORMAL			%NEXT
+	%',		%COMMA		BIN_NORMAL			%NEXT
+	%'DOES>		%DOES>		BIN_IMMEDIATE			%NEXT
+	
 	;; ----------------------------------------------------------
+	;; More system words
 
 	%'BufReset		%BufReset		BIN_NORMAL		%NEXT
 	%'BufAdd		%BufAdd			BIN_NORMAL		%NEXT
 	%'ShowBuffer		%ShowBuffer		BIN_NORMAL		%NEXT
 	%'BufCopy		%BufCopy		BIN_NORMAL		%NEXT
+	%'BufCreateCopy		%BufCreateCopy		BIN_NORMAL		%NEXT
 	%'EmitNumber		%EmitNumber		BIN_NORMAL		%NEXT
 	%'EmitByte		%EmitByte		BIN_NORMAL		%NEXT
 	%'GetNextWord		%GetNextWord		BIN_NORMAL		%NEXT
-    	%'ResetCompile  	%ResetCompile		BIN_NORMAL		%NEXT
+    	%'PreCompile  		%PreCompile		BIN_NORMAL		%NEXT
+    	%'PostCompile  		%PostCompile		BIN_NORMAL		%NEXT
 
-	;; -- addresses of stuff that may be useful in Forth --
+	;; ----------------------------------------------------------
+	;; System addresses as words
+
 	%'&DictionaryHead	%GetAddrDictionaryHead		BIN_NORMAL	%NEXT
 	%'&DebugFlag 		%GetAddrDebugFlag		BIN_NORMAL	%NEXT
 	%'&CompileBuf 		%GetAddrCompileBuf		BIN_NORMAL	%NEXT
@@ -1130,19 +1183,19 @@
 	%'&AllBuffers		%GetAddrAllBuffers		BIN_NORMAL	%NEXT
 	%'&AllBuffersEnd	%GetAddrAllBuffersEnd		BIN_NORMAL	%NEXT
 	%'&IsCompiling		%GetAddrIsCompiling		BIN_NORMAL	%NEXT
-	
 	%'&IsCompilingWordMode	%GetAddrIsCompilingWordMode	BIN_NORMAL	%NEXT
 	%'&IsCompilingWord	%GetAddrIsCompilingWord		BIN_NORMAL	%NEXT
-	
-	%'&SEMICOLON		%GetAddrSEMICOLON		BIN_NORMAL	%NEXT
 
+	;; ----------------------------------------------------------
+	;; Colon, local variables, semicolon etc
+		
 	%'?			%Words		BIN_NORMAL	%NEXT
-	%'.s		%.s			BIN_NORMAL	%NEXT
-	%'words		%Words		BIN_NORMAL	%NEXT
+	%'.s			%.s		BIN_NORMAL	%NEXT
+	%'words			%Words		BIN_NORMAL	%NEXT
 	%':			%COLON		BIN_NORMAL	%NEXT
-	%'=>		%LVSet		BIN_IMMEDIATE	%NEXT
-	HEX:013B	%SEMICOLON	BIN_IMMEDIATE	%NEXT
-	%'IMMEDIATE	%immediate	BIN_IMMEDIATE	w0	;; <-- w0 = terminating the linked list
+	%'=>			%LVSet		BIN_IMMEDIATE	%NEXT
+	HEX:013B		%SEMICOLON	BIN_IMMEDIATE	%NEXT
+	%'IMMEDIATE		%immediate	BIN_IMMEDIATE	w0	;; <-- w0 = terminating the linked list
 :DictionaryEnd
 
 :PROTECT		;; protects data before this point against writes - reads are allowed
@@ -1164,6 +1217,7 @@
 
 :IsCompiling		b0
 :IsCompilingWordMode	b0					;; NORMAL or IMMEDIATE
+:CREATE-HERE		w0
 
 :AllBuffers
 

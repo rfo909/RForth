@@ -1,3 +1,9 @@
+https://www.bradrodriguez.com/papers/moving3.htm
+
+
+
+
+
 # CREATE and DOES>
 
 I have made a CREATE non immediate word, which works, as well as the COMMA word, and now I'm pondering on DOES>. This is the logic I have come up with.
@@ -14,65 +20,6 @@ It emits the CREATE_HERE value as code into the compile buffer.
 It then looks up the return address back into the code where it was called, which is the word with the NOP special bytecode at the end. It searches from the return address ahead until it finds the NOP, then appends those bytes into the compile buffer
 
 It resets USING_DOES to false, and invokes the SEMICOLON code, which takes care of adding the final "return" op to the compile buffer, and clean up.
-
-
-
-(----------------------------)
-
-0 VARIABLE CREATE-HERE
-0 VARIABLE USES-DOES
-
-
-: CREATE
-  GetNextWord
-
-  &NextWord readb 1+ => name#
-  &NextWord &IsCompilingWord name# memcpy
-  
-  (store HERE for DOES> to pick up)
-  HERE CREATE-HERE !
-;
-
-: , (val--)
-  HERE CELL allot ! ;
-  
-  
-: DOES>
-  cr "DOES>_ .str &IsCompilingWord .str
-
-  (enable compile mode)
-  1 &IsCompiling writeb
-  0 &CompileBuf writeb
-  0 &IsCompilingWordMode writeb (NORMAL) 
-
-  CREATE-HERE @ => ch
-  ch 0 ne ch HERE ne and IF
-    cr "EmitNumber_ .str ch .
-    ch 0 EmitNumber
-    0 CREATE-HERE !
-  ELSE
-    cr "DOES>_No_data .str 
-    PANIC
-  THEN
-;
-
-
-: <DONE
-  &SEMICOLON call
-;
-
-: CONST CREATE , DOES> . <DONE  ;
-
-
-
-
-
-
-
-
-  
-(DOES>'nt work yet)
-
 
 
 ####################################################

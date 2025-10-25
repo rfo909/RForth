@@ -323,6 +323,12 @@
 		self.memory.writeWord(base+self.WORDSIZE*index, value)	
 	}
 	
+	self._A=Lambda{ # crget (--addr) get return address
+		frameInfo=self.fpeek
+		base=(self.cbase + (frameInfo.base*self.WORDSIZE))
+		self.push(self.memory.readWord(base-self.WORDSIZE))
+	}
+	
 	self._j=Lambda { # drop  ( a -- )
 		self.pop
 	}

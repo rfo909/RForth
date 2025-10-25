@@ -234,6 +234,7 @@
 	cget		:3	;; copy value off call stack indexed from frame base (must be cpush'ed first)
 	cset		:4	;; set value on call stack (must be cpush'ed first)
 
+	crget		:A	;; get return address
 	
 	;; compiled numbers
 		
