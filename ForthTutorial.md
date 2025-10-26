@@ -410,7 +410,7 @@ them here.
 These words are used to create words *that create words*. We have already seen examples of this
 with the CONSTANT and VARIABLE words, which create new words (the names of the constant or variable).
 
-The CONSTANT and VARIABLE implementations are more effective than using CREATE and DOES> but here
+The CONSTANT and VARIABLE implementations are more efficient than using CREATE and DOES> but here
 follows an example of how to do it.
 
 ```
@@ -430,12 +430,13 @@ The COMMA word takes a value from the data stack (5) and stores it on the heap, 
 a CELL and writing the value there. 
 
 The DOES> word is kind of advanced, and we don't need to understand the details, other than
-that the word it is creating ("Const"), when it is run, executes only the code following DOES>. 
+that the word being compiled ("Const"), when it is runs, executes the code up to the DOES>, which
+creates the new word ("A"), which *in turn* executes only the code following DOES>. 
 
-That code, when running, has a reference to the data allocated after CREATE, using COMMA
-in this example, on the stack.
+That code, when running, also is supplied with a reference to the data allocated 
+after CREATE, using COMMA in this example, on the stack.
 
-Calling @ it reads the value of the CELL, which is 5.
+Calling the "@" word reads the value of that CELL, which is 5.
 
 We have a constant.
 
