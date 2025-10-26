@@ -118,10 +118,7 @@
 ;; When executing code, we start at PC=0x0000 (&Init)
 
 :Init	
-	0 &IsCompiling writeb
-	0 &IsCompilingWord writeb	
-	0 &NextWord writeb
-	0 &CompileBuf writeb
+	&PostCompile call
 
 :REPL
 	&GetNextWord call
@@ -144,6 +141,7 @@
 		&ProcessString call
 		&REPL jmp
 
+:Str_GetNextWordTooLong  %"GetNextWord:_too_long
 
 :GetNextWord
 	0 &NextWord writeb
@@ -158,9 +156,18 @@
 			(tab)
 			0x20 a!    ;; replace with space
 		:*notTab
+		
 		a 0x20 eq b 0 eq and &*nextChar jmp? 	;; ignore preceding space
 		a 0x20 eq &*done jmp?			;; word identified
 
+		;; check buffer size
+		b 1+ (length + length byte = required space)
+			&NextWordEnd &NextWord sub lt &*bufSizeOk jmp?
+				cr &Str_GetNextWordTooLong .str
+				PANIC
+
+		:*bufSizeOk
+		
 		;; update NextWord
 		a &NextWord b add 1+ writeb
 		b 1+ b!
@@ -297,22 +304,22 @@
 ;; -----------------------------------------------
 
 :PreCompile
-	0 &IsCompilingWord writeb
+	0 &CompilingWord writeb
 	0 &CompileStack writeb
 	0 &CompileBuf writeb
 
 	&LVBuf 32 &FillZeroes call
            ;; local variable names
 	
-	MODE_NORMAL &IsCompilingWordMode writeb
+	MODE_NORMAL &CompilingWordMode writeb
 
 	1 &IsCompiling writeb
 	ret
 	
 :PostCompile
 	0 &IsCompiling writeb			;; set IsCompiling flag = 0 - set to 1 when compiling a word
-	0 &IsCompilingWord writeb
-	0 &IsCompilingWordMode writeb
+	0 &CompilingWord writeb
+	0 &CompilingWordMode writeb
 	0 &CompileBuf writeb
 	0 &CompileStack writeb
 	0 &LVBuf writeb
@@ -761,13 +768,23 @@
 
 :Str_ok_			%"_ok_	
 :Str_bytes			%"_bytes
+:Str_CompilingWordTooLong:	%"Compiling_word_too_long:_
 
+:SetCompilingWord (str -- )
+	cpush (a=str)
+	a readb 1+ 
+	   	&CompilingWordEnd &CompilingWord sub le &*ok jmp?
+	   		&Str_CompilingWordTooLong: .str PANIC
+	:*ok
+	a &CompilingWord &BufCopy call
+   	ret
+   		
 
 	
 :COLON
 	&PreCompile call
 	&GetNextWord call
-	&NextWord &IsCompilingWord &BufCopy call
+	&NextWord &SetCompilingWord call
 	ret
 
 
@@ -850,7 +867,7 @@
 :CREATE
   &GetNextWord call
 
-  &NextWord &IsCompilingWord &BufCopy call 
+  &NextWord &SetCompilingWord call 
   HERE &CREATE-HERE !
   ret
 
@@ -859,21 +876,36 @@
   ret
   
 :DODOES (non-public)
+  (CREATE stored value in &CompilingWord)
+  (store it in CompileBuf+1)
+  (as index 0 is nulled at PreCompile)
+  &CompilingWord &CompileBuf 1+ &BufCopy call
+
   &PreCompile call
+
+  (restore CompilingWord)
+  &CompileBuf 1+ &CompilingWord &BufCopy call
+  
   (data pointer)
   &CREATE-HERE @ 0 &EmitNumber call
   
   (return address + 1 = past ret generated in DOES>)
   crget 1+ 0 &EmitNumber call
-  82 &EmitByte call (jmp) 
-  
+  83 &EmitByte call (jmp) 
+
   &SEMICOLON call
+
   ret
 
 
 :DOES>
-  (immediate)
-  (build call to DODOES)
+  (immediate - compiling the word with CREATE DOES>)
+  
+  (build code to call DODOES)
+  (followed by ret)
+  (the ret of the word gets compiled after the generated ret)
+  (and DODOES jumps to it)
+ 
   &DODOES 0 &EmitNumber call
   81 &EmitByte call (call) 
   82 &EmitByte call (ret) (<-- this is the return addr inside DODOES)
@@ -889,7 +921,7 @@
 	:*ok
 
 	;; info
-	cr &IsCompilingWord .str &Str_ok_ .str
+	cr &CompilingWord .str &Str_ok_ .str
 
 	;; add a ret instruction to CompileBuf
 	0x52 &EmitByte call
@@ -899,9 +931,9 @@
 	;; allocate permanent code buffer including length byte
 	&CompileBuf &BufCreateCopy call cpush            (a=codeBuffer)
 	
-	&IsCompilingWord 			(name)
+	&CompilingWord 			(name)
 		a 1 add				(code - advance past the length byte)
-		&IsCompilingWordMode readb	(mode)
+		&CompilingWordMode readb	(mode)
 			&CreateDictionaryEntry call
 
 	;; switch off compile mode and clean up
@@ -958,8 +990,8 @@
 		ret
 
 :immediate
-	;; change the IsCompilingWordMode to immediate
-	1 &IsCompilingWordMode writeb
+	;; change the CompilingWordMode to immediate
+	1 &CompilingWordMode writeb
 	ret		
 
 :Str_Separator		%'--
@@ -1014,8 +1046,8 @@
 :GetAddrNextWord &NextWord ret
 :GetAddrNextWordEnd &NextWordEnd ret
 :GetAddrIsCompiling &IsCompiling ret
-:GetAddrIsCompilingWord &IsCompilingWord ret
-:GetAddrIsCompilingWordMode &IsCompilingWordMode ret
+:GetAddrCompilingWord &CompilingWord ret
+:GetAddrCompilingWordMode &CompilingWordMode ret
 :GetAddrSEMICOLON &SEMICOLON ret
 :GetAddrLVBuf &LVBuf ret
 :GetAddrLVBufEnd &LVBufEnd ret
@@ -1168,7 +1200,8 @@
 	%'GetNextWord		%GetNextWord		BIN_NORMAL		%NEXT
     	%'PreCompile  		%PreCompile		BIN_NORMAL		%NEXT
     	%'PostCompile  		%PostCompile		BIN_NORMAL		%NEXT
-
+	%'SetCompilingWord	%SetCompilingWord	BIN_NORMAL		%NEXT
+	
 	;; ----------------------------------------------------------
 	;; System addresses as words
 
@@ -1183,8 +1216,8 @@
 	%'&AllBuffers		%GetAddrAllBuffers		BIN_NORMAL	%NEXT
 	%'&AllBuffersEnd	%GetAddrAllBuffersEnd		BIN_NORMAL	%NEXT
 	%'&IsCompiling		%GetAddrIsCompiling		BIN_NORMAL	%NEXT
-	%'&IsCompilingWordMode	%GetAddrIsCompilingWordMode	BIN_NORMAL	%NEXT
-	%'&IsCompilingWord	%GetAddrIsCompilingWord		BIN_NORMAL	%NEXT
+	%'&CompilingWordMode	%GetAddrCompilingWordMode	BIN_NORMAL	%NEXT
+	%'&CompilingWord	%GetAddrCompilingWord		BIN_NORMAL	%NEXT
 
 	;; ----------------------------------------------------------
 	;; Colon, local variables, semicolon etc
@@ -1216,33 +1249,31 @@
 
 
 :IsCompiling		b0
-:IsCompilingWordMode	b0					;; NORMAL or IMMEDIATE
+:CompilingWordMode	b0					;; NORMAL or IMMEDIATE
 :CREATE-HERE		w0
 
 :AllBuffers
 
-:IsCompilingWord	b0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0 w0		;; 32 character stringbuffer
-
+:CompilingWord	b0 w0 w0 w0 w0 w0 w0 w0 w0		;; 16 characters stringbuffer
+:CompilingWordEnd
 
 :CompileBuf	w0 w0 w0 w0 w0 w0 w0 w0 		;; + up to 63 code bytes (1 byte length)
-			w0 w0 w0 w0 w0 w0 w0 w0			;; 
-			w0 w0 w0 w0 w0 w0 w0 w0			;; For colon compiler
-			w0 w0 w0 w0 w0 w0 w0 w0			;; and as scratch buffer at runtime
-			w0 w0 w0 w0 w0 w0 w0 w0
-			w0 w0 w0 w0 w0 w0 w0 w0
-
+		w0 w0 w0 w0 w0 w0 w0 w0			;; 
+		w0 w0 w0 w0 w0 w0 w0 w0			;; For colon compiler
+		w0 w0 w0 w0 w0 w0 w0 w0			;; and as scratch buffer at runtime
+			
 :CompileBufEnd
 
-:NextWord	w0 w0 w0 w0 w0 w0 w0 w0 		;; 32 bytes string buffer
-			w0 w0 w0 w0 w0 w0 w0 w0			;; and scratch buffer at runtime
+:NextWord	w0 w0 w0 w0 w0 w0 w0 w0 		;; string buffer
+		w0 w0 w0 w0 w0 w0 w0 w0			;; and scratch buffer at runtime
 :NextWordEnd
 
 :LVBuf		w0 w0 w0 w0 w0 w0 w0 w0 		;; local variables in colon compiler - 32 bytes
-			w0 w0 w0 w0 w0 w0 w0 w0		    ;; and scratch buffer at runtime
+		w0 w0 w0 w0 w0 w0 w0 w0		    ;; and scratch buffer at runtime
 :LVBufEnd
 
 
-:NextNumber		w0 					;; single word
+:NextNumber		w0 					;; single word - output when parsing ok (atoi op)
 
 :CompileStack		b0 w0 w0 w0 w0 w0 w0 w0 w0 		
 				;; 8 words each consists of type (1 byte) and offset in CompileBuf (1 byte)
