@@ -1065,6 +1065,7 @@
 :GetAddrLVBufEnd &LVBufEnd ret
 :GetAddrAllBuffers &AllBuffers ret
 :GetAddrAllBuffersEnd &AllBuffersEnd ret
+:GetAddrCREATE-HERE &CREATE-HERE ret
 
 ;; Utility Forth words for buffer processing
 
@@ -1233,6 +1234,7 @@
 	%'&CompilingWordEnd	%GetAddrCompilingWordEnd	BIN_NORMAL	%NEXT
 	%'&CompileStack		%GetAddrCompileStack		BIN_NORMAL	%NEXT
 	%'&CompileStackEnd	%GetAddrCompileStackEnd		BIN_NORMAL	%NEXT
+	%'&CREATE-HERE		%GetAddrCREATE-HERE		BIN_NORMAL	%NEXT
 	
 	;; ----------------------------------------------------------
 	;; Colon, local variables, semicolon etc

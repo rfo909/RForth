@@ -1,3 +1,18 @@
+# If we let DODOES take a pointer off the stack, instead of storing stuff on the heap,
+# then we can let the ptr pass through CREATE and be picked up by DODOES and push that
+# on the stack (via code) before jumping to run the code after DOES>
+
+: Adder (ptr) CREATE &CREATE-HERE ! DOES> (value) => val => ptr ptr @ val add ptr ! ;
+: Subtractor (ptr) CREATE &CREATE-HERE ! DOES> (value) => val => ptr ptr @ val add ptr ! ;
+: Getter (ptr) CREATE &CREATE-HERE ! DOES> (--value) @ ;
+
+HERE 0 , 
+    dup Adder OrderAdd 
+    dup Subber OrderSub
+    Getter OrderGet
+  
+
+
 
 (Using buffers for string ops)
 
