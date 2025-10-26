@@ -871,6 +871,8 @@
   HERE &CREATE-HERE !
   ret
 
+:Str_CommaCompileModeOnly %"COMMA_-_compile_mode_only
+
 :COMMA (val--)
   HERE CELL allot !
   ret
@@ -906,12 +908,16 @@
   	cr &Str_DOESCompileModeOnly .str
   	PANIC
   :*ok
-  (build code to call DODOES)
-  (followed by ret)
 
- 
+  (building call to DODOES)
   &DODOES 0 &EmitNumber call
   81 &EmitByte call (call) 
+
+  (generating a ret; this returns from the code after DOES> but the)
+  (compiler will still compile the rest of the code, adding it after)
+  (the ret, and that's where the DODOES generates a JMP to, after first)
+  (generating the CREATE-HERE address as set in CREATE)
+    
   82 &EmitByte call (ret) (<-- this is the return addr inside DODOES)
   ret
 
