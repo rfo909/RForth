@@ -176,7 +176,6 @@ The RFOrth implementation has no intention of following Forth standards. It is a
 language, for discovering what can be done with some stacks and bytecode, but I still
 plan to put it to real use.
 
-See implementation of the NATIVE word for an example at tag :NATIVE in ACode.txt.
 
 Interactive
 -----------
@@ -190,15 +189,16 @@ This prints 8
 
 Compiled
 --------
-As in normal Forth, RFOrth has a colon compiler, which lets us define new words.
+As in normal Forth, RFOrth has a built-in compiler mode, which is enabled by the COLON word, and lets us
+define new words, terminated by SEMICOLON.
 ```
 : NewWord .... ;
 ```
 
 The colon must be space separated from the name of the new word and the colon definition
 is terminated by a semicolon. I mention this, because in ACode.txt the colon is *not* separate
-from the name, because in that file, those are *tags* for the Assembler, not invocations of
-the colon compiler. The colon compiler is initiated at tag :COLON in ACode.
+from the name, because in that file, those are *tags* for the Assembler (symbolic names for addresses), 
+and not invocations of the colon compiler. The colon compiler is written at tag :COLON in ACode.
 
 In ACode the returning from a function is done with the assembly code "ret". The SEMICOLON word
 in Forth calls "ret" as well, after doing various housekeeping.
@@ -248,7 +248,7 @@ an array of bytes in C.
 Its address space combines a readonly flash part, which is the result
 from assembling ACode, and the SRAM part, which is read/write.
 
-RFOrth uses 16 bit (data) words (called "cells" in normal Forth), and though it could easily address
+RFOrth uses 16 bit (data) words (called "cells" in Forth), and though it could easily address
 real memory and registers on the smaller 8-bit architectures, it is not capable of directly
 creating 32-bit values. 
 
@@ -355,24 +355,27 @@ called &AllBuffers:
 &AllBuffersEnd &AllBuffers sub .    (162)
 ```
 
+See [Firmware words](FirmwareWords.md) for details.
+
 Allocating memory
 -----------------
 As in regular Forth, RFOrth uses the word "HERE" to return the next address on the heap,
 and "allot" to allocate bytes of heap.
 
 Differing from regular Forth, RFOrth does not allow memory access at HERE or beyond,
-so memory must be allot'ed before used. The "allot" word just advanced the HERE value,
+so memory must be allot'ed before used. The "allot" word just advances the HERE value,
 making new memory available for use.
 
-Note a little piece of subtlety that cost me half an hour of serious doubts. If one wants
-to allocate a 20 byte buffer, and store a reference to it as a constant, it would seem one 
-could do this:
+Note a little piece of subtlety that cost me half an hour of serious doubts in the overall
+health of my code. 
+
+If one wants to allocate a 20 byte buffer, and store a reference to it as a constant, 
+it would seem one could do this:
 
 ```
 HERE CONSTANT buf
 20 allot
 ```
-
 
 It seems logical that storing the value of HERE in a constant and then advancing the HERE by
 allocating 20 bytes, should work just fine.
@@ -404,13 +407,13 @@ We saw constants in action above. Global variables follow a similar pattern.
 ```
 
 Note that all variables and constants, as well as all stack content, are
-data words (2 bytes), not bytes. 
+cells (2 bytes), not bytes. 
 
 The only time we operate
 on bytes, is when using "readb" or "writeb" to read or write single bytes.
 
 To retrieve the value of a constant, just enter the constant name; that will push
-the value of the constant on the stack. 
+the value of the constant on the stack. The stack also contains cell values. 
 
 For variables, entering the name of the variable pushes a "constant" on the stack as well,
 but this time it is an *address* to where the data is stored, which can then be read and 
@@ -476,8 +479,6 @@ a good idea.
   ...
   ;
 ```
-
-
 
 Extending the compiler
 ----------------------
@@ -576,7 +577,7 @@ RFOrth implements an immediate word "In" which takes the two following words fro
 as the name of the dictionary, and the word inside.
 
 ```
-10 IN Accumulator add    (calls the "add" word inside the custom dictionary, NOT the addition op)
+10 IN Accumulator add    (calls the "add" word IN the custom dictionary, NOT the addition op)
 IN Accumulator count @ . (should now print 10)
 ```
 
@@ -601,7 +602,9 @@ Type checking
 Hah hah hah ... :-)
 
 Seriously though, the system enforces some pointer validation for the read/write operations, ensuring
-we can not access memory above HERE. Also, since custom dictionaries are constants, the DictUse word
+we can not access memory above HERE, or write to locations in Flash. 
+
+Also, since custom dictionaries are constants, the DictUse word
 actually checks that the word given as name of dictionary, refers to a constant. 
 
 Other than that: nope!
