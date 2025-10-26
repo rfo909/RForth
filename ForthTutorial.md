@@ -404,10 +404,10 @@ and loops.
 CREATE and DOES> (and COMMA)
 ----------------------------
 
-This is considered "advanced" territory, but I just implemented these, so I got to include
-them here.
+This is considered an advanced mechanism, often referred to as "the pearl of Forth", because
+of the ways it can extend the language. Here goes.
 
-These words are used to create words *that create words*. We have already seen examples of this
+These words are used to create new words *that create words*. We have already seen examples of this
 with the CONSTANT and VARIABLE words, which create new words (the names of the constant or variable).
 
 The CONSTANT and VARIABLE implementations are more efficient than using CREATE and DOES> but here
@@ -439,5 +439,9 @@ after CREATE, using COMMA in this example, on the stack.
 Calling the "@" word reads the value of that CELL, which is 5.
 
 We have a constant.
+
+The CREATE DOES> can make your head spin. It is an impressive mechanism. My implementation
+is non-standard, since my memory management is non-standard, but that's another story
+of interest only to implementers. 
 
 
