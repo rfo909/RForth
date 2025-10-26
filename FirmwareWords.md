@@ -44,7 +44,7 @@ they are not attempted borrowed from any standard (that I know of).
 Dict                Dict <name> -- create dictionary
 DictUse             <Dict> DictUse -- use custom dictionary
 DictClear           stop using custom dictionary
-->                  -> <DictName> <WordName> -- call word in custom Dict
+In                  IN <DictName> <WordName> -- call word in custom Dict
 =>                  => <name> -- create or update local variable inside colon def
 .W                  .W <word> -- prints address of Dictionary Entry for word (in hex)
 ?C                  (str -- addr) 'str ?C -- returns address of code for word (on stack)

@@ -524,7 +524,7 @@
 :Str_Invalid_dictionary_   %"Invalid_dictionary_
 :Str_Not_constant		%"_:_Not_constant
 
-:-> (dictWord word -- ? )
+:IN (dictWord word -- ? )
 	&GetNextWord call 
 	&NextWord &DictLookup call cpush 	(a=dict-entry for dict)
 	a null eq &*dictNotFound jmp?
@@ -1061,7 +1061,6 @@
 :GetAddrCompilingWordMode &CompilingWordMode ret
 :GetAddrCompileStack &CompileStack ret
 :GetAddrCompileStackEnd &CompileStackEnd ret
-:GetAddrSEMICOLON &SEMICOLON ret
 :GetAddrLVBuf &LVBuf ret
 :GetAddrLVBufEnd &LVBufEnd ret
 :GetAddrAllBuffers &AllBuffers ret
@@ -1188,7 +1187,7 @@
 	%'Dict		%Dict		BIN_NORMAL			%NEXT
 	%'DictUse	%DictUse	BIN_NORMAL			%NEXT
 	%'DictClear	%DictClear	BIN_NORMAL			%NEXT
-	%'->		%->		BIN_IMMEDIATE			%NEXT
+	%'IN		%IN		BIN_IMMEDIATE			%NEXT
 	%'.W		%.W		BIN_NORMAL			%NEXT    ;; show addr to DE for word
 	%'>>str		%>>str		BIN_NORMAL			%NEXT
 	%'?C		%?C		BIN_NORMAL			%NEXT    ;; get code ptr for word

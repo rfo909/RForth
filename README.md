@@ -572,19 +572,19 @@ is listed, followed by a separator and then the global dictionary.
 
 ### Use in code
 
-RFOrth implements an immediate word "->" which takes the two following words from the input stream
+RFOrth implements an immediate word "In" which takes the two following words from the input stream
 as the name of the dictionary, and the word inside.
 
 ```
-10 -> Accumulator add    (calls the "add" word inside the custom dictionary, NOT the addition op)
--> Accumulator count @ . (should now print 10)
+10 IN Accumulator add    (calls the "add" word inside the custom dictionary, NOT the addition op)
+IN Accumulator count @ . (should now print 10)
 ```
 
 This code works both interactively and from inside compiled words. 
 
 ### No call overhead
 
-The "->" word is implemented in ACode (tag :->), where it just identifies the dictionary entry within the
+The "IN" word is implemented in ACode (tag :IN), where it just identifies the dictionary entry within the
 custom dictionary, then leaves the processing to the same &ExecuteWord that is used elsewhere. 
 
 It is tagged as an IMMEDIATE word in the Forth initial dictionary, near the end of ACode.txt.
@@ -593,7 +593,7 @@ What this means is that there is no overhead calling a word inside a dictionary;
 resolved fully at compile time, just as for words in the global dictionary.
 
 ```
-: showAcc (--) -> Accumulator count @ . ;
+: showAcc (--) IN Accumulator count @ . ;
 ```
 
 Type checking

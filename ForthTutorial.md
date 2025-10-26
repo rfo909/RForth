@@ -57,7 +57,7 @@ cforce cget clear cpush cr crget cset div drop dump dup eq ge gt halt
 inv jmp jmp? le lt memcpy mul n2code native nativec ne not null or orb 
 over print print# print#s printb printc rback? readb readc ret rfwd? streq 
 sub swap u2spc writeb . IF THEN ELSE BEGIN AGAIN? CONSTANT VARIABLE NATIVE 
-Dict DictUse DictClear -> .W >>str ?C CELL CELLS CREATE , DOES> BufReset 
+Dict DictUse DictClear IN .W >>str ?C CELL CELLS CREATE , DOES> BufReset 
 BufAdd ShowBuffer BufCopy BufCreateCopy EmitNumber EmitByte GetNextWord 
 PreCompile PostCompile SetCompilingWord &DictionaryHead &DebugFlag &CompileBuf 
 &CompileBufEnd &LVBuf &LVBufEnd &NextWord &NextWordEnd &AllBuffers &AllBuffersEnd 

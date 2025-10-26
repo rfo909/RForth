@@ -323,9 +323,9 @@ There can be only one custom dictionary, which if activated with DictUse is sear
 the global dictionary, and new words are added to it instead of the global. 
 
 After having created a dictionary, we can call words inside it, both interactively and at
-compile time by the "->" word.
+compile time by the "IN" word (originally named "->")
 
-Note that the _"->" comes in front of both the dictionary and the word, because it accesses
+Note that the IN comes in front of both the dictionary and the word, because it accesses
 both via &GetNextWord. This simplifies the implementation, and makes the code size the exact
 same as if calling a word in the same dictionary or in the global one.
 
@@ -336,10 +336,10 @@ Something DictUse
 DictClear
 
 (interactive)
--> Something magic
+IN Something magic
 
 (in word)
-:x -> Something magic ;
+:x IN Something magic ;
 x
 ```
 

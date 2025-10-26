@@ -1,28 +1,4 @@
-https://www.bradrodriguez.com/papers/moving3.htm
 
-
-
-
-
-# CREATE and DOES>
-
-I have made a CREATE non immediate word, which works, as well as the COMMA word, and now I'm pondering on DOES>. This is the logic I have come up with.
-
-CREATE stores a copy of HERE in field CREATE_HERE.
-
-DOES> is immediate, and sets a compiler flag USING_DOES, then generates code to call an ACTUAL_DOES> word.
-
-The SEMICOLON, when it finds the USING_DOES flag, adds a special NOP bytecode to the compile buffer, before the return opcode, and then proceeds as before, managing state.
-
-The ACTUAL_DOES checks that HERE > CREATE_HERE, then resets the compile buffer.
-It emits the CREATE_HERE value as code into the compile buffer.
-
-It then looks up the return address back into the code where it was called, which is the word with the NOP special bytecode at the end. It searches from the return address ahead until it finds the NOP, then appends those bytes into the compile buffer
-
-It resets USING_DOES to false, and invokes the SEMICOLON code, which takes care of adding the final "return" op to the compile buffer, and clean up.
-
-
-####################################################
 (Using buffers for string ops)
 
 (----------------------------)
@@ -77,9 +53,9 @@ DictClear
 (----------------------------)
 (TEST CODE)
 
-: SClr () -> Str clear ;
-: S+ (str) -> Str add ;
-: S> (--ptr) -> Str buf ;
+: SClr () IN Str clear ;
+: S+ (str) IN Str add ;
+: S> (--ptr) IN Str buf ;
 : S. S> .str ;
 
 : test 
