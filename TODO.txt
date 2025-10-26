@@ -1,5 +1,15 @@
 2025-08 v3
 
+2025-10-26
+
+  - implement _DOES> which activates _DODOES reading the ptr from stack instead of &CREATE-HERE
+    as written by CREATE (or just write to &CREATE-HERE, creating a little word for that)
+    
+  - figure out a way of pushing a string into the input, so that words using CREATE can be
+    called from compiled code (if that is an actual need?)
+    
+    
+
 2025-10-17
 
 - Implement native functions for i2c (later SPI and Serial)
@@ -9,7 +19,7 @@
 
 - Add external 24FC256-I/P EEPROM, save code to it via "screens" editor (in firmware)
 
-- Create a disassembler (code length byte at index -1 already in place) (?)
+- Create a disassembler (code length byte at index -1 already in place)
 
 - Define a way to both automatically run a certain word, and some startup condition to enter interactive 
 	mode instead, like a pin reading HIGH or LOW

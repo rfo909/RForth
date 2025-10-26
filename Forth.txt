@@ -2,15 +2,22 @@
 # then we can let the ptr pass through CREATE and be picked up by DODOES and push that
 # on the stack (via code) before jumping to run the code after DOES>
 
-: Adder (ptr) CREATE &CREATE-HERE ! DOES> (value) => val => ptr ptr @ val add ptr ! ;
-: Subtractor (ptr) CREATE &CREATE-HERE ! DOES> (value) => val => ptr ptr @ val add ptr ! ;
-: Getter (ptr) CREATE &CREATE-HERE ! DOES> (--value) @ ;
+# I simulate this by setting the CREATE-HERE value to the ptr parameter to Adder and Getter
+
+: Adder (ptr) CREATE &CREATE-HERE ! DOES> (value [ptr]) => ptr => val ptr @ val add ptr ! ;
+: Getter (ptr) CREATE &CREATE-HERE ! DOES> ([ptr]--value) @ ;
 
 HERE 0 , 
-    dup Adder OrderAdd 
-    dup Subber OrderSub
-    Getter OrderGet
-  
+    dup Adder CounterAdd 
+    Getter CounterGet
+
+
+The issue now is resisting the temptation of overdoing this, creating "libraries" like
+the dictionary example below. Which would benefit from (a) the shared data and (b) of
+creating words from code, like supply a base name and have it extended by "method names",
+... Doing Java in Forth???
+
+
 
 
 
