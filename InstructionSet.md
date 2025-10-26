@@ -1,4 +1,4 @@
-2025-10-22
+2025-10-26
 
 ```
 Assembler:IDoc
@@ -25,6 +25,7 @@ cget     | ( index -- value ) get value by index from call stack, indexed from c
 clear    | Clear stack                                                                                 
 cpush    | ( value -- ) push value from data stack on call stack ( x -- )                              
 cr       | print newline                                                                               
+crget    | (--addr) get return address                                                                 
 cset     | (value index -- ) set value in stack frame (must have been cpush'ed first)                  
 div      | ( a b -- a/b )                                                                              
 drop     | ( a -- )                                                                                    
@@ -64,6 +65,7 @@ streq    | compare strings, return 0 if not and 1 if equal
 sub      | ( a b -- a-b )                                                                              
 swap     | ( a b -- b a )                                                                              
 u2spc    | convert underscore to space in string in RAM                                                
+writeb   | ( value addr -- ) write byte                ng in RAM                                                
 writeb   | ( value addr -- ) write byte                             
 ```
 

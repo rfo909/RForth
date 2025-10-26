@@ -512,7 +512,12 @@ Added code to check that the colon compiler doesn't generate compiled words long
 than the CompileBuf
 
 
+2025-10-26 CREATE COMMA DOES>
+-----------------------------
+Got this working as intended. The implementation got fairly elegant.
 
+Also added bounds check for NextWord and CompilingWord. NextWord is
+bigger, because it is also used to process string constants. 
 
 
 References

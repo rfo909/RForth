@@ -1,7 +1,7 @@
 Introduction to Forth
 =====================
 
-2025-10-24
+2025-10-26
 
 Stack language
 --------------
@@ -52,15 +52,16 @@ To list all words on the dictionary, type a "?" and press Enter.
 ```
 ?
 
-! .str 1+ << >> @ HERE PANIC PC CELL+ add allot and andb atoi call cforce 
-cget clear cpush cr cset div drop dump dup eq ge gt halt inv jmp jmp? 
-le lt memcpy mul n2code native nativec ne not null or orb over print print# 
-print#s printb printc rback? readb readc ret rfwd? streq sub swap u2spc 
-cellsize writeb . IF THEN ELSE BEGIN AGAIN? CONSTANT VARIABLE NATIVE Dict 
-DictUse DictClear -> .W CELL CELLS BufReset BufAdd ShowBuffer BufCopy 
-EmitNumber EmitByte &DictionaryHead &DebugFlag &CompileBuf &CompileBufEnd 
-&LVBuf &LVBufEnd &NextWord &NextWordEnd &AllBuffers &AllBuffersEnd &IsCompiling 
-? .s words : => ; IMMEDIATE 
+! .str 1+ << >> @ CELL+ HERE PANIC PC add allot and andb atoi call cellsize 
+cforce cget clear cpush cr crget cset div drop dump dup eq ge gt halt 
+inv jmp jmp? le lt memcpy mul n2code native nativec ne not null or orb 
+over print print# print#s printb printc rback? readb readc ret rfwd? streq 
+sub swap u2spc writeb . IF THEN ELSE BEGIN AGAIN? CONSTANT VARIABLE NATIVE 
+Dict DictUse DictClear -> .W >>str ?C CELL CELLS CREATE , DOES> BufReset 
+BufAdd ShowBuffer BufCopy BufCreateCopy EmitNumber EmitByte GetNextWord 
+PreCompile PostCompile SetCompilingWord &DictionaryHead &DebugFlag &CompileBuf 
+&CompileBufEnd &LVBuf &LVBufEnd &NextWord &NextWordEnd &AllBuffers &AllBuffersEnd 
+&IsCompiling &CompilingWordMode &CompilingWord ? .s words : => ; IMMEDIATE  
 ```
 
 
@@ -399,3 +400,43 @@ Loops are simpler in that they only contain a back jump, to from the bottom of t
 loop to the top, but still need to know where that top is. The compile stack does
 this, and at the same time allows for nested structures, both for conditionals
 and loops.
+
+CREATE and DOES> (and COMMA)
+----------------------------
+
+This is considered "advanced" territory, but I just implemented these, so I got to include
+them here.
+
+These words are used to create words *that create words*. We have already seen examples of this
+with the CONSTANT and VARIABLE words, which create new words (the names of the constant or variable).
+
+The CONSTANT and VARIABLE implementations are more effective than using CREATE and DOES> but here
+follows an example of how to do it.
+
+```
+: Const (value --) CREATE , DOES> @ ;
+```
+
+Const takes a value from the stack, and must be followed by a name, just like CONSTANT: 
+
+```
+5 Const A
+```
+
+The CREATE word is the one that identifies the next word *from the input stream*, which
+means "A". 
+
+The COMMA word takes a value from the data stack (5) and stores it on the heap, by allocating
+a CELL and writing the value there. 
+
+The DOES> word is kind of advanced, and we don't need to understand the details, other than
+that the word it is creating ("Const"), when it is run, executes only the code following DOES>. 
+
+That code, when running, has a reference to the data allocated after CREATE, using COMMA
+in this example, on the stack.
+
+Calling @ it reads the value of the CELL, which is 5.
+
+We have a constant.
+
+

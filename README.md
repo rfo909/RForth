@@ -1,7 +1,7 @@
 RFOrth - a Forth like language
 ==============================
 
-2025-10-24 RFO
+2025-10-26 RFO
 
 ```
 13 CONSTANT Led
@@ -174,10 +174,6 @@ Non-standard
 The RFOrth implementation has no intention of following Forth standards. It is a toy
 language, for discovering what can be done with some stacks and bytecode, but I still
 plan to put it to real use.
-
-It currently (2025-10) does not implement the CREATE ... DOES> but it still can do the same
-by means of reading the &IsCompiling status byte, and depending on its value do
-one thing at compile time, and another at runtime. 
 
 See implementation of the NATIVE word for an example at tag :NATIVE in ACode.txt.
 
@@ -513,8 +509,28 @@ and returns 1 if they are equal, otherwise 0. It is an assembly level function.
 "test 'test streq .
 ```
 
-This should print a 1
+This should print 1 (true).
 
+
+CREATE COMMA DOES>
+------------------
+RFOrth supports these words. The code following DOES> runs with a pointer to
+HERE as it was when CREATE was invoked. The standard example:
+
+```
+: Const CREATE , DOES> @ ;
+```
+
+It works as it should, although the implementation differs a bit from normal
+Forths, because CREATE does in fact not create a dictionary entry. 
+
+It just sets some state variables. DOES> is immediate, and generates a little
+bit of code to call another hidden word DODOES, which in turn generates code
+that points to HERE as it was when CREATE was invoked, and a jump to the code following
+DOES> in the Const word. It invokes the SEMICOLON word, which is responsible for
+creating the dictionary entry.
+
+Fully understanding and implementing DOES> was great fun!!
 
 Custom dictionaries
 -------------------
