@@ -330,14 +330,15 @@ cr "Welcome_to_this_program .str
 
 ### Available buffers
 
-At runtime, when executing code (not compiling), the following buffers are available for general
+At runtime, when executing code (not compiling), a few buffers are available for general
 use: 
 
 - &CompileBuf
 - &LVBuf
 - &NextWord
+- ...
 
-Each is fitted with an end-tag to calculate available bytes:
+Each is fitted with an end-tag to calculate available space:
 
 ```
 &CompileBufEnd &CompileBuf sub .   (64)
@@ -345,12 +346,12 @@ Each is fitted with an end-tag to calculate available bytes:
 &NextWordEnd &NextWord sub .       (32)
 ```
 
-For additional flexibility, all data fields related to the interpreter and compiler,
+For additional flexibility, all data buffers related to the interpreter and compiler,
 are placed next to each other in memory. To use all this memory as a single buffer,
 called &AllBuffers:
 
 ```
-&AllBuffersEnd &AllBuffers sub .    (180)
+&AllBuffersEnd &AllBuffers sub .    (162)
 ```
 
 Allocating memory
@@ -530,7 +531,8 @@ that points to HERE as it was when CREATE was invoked, and a jump to the code fo
 DOES> in the Const word. It invokes the SEMICOLON word, which is responsible for
 creating the dictionary entry.
 
-Fully understanding and implementing DOES> was great fun!!
+Fully understanding and implementing DOES> has been great fun!!
+
 
 Custom dictionaries
 -------------------

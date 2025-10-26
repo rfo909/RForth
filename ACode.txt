@@ -1057,7 +1057,10 @@
 :GetAddrNextWordEnd &NextWordEnd ret
 :GetAddrIsCompiling &IsCompiling ret
 :GetAddrCompilingWord &CompilingWord ret
+:GetAddrCompilingWordEnd &CompilingWordEnd ret
 :GetAddrCompilingWordMode &CompilingWordMode ret
+:GetAddrCompileStack &CompileStack ret
+:GetAddrCompileStackEnd &CompileStackEnd ret
 :GetAddrSEMICOLON &SEMICOLON ret
 :GetAddrLVBuf &LVBuf ret
 :GetAddrLVBufEnd &LVBufEnd ret
@@ -1228,7 +1231,10 @@
 	%'&IsCompiling		%GetAddrIsCompiling		BIN_NORMAL	%NEXT
 	%'&CompilingWordMode	%GetAddrCompilingWordMode	BIN_NORMAL	%NEXT
 	%'&CompilingWord	%GetAddrCompilingWord		BIN_NORMAL	%NEXT
-
+	%'&CompilingWordEnd	%GetAddrCompilingWordEnd	BIN_NORMAL	%NEXT
+	%'&CompileStack		%GetAddrCompileStack		BIN_NORMAL	%NEXT
+	%'&CompileStackEnd	%GetAddrCompileStackEnd		BIN_NORMAL	%NEXT
+	
 	;; ----------------------------------------------------------
 	;; Colon, local variables, semicolon etc
 		
@@ -1261,6 +1267,7 @@
 :IsCompiling		b0
 :CompilingWordMode	b0					;; NORMAL or IMMEDIATE
 :CREATE-HERE		w0
+:NextNumber		w0 					;; single word - output when parsing ok (atoi op)
 
 :AllBuffers
 
@@ -1282,13 +1289,10 @@
 		w0 w0 w0 w0 w0 w0 w0 w0		    ;; and scratch buffer at runtime
 :LVBufEnd
 
-
-:NextNumber		w0 					;; single word - output when parsing ok (atoi op)
-
-:CompileStack		b0 w0 w0 w0 w0 w0 w0 w0 w0 		
+:CompileStack	b0 w0 w0 w0 w0 w0 w0 w0 w0 		
 				;; 8 words each consists of type (1 byte) and offset in CompileBuf (1 byte)
 				;; see COMPS_TYPE_* defs
-
+:CompileStackEnd
 :AllBuffersEnd
 
 :MemoryEnd

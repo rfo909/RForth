@@ -46,6 +46,15 @@ void setError (char *msg) {
 void setup() {
   Wire.begin();
   Serial.begin(9600);
+  Serial.println(F("RFOrth - an interactive Forth-like language"));
+  Serial.println(F("Currently implemented for Arduino"));
+  Serial.println(F("Copyright (C) 2025-  Roar Foshaug"));
+  Serial.println();
+  Serial.println(F("This program comes with ABSOLUTELY NO WARRANTY."));
+  Serial.println(F("This is free software, and you are welcome to redistribute it"));
+  Serial.println(F("under certain conditions; see the LICENSE file."));
+  Serial.println();
+
   delay(100);
 
   fpush(0,0);
