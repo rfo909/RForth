@@ -897,14 +897,18 @@
 
   ret
 
+:Str_DOESCompileModeOnly %"DOES>_-_compile_mode_only
 
 :DOES>
   (immediate - compiling the word with CREATE DOES>)
   
+  &IsCompiling readb &*ok jmp?
+  	cr &Str_DOESCompileModeOnly .str
+  	PANIC
+  :*ok
   (build code to call DODOES)
   (followed by ret)
-  (the ret of the word gets compiled after the generated ret)
-  (and DODOES jumps to it)
+
  
   &DODOES 0 &EmitNumber call
   81 &EmitByte call (call) 
