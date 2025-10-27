@@ -64,19 +64,29 @@ PreCompile PostCompile SetCompilingWord &DictionaryHead &DebugFlag &CompileBuf
 &IsCompiling &CompilingWordMode &CompilingWord ? .s words : => ; IMMEDIATE  
 ```
 
+The listing may seem overwhelming. Most of the lower case words are "assembly" instructions, where
+each word, like "add" or "print" corresponds to a single byte opcode.
+
+
+- [Bytecode instruction set](InstructionSet.md)
+- [Firmware words](FirmwareWords.md)
+
+
 
 Naming
 ------
-Word names in Forth do not need to follow classic "identifier" rules. They can consist of any
-sequence of letters, apart from whitespace, and apart from looking like numbers. The following
-are examples of valid word names
+Word names in RFOrth do not need to follow classic rules for "identifiers" as in other languages. 
+They can consist of any sequence of letters, apart from whitespace, and apart from looking like numbers.
+The following are examples of valid word names
 
 ```
-:
-.
-;
+:               (called COLON in doc)
+.               (DOT)
+;               (SEMICOLON)
+,               (COMMA)
 R>
 DOES>
+
 my:something
 x/y-%
 name#
@@ -85,7 +95,8 @@ name#
 
 Comments
 --------
-Text written inside parantheses is considered a comment in Forth:
+Comments in RFOrth (and Forth) are written inside parantheses. In traditional Forth we also
+see the backslash making the rest of the line a comment. This is not implemented in RFOrth.
 
 ```
 (this word does so and so)
@@ -120,11 +131,11 @@ is as follows:
 : name ... ;
 ```
 
-This is called a colon definition, and the colon initiates the compile mode, and is called
+This is called a colon definition, and the COLON initiates the compile mode. The COLON is somtimes called
 the colon compiler. Example:
 
 ```
-: number 42 ;
+: number 40 2 add ;
 ```
 
 This creates word called "number". When we call it, it puts the value 42 on the stack.
@@ -276,7 +287,7 @@ and looking up tags. This essentially forms a virtual assembly language.
 
 An assembler program runs through the assembly code (in the file ACode.txt) and
 generates byte code, which implements the REPL, colon compiler and some other stuff. It
-does this in about 3000 bytes. The low byte count follows not only from the base simplicity
+does this in about 4000 bytes. The low byte count follows not only from the base simplicity
 of Forth, but also from the virtual machine design. 
 
 The virtual machine architecture is ... surprise, a stack machine. So the assembly operations

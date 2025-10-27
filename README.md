@@ -142,7 +142,7 @@ and a few more key features available in Forth.
 Note that all the "assembly" instructions are directly available to RFOrth, via the dictionary,
 as are some select functions and addresses from ACode.
 
-- [Instruction set](InstructionSet.md)
+- [Bytecode instruction set](InstructionSet.md)
 - [Firmware words](FirmwareWords.md)
 
 Note that I prefer names over symbols, so where a traditional Forth would use the words + - * /,

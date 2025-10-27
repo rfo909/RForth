@@ -63,6 +63,9 @@ NATIVE              NATIVE <name> -- call native function, use NATIVE ? to list
 >>str               (ptr -- ptr) -- advance past string or buffer (length byte + 1)
 ```
 
+(See also the [Bytecode instruction set](InstructionSet.md) which contains base functionality, like add,
+sub, print, cr etc)
+
 Useful addresses 
 ----------------
 A number of both memory areas are allocated in the ACode file. When the program starts,
