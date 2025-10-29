@@ -44,23 +44,43 @@ I2C.MasterRead
 
 EEPROM
 ------
-Organizing EEPROM as a sequence of blocks, each being a line. Also creating
-a dictionary over all words, with option to recompile individual words
-after changing them.
+Organizing EEPROM as a sequence of blocks, each being a line. Creating the entire
+storage as a long document of text, but with an end marker for how far we have added
+data, in order to pick lines from beyond that point to insert into the code when 
+needed, as well as moving lines there when deleting from the document.
 
-When working with data from the EEPROM, we need a word called EMPTY-WORD which
-creates words in the dictionary, each pointing to the same code "ret"; these
-are generated automatically before parsing the actual words in the code.
+Initialization:
+All lines are initialized as consisting of spaces, and the first two bytes point to the NEXT
+and the third byte contains FLAGS. The remaining 29 characters are filled with spaces.
 
-EMPTY-WORD x
+The ROOT block (0) points to top of document, line 1.
+Then we modify the next-pointer of line N to 0, which marks the end of the document, and
+stores a reference to N+1 in the freelist pointer in ROOT
+
+The FLAGS is a bitmask
+  0 = normal 
+  1 = empty line above
+  2 = empty line below
+  4 = word-def
+  8 = emphasize
+ 
+
+
+The editor needs commands to change the FLAGS of each line.
+
+We edit single words at a time
 
 
 
+: Init (lines--)
+  1 => i
+  BEGIN i 1+ => next
+    next i InitLine
+    i 1+ => i
+    i lines lt AGAIN?
+;
 
 
-Change compiler so that ref to unknown word creates that word as type UNDEFINED with shared code "ret"
-
-When defining a word, if it exists, overwrite
 
 Data structure
 --------------
