@@ -272,6 +272,7 @@
 	jmp		:S
 	jmp?		:T   	;; conditional jump on true	
 	call		:Q  
+	dcall		:M
 	ret		:R
 	
 	rfwd?		:6	;; single byte (0-64) offset jumps (inside word)

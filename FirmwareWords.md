@@ -44,7 +44,7 @@ they are not attempted borrowed from any standard (that I know of).
 Dict                Dict <name> -- create dictionary
 DictUse             <Dict> DictUse -- use custom dictionary
 DictClear           stop using custom dictionary
-In                  IN <DictName> <WordName> -- call word in custom Dict
+IN                  IN <DictName> <WordName> -- call word in custom Dict
 =>                  => <name> -- create or update local variable inside colon def
 .W                  .W <word> -- prints address of Dictionary Entry for word (in hex)
 ?C                  (str -- addr) 'str ?C -- returns address of code for word (on stack)
@@ -61,6 +61,7 @@ GetNextWord         (--) -- Reads next word from input, store in &NextWord
 SetCompilingWord    (str --) -- Copy string into &CompilingWord
 NATIVE              NATIVE <name> -- call native function, use NATIVE ? to list 
 >>str               (ptr -- ptr) -- advance past string or buffer (length byte + 1)
+EMPTY-WORD          (isImmediate --) -- creates empty dictionary entry for word (isImmediate selects between IMMEDIATE and NORMAL only)
 ```
 
 (See also the [Bytecode instruction set](InstructionSet.md) which contains base functionality, like add,

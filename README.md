@@ -1,7 +1,7 @@
 RFOrth - a Forth like language
 ==============================
 
-2025-10-26 RFO
+2025-10-29 RFO
 
 ```
 13 CONSTANT Led
@@ -597,16 +597,66 @@ resolved fully at compile time, just as for words in the global dictionary.
 : showAcc (--) IN Accumulator count @ . ;
 ```
 
-Type checking
--------------
-Hah hah hah ... :-)
+Redefining words
+----------------
+The simplest implementation is that every time we define a word, we push a new entry on
+top of the dictionary. 
 
-Seriously though, the system enforces some pointer validation for the read/write operations, ensuring
+RFOrth has adopted a different strategy. The default is that when
+defining a word, if it is found in "top dictionary", which is either the global dictionary
+or a single "custom dictionary", enabled with DictUse, then that word gets redefined.
+
+This means updating the code pointer and the mode value. If not found, it is added to
+the "top dictionary". 
+
+The point about "top dictionary" is to avoid having enabled a custom dictionary, and
+mistyping when redefining a word, ending up redefining a word in the global dictionary
+instead. That would be hard to debug!
+
+### EMPTY-WORD
+
+A new word, EMPTY-WORD has been added to the dictionary. It takes an immediate flag, which
+decides the type between IMMEDIATE and NORMAL, and it is set to point to code doing one op: "ret". 
+
+EMPTY-WORD does not care if the word is already defined. 
+
+This word was thought to be useful when compiling stored code, where we don't want to depend
+on a particular order. But there will have to exist certain ordering, because constant
+and variable defs may depend on running words to determine their values. 
+
+### Forward declaration
+
+The EMPTY-WORD is a forward declaration, so that other words can compile references correctly,
+without it being implemented yet. That can be useful in some situations. It also means 
+words can be recursive, both directly and indirectly.
+
+### "Forgetting" old implementations
+
+If we want to define a new version of some word, while retaining the old one as used by
+other words, the EMPTY-WORD does exactly this.
+
+It would in that scenario possibly be in its place to define a super-word first, like
+this:
+
+
+```
+: x 1 ;
+  
+  (...) other code using x
+
+(creating a new x)
+: super.x x ;
+0 EMPTY-WORD x
+: x 3 ; (new impl)
+<bool> EMPTY-WORD <name>
+```
+
+Type checking / safety
+----------------------
+Stack data are CELL sized values. There is no type tagging.
+
+The system enforces some pointer validation for the read/write operations, ensuring
 we can not access memory above HERE, or write to locations in Flash. 
 
 Also, since custom dictionaries are constants, the DictUse word
 actually checks that the word given as name of dictionary, refers to a constant. 
-
-Other than that: nope!
-
-This is firmly within the Forth tradition, I think!

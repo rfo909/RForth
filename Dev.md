@@ -520,6 +520,43 @@ Also added bounds check for NextWord and CompilingWord. NextWord is
 bigger, because it is also used to process string constants. 
 
 
+2025-10-29 New op dcall
+-----------------------
+To allow redefinition of words, as well as various kinds of
+recursion, when compiling calls to words on the dictionary,
+we instead of the code-ptr, write the code-ptr-ptr, which is
+the pointer to the code field in the Dictionary Entry. This 
+means that to call such words, we must do an extra READ to 
+get to the actual code.
+
+When compiling code, and defining a word, the SEMICOLON code calls
+a new ACode function UpdateDictionaryEntry, which if it locates
+the word, and it exists above the PROTECT tag, modifies the code
+pointer and mode, otherwise creates dictionary entry as before.
+
+The content of the dictionary is the same as before, the changes
+are only when :ExecuteWord comes across the combination of mode==NORMAL
+in compile mode. Then it emits the code-ptr-ptr instead of the
+code-ptr as before, followed by the dcall op.
+
+This makes no difference with regards to the initial dictionary, since
+reading below PROTECT is allowed. 
+
+```
+: x 1 ;
+: y x . ;
+: x 99 ;
+y
+99
+
+: rec ;
+: rec (n) => n n 0 gt IF n 1 sub rec THEN n . ;
+2 rec
+0 1 2
+```
+
+Note that the stacks are modestly sized, so no deep recursion!!
+
 References
 ----------
 

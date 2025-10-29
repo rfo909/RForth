@@ -264,6 +264,13 @@
 
 		self.PC=targetAddr # JMP
 	}
+
+	self._M=Lambda{ # dcall (addr-ptr -- ) Call NORMAL word from dictionary, uses Addr-ptr-ptr in order to support redef of words
+		ptr=self.pop()
+		targetAddr=self.memory.readWord(ptr)
+		self.push(targetAddr)
+		self._Q  # regular call
+	}
 		
 	self._R=Lambda{  # ret ( -- ) return
 		self.fpop

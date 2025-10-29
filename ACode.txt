@@ -428,7 +428,31 @@
 	ret
 
 
-:CreateDictionaryEntry ( name code mode -- ) (And push it on the dictionary)
+:UpdateDictionaryEntry ( name code mode -- ) (return true if ok)
+	cpush			(a=mode)
+	cpush			(b=code)
+	cpush			(c=name)
+
+	;; if there is a custom dictionary, only check it, because we
+	;; can not risk updating a word in th global directory
+	;; when there is a custom one active.
+
+	;; DictLookupSingle handles this
+
+
+	(check if it exists and is in valid memory area)
+	c &DictLookupSingle call cpush (d=DE/null)
+    d &PROTECT lt &*fail jmp?
+	
+		d dup readb add 1+ d!  (past name)
+		b d !              (update code)
+		a d CELL+ !        (update mode)
+
+		1 ret
+	:*fail
+		0 ret
+
+:CreateDictionaryEntry ( name code mode -- ) 
 	cpush			(a=mode)
 	cpush			(b=code)
 	cpush			(c=name)
@@ -467,6 +491,22 @@
 	&DictionaryHead a &DictTraverse call
 	ret
 	
+:DictLookupSingle ;; (str -- dictEntry|null)
+	;; Lookup either in custom dict, if defined, or global dict, but 
+	;; without automatic fallthrough if not found in custom. See
+	;; SEMICOLON - this is a feature needed in order to redefine
+	;; existing words
+
+	cpush 						(a=str)
+
+	&CustomDictionaryHeadPtr @ 0 eq &*defaultDict jmp?
+
+		&CustomDictionaryHeadPtr @ a &DictTraverse call ret
+	
+	:*defaultDict
+	
+	&DictionaryHead a &DictTraverse call
+	ret
 
 
 :DictTraverse ;; ( dictHead str -- dictEntry|null )
@@ -573,7 +613,7 @@
 	ret
 
 :ExecuteWord ;; ( code-ptr-ptr mode-value -- ) ;; decide how to handle normal word
-	swap @ cpush				; a=code-ptr  
+	swap cpush				; a=code-ptr  
 	cpush    				; b=mode-value
 	
 	&IsCompiling readb not &*NotCompiling jmp?
@@ -588,33 +628,32 @@
 		b MODE_NORMAL    eq &*callCode jmp?		;; mode==normal, call the code
 		b MODE_IMMEDIATE eq &*callCode jmp?		;; mode==immediate, call the code
 		b MODE_INSTR    eq &*callInline jmp?		;; mode==inline, execute that instruction
-		b MODE_CONSTANT      eq &*executeData jmp?
+		b MODE_CONSTANT      eq &*constant jmp?
 
 		ret
 		
 	:*callCode
-		;; cr "callCode_ .str a print
-		a call 
+		;; cr "callCode_ .str a @ print
+		a @ call 
 		ret
-	:*generateCall
-		;; cr "generateCall_ .str a print
+	:*generateCall (using ptr-ptr in order to allow redef of words)
+		;; cr "generateCall_ .str a @ print
 		a 0 &EmitNumber call
 
 		;; add the call instruction
-		0x51						;; Q = call
-			&EmitByte call
+		77 &EmitByte call ;; dcall op, expects ptr-ptr
 
 		ret
 	:*inlineCode
 		;; when inlining, the "code pointer" is the instruction! 00nn!
-		;; cr "inlineCode_ .str a print
-		a &EmitByte call
+		;; cr "inlineCode_ .str a @ print
+		a @ &EmitByte call
 		ret
 	:*callInline
 		;; when inlining, the "code pointer" is the instruction! 00nn!
-		;; cr "callInline_ .str a print
+		;; cr "callInline_ .str a @ print
 		0 &CompileBuf writeb		;; clear CompileBuf (this is interactive mode, so buffer not in use)
-		a &EmitByte call
+		a @ &EmitByte call
 		;; add the opcode
 		0x52 &EmitByte call  		;; add "R" = ret
 		&CompileBuf 1+ call    	;; invoke CompileBuf offset 1 (as byte 0 is the length)
@@ -623,10 +662,10 @@
 		;; Data word, push code pointer value to stack
 		;; Data words are static, so generating code is ok. For variables, this
 		;; value is typically a memory reference!
-		a 0 &EmitNumber call
+		a @ 0 &EmitNumber call
 		ret
-	:*executeData
-		a
+	:*constant
+		a @
 		ret
 
 ; -------------------------------------------
@@ -940,11 +979,20 @@
 
 	;; allocate permanent code buffer including length byte
 	&CompileBuf &BufCreateCopy call cpush            (a=codeBuffer)
-	
+
+	(update existing if found, otherwise create new dictionary entry)
 	&CompilingWord 			(name)
 		a 1 add				(code - advance past the length byte)
 		&CompilingWordMode readb	(mode)
-			&CreateDictionaryEntry call
+			&UpdateDictionaryEntry call &*cleanup jmp?
+
+	
+		&CompilingWord 			(name)
+			a 1 add				(code - advance past the length byte)
+			&CompilingWordMode readb	(mode)
+				&CreateDictionaryEntry call
+
+	:*cleanup
 
 	;; switch off compile mode and clean up
 	&PostCompile call
@@ -980,6 +1028,35 @@
 	&CONSTANT call 			(create word for the pointer)
 	ret
 	
+(When working with code in EEPROM, before compiling them)
+(we create all words as empty words, so as not to get issues)
+(with compile order; note that mode is a parameter, so that)
+(references are compiled correctly)
+()
+(Calling this for an existing word creates a new instance on)
+(the dictionary, as was the default pattern initially, so that)
+(pre-existing code continues using the old version)
+
+:EMPTY-WORD (isImmediate)
+	cpush (a=isImmediate)
+
+	MODE_IMMEDIATE cpush (b=mode)
+
+    a 0 gt &*modeOk jmp?  (leave mode IMMEDIATE)
+		(else: MODE_NORMAL)
+		MODE_NORMAL b!
+	:*modeOk
+    
+	&GetNextWord call
+	
+	&NextWord	 			(name)
+		&emptyCode 1+		(code)
+		b					(mode)
+			&CreateDictionaryEntry call
+	ret
+
+:emptyCode HEX:0152  (buffer length + ret op) - remember to point to pos +1
+
 :DOT
 	print#s 
 	&Str_Space .str
@@ -1214,6 +1291,7 @@
     	%'PreCompile  		%PreCompile		BIN_NORMAL		%NEXT
     	%'PostCompile  		%PostCompile		BIN_NORMAL		%NEXT
 	%'SetCompilingWord	%SetCompilingWord	BIN_NORMAL		%NEXT
+	%'EMPTY-WORD		%EMPTY-WORD			BIN_NORMAL		%NEXT
 	
 	;; ----------------------------------------------------------
 	;; System addresses as words

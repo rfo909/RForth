@@ -39,17 +39,55 @@ Created these NATIVE functions
 I2C.MasterWrite
 I2C.MasterRead
 
-Forth code editor
------------------
-Organizing EEPROM as a sequence of 32 byte blocks. For each block the
-two first bytes are control bytes, and the remaining 30 are code.
 
-The first block is used for control purposes; it contains a pointer to the
-list of free blocks and another to the list of code lines in use.
 
-Each list is a linked list, using the two first bytes to point to the next.
 
-Initially we clear and assign 10 lines with blank strings, as in use.
+EEPROM
+------
+Organizing EEPROM as a sequence of blocks, each being a line. Also creating
+a dictionary over all words, with option to recompile individual words
+after changing them.
+
+When working with data from the EEPROM, we need a word called EMPTY-WORD which
+creates words in the dictionary, each pointing to the same code "ret"; these
+are generated automatically before parsing the actual words in the code.
+
+EMPTY-WORD x
+
+
+
+
+
+Change compiler so that ref to unknown word creates that word as type UNDEFINED with shared code "ret"
+
+When defining a word, if it exists, overwrite
+
+Data structure
+--------------
+Root page at location 0
+
+Linked lists of pages
+Populate all with space (0x20)
+
+Use
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
