@@ -61,7 +61,7 @@ GetNextWord         (--) -- Reads next word from input, store in &NextWord
 SetCompilingWord    (str --) -- Copy string into &CompilingWord
 NATIVE              NATIVE <name> -- call native function, use NATIVE ? to list 
 >>str               (ptr -- ptr) -- advance past string or buffer (length byte + 1)
-EMPTY-WORD          (isImmediate --) -- creates empty dictionary entry for word (isImmediate selects between IMMEDIATE and NORMAL only)
+EMPTY-WORD          (--) -- creates empty dictionary entry for normal word
 ```
 
 (See also the [Bytecode instruction set](InstructionSet.md) which contains base functionality, like add,

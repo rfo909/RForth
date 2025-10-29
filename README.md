@@ -599,7 +599,7 @@ resolved fully at compile time, just as for words in the global dictionary.
 
 Redefining words
 ----------------
-The simplest implementation is that every time we define a word, we push a new entry on
+The simplest implementation is where every time we define a word, we push a new entry on
 top of the dictionary. 
 
 RFOrth has adopted a different strategy. The default is that when
@@ -613,16 +613,24 @@ The point about "top dictionary" is to avoid having enabled a custom dictionary,
 mistyping when redefining a word, ending up redefining a word in the global dictionary
 instead. That would be hard to debug!
 
+_Note:_ It is not possible to redefine system words defined on the default global stack,
+as it exists below the PROTECT limit, which means it exists in Flash at runtime. In that
+case a new word will be pushed on top of the dictionary, hiding the old.
+
 ### EMPTY-WORD
 
-A new word, EMPTY-WORD has been added to the dictionary. It takes an immediate flag, which
-decides the type between IMMEDIATE and NORMAL, and it is set to point to code doing one op: "ret". 
+A new word, EMPTY-WORD has been added to the global dictionary. It creates an *empty normal word*
+and sets its code to point to a fixed segment that contains the "ret" op only (and a
+length byte at index -1).
 
 EMPTY-WORD does not care if the word is already defined. 
 
-This word was thought to be useful when compiling stored code, where we don't want to depend
-on a particular order. But there will have to exist certain ordering, because constant
+This word was initially thought to be useful when compiling stored code, where we don't
+want to depend on a particular order. But there will have to exist certain ordering, because constant
 and variable defs may depend on running words to determine their values. 
+
+It still has one important use; that of creating forward declarations, which is necessary
+in order to implement any type of recursion.
 
 ### Forward declaration
 
@@ -630,26 +638,14 @@ The EMPTY-WORD is a forward declaration, so that other words can compile referen
 without it being implemented yet. That can be useful in some situations. It also means 
 words can be recursive, both directly and indirectly.
 
-### "Forgetting" old implementations
 
-If we want to define a new version of some word, while retaining the old one as used by
-other words, the EMPTY-WORD does exactly this.
+### Freezing previous version
 
-It would in that scenario possibly be in its place to define a super-word first, like
-this:
+In addition, as EMPTY-WORD doesn't check if the word was already defined, it freezes the
+old version of the word, and leaves all words depending on it to use the old version. 
 
-
-```
-: x 1 ;
-  
-  (...) other code using x
-
-(creating a new x)
-: super.x x ;
-0 EMPTY-WORD x
-: x 3 ; (new impl)
-<bool> EMPTY-WORD <name>
-```
+It is perhaps a bit far fetched to use EMPTY-WORD for this. Having multiple implementations
+of a single word isn't going to make life easier when debugging.
 
 Type checking / safety
 ----------------------

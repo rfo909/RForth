@@ -1036,22 +1036,16 @@
 (Calling this for an existing word creates a new instance on)
 (the dictionary, as was the default pattern initially, so that)
 (pre-existing code continues using the old version)
+()
+(Only applies to NORMAL words)
 
-:EMPTY-WORD (isImmediate)
-	cpush (a=isImmediate)
-
-	MODE_IMMEDIATE cpush (b=mode)
-
-    a 0 gt &*modeOk jmp?  (leave mode IMMEDIATE)
-		(else: MODE_NORMAL)
-		MODE_NORMAL b!
-	:*modeOk
+:EMPTY-WORD 
     
 	&GetNextWord call
 	
 	&NextWord	 			(name)
 		&emptyCode 1+		(code)
-		b					(mode)
+		MODE_NORMAL				(mode)
 			&CreateDictionaryEntry call
 	ret
 
