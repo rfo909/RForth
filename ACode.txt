@@ -910,6 +910,14 @@
   HERE &CREATE-HERE !
   ret
 
+(name as parameter)
+:PCREATE (str)
+  &SetCompilingWord call
+  HERE &CREATE-HERE !
+  ret
+
+  
+
 :Str_CommaCompileModeOnly %"COMMA_-_compile_mode_only
 
 :COMMA (val--)
@@ -1268,6 +1276,7 @@
 	%'CELLS		%CELLS		BIN_NORMAL			%NEXT
 	
 	%'CREATE	%CREATE		BIN_NORMAL			%NEXT
+	%'PCREATE	%PCREATE	BIN_NORMAL			%NEXT
 	%',		%COMMA		BIN_NORMAL			%NEXT
 	%'DOES>		%DOES>		BIN_IMMEDIATE			%NEXT
 	

@@ -1,5 +1,8 @@
 Firmware words
 --------------
+
+2025-10-29
+
 In addition to the Forth words that are assembly op's from the virtual
 bytecode machine architecture, a number of useful words are made available
 from the ACode.txt file, where the initial dictionary is created.
@@ -59,9 +62,10 @@ EmitNumber          (value digits --) -- Add byte code for value to &CompileBuf,
 EmitByte            (byte --) -- Add byte to &CompileBuf, typically op's
 GetNextWord         (--) -- Reads next word from input, store in &NextWord
 SetCompilingWord    (str --) -- Copy string into &CompilingWord
+>>str               (ptr -- ptr) -- advance pointer past string or buffer (length byte + 1)
 NATIVE              NATIVE <name> -- call native function, use NATIVE ? to list 
->>str               (ptr -- ptr) -- advance past string or buffer (length byte + 1)
 EMPTY-WORD          (--) -- creates empty dictionary entry for normal word
+PCREATE             (str--) -- same as CREATE except takes word as string
 ```
 
 (See also the [Bytecode instruction set](InstructionSet.md) which contains base functionality, like add,
