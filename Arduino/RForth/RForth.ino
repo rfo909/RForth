@@ -226,6 +226,7 @@ void populateOps() {
   ops[74]=&op_write;
   ops[75]=&op_allot;
   ops[76]=&op_printb;
+  ops[77]=&op_dcall;
   ops[79]=&op_cpush;
   ops[80]=&op_PC;
   ops[81]=&op_call;
@@ -305,6 +306,8 @@ void op_print_decimal_unsigned () {Word w=pop(); printUnsignedDecimal(w);}
 void op_cpush () {Word value=pop(); cpush(value);}
 void op_PC () {push(programCounter);}
 void op_call () {Word targetAddr=pop(); Word returnAddr=programCounter+1; callCode(targetAddr, returnAddr);}
+void op_dcall () {Word ptr=pop(); Word targetAddr=readWord(ptr); Word returnAddr=programCounter+1; callCode(targetAddr, returnAddr);}
+
 void op_ret () {returnFromCode();}
 void op_jmp () {programCounter=pop();}
 void op_jmp_optional () {Word addr=pop(); Word cond=pop(); if (cond != 0) programCounter=addr;}
