@@ -1,91 +1,85 @@
-# If we let DODOES take a pointer off the stack, instead of storing stuff on the heap,
-# then we can let the ptr pass through CREATE and be picked up by DODOES and push that
-# on the stack (via code) before jumping to run the code after DOES>
 
-# I simulate this by setting the CREATE-HERE value to the ptr parameter to Adder and Getter
+Dict EEPROM
+EEPROM DictUse
 
-: Adder (ptr) CREATE &CREATE-HERE ! DOES> (value [ptr]) => ptr => val ptr @ val add ptr ! ;
-: Getter (ptr) CREATE &CREATE-HERE ! DOES> ([ptr]--value) @ ;
+32 CONSTANT BufSize
+  
+0x50 CONSTANT deviceAddr
 
-HERE 0 , 
-    dup Adder CounterAdd 
-    Getter CounterGet
+800 CONSTANT BufCount
+  (with room for dumping HEAP)
 
+HERE BufSize 3 add allot CONSTANT Block 
+  (1 length byte 2 eeprom write address bytes)
 
-The issue now is resisting the temptation of overdoing this, creating "libraries" like
-the dictionary example below. Which would benefit from (a) the shared data and (b) of
-creating words from code, like supply a base name and have it extended by "method names",
-... Doing Java in Forth???
+: Len Block readb ;
+: Out (byte --) 
+  (byte) Block Len add 1+ writeb 
+  Len 1+ Block writeb (update length) ;
+  
+: Out2 (val--) 
+  dup (val) 8 >> 0xFF andb Out 
+  (val) 0xFF andb Out ;
 
+: Clr 
+  0 Block writeb ;
+  
+: >eeAddr (blockNo) 
+  BufSize mul Out2 ;
+  
+: >Next (blockNo) 
+  1 sub Out2 ;
+  
+: >Flags ()
+  0 Out (flags) ;
+  
+: >Spaces ()
+  BufSize 3 sub => i 
+  BEGIN 0x20 Out 
+    i 1 sub => i
+  i AGAIN? ;
 
+: InitBlock (blockNo) 
+  Clr 
+  dup (blockNo) >eeAddr
+  (blockNo) >Next
+  >Flags 
+  >Spaces ;
 
+: i2cWrite
+  (write Block data to i2c device)
+  Block 1+
+    Len
+    deviceAddr NATIVE I2C.MasterWrite 
+  deviceAddr NATIVE I2C.MasterWWait
+  ;
+  
+: InitAll (--) 
+  1 => i BEGIN 
+    cr i print#
+    i InitBlock i2cWrite 
+    i 1+ => i 
+    i BufCount lt AGAIN? ;
 
-
-(Using buffers for string ops)
-
-(----------------------------)
-Dict Str
-Str DictUse
-
-&CompileBuf CONSTANT buf
-&CompileBufEnd &CompileBuf sub CONSTANT Available
-
-(=============================
-NOTE: Using the compile
-buffer is safe as long as 
-inside running code. Its 
-content may change when using
-the REPL
-=============================)
-
-: clear (--) 0 buf writeb ;
-
-: Length (-- n) buf readb ;
-
-: add (str --)
-  => str
-  str readb => strLen
-  Length => bufLen
-
-  strLen Length add Available gt IF
-    "Str:_Buffer_overflow .str 
-    PANIC
-  THEN
-  (-- copy str into buf --)
-  str 1+ (source)
-    buf Length add 1+ (target)
-    strLen (#bytes)
-      memcpy
-  (-- update buf length --)
-  Length strLen add
-    buf writeb
-;  
-
-(-- for debug --)
-: .b buf Available ShowBuffer ;
-
-DictClear
-(172 bytes)
-
-
-(----------------------------)
-
-
-
-(----------------------------)
-(TEST CODE)
-
-: SClr () IN Str clear ;
-: S+ (str) IN Str add ;
-: S> (--ptr) IN Str buf ;
-: S. S> .str ;
-
-: test 
-  SClr 
-  "test_ S+ 
-  "tust_ S+ 
-  S. ;
-
-
-
+: Show (-- show Block data --)
+  Block readb => count
+  0 => i BEGIN
+     cr i print#
+     "_:_ .str
+     Block 1+ i add readb print
+     i 1+ => i
+     i count lt AGAIN?
+  ;
+    
+: i2cRead (blockNo)
+  (send address)
+  Clr (blockNo) >eeAddr i2cWrite
+  cr Show cr
+  (read data)
+  Clr BufSize 
+    Block 1+ 
+    deviceAddr NATIVE I2C.MasterRead => recv
+  recv Block writeb (update length)
+  ;
+ 
 

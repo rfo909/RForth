@@ -1,0 +1,60 @@
+# text to send
+# --
+	Dir.file("send.txt").read
+/TextLines
+
+# Source file
+# --
+	Sys.savefile.dir.file("Forth.txt")
+/SourceFile
+
+
+# Newline
+# --
+	#"^n".unEsc.getBytes("ISO-8859-1").getList(0).nth(0)
+	10
+/Newline
+
+# Send line
+# --
+	P(1) => line
+	file=RawFile("/dev/ttyACM0")
+	#println(line)
+	line.getBytes("ISO-8859-1").getList(0)->byte
+		file.write(byte)
+		Sys.sleep(50)
+	|
+	file.write(Newline)
+/SendLine
+	
+# Send
+# --
+	SourceFile.read->line
+		break(line.startsWith("#END"))
+		reject(line.trim.startsWith("#"))
+		println("FILE: " + line)
+		SendLine(line)
+/SendFile
+
+
+# Main loop
+# --
+	SendFile
+	
+	append=true
+	loop
+		Inner{
+			SourceFile.read->line println(line)
+		}
+		str = if (append) 
+			readLine("Enter line, q to stop, x to stop append")
+		else
+			readLine("[NOAPPEND] Enter line, q to stop, a to append")
+			
+		break(str=="q")
+		if (str=="x") {append=false continue}
+		if (str=="a") {append=true continue}
+		SendLine(str)
+		if (append) SourceFile.append(str)
+		
+/Main
