@@ -15,7 +15,7 @@ where each element either puts something on a stack, or takes something from it,
 with it, and putting the result back.
 
 ```
-2 3 add
+2 3 +
 ```
 
 First the value 2 is pushed on the stack. Then the value 3. The stack now looks like this
@@ -32,6 +32,12 @@ and push the result on the stack. The result:
 5 
 ```
 
+At this point, nothing is shown on the screen. To print the (top) value from the stack,
+enter the DOT word
+
+```
+. 
+```
 
 
 Words
@@ -52,21 +58,20 @@ To list all words on the dictionary, type a "?" and press Enter.
 ```
 ?
 
-! .str 1+ << >> @ CELL+ HERE PANIC PC add allot and andb atoi call cellsize 
-cforce cget clear cpush cr crget cset div drop dump dup eq ge gt halt 
-inv jmp jmp? le lt memcpy mul n2code native nativec ne not null or orb 
-over print print# print#s printb printc rback? readb readc ret rfwd? streq 
-sub swap u2spc writeb . IF THEN ELSE BEGIN AGAIN? CONSTANT VARIABLE NATIVE 
-Dict DictUse DictClear IN .W >>str ?C CELL CELLS CREATE , DOES> BufReset 
+! .str 1+ << >> @ CELL+ HERE PANIC PC + allot && & atoi call cellsize 
+cforce cget clear cpush cr crget cset / drop dump dup == >= > halt inv 
+jmp jmp? <= < memcpy * n2code native nativec != ! null || | over print 
+print# print#s printb printc rback? readb readc ret rfwd? streq - swap 
+u2spc writeb . IF THEN ELSE BEGIN AGAIN? CONSTANT VARIABLE NATIVE Dict 
+DictUse DictClear IN .W >>str ?C CELL CELLS CREATE PCREATE , DOES> BufReset 
 BufAdd ShowBuffer BufCopy BufCreateCopy EmitNumber EmitByte GetNextWord 
-PreCompile PostCompile SetCompilingWord &DictionaryHead &DebugFlag &CompileBuf 
-&CompileBufEnd &LVBuf &LVBufEnd &NextWord &NextWordEnd &AllBuffers &AllBuffersEnd 
-&IsCompiling &CompilingWordMode &CompilingWord ? .s words : => ; IMMEDIATE  
+PreCompile PostCompile SetCompilingWord EMPTY-WORD &DictionaryHead &DebugFlag 
+&CompileBuf &CompileBufEnd &LVBuf &LVBufEnd &NextWord &NextWordEnd &AllBuffers 
+&AllBuffersEnd &IsCompiling &CompilingWordMode &CompilingWord &CompilingWordEnd 
+&CompileStack &CompileStackEnd &CREATE-HERE ? .s words : => ; IMMEDIATE```
 ```
 
-The listing may seem overwhelming. Most of the lower case words are "assembly" instructions, where
-each word, like "add" or "print" corresponds to a single byte opcode.
-
+This list contains two sets of words:
 
 - [Bytecode instruction set](InstructionSet.md)
 - [Firmware words](FirmwareWords.md)
@@ -135,7 +140,7 @@ This is called a colon definition, and the COLON initiates the compile mode. The
 the colon compiler. Example:
 
 ```
-: number 40 2 add ;
+: number 40 2 + ;
 ```
 
 This creates word called "number". When we call it, it puts the value 42 on the stack.
@@ -243,7 +248,7 @@ Example, building a linked list (stack) of values
 : showList (--)
   ListHead @ => ptr
   BEGIN
-    ptr 0 ne IF 
+    ptr 0 != IF 
       cr ptr @ . 
       ptr CELL+ @ => ptr
     THEN
@@ -281,7 +286,7 @@ machine code, implementing the REPL, the colon compiler, and a number of standar
 for managing memory, etc. 
 
 RFOrth is not written in real assembly. Instead it runs on a virtual machine defined by
-around 60 single byte instructions (plus 128 for representing numeric literals). Short names
+around 70 single byte instructions (plus 128 for representing numeric literals). Short names
 have been defined for each of these instructions, together with simple syntax for defining
 and looking up tags. This essentially forms a virtual assembly language. 
 
@@ -415,7 +420,7 @@ and loops.
 CREATE and DOES> (and COMMA)
 ----------------------------
 
-This is considered an advanced mechanism, often referred to as "the pearl of Forth", because
+This is considered an advanced topic, often referred to as "the pearl of Forth", because
 of the ways it can extend the language. Here goes.
 
 These words are used to create new words *that create words*. We have already seen examples of this

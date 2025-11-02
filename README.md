@@ -1,7 +1,7 @@
 RFOrth - a Forth like language
 ==============================
 
-2025-10-29 RFO
+2025-11-02 RFO
 
 ```
 13 CONSTANT Led
@@ -18,8 +18,9 @@ RFOrth - a Forth like language
   
 : Flashes (count --) 
   => count 
-  BEGIN Flash 50 Sleep 
-    count 1 sub dup => count 
+  BEGIN 
+    Flash 50 Sleep 
+    count 1 - dup => count 
   AGAIN? ;
   
 (generate seq. of 5 flashes)
@@ -29,7 +30,7 @@ RFOrth - a Forth like language
   BEGIN 
     5 Flashes 
     500 Sleep 
-    count 1 sub => count
+    count 1 - => count
     count AGAIN? ;
 
 (run example)
@@ -145,30 +146,6 @@ as are some select functions and addresses from ACode.
 - [Bytecode instruction set](InstructionSet.md)
 - [Firmware words](FirmwareWords.md)
 
-Note that I prefer names over symbols, so where a traditional Forth would use the words + - * /,
-I use add, sub, mul and div. This makes code more readable to me. 
-
-```
-+	add
--	sub
-*	mul
-/	div
-
-==	eq
-!=	ne
->	gt
-<	lt
->=	ge
-<=	le
-!	not	(logical)
-
-&&	and	(logical)
-||	or
-	
-&	andb	(bitwise)
-|	orb
-```
-
 
 Non-standard
 ------------
@@ -183,7 +160,7 @@ As usual with Forth, RFOrth implements a REPL (read-eval-print-loop), which take
 it and repeats. 
 
 ```
-3 5 add .
+3 5 + .
 ```
 This prints 8
 
@@ -442,7 +419,7 @@ BEGIN .... bool AGAIN?
 ```
 : max (a b -- n)
   => b => a
-  b a gt IF
+  b a > IF
     b
   ELSE
     a
@@ -455,7 +432,7 @@ BEGIN .... bool AGAIN?
   BEGIN
     cr counter .
     counter 1+ => counter
-    counter max lt AGAIN?
+    counter max < AGAIN?
   ;
 ```
 
@@ -475,7 +452,7 @@ a good idea.
 ```
 : someWord
   ...
-  x y eq IF ret THEN
+  x y == IF ret THEN
   ...
   ;
 ```
@@ -577,7 +554,7 @@ RFOrth implements an immediate word "In" which takes the two following words fro
 as the name of the dictionary, and the word inside.
 
 ```
-10 IN Accumulator add    (calls the "add" word IN the custom dictionary, NOT the addition op)
+10 IN Accumulator add    (calls the "add" word IN the custom dictionary)
 IN Accumulator count @ . (should now print 10)
 ```
 

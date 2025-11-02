@@ -9,46 +9,33 @@ EEPROM DictUse
 800 CONSTANT BufCount
   (with room for dumping HEAP)
 
-HERE BufSize 3 add allot CONSTANT Block 
+HERE BufSize 3 + allot CONSTANT Block 
   (1 length byte 2 eeprom write address bytes)
 
 : Len Block readb ;
-: Out (byte --) 
-  (byte) Block Len add 1+ writeb 
+
+: >Byte (byte --) 
+  (byte) Block Len + 1+ writeb 
   Len 1+ Block writeb (update length) ;
   
-: Out2 (val--) 
-  dup (val) 8 >> 0xFF andb Out 
-  (val) 0xFF andb Out ;
+: >Word (val--) 
+  dup 
+  (val) 8 >> 0xFF & >Byte 
+  (val) 0xFF & >Byte 
+  ;
 
 : Clr 
   0 Block writeb ;
   
-: >eeAddr (blockNo) 
-  BufSize mul Out2 ;
+: eeAddr (blockNo) 
+  BufSize * ;
   
-: >Next (blockNo) 
-  1 sub Out2 ;
-  
-: >Flags ()
-  0 Out (flags) ;
-  
-: >Spaces ()
-  BufSize 3 sub => i 
-  BEGIN 0x20 Out 
-    i 1 sub => i
-  i AGAIN? ;
+: InitBlock (blockNo) => b
+  Clr b eeAddr >Word b 1 - >Word 0 >Byte ;
 
-: InitBlock (blockNo) 
-  Clr 
-  dup (blockNo) >eeAddr
-  (blockNo) >Next
-  >Flags 
-  >Spaces ;
-
-: i2cWrite
+: W
   (write Block data to i2c device)
-  Block 1+
+  Block 1+ (ptr)
     Len
     deviceAddr NATIVE I2C.MasterWrite 
   deviceAddr NATIVE I2C.MasterWWait
@@ -57,29 +44,42 @@ HERE BufSize 3 add allot CONSTANT Block
 : InitAll (--) 
   1 => i BEGIN 
     cr i print#
-    i InitBlock i2cWrite 
+    i InitBlock W
     i 1+ => i 
-    i BufCount lt AGAIN? ;
+    i BufCount < AGAIN? ;
 
 : Show (-- show Block data --)
-  Block readb => count
   0 => i BEGIN
      cr i print#
      "_:_ .str
-     Block 1+ i add readb print
+     Block 1+ i + readb print
      i 1+ => i
-     i count lt AGAIN?
+     i Len < AGAIN?
   ;
+  
+: >>addr (blockNo)
+  Clr (blockNo) eeAddr >Word W ;
     
-: i2cRead (blockNo)
-  (send address)
-  Clr (blockNo) >eeAddr i2cWrite
-  cr Show cr
-  (read data)
-  Clr BufSize 
-    Block 1+ 
+: R (blockNo)
+  Clr (blockNo) eeAddr >Word W
+  3 (count) 
+    Block 1+ (ptr)
     deviceAddr NATIVE I2C.MasterRead => recv
   recv Block writeb (update length)
   ;
- 
+
+: R1 (addr) => addr
+  addr .
+  Clr addr >Word W
+  1 Block 1+ deviceAddr NATIVE I2C.MasterRead 
+  cr Block 1+ print
+  0 Block writeb
+  ;
+  
+
+HERE 4128 - .
+
+#END
+
+
 

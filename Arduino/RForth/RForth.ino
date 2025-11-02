@@ -46,8 +46,9 @@ void setError (char *msg) {
 void setup() {
   Wire.begin();
   Serial.begin(9600);
+  Serial.println();
   Serial.println(F("RFOrth - an interactive Forth-like language"));
-  Serial.println(F("Currently implemented for Arduino"));
+  Serial.println(F("For: Arduino Nano Every"));
   Serial.println(F("Copyright (C) 2025-  Roar Foshaug"));
   Serial.println();
   Serial.println(F("This program comes with ABSOLUTELY NO WARRANTY."));
@@ -949,7 +950,6 @@ void natI2CMasterRead() {
     writeByte(recvBuf+i+1, b);
     i++;
   }
-  Wire.endTransmission();
   push(i);  // received count
 }
 
