@@ -54,11 +54,3 @@ HERE 10 allot CONSTANT r
 : test-old write read-old Br ;
 : test-new write read Br ;
 
-#END
-
-read-old Br
-read Br
-read Br
-write 
-read Br
-read-old Br

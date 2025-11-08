@@ -748,9 +748,10 @@ const NativeFunction nativeFunctions[]={
   {"Pin.ReadDigital",  &natPinReadDigital,  "(pin -- value) returns 0 or 1"},
   {"Pin.ReadAnalog",   &natPinReadAnalog,   "(pin -- value) returns 0-1023"},
 
-  {"I2C.MasterWrite",   &natI2CMasterWrite,   "(sendBufPtr sendCount addr -- )"},
-  {"I2C.MasterWWait",   &natI2CMasterWWait,   "(addr -- ) wait for data write (eeprom) to complete"},
-  {"I2C.MasterRead",    &natI2CMasterRead,    "(count recvBufPtr addr -- recvCount)"},
+  {"I2C.mW",       &natI2CmW,          "(sendBufPtr addr -- ) master write"},
+  {"I2C.mWWait",   &natI2CmWWait,      "(addr -- ) master wait for data write (eeprom) to complete"},
+  {"I2C.mR",       &natI2CmR,          "(count recvBufPtr addr -- recvCount) master read"},
+  {"I2C.mWR",      &natI2CmWR,         "(sendBufPtr count recvBufPtr addr -- recvCount) master write then read"},
 
   {"Test.EEPROM",   &natTestEEPROM,   "(i2cAddr memAddr -- )"},
 
@@ -914,11 +915,12 @@ void natPinReadAnalog () {
 // -------------------------------
 
 // (sendBufPtr sendCount addr -- )
-void natI2CMasterWrite() {
+void natI2CmW() {
   Word addr=pop();
-  Word sendCount=pop();
   Word sendBuf=pop();
-  
+
+  Word sendCount=readByte(sendBuf);
+
   Wire.beginTransmission((byte) addr);
   for (byte i=0; i<sendCount; i++) {
     Wire.write((byte)readByte(sendBuf+i+1));
@@ -927,7 +929,7 @@ void natI2CMasterWrite() {
 }
 
 // EEPROM's are sometimes slow at doing page writes etc (thank you, ChatGPT)
-void natI2CMasterWWait () {
+void natI2CmWWait () {
   Word addr=pop();  
   while (true) {
     Wire.beginTransmission((int) addr);
@@ -938,7 +940,7 @@ void natI2CMasterWWait () {
 }
 
 // count recvBufPtr addr -- recvCount)
-void natI2CMasterRead() {
+void natI2CmR() {
   Word addr=pop();
   Word recvBuf=pop();
   Word count=pop();
@@ -952,6 +954,23 @@ void natI2CMasterRead() {
   }
   push(i);  // received count
 }
+
+// write then read (sendBufPtr count recvBufPtr addr -- actualRecvCount)
+void natI2CmWR() {
+  Word addr=pop();
+  Word recvBuf=pop();
+  Word count=pop();
+
+  push(addr);
+  natI2CmW();
+
+  push(count);
+  push(recvBuf);
+  push(addr);
+  natI2CmR(); // pushes actual count on stack
+}
+
+
 
 // -------------------------------
 // Test.*
