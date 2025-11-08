@@ -845,24 +845,24 @@
 :LVSet ;; => (immediate word)
 	&GetNextWord call
 	&IsCompiling readb not &*interactive jmp?
-		&NextWord readb 7 gt &*length jmp?
-			&NextWord &LVSetOrAdd call
-			
-			;; DEBUG
-			;cr &NextWord .str
-			;cr &LVBuf 32 &ShowBuffer call
-			ret
+	
+	&NextWord readb 7 gt &*length jmp?
+		&LVSetOrAdd call
+		ret
 	:*interactive
-			cr &Str_NoInteractiveLocals .str
-			PANIC
+		cr &Str_NoInteractiveLocals .str
+		PANIC
 	:*length
-			cr &Str_LocalsMaxLength .str
-			PANIC
+		cr &Str_LocalsMaxLength .str
+		PANIC
 
 
 
-:LVSetOrAdd ;; &NextWord (called from :LVSet)
-	;; LVBuf:  N...N...0
+:LVSetOrAdd ;; uses &NextWord (called from :LVSet)
+	;; LVBuf:  N...N...000...  
+	   (the 000 are filled into LVBuf by PreCompile called from COLON)
+	   (and the N's are the length of each local variable name)
+	   
 	0 cpush (a=index of word)
 	0 cpush (b=pos)
 	&NextWord readb cpush (c=len)
@@ -885,6 +885,7 @@
 
 	:*add
 		(b is at the terminating 0)
+		(WARNING: no boundary check)
 
 		&NextWord
 			&LVBuf b add

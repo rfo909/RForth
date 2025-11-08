@@ -41,7 +41,7 @@
 # --
 	SendFile
 	
-	append=true
+	append=false
 	loop
 		Inner{
 			SourceFile.read->line println(line)

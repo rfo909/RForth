@@ -1,7 +1,10 @@
+clear
+
 (
-Letting #buf indicate a buffer that
-has the length byte set to the size of 
-the buffer
+Letting #buf indicate a
+static buffer that has the
+length byte set to the size
+of the buffer
 )
 
 : fillSpaces (#buf) 
@@ -12,17 +15,16 @@ the buffer
     pos 1 - => pos
     pos AGAIN? ;
 
-: CRLF? (ch) dup 13 == swap 10 == || ;
+: CRLF? (ch) dup 13 == 
+  swap 10 == || ;
   
 : readLine (#buf)
   dup fillSpaces 
   dup readb => len
-  => buf
-  0 => pos
-  0 => c (can't use variable first time inside loop)
+  => buf 0 => pos
+  0 => c (define before loop)
   BEGIN
     readc => c
-    cr c print#
     c CRLF?
       pos buf readb >= || 
       IF ret THEN
@@ -37,7 +39,7 @@ test
 
 HERE 29 allot CONSTANT buf
 28 buf writeb
-buf fillSpaces
+(buf fillSpaces)
 
 : dump
   0 => i
@@ -51,5 +53,4 @@ buf fillSpaces
 ( ** it works ** )
 
 #END
-
 
