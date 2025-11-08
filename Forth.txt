@@ -1,64 +1,55 @@
-HERE 10 allot CONSTANT s
-HERE 10 allot CONSTANT r
-0x50 CONSTANT &i2c
+(
+Letting #buf indicate a buffer that
+has the length byte set to the size of 
+the buffer
+)
 
-: s0 0 s writeb ;
-: r0 0 r writeb ;
-: s# s readb ; (length)
+: fillSpaces (#buf) 
+  => buf
+  buf readb 1 - => pos
+  BEGIN 
+    0x20 buf pos + 1+ writeb
+    pos 1 - => pos
+    pos AGAIN? ;
 
-: s<b (byte) s s# + 1+ writeb s# 1+ s writeb ;
-: s<w (word) => w 
-  w 8 >> 0xFF & s<b 
-  w 0xFF & s<b ;
-
-(set data)
-: loc 64 s<w ;
-: data 0xCAFE s<w 0xBADE s<w 0xCADA s<w ;
-
-(write to EEPROM)
-: write 
-  s0 loc data
-  s &i2c NATIVE I2C.mW
-  (wait a bit)
-  &i2c NATIVE I2C.mWWait
+: CRLF? (ch) dup 13 == swap 10 == || ;
+  
+: readLine (#buf)
+  dup fillSpaces 
+  dup readb => len
+  => buf
+  0 => pos
+  0 => c (can't use variable first time inside loop)
+  BEGIN
+    readc => c
+    cr c print#
+    c CRLF?
+      pos buf readb >= || 
+      IF ret THEN
+    c buf pos + 1+ writeb
+    pos 1+ => pos  
+    1 AGAIN?
 ;
 
-(read from EEPROM - with mWR)
-: read
-  s0 loc 
-  r0
-  s 
-    6 r 
-    &i2c 
-    NATIVE I2C.mWR
-;
+(
+test
+)
 
-(read from EEPROM - old - separate W and R)
-: read-old
-  s0 loc
-  s &i2c NATIVE I2C.mW
-  r0 
-  6 r &i2c NATIVE I2C.mR
-;
+HERE 29 allot CONSTANT buf
+28 buf writeb
+buf fillSpaces
 
- 
-: Br (B=glasses=show :-)
-  0 => i BEGIN
-    r i + readb print cr
+: dump
+  0 => i
+  cr
+  BEGIN
+    buf i + 1+ readb print "_ .str
     i 1+ => i
-    i 10 < AGAIN?
+    i 28 < AGAIN?
 ;
 
-
-(both work!)
-: test-old write read-old Br ;
-: test-new write read Br ;
+( ** it works ** )
 
 #END
 
-read-old Br
-read Br
-read Br
-write 
-read Br
-read-old Br
+

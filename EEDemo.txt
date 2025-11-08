@@ -1,18 +1,28 @@
-HERE 10 allot CONSTANT s
-HERE 10 allot CONSTANT r
+33 CONSTANT buf#
+
+HERE buf# allot CONSTANT s (send buffer)
+HERE buf# allot CONSTANT r (recv buffer)
+
 0x50 CONSTANT &i2c
+32 CONSTANT eeloc
 
 : s0 0 s writeb ;
-: r0 0 r writeb ;
-: s# s readb ; (length)
 
-: s<b (byte) s s# + 1+ writeb s# 1+ s writeb ;
+: r<n (n) r writeb ; 
+  (n=bytes to read)
+
+: s# s readb ; 
+  (length of s)
+
+: s<b (byte) 
+  s s# + 1+ writeb 
+  s# 1+ s writeb ;
 : s<w (word) => w 
   w 8 >> 0xFF & s<b 
   w 0xFF & s<b ;
-
+    
 (set data)
-: loc 64 s<w ;
+: loc eeloc s<w ;
 : data 0xCAFE s<w 0xBADE s<w 0xCADA s<w ;
 
 (write to EEPROM)
@@ -26,10 +36,8 @@ HERE 10 allot CONSTANT r
 (read from EEPROM - with mWR)
 : read
   s0 loc 
-  r0
-  s 
-    6 r 
-    &i2c 
+  6 r<n (bytes to read)
+  s r &i2c 
     NATIVE I2C.mWR
 ;
 
@@ -37,8 +45,9 @@ HERE 10 allot CONSTANT r
 : read-old
   s0 loc
   s &i2c NATIVE I2C.mW
-  r0 
-  6 r &i2c NATIVE I2C.mR
+  
+  6 r<n (bytes to read)
+  r &i2c NATIVE I2C.mR
 ;
 
  
@@ -46,11 +55,12 @@ HERE 10 allot CONSTANT r
   0 => i BEGIN
     r i + readb print cr
     i 1+ => i
-    i 10 < AGAIN?
+    i buf# < AGAIN?
 ;
 
 
 (both work!)
 : test-old write read-old Br ;
 : test-new write read Br ;
+
 

@@ -151,6 +151,9 @@
 
 	:*nextChar
 		readc a!
+		a 13 ne a 10 ne and &*notCRLF jmp?
+			0x20 a!  ; map CRLF to space
+		:*notCRLF
 		a 0x28 eq &*comment jmp?		;; start of comment
 		a 0x09 ne &*notTab jmp?
 			(tab)

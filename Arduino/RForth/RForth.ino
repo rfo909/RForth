@@ -665,7 +665,6 @@ Word readSerialChar () {
     if (ch >= 0) {
       if (ch==13 || ch==10) {
         if (READC_ECHO) Serial.println();
-        ch=32; // map to space
       }  else {
         if (READC_ECHO) printChar(ch);
       }
@@ -750,8 +749,8 @@ const NativeFunction nativeFunctions[]={
 
   {"I2C.mW",       &natI2CmW,          "(sendBufPtr addr -- ) master write"},
   {"I2C.mWWait",   &natI2CmWWait,      "(addr -- ) master wait for data write (eeprom) to complete"},
-  {"I2C.mR",       &natI2CmR,          "(count recvBufPtr addr -- recvCount) master read"},
-  {"I2C.mWR",      &natI2CmWR,         "(sendBufPtr count recvBufPtr addr -- recvCount) master write then read"},
+  {"I2C.mR",       &natI2CmR,          "(recvBufPtr addr -- ) master read"},
+  {"I2C.mWR",      &natI2CmWR,         "(sendBufPtr recvBufPtr addr -- recvCount) master write then read"},
 
   {"Test.EEPROM",   &natTestEEPROM,   "(i2cAddr memAddr -- )"},
 
@@ -939,11 +938,14 @@ void natI2CmWWait () {
   }
 }
 
-// count recvBufPtr addr -- recvCount)
+// (recvBufPtr addr -- )
+// reads length from buffer, attempts to read that many bytes
+// updates buffer length when done, with actual read count
 void natI2CmR() {
   Word addr=pop();
   Word recvBuf=pop();
-  Word count=pop();
+  // desired count
+  Word count=readByte(recvBuf);
 
   Wire.requestFrom((int) addr, (int) count);
   Word i=0;
@@ -952,19 +954,18 @@ void natI2CmR() {
     writeByte(recvBuf+i+1, b);
     i++;
   }
-  push(i);  // received count
+  writeByte(recvBuf,count);
 }
 
-// write then read (sendBufPtr count recvBufPtr addr -- actualRecvCount)
+// (sendBufPtr recvBufPtr addr -- actualRecvCount) 
+// with no WWait inbetween
 void natI2CmWR() {
   Word addr=pop();
   Word recvBuf=pop();
-  Word count=pop();
 
   push(addr);
   natI2CmW();
 
-  push(count);
   push(recvBuf);
   push(addr);
   natI2CmR(); // pushes actual count on stack

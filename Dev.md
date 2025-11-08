@@ -520,8 +520,8 @@ Also added bounds check for NextWord and CompilingWord. NextWord is
 bigger, because it is also used to process string constants. 
 
 
-2025-10-29 New op dcall
------------------------
+2025-10-29 New op dcall (dictionary call)
+-----------------------------------------
 To allow redefinition of words, as well as various kinds of
 recursion, when compiling calls to words on the dictionary,
 we instead of the code-ptr, write the code-ptr-ptr, which is
@@ -556,6 +556,22 @@ y
 ```
 
 Note that the stacks are modestly sized, so no deep recursion!!
+
+
+2025-11-08 EEPROM dev
+---------------------
+After failing to get EEPROM RFOrth code stable, I implemented a new
+NATIVE routine for doing write followed by a read, in case there
+was a timing issue. I then wrote some code in RFOrth, and it works.
+
+And the old method of first calling "write" with the two byte address,
+followed by a "read" for a desired number of bytes, works too.
+
+I also shortened the names of the NATIVE functions, and eliminated the
+count parameter when reading data. Instead setting the length byte
+of the buffer to indicate the intended number of bytes, which gets 
+updated to the actual count before returning.
+
 
 References
 ----------
