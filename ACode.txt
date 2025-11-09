@@ -1149,6 +1149,7 @@
 :GetAddrAllBuffers &AllBuffers ret
 :GetAddrAllBuffersEnd &AllBuffersEnd ret
 :GetAddrCREATE-HERE &CREATE-HERE ret
+:GetAddrPROTECT &PROTECT ret
 
 ;; Utility Forth words for buffer processing
 
@@ -1320,6 +1321,7 @@
 	%'&CompileStack		%GetAddrCompileStack		BIN_NORMAL	%NEXT
 	%'&CompileStackEnd	%GetAddrCompileStackEnd		BIN_NORMAL	%NEXT
 	%'&CREATE-HERE		%GetAddrCREATE-HERE		BIN_NORMAL	%NEXT
+	%'&PROTECT		%GetAddrPROTECT			BIN_NORMAL	%NEXT
 	
 	;; ----------------------------------------------------------
 	;; Colon, local variables, semicolon etc

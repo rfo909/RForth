@@ -1,7 +1,7 @@
 RFOrth - a Forth like language
 ==============================
 
-2025-11-02 RFO
+2025-11-09 RFO
 
 ```
 13 CONSTANT Led
@@ -100,7 +100,7 @@ The data stack
 RFOrth has four stacks, but as a programmer we deal only with one, which
 is the *data stack*. Sometimes it is called parameter stack. This is where
 we put parameters to words, and get values back from words. Programming in
-Forth we interact with the stack all the time.
+Forth we interact with the data stack all the time.
 
 The other stacks
 ----------------
@@ -115,9 +115,9 @@ this stack in code. The operations for doing so are cpush, cget and cset.
 The third stack is the *frame stack*.
 
 It keeps track of invocation frames on the call stack. Whenever defining a new local variable,
-it registers on the frame stack, so that when we return from the current word, it
-knows how to find the return address in the code that called the word. There are no
-words in RFOrth to manipulate this stack; it is handled by system words call and ret, as
+it is pushed on the call stack, and then we update the frame stack, so that when we return from
+the current word, we know how to find the return address. There are no
+words in RFOrth to manipulate the frame stack; it is handled by system words call and ret, as
 well as cpush, which is used to define a new local variable on the call stack.
 
 The fourth and final stack (so far) is the *compile stack*. It is used when compiling
@@ -615,14 +615,44 @@ The EMPTY-WORD is a forward declaration, so that other words can compile referen
 without it being implemented yet. That can be useful in some situations. It also means 
 words can be recursive, both directly and indirectly.
 
-
 ### Freezing previous version
 
-In addition, as EMPTY-WORD doesn't check if the word was already defined, it freezes the
-old version of the word, and leaves all words depending on it to use the old version. 
+In addition, as EMPTY-WORD doesn't check if the word was already defined, by creating
+a new dictionary entry, it freezes or isolates the old version of the word, leaving all words 
+depending on it to use the old version. 
 
-It is perhaps a bit far fetched to use EMPTY-WORD for this. Having multiple implementations
-of a single word isn't going to make life easier when debugging.
+It is probably not a good idea to be using EMPTY-WORD for this purpose, as having multiple 
+implementations of a single word isn't going to make life easier ...
+
+
+Using local variables
+---------------------
+The fat arrow "=>" is used to assign a value to a local variable. It makes no difference if
+it is the first time that variable is used or if we want to update an existing variable value.
+
+### How it works
+
+The first time the compiler sees "=> name" for a new name, it compiles this into a simple
+"cpush", which pushes a value from the data stack on to the call stack. The next time it
+sees "=> name" it instead generates "N cset", where N is the offset of the value inside
+the call frame, for that variable.
+
+As it comes across references to the variable, without the arrow, it generates "N cget", to
+copy the value of the variable on to the data stack.
+
+### Warning - loops
+
+This scheme is easy to use, but when using variables inside loops, we must declare them
+first, like this:
+
+```
+	0 => char
+	BEGIN readc => char ... AGAIN?
+```
+
+The reason for this is that otherwise, the "readc => char" gets compiled into a cpush, and
+we don't want to do that inside a loop, as we will first off get strange behaviour, and second,
+if looping more than a few times, the call stack will overflow.
 
 Type checking / safety
 ----------------------
