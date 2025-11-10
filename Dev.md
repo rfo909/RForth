@@ -573,6 +573,16 @@ of the buffer to indicate the intended number of bytes, which gets
 updated to the actual count before returning.
 
 
+2025-11-10 New op: key
+----------------------
+In order to create simple monitoring programs that loop, reading a pin or something,
+but which terminates when we press Enter (or some other key in a raw terminal).
+
+```
+: counter 0 => i BEGIN i print# cr i 1+ => i 1000 NATIVE Sys.Delay key not AGAIN? ;
+```
+
+
 References
 ----------
 
