@@ -203,30 +203,30 @@
 
 
 
-	self.set("_+", Lambda{self.push(self.pop+self.pop)}) # add ( a b -- a+b )
-	self.set("_-", Lambda{b=self.pop a=self.pop self.push(a-b)}) # sub ( a b -- a-b )
-	self.set("_*", Lambda{b=self.pop a=self.pop self.push(a*b)}) # mul ( a b -- a*b )
-	self.set("_/", Lambda{b=self.pop a=self.pop self.push((a/b).i)}) # div ( a b -- a/b )
-	self.set("_<", Lambda{b=self.pop a=self.pop value=if(a<b,1,0) self.push(value)}) # lt ( a b -- 0|1 )
-	self.set("_=", Lambda{b=self.pop a=self.pop value=if(a==b,1,0) self.push(value)}) # eq ( a b -- 0|1 )
-	self.set("_>", Lambda{b=self.pop a=self.pop value=if(a>b,1,0) self.push(value)}) # gt ( a b -- 0|1 )
+	self.set("_+", Lambda{self.push(self.pop+self.pop)}) # + ( a b -- a+b ) add
+	self.set("_-", Lambda{b=self.pop a=self.pop self.push(a-b)}) # - ( a b -- a-b ) sub
+	self.set("_*", Lambda{b=self.pop a=self.pop self.push(a*b)}) # * ( a b -- a*b ) mul
+	self.set("_/", Lambda{b=self.pop a=self.pop self.push((a/b).i)}) # / ( a b -- a/b ) div
+	self.set("_<", Lambda{b=self.pop a=self.pop value=if(a<b,1,0) self.push(value)}) # < ( a b -- 0|1 ) lt
+	self.set("_=", Lambda{b=self.pop a=self.pop value=if(a==b,1,0) self.push(value)}) # == ( a b -- 0|1 ) eq
+	self.set("_>", Lambda{b=self.pop a=self.pop value=if(a>b,1,0) self.push(value)}) # > ( a b -- 0|1 ) gt
 	
 	self._d=Lambda{ # 1+ ( n -- n+1 )
 		self.push(self.pop+1)
 	}
 	
-	self._h=Lambda{	# ne ( a b -- 0/1 )  boolean
+	self._h=Lambda{	# != ( a b -- 0/1 )  boolean - ne
 		b=self.pop a=self.pop value=if(a!=b,1,0) self.push(value)
 	}
 	self._i=Lambda{ # not boolean ( x -- 0|1 )
 		a=self.pop value=if(a==0,1,0) self.push(value)
 	}
-	self._E=Lambda{ # ge ( a b -- 0|1 )
+	self._E=Lambda{ # >= ( a b -- 0|1 ) ge
 		b=self.pop
 		a=self.pop
 		if (a>=b) self.push(1) else self.push(0)
 	}
-	self._F=Lambda{ # le ( a b -- 0|1 )
+	self._F=Lambda{ # <= ( a b -- 0|1 ) le
 		b=self.pop
 		a=self.pop
 		if (a<=b) self.push(1) else self.push(0)
@@ -236,8 +236,8 @@
 		self.push(self.memory.HERE)
 	}
 	
-	self.set("_&", Lambda{b=self.pop a=self.pop value=if(a != 0 && b != 0, 1, 0) self.push(value)}) # and boolean ( a b -- 0|1 )
-	self.set("_|", Lambda{b=self.pop a=self.pop value=if(a != 0 || b != 0, 1, 0) self.push(value)}) # or boolean ( a b -- 0|1 )
+	self.set("_&", Lambda{b=self.pop a=self.pop value=if(a != 0 && b != 0, 1, 0) self.push(value)}) # && ( a b -- 0|1 ) - boolean and
+	self.set("_|", Lambda{b=self.pop a=self.pop value=if(a != 0 || b != 0, 1, 0) self.push(value)}) # || ( a b -- 0|1 ) - boolean or
 	
 	self._S=Lambda{   # jmp ( addr -- ) updates PC
 		self.PC=self.pop
@@ -432,18 +432,18 @@
 		}
 	}
 
-	self._q=Lambda { # andb binary and ( a b -- c )
+	self._q=Lambda { # & ( a b -- c ) - binary and
 		b=self.pop
 		a=self.pop
 		self.push(HWSim:BitwiseAnd(a,b,self.WORDSIZE))	
 	}
 
-	self._r=Lambda { # orb binary or ( a b -- c )
+	self._r=Lambda { # | ( a b -- c ) - binary or
 		b=self.pop
 		a=self.pop
 		self.push(HWSim:BitwiseOr(a,b,self.WORDSIZE))	
 	}
-	self._s=Lambda{ # inv binary not  ( a -- b )
+	self._s=Lambda{ # inv ( a -- b ) - binary not
 		a=self.pop
 		self.push(HWSim:BitwiseNot(a, self.WORDSIZE))
 	}
