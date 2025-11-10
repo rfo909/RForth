@@ -1,13 +1,7 @@
-# text to send
+# Log file
 # --
-	Dir.file("send.txt").read
-/TextLines
-
-# Source file
-# --
-	Sys.savefile.dir.file("Forth.txt")
-/SourceFile
-
+	Sys.savefile.dir.file("SlowSend.log")
+/LogFile
 
 # Newline
 # --
@@ -29,32 +23,27 @@
 	
 # Send
 # --
-	SourceFile.read->line
+	P(1,Input("File name").get) => fname
+	file=Dir.file(fname)
+	
+	file.read->line
 		break(line.startsWith("#END"))
 		reject(line.trim.startsWith("#"))
-		println("FILE: " + line)
+		println(fname,"|",line)
 		SendLine(line)
 /SendFile
 
 
 # Main loop
 # --
-	SendFile
-	
-	append=false
 	loop
-		Inner{
-			SourceFile.read->line println(line)
+		readLine("Enter line, q to stop, f to send file") => str
+		if (str=="f") {
+			SendFile
+			continue
 		}
-		str = if (append) 
-			readLine("Enter line, q to stop, x to stop append")
-		else
-			readLine("[NOAPPEND] Enter line, q to stop, a to append")
-			
 		break(str=="q")
-		if (str=="x") {append=false continue}
-		if (str=="a") {append=true continue}
 		SendLine(str)
-		if (append) SourceFile.append(str)
+		LogFile.append(str)
 		
 /Main
