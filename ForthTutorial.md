@@ -1,7 +1,13 @@
 Introduction to Forth
 =====================
 
-2025-10-26
+2025-11-09
+
+Disclaimer
+----------
+This introduction assumes general knowledge of programming languages, stacks, linked lists, 
+strings, and so on.
+
 
 Stack language
 --------------
@@ -10,6 +16,7 @@ Forth (and RFOrth) are stack languages. This means they do things differently. I
 ```
 2+3
 ```
+
 which is how expressions are written in most other languages, Forth uses *postfix* notation,
 where each element either puts something on a stack, or takes something from it, doing something
 with it, and putting the result back.
@@ -25,7 +32,7 @@ First the value 2 is pushed on the stack. Then the value 3. The stack now looks 
 2
 ```
 
-The operation "add" is defined as: take the two topmost values off the stack, add them together
+The operation "+" is defined as: take the two topmost values off the stack, add them together
 and push the result on the stack. The result:
 
 ```
@@ -57,24 +64,13 @@ To list all words on the dictionary, type a "?" and press Enter.
 
 ```
 ?
-
-! .str 1+ << >> @ CELL+ HERE PANIC PC + allot && & atoi call cellsize 
-cforce cget clear cpush cr crget cset / drop dump dup == >= > halt inv 
-jmp jmp? <= < memcpy * n2code native nativec != ! null || | over print 
-print# print#s printb printc rback? readb readc ret rfwd? streq - swap 
-u2spc writeb . IF THEN ELSE BEGIN AGAIN? CONSTANT VARIABLE NATIVE Dict 
-DictUse DictClear IN .W >>str ?C CELL CELLS CREATE PCREATE , DOES> BufReset 
-BufAdd ShowBuffer BufCopy BufCreateCopy EmitNumber EmitByte GetNextWord 
-PreCompile PostCompile SetCompilingWord EMPTY-WORD &DictionaryHead &DebugFlag 
-&CompileBuf &CompileBufEnd &LVBuf &LVBufEnd &NextWord &NextWordEnd &AllBuffers 
-&AllBuffersEnd &IsCompiling &CompilingWordMode &CompilingWord &CompilingWordEnd 
-&CompileStack &CompileStackEnd &CREATE-HERE ? .s words : => ; IMMEDIATE```
 ```
 
-This list contains two sets of words:
+The list that is displayed contains three sets of words:
 
 - [Bytecode instruction set](InstructionSet.md)
 - [Firmware words](FirmwareWords.md)
+- And on top, those created by the programmer
 
 
 
@@ -95,6 +91,7 @@ DOES>
 my:something
 x/y-%
 name#
+
 ```
 
 
@@ -106,6 +103,13 @@ see the backslash making the rest of the line a comment. This is not implemented
 ```
 (this word does so and so)
 : myWord  ... ;
+
+(
+comments can also
+span multiple 
+lines
+)
+
 ```
 
 It is customary to follow the new word with a special comment that identifies
@@ -154,8 +158,8 @@ The second line is a single dot ("."), which is a Forth word which takes the top
 the stack and prints it. It should result in displaying 42.
 
 
-Memory
-------
+Memory (read and write)
+-----------------------
 Forth has system words for managing memory. Traditionally memory is organized in terms of
 two sizes, the CELL and single bytes. 
 
@@ -184,7 +188,7 @@ dictionary, but practical use differs a little:
 42 VARIABLE var
 ```
 
-To use the value of a constant, just refer its name:
+To use the value of a constant, just refer its name (the dot prints the value):
 
 ```
 const .
@@ -214,7 +218,7 @@ HERE         (returns the current top of the heap)
 
 In RFOrth, the HERE value is the next available byte on the heap. It grows upward,
 and RFOrth enforces a simple memory protection, so that trying to read or write to addresses 
-starting from the HERE value, is detected and fails with an error. 
+starting greater than or equal to the HERE value, are detected and fails with an error. 
 
 The "allot" word simply increases the HERE value, up until all available heap space is 
 used.
@@ -261,8 +265,6 @@ showList
 ```
 
     
-
-
 Interactive
 -----------
 Forth is an interactive programming language. Usually one connects to the running instance
@@ -312,7 +314,7 @@ The answer is both simple and complex.
 
 ### Simple (the real reason?)
 
-The simple answer it that it was *fun* doing it this way, and got me up to speed programming both
+The simple answer is that it was *fun* doing it this way, and got me up to speed programming both
 the assembly language and programming *in* the assembly language pretty fast. I created an assembler 
 and an interpreter in a scripting language (which I wrote myself). It allows me to step through code,
 inspect simulated memory, set break points etc. 
@@ -347,19 +349,22 @@ which represent addresses, and very primitive support for local variables.
 
 ### RAM
 
-In RFOrth, RAM is used for three things, basically.
+In RFOrth, RAM is used for three things
 
 - Stacks and system buffers
 - System status fields
 - Compiled Forth words: code and dictionary entries
 
-The third refers to words where we enter a colon definition. When we compile the very first colon
-word, if it compiles correctly, a dictionary entry is allocated, and its next field points to the
+The third refers to words where we enter a colon definition, as well as those created with VARIABLE and
+CONSTANT. 
+
+When we compile the very first colon
+word, a dictionary entry is allocated (in RAM), and its next field points to the
 predefined initial dictionary, which at runtime resides in flash. 
 
 To make this work, the C implementation makes Flash and RAM into a continous address space, after copying
 the buffers and state variables defined in ACode into RAM (some 190 bytes), as the Flash part of the address
-space is read only.
+space is read only at runtime.
 
 Simple and complex.
 
@@ -427,7 +432,7 @@ These words are used to create new words *that create words*. We have already se
 with the CONSTANT and VARIABLE words, which create new words (the names of the constant or variable).
 
 The CONSTANT and VARIABLE implementations are more efficient than using CREATE and DOES> but here
-follows an example of how to do it.
+follows an example of how to create a constant defining word 
 
 ```
 : Const (value --) CREATE , DOES> @ ;
@@ -439,6 +444,8 @@ Const takes a value from the stack, and must be followed by a name, just like CO
 5 Const A
 ```
 
+### How does it work?
+
 The CREATE word is the one that identifies the next word *from the input stream*, which
 means "A". 
 
@@ -447,17 +454,21 @@ a CELL and writing the value there.
 
 The DOES> word is kind of advanced, and we don't need to understand the details, other than
 that the word being compiled ("Const"), when it is runs, executes the code up to the DOES>, which
-creates the new word ("A"), which *in turn* executes only the code following DOES>. 
+creates the new word ("A"), which *in turn* when called, executes only the code following DOES>. 
 
-That code, when running, also is supplied with a reference to the data allocated 
-after CREATE, using COMMA in this example, on the stack.
+That code, when running, automagically is supplied with a reference to the data allocated 
+after CREATE, pointing to the value stored with COMMA in this example, on the stack.
 
-Calling the "@" word reads the value of that CELL, which is 5.
+Calling the "@" word reads the value of that CELL, which is 5. This becomes the return value
+of the word "A". 
 
 We have a constant.
 
-The CREATE DOES> can make your head spin. It is an impressive mechanism. My implementation
-is non-standard, since my memory management is non-standard, but that's another story
-of interest only to implementers. 
+### Head spinning yet?
+
+The CREATE DOES> can *make your head spin.* It is an impressive mechanism, and took some while
+understanding, not to mention implementing. My implementation is somewhat non-standard, since my memory 
+management is non-standard, but that's another story. 
+
 
 
