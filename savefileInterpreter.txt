@@ -548,6 +548,10 @@
 		
 	 }
 	 
+	 self._x=Lambda{ # key (--byte) - read single character - non-blocking - 0 if no char
+	 	self._v # input not async in CFT
+	 }
+	 
 	 self._z = Lambda{ # null ( -- 0 ) pushes a single zero on the stack
 	 	self.push(0)
 	 }

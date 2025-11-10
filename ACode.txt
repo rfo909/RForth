@@ -1219,18 +1219,20 @@
 	%'call          HEX:0051        BIN_INSTR       %NEXT        ;; Q
 	%'cellsize      HEX:006B        BIN_INSTR       %NEXT        ;; k
 	%'cforce        HEX:0066        BIN_INSTR       %NEXT        ;; f
-	%'cget          HEX:0033        BIN_INSTR       %NEXT        ;; 3
 	%'clear         HEX:0077        BIN_INSTR       %NEXT        ;; w
 	%'cpush         HEX:004F        BIN_INSTR       %NEXT        ;; O
+	%'cset          HEX:0034        BIN_INSTR       %NEXT        ;; 4
+	%'cget          HEX:0033        BIN_INSTR       %NEXT        ;; 3
 	%'cr            HEX:0058        BIN_INSTR       %NEXT        ;; X
 	%'crget         HEX:0041        BIN_INSTR       %NEXT        ;; A
-	%'cset          HEX:0034        BIN_INSTR       %NEXT        ;; 4
 	%'drop          HEX:006A        BIN_INSTR       %NEXT        ;; j
-	%'dump          HEX:0070        BIN_INSTR       %NEXT        ;; p
 	%'dup           HEX:006C        BIN_INSTR       %NEXT        ;; l
+	%'dump          HEX:0070        BIN_INSTR       %NEXT        ;; p
 	%'halt          HEX:005A        BIN_INSTR       %NEXT        ;; Z
 	%'jmp           HEX:0053        BIN_INSTR       %NEXT        ;; S
 	%'jmp?          HEX:0054        BIN_INSTR       %NEXT        ;; T
+	%'rback?        HEX:0037        BIN_INSTR       %NEXT        ;; 7
+	%'rfwd?         HEX:0036        BIN_INSTR       %NEXT        ;; 6
 	%'memcpy        HEX:0044        BIN_INSTR       %NEXT        ;; D
 	%'n2code        HEX:0032        BIN_INSTR       %NEXT        ;; 2
 	%'native        HEX:0061        BIN_INSTR       %NEXT        ;; a
@@ -1243,11 +1245,10 @@
 	%'print#s       HEX:0062        BIN_INSTR       %NEXT        ;; b
 	%'printb        HEX:004C        BIN_INSTR       %NEXT        ;; L
 	%'printc        HEX:0055        BIN_INSTR       %NEXT        ;; U
-	%'rback?        HEX:0037        BIN_INSTR       %NEXT        ;; 7
 	%'readb         HEX:0047        BIN_INSTR       %NEXT        ;; G
 	%'readc         HEX:0076        BIN_INSTR       %NEXT        ;; v
+	%'key           HEX:0078        BIN_INSTR       %NEXT        ;; x
 	%'ret           HEX:0052        BIN_INSTR       %NEXT        ;; R
-	%'rfwd?         HEX:0036        BIN_INSTR       %NEXT        ;; 6
 	%'streq         HEX:0042        BIN_INSTR       %NEXT        ;; B
 	%'swap          HEX:006D        BIN_INSTR       %NEXT        ;; m
 	%'u2spc         HEX:005F        BIN_INSTR       %NEXT        ;; _

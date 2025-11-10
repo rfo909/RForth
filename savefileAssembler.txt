@@ -165,7 +165,7 @@
 		code=x.data
 		name=data.get(code)
 		num=code.toHexString("ISO-8859-1").first(2).parseInt(16)
-		report(name,code,num)
+		report(name,code,num,"0x"+(num.hex))
 /NDoc
 
 # Generate numeric values for instructions in C
@@ -296,6 +296,7 @@
 	halt		:Z   ;; halt automatic execution in interactive interpreter (hard-coded breakpoint)
 				;; on a microcontroller we will just run in a tight forever loop when halted
 	readc		:v   ;; ( -- byte ) - read single character (byte), blocking 
+	key		:x   ;; ( -- byte ) - key or 0 if none waiting (non-blocking)
 		
 	;; Strings are stored as one length byte and N characters (max 255)
 

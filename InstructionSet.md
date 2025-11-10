@@ -39,6 +39,7 @@ halt     | terminate execution
 inv      | binary not  ( a -- b )
 jmp      | ( addr -- ) updates PC
 jmp?     | ( cond addr -- ) conditionally updates PC
+key      | ( -- byte ) read input character, 0 if none waiting (non-blocking)
 <=       | ( a b -- 0|1 )
 <        | ( a b -- 0|1 )
 memcpy   | ( ptrSrc ptrTarget bytecount -- )

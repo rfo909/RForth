@@ -262,6 +262,7 @@ void populateOps() {
   ops[117]=&op_shift_right;
   ops[118]=&op_readc;
   ops[119]=&op_clear;
+  ops[120]=&op_key;
   ops[122]=&op_null;
   ops[124]=&op_or;
 }
@@ -335,6 +336,7 @@ void op_shift_left () {Word b=pop(); Word a=pop(); push((Word) (a<<b));}
 void op_shift_right () {Word b=pop(); Word a=pop(); push((Word) (a>>b));}
 void op_readc () {push(readSerialChar());}
 void op_clear () {dStackNext=0;}
+void op_key () {push(keyPressed());}
 void op_null () {push((Word) 0);}
 void op_or () {Word b=pop(); Word a=pop(); push((Word) (a != 0 || b != 0));}
 
@@ -671,6 +673,11 @@ Word readSerialChar () {
       return (Word) ch;
     }
   }
+}
+
+Word keyPressed() {
+  if (Serial.available()>0) return (Word) Serial.read();
+  return (Word) 0;
 }
 
 void clearSerialInputBuffer() {
