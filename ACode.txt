@@ -1205,7 +1205,7 @@
 	%'CELL+         HEX:006E        BIN_INSTR       %NEXT        ;; n
 	%'&&            HEX:0026        BIN_INSTR       %NEXT        ;; &
 	%'||            HEX:007C        BIN_INSTR       %NEXT        ;; |
-	%'!             HEX:0069        BIN_INSTR       %NEXT        ;; i
+	%'not           HEX:0069        BIN_INSTR       %NEXT        ;; i
 	%'&             HEX:0071        BIN_INSTR       %NEXT        ;; q
 	%'|             HEX:0072        BIN_INSTR       %NEXT        ;; r
 	%'inv           HEX:0073        BIN_INSTR       %NEXT        ;; s
