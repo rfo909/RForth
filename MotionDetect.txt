@@ -1,0 +1,17 @@
+14 NATIVE Pin.ModeIn
+(
+Checking output from simple
+motion detector
+)
+
+: check 
+  0 => val
+  BEGIN
+    14 NATIVE 
+      Pin.ReadDigital => val
+    val IF 
+      "ALARM .str 
+    THEN cr
+    200 NATIVE Sys.Delay
+    key not AGAIN? ;
+
