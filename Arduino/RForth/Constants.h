@@ -9,6 +9,8 @@
 
 #define RAM_SIZE          4096
 
+#define TIMER_COUNT       8
+
 const bool READC_ECHO = true;
 
 typedef unsigned int Word;

@@ -12,6 +12,7 @@ byte cStackNext=0;
 Word fStack[FSTACK_SIZE];
 byte fStackNext=0;
 
+unsigned long timers[TIMER_COUNT];
 
 // opCode array of function pointers
 void (*ops[128]) ();
@@ -192,7 +193,41 @@ void allot (Word count) {
   if (HERE-firmwareProtectTag+count >= RAM_SIZE) setError("allot: heap overflow"); else HERE += count;
 }
 
+/* Set timer to current time in milliseconds */
+void setTimer (Word timerId) {
+  if (timerId >= TIMER_COUNT) {
+    Serial.print(F("Invalid timer id, must be 0-"));
+    Serial.println(TIMER_COUNT-1);
+    setError("PANIC");
+  }
+  timers[timerId]=millis();
+}
 
+/* Get number of milliseconds since timer was set, capped at 0xFFFF */
+Word getTimer (Word timerId) {
+  if (timerId >= TIMER_COUNT) {
+    Serial.print(F("Invalid timer id, must be 0-"));
+    Serial.println(TIMER_COUNT-1);
+    setError("PANIC");
+  }
+  unsigned long now=millis();
+  unsigned long t=timers[timerId];
+  unsigned long result;
+
+  if (t <= now) {
+    result=now-t;
+  } else {
+    // rollover
+    result=((unsigned long) 0xFFFFFFFE)-t+now;
+  }
+  // result is 16 bits only
+  if (result > 0xFFFF) {
+    return 0xFFFF;
+  } else {
+    return (Word) result;
+  }
+
+}
 
 
 void populateOps() {
@@ -743,6 +778,8 @@ const NativeFunction nativeFunctions[]={
   {"Sys.Free",    &natSysFree,              "( -- n) return number of free bytes of heap space"},
   {"Sys.Delay",   &natSysDelay,             "(ms -- ) sleep a number of millis"},
   {"Sys.DelayUs",   &natSysDelayUs,         "(us -- ) sleep a number of microseconds"},
+  {"Sys.TimerSet",  &natSysTimerSet,        "(timerId --) initiate timer to current time"},
+  {"Sys.TimerGet",  &natSysTimerGet,        "(timerId -- millis) return time since timer set"},
 
   {"Pin.ModeOut", &natPinModeOut,           "(pin -- ) set pin mode"},
   {"Pin.ModeIn",  &natPinModeIn,            "(pin -- ) set pin mode"},
@@ -843,6 +880,15 @@ void natSysDelayUs() {
   delayMicroseconds(us);
 }
 
+void natSysTimerSet() { // (timerId --)
+  Word timerId=pop();
+  setTimer(timerId);
+}
+
+void natSysTimerGet() { // (timerId -- millis)
+  Word timerId=pop();
+  push(getTimer(timerId));
+}
 // -------------------------------
 // Pin.*
 // -------------------------------
