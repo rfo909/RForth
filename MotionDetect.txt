@@ -1,20 +1,17 @@
 (
 Checking output from simple
-motion detector - 59 bytes
+motion detector - turn LED on
+when motion
 )
 
-: init
-  14 NATIVE Pin.ModeIn
-  13 NATIVE Pin.ModeOut
+: init (--)
+ 14 NATIVE Pin.ModeIn 
+ 13 NATIVE Pin.ModeOut
 ;
 
-: check
-  init 
-  0 => val
-  BEGIN
-    14 NATIVE 
-      Pin.ReadDigital => val
-    val 0 > => val (map to 0 or 1)
-    val 13 NATIVE Pin.WriteDigital 
-    key not AGAIN? ;
+: check (--)
+  init BEGIN
+   14 NATIVE Pin.RDig
+   13 NATIVE Pin.WDig
+  key not AGAIN? ;
 

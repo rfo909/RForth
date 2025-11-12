@@ -3,11 +3,24 @@
 
 2025-11
 
-	- implement key? word which returns true if receiving input on serial,
-	- implement <boolean> BREAK to BEGIN AGAIN? and add AGAIN without conditional
+	- implement 0-9 hardware timers, operating at millisecond resolution
+      
+	  Sys.tEnable (bool timer --)
+      Sys.tEnabled (timer -- bool)
+	  Sys.tMillis (timer -- millis)
 
-	- test saving HEAP, from address &PROTECT to HERE, and restoring it
-	- must use Forth words for this, as ACode shouldn't do NATIVE stuff
+	- implement hardware interrupt on some pin to break otherwise forever loops
+      instead of "key", use pull-down, and when high, enables timer 0
+
+    - RForth code detects this by checking if timer 0 is enabled.
+
+         : continue? 0 NATIVE Sys.tEnabled not ;
+
+	- write bootloader (256 bytes) for onchip EEPROM, to load versioned and checksummed version of HEAP from
+      external EEPROM, with data on i2c address, EEPROM pos, and page size, and jump to certain address, 
+      or fail with blink code on internal LED
+
+	- test saving HEAP, from address &PROTECT to HERE, on external EEPROM
 
 	- store source code in 32 byte blocks, with 2 bytes next pointers and 1 status byte
 	- create eval or something to process lines from EEPROM	
