@@ -1,17 +1,20 @@
-14 NATIVE Pin.ModeIn
 (
 Checking output from simple
-motion detector
+motion detector - 59 bytes
 )
 
-: check 
+: init
+  14 NATIVE Pin.ModeIn
+  13 NATIVE Pin.ModeOut
+;
+
+: check
+  init 
   0 => val
   BEGIN
     14 NATIVE 
       Pin.ReadDigital => val
-    val IF 
-      "ALARM .str 
-    THEN cr
-    200 NATIVE Sys.Delay
+    val 0 > => val (map to 0 or 1)
+    val 13 NATIVE Pin.WriteDigital 
     key not AGAIN? ;
 
