@@ -62,6 +62,7 @@ void setup() {
   fpush(0,0);
   populateOps();
   populateRAM();
+  initTimers();
 
   Serial.print(F("(Ready) HERE="));
   Serial.println(HERE);
@@ -191,6 +192,26 @@ Word readByte (Word addr) {
 
 void allot (Word count) {
   if (HERE-firmwareProtectTag+count >= RAM_SIZE) setError("allot: heap overflow"); else HERE += count;
+}
+
+/* initialize timers */
+void initTimers () {
+	for (Word id=0; id<TIMER_COUNT; id++) {
+		cancelTimer(id);
+	}
+}
+
+/* cancel a timer, by setting it ~25 days into the past */
+void cancelTimer (Word timerId) {
+  if (timerId >= TIMER_COUNT) {
+    Serial.print(F("Invalid timer id, must be 0-"));
+    Serial.println(TIMER_COUNT-1);
+    setError("PANIC");
+  }
+  unsigned long offset=0x7FFFFFFE;
+  unsigned long now=millis();
+  if (now > offset) now=now-offset; else now=now+offset;
+  timers[timerId]=now;
 }
 
 /* Set timer to current time in milliseconds */
@@ -780,6 +801,7 @@ const NativeFunction nativeFunctions[]={
   {"Sys.DelayUs",   &natSysDelayUs,         "(us -- ) sleep a number of microseconds"},
   {"Sys.TimerSet",  &natSysTimerSet,        "(timerId --) initiate timer to current time"},
   {"Sys.TimerGet",  &natSysTimerGet,        "(timerId -- millis) return time since timer set"},
+  {"Sys.TimerCancel", &natSysTimerCancel,,  "(timerId --) set timer to expired"},
 
   {"Pin.ModeOut", &natPinModeOut,           "(pin -- ) set pin mode"},
   {"Pin.ModeIn",  &natPinModeIn,            "(pin -- ) set pin mode"},
@@ -883,6 +905,11 @@ void natSysDelayUs() {
 void natSysTimerSet() { // (timerId --)
   Word timerId=pop();
   setTimer(timerId);
+}
+
+void natSysTimerCancel() // (timerId --)
+  Word timerId=pop();
+  cancelTimer(timerId);
 }
 
 void natSysTimerGet() { // (timerId -- millis)

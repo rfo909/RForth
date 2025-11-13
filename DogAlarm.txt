@@ -1,0 +1,64 @@
+(
+If low sensor detects movement and the
+high sensors have not for at least 10 seconds,
+then sound the alarm
+)
+
+(pins)
+14 CONSTANT LowSensor
+15 CONSTANT HighSensor1
+16 CONSTANT HighSensor2
+
+5 CONSTANT Speaker
+13 CONSTANT Led
+
+(timers)
+1 CONSTANT tHigh
+2 CONSTANT tLow
+3 CONSTANT tAlarm
+
+: Read (pin--value) NATIVE Pin.ReadDigital ;
+: Millis (timer -- millis) NATIVE Sys.TimerGet ;
+: Start (timer -- ) NATIVE Sys.TimerSet ;
+
+: Init
+  LowSensor NATIVE Pin.ModeIn
+  Speaker NATIVE Pin.ModeOut
+;
+
+
+: Sense
+  HighSensor1 Read HighSensor2 Read || IF tHigh Start THEN
+  LowSensor Read IF tLow Start THEN
+;
+
+: Decide
+  tHigh Millis 10000 >
+    tLow Millis 500 <
+    && 
+  IF 
+    tAlarm start
+  THEN
+;
+
+: Play?
+  tAlarm Millis 700 < IF
+    128 Speaker NATIVE Pin.WriteAnalog (PWM)
+  THEN
+;
+
+: Led?
+  tHigh Millis 10000 < 
+    Led NATIVE Pin.WriteDigital
+;
+  
+  
+
+: Main
+  Init BEGIN 
+    Sense 
+    Decide
+    Play?
+    key not AGAIN?
+;
+
