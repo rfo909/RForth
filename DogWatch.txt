@@ -1,0 +1,42 @@
+
+14 CONSTANT LowSensor
+
+13 CONSTANT Speaker
+
+1 CONSTANT tLow
+
+: Read (pin--value) NATIVE Pin.ReadDigital ;
+: Millis (timer -- millis) NATIVE Sys.TimerGet ;
+: Start (timer -- ) NATIVE Sys.TimerSet ;
+
+: Init
+  LowSensor NATIVE Pin.ModeIn
+  Speaker NATIVE Pin.ModeOut
+  tLow Start
+;
+
+
+: Sense
+  LowSensor Read 
+  tLow Millis 600 > 
+  && IF 
+  	tLow Start
+  THEN
+;
+
+: Play?
+  tLow Millis dup 
+    500 > 
+    1000 < 
+    && Speaker NATIVE Pin.WriteDigital
+;
+  
+  
+
+: Main
+  Init BEGIN 
+    Sense 
+    Play?
+    key not AGAIN?
+;
+

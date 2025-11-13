@@ -3,20 +3,7 @@
 
 2025-11
 
-	- implement 0-9 hardware timers, operating at millisecond resolution
-      
-	  Sys.tEnable (bool timer --)
-      Sys.tEnabled (timer -- bool)
-	  Sys.tMillis (timer -- millis)
-
-	- implement hardware interrupt on some pin to break otherwise forever loops
-      instead of "key", use pull-down, and when high, enables timer 0
-
-    - RForth code detects this by checking if timer 0 is enabled.
-
-         : continue? 0 NATIVE Sys.tEnabled not ;
-
-	- write bootloader (256 bytes) for onchip EEPROM, to load versioned and checksummed version of HEAP from
+ 	- write bootloader (256 bytes) for onchip EEPROM, to load versioned and checksummed version of HEAP from
       external EEPROM, with data on i2c address, EEPROM pos, and page size, and jump to certain address, 
       or fail with blink code on internal LED
 

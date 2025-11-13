@@ -1,7 +1,7 @@
 (
 Checking output from simple
 motion detector - turn LED on
-when motion
+when motion 
 )
 
 : init (--)
@@ -11,7 +11,8 @@ when motion
 
 : check (--)
   init BEGIN
-   14 NATIVE Pin.RDig
-   13 NATIVE Pin.WDig
+   14 NATIVE Pin.ReadDigital
+   13 NATIVE Pin.WriteDigital
   key not AGAIN? ;
 
+(47 bytes)
