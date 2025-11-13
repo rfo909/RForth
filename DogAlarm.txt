@@ -21,6 +21,7 @@ then sound the alarm
 : Millis (timer -- millis) NATIVE Sys.TimerGet ;
 : Start (timer -- ) NATIVE Sys.TimerSet ;
 
+
 : Init
   LowSensor NATIVE Pin.ModeIn
   Speaker NATIVE Pin.ModeOut
@@ -33,18 +34,26 @@ then sound the alarm
 ;
 
 : Decide
+  tLow Millis => low
   tHigh Millis 10000 >
-    tLow Millis 500 <
-    && 
+    low 250 > 
+    low 1000 < && &&
   IF 
-    tAlarm start
+    tAlarm Millis 3000 > IF tAlarm Start THEN
   THEN
 ;
 
+: modulo (a b -- rem)
+  => b => a
+  a b / b * a swap -
+;
+
 : Play?
-  tAlarm Millis 700 < IF
-    128 Speaker NATIVE Pin.WriteAnalog (PWM)
-  THEN
+  tAlarm Millis => m
+  m 1200 < IF
+    m 100 / 2 modulo 128 * => val
+    val Speaker NATIVE Pin.WriteAnalog (PWM)
+ THEN
 ;
 
 : Led?
@@ -59,6 +68,7 @@ then sound the alarm
     Sense 
     Decide
     Play?
+    Led?
     key not AGAIN?
 ;
 

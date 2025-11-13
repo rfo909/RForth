@@ -801,7 +801,7 @@ const NativeFunction nativeFunctions[]={
   {"Sys.DelayUs",   &natSysDelayUs,         "(us -- ) sleep a number of microseconds"},
   {"Sys.TimerSet",  &natSysTimerSet,        "(timerId --) initiate timer to current time"},
   {"Sys.TimerGet",  &natSysTimerGet,        "(timerId -- millis) return time since timer set"},
-  {"Sys.TimerCancel", &natSysTimerCancel,,  "(timerId --) set timer to expired"},
+  {"Sys.TimerCancel", &natSysTimerCancel,   "(timerId --) set timer to expired"},
 
   {"Pin.ModeOut", &natPinModeOut,           "(pin -- ) set pin mode"},
   {"Pin.ModeIn",  &natPinModeIn,            "(pin -- ) set pin mode"},
@@ -813,10 +813,10 @@ const NativeFunction nativeFunctions[]={
   {"Pin.ReadDigital",  &natPinReadDigital,  "(pin -- value) returns 0 or 1"},
   {"Pin.ReadAnalog",   &natPinReadAnalog,   "(pin -- value) returns 0-1023"},
 
-  {"I2C.mW",       &natI2CmW,          "(sendBufPtr addr -- ) master write"},
-  {"I2C.mWWait",   &natI2CmWWait,      "(addr -- ) master wait for data write (eeprom) to complete"},
-  {"I2C.mR",       &natI2CmR,          "(recvBufPtr addr -- ) master read"},
-  {"I2C.mWR",      &natI2CmWR,         "(sendBufPtr recvBufPtr addr -- recvCount) master write then read"},
+  {"I2C.masterWrite",       &natI2CmasterWrite,          "(sendBufPtr addr -- ) master write"},
+  {"I2C.masterWWait",   &natI2CmasterWWait,      "(addr -- ) master wait for data write (eeprom) to complete"},
+  {"I2C.masterRead",       &natI2CmasterRead,          "(recvBufPtr addr -- ) master read"},
+  {"I2C.masterWR",      &natI2CmasterWR,         "(sendBufPtr recvBufPtr addr -- recvCount) master write then read"},
 
   {"Test.EEPROM",   &natTestEEPROM,   "(i2cAddr memAddr -- )"},
 
@@ -907,15 +907,16 @@ void natSysTimerSet() { // (timerId --)
   setTimer(timerId);
 }
 
-void natSysTimerCancel() // (timerId --)
+void natSysTimerGet() { // (timerId --)
+  Word timerId=pop();
+  push(getTimer(timerId));
+}
+
+void natSysTimerCancel() { // (timerId --)
   Word timerId=pop();
   cancelTimer(timerId);
 }
 
-void natSysTimerGet() { // (timerId -- millis)
-  Word timerId=pop();
-  push(getTimer(timerId));
-}
 // -------------------------------
 // Pin.*
 // -------------------------------
@@ -994,7 +995,7 @@ void natPinReadAnalog () {
 // -------------------------------
 
 // (sendBufPtr sendCount addr -- )
-void natI2CmW() {
+void natI2CmasterWrite() {
   Word addr=pop();
   Word sendBuf=pop();
 
@@ -1008,7 +1009,7 @@ void natI2CmW() {
 }
 
 // EEPROM's are sometimes slow at doing page writes etc (thank you, ChatGPT)
-void natI2CmWWait () {
+void natI2CmasterWWait () {
   Word addr=pop();  
   while (true) {
     Wire.beginTransmission((int) addr);
@@ -1021,7 +1022,7 @@ void natI2CmWWait () {
 // (recvBufPtr addr -- )
 // reads length from buffer, attempts to read that many bytes
 // updates buffer length when done, with actual read count
-void natI2CmR() {
+void natI2CmasterRead() {
   Word addr=pop();
   Word recvBuf=pop();
   // desired count
@@ -1039,16 +1040,16 @@ void natI2CmR() {
 
 // (sendBufPtr recvBufPtr addr -- actualRecvCount) 
 // with no WWait inbetween
-void natI2CmWR() {
+void natI2CmasterWR() {
   Word addr=pop();
   Word recvBuf=pop();
 
   push(addr);
-  natI2CmW();
+  natI2CmasterWrite();
 
   push(recvBuf);
   push(addr);
-  natI2CmR(); // pushes actual count on stack
+  natI2CmasterRead(); // pushes actual count on stack
 }
 
 
