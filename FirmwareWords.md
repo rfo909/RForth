@@ -43,7 +43,8 @@ IN                  IN <DictName> <WordName> -- call word in custom Dict
 ?C                  (str -- addr) 'str ?C -- returns address of code for word (on stack)
 BufReset            (bufPtr -- ) Write a 0 in the first byte (length)
 BufAdd              (byte bufPtr -- ) Append byte to buf
-ShowBuffer          (bufPtr size -- ) Raw dump of buffer bytes
+BufAddC             (cell bufPtr -- ) Append two byte cell value to buffer
+BufShow             (size bufPtr -- ) Raw dump of buffer bytes
 BufCopy             (src target -- ) Copy buffer to another buffer
 BufCreateCopy       (src -- ptr) Allocate memory for content in src buffer, copy it, return pointer
 PreCompile          (--) Initiate compile mode

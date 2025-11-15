@@ -6,40 +6,36 @@ then sound the alarm
 
 (pins)
 14 CONSTANT LowSensor
-15 CONSTANT HighSensor1
-16 CONSTANT HighSensor2
+15 CONSTANT HighSensor
 
-5 CONSTANT Speaker
-13 CONSTANT Led
+13 CONSTANT Speaker
 
 (timers)
 1 CONSTANT tHigh
 2 CONSTANT tLow
-3 CONSTANT tAlarm
 
 : Read (pin--value) NATIVE Pin.ReadDigital ;
 : Millis (timer -- millis) NATIVE Sys.TimerGet ;
 : Start (timer -- ) NATIVE Sys.TimerSet ;
-
+: Cancel (timer -- ) NATIVE Sys.TimerCancel ;
 
 : Init
   LowSensor NATIVE Pin.ModeIn
+  HighSensor NATIVE Pin.ModeIn
   Speaker NATIVE Pin.ModeOut
 ;
 
 
 : Sense
-  HighSensor1 Read HighSensor2 Read || IF tHigh Start THEN
-  LowSensor Read IF tLow Start THEN
-;
-
-: Decide
-  tLow Millis => low
-  tHigh Millis 10000 >
-    low 250 > 
-    low 1000 < && &&
+  HighSensor Read IF tHigh Start THEN
+  
+  (can not restart tLow timer on every cycle, as
+  it controls the alarm sound)
+  
+  LowSensor Read 
+    tLow Millis 5000 > && 
   IF 
-    tAlarm Millis 3000 > IF tAlarm Start THEN
+    tLow Start 
   THEN
 ;
 
@@ -48,17 +44,42 @@ then sound the alarm
   a b / b * a swap -
 ;
 
-: Play?
-  tAlarm Millis => m
-  m 1200 < IF
-    m 100 / 2 modulo 128 * => val
-    val Speaker NATIVE Pin.WriteAnalog (PWM)
- THEN
+
+EMPTY-WORD Alarm
+EMPTY-WORD Silence
+
+: Alarm?
+  0 => play
+  
+  (delay the tLow timer by a quarter of a second,
+   to allow for the tHigh to be enabled, if there
+   is a person there after all
+  )
+  tHigh Millis 10000 >
+    tLow Millis 250 > && 
+    tLow Millis 2000 < &&
+  IF 
+    Alarm
+  ELSE
+    Silence
+  THEN
 ;
 
-: Led?
-  tHigh Millis 10000 < 
-    Led NATIVE Pin.WriteDigital
+: Alarm
+  tLow Millis 
+    100 / 
+    2 modulo 
+      Speaker NATIVE Pin.WriteDigital
+;
+
+: Silence
+  0 Speaker NATIVE Pin.WriteDigital
+;
+
+: Status
+  cr
+  tHigh Millis 10000 < IF "H .str THEN
+  tLow Millis 2000 < IF "L .str THEN
 ;
   
   
@@ -66,9 +87,12 @@ then sound the alarm
 : Main
   Init BEGIN 
     Sense 
-    Decide
-    Play?
-    Led?
+    Alarm?
+    Status
     key not AGAIN?
+    cr "Terminated .str
 ;
+
+HERE 4154 - .
+
 

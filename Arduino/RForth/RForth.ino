@@ -818,8 +818,6 @@ const NativeFunction nativeFunctions[]={
   {"I2C.masterRead",       &natI2CmasterRead,          "(recvBufPtr addr -- ) master read"},
   {"I2C.masterWR",      &natI2CmasterWR,         "(sendBufPtr recvBufPtr addr -- recvCount) master write then read"},
 
-  {"Test.EEPROM",   &natTestEEPROM,   "(i2cAddr memAddr -- )"},
-
   {"",0,""} 
 };
 
@@ -1050,56 +1048,5 @@ void natI2CmasterWR() {
   push(recvBuf);
   push(addr);
   natI2CmasterRead(); // pushes actual count on stack
-}
-
-
-
-// -------------------------------
-// Test.*
-// -------------------------------
-
-// This works, even without external pullup resistors; delays for 3ms (zzz) after each write :-)
-void natTestEEPROM () {
-  int memAddr = (int) pop();
-  int i2cAddr=(int) pop();
-  for (uint8_t value=1; value<255; value++) {
-    // write one byte
-    Wire.beginTransmission(i2cAddr);
-    Wire.write((memAddr >> 8) & 0xFF);   // High address byte
-    Wire.write(memAddr & 0xFF);          // Low address byte
-    Wire.write(value);
-    Wire.endTransmission();
-
-    // wait for write to complete
-    while (true) {
-      Wire.beginTransmission(i2cAddr);
-      uint8_t err = Wire.endTransmission();
-      if (err == 0) break;  // ACK received
-      Serial.print("z");
-      delay(1);            // Small delay to avoid hammering the bus
-    }
-    Serial.println();
-
-    // read back value - set address
-    Wire.beginTransmission(i2cAddr);
-    Wire.write((memAddr >> 8) & 0xFF);
-    Wire.write(memAddr & 0xFF);
-    Wire.endTransmission();
-
-    // don't need to wqit here, because the two first
-    // bytes are stored in the address registers and are
-    // not written to the memory, so no delay
-    
-    // read value
-    uint8_t rvalue=0;
-    Wire.requestFrom(i2cAddr, 1);
-    if (Wire.available()) {
-      rvalue=Wire.read();
-    }
-    Serial.print("Expected ");
-    Serial.print(value);
-    Serial.print(" got ");
-    Serial.println(rvalue);
-  } // for
 }
 

@@ -337,14 +337,17 @@
 		a 0 gt &*again jmp?
 	ret
 
-:ShowBuffer (buf size) 
-	cpush (a=size)
-	cpush (b=buf)
+:BufShow (size buf) 
+	cpush (a=buf)
+	cpush (b=size)
 	0 cpush (c=count)
 	:*again
-		b c add readb print# &Str_Space .str 
+		cr
+		a c add readb print 
+		&Str_Space .str
+		a c add readb print#  
 		c 1+ c!
-		c a le &*again jmp?
+		c b le &*again jmp?
 	ret
 
 
@@ -1086,7 +1089,7 @@
 	;; change the CompilingWordMode to immediate
 	1 &CompilingWordMode writeb
 	ret		
-
+	
 :Str_Separator		%'--
 :Str_Space		%"_
 
@@ -1165,6 +1168,13 @@
 	a b add 1+ writeb
 	(update length)
 	b 1+ a writeb
+	ret
+
+:BufAddC ( word bufPtr -- )
+	cpush (a=buf)
+	cpush (b=word)
+	b 8 >> 0xFF andb a &BufAdd call
+	b 0xFF andb a &BufAdd call
 	ret
 
 
@@ -1288,7 +1298,8 @@
 
 	%'BufReset		%BufReset		BIN_NORMAL		%NEXT
 	%'BufAdd		%BufAdd			BIN_NORMAL		%NEXT
-	%'ShowBuffer		%ShowBuffer		BIN_NORMAL		%NEXT
+	%'BufAddC		%BufAddC		BIN_NORMAL		%NEXT
+	%'BufShow		%BufShow		BIN_NORMAL		%NEXT
 	%'BufCopy		%BufCopy		BIN_NORMAL		%NEXT
 	%'BufCreateCopy		%BufCreateCopy		BIN_NORMAL		%NEXT
 	%'EmitNumber		%EmitNumber		BIN_NORMAL		%NEXT
@@ -1372,12 +1383,13 @@
 :NextWordEnd
 
 :LVBuf		w0 w0 w0 w0 w0 w0 w0 w0 		;; local variables in colon compiler - 32 bytes
-		w0 w0 w0 w0 w0 w0 w0 w0		    ;; and scratch buffer at runtime
+		w0 w0 w0 w0 w0 w0 w0 w0		       ;; and scratch buffer at runtime
 :LVBufEnd
 
-:CompileStack	b0 w0 w0 w0 w0 w0 w0 w0 w0 		
-				;; 8 words each consists of type (1 byte) and offset in CompileBuf (1 byte)
+:CompileStack	b0 w0 w0 w0 w0 w0 w0 w0 w0 
+   				;; 8 words each consists of type (1 byte) and offset in CompileBuf (1 byte)
 				;; see COMPS_TYPE_* defs
+
 :CompileStackEnd
 :AllBuffersEnd
 
