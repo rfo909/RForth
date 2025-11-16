@@ -816,7 +816,11 @@ const NativeFunction nativeFunctions[]={
   {"I2C.masterWrite",       &natI2CmasterWrite,          "(sendBufPtr addr -- ) master write"},
   {"I2C.masterWWait",   &natI2CmasterWWait,      "(addr -- ) master wait for data write (eeprom) to complete"},
   {"I2C.masterRead",       &natI2CmasterRead,          "(recvBufPtr addr -- ) master read"},
-  {"I2C.masterWR",      &natI2CmasterWR,         "(sendBufPtr recvBufPtr addr -- recvCount) master write then read"},
+//  {"I2C.masterWR",      &natI2CmasterWR,         "(sendBufPtr recvBufPtr addr -- recvCount) master write then read"},
+
+  {"EEProm.save",       &natEEPromSave,          "(pageSize startPage i2cAddress -- ) save &PROTECT -> HEAP bytes"},
+  {"EEProm.verify",       &natEEPromVerify,          "(pageSize startPage i2cAddress -- ) verify after save"},
+  {"EEProm.load",       &natEEPromLoad,          "(pageSize startPage i2cAddress -- ) load &PROTECT -> HEAP bytes"},
 
   {"",0,""} 
 };
@@ -1038,6 +1042,7 @@ void natI2CmasterRead() {
 
 // (sendBufPtr recvBufPtr addr -- actualRecvCount) 
 // with no WWait inbetween
+/*
 void natI2CmasterWR() {
   Word addr=pop();
   Word recvBuf=pop();
@@ -1048,5 +1053,120 @@ void natI2CmasterWR() {
   push(recvBuf);
   push(addr);
   natI2CmasterRead(); // pushes actual count on stack
+}*/
+
+
+void i2c_sendWord (Word w) {
+  byte hi=(byte) ((w >> 8) & 0xFF);
+  byte lo=(byte) (w & 0xFF);
+  Wire.write(hi);
+  Wire.write(lo);
 }
 
+void natEEPromSave () {  // (pageSize startPage i2cAddress -- )
+  Word addr=pop();
+  Word currPage=pop();
+  Word pageSize=pop();
+
+  // first page contains length and the protect tag
+  Serial.print(F("Saving status page at 0x"));
+  Serial.println(pageSize*currPage,16);
+  Wire.beginTransmission((byte) addr);
+  i2c_sendWord(pageSize * currPage);
+  Word length=HERE-firmwareProtectTag;
+  i2c_sendWord(firmwareProtectTag);
+  i2c_sendWord(length);
+  Wire.endTransmission();  
+
+  push(addr);
+  natI2CmasterWWait();
+
+  currPage++;
+  for (Word pagePos=firmwareProtectTag; pagePos<HERE; pagePos+=pageSize) {
+    Serial.print(F("Saving heap to EEPROM page at 0x"));
+    Serial.println(pageSize*currPage,16);
+
+    Wire.beginTransmission((byte) addr);
+    i2c_sendWord(pageSize * currPage); 
+    for (Word i=0; i<pageSize; i++) {
+      Word readPos=pagePos+i;
+      if (readPos < HERE) Wire.write(readByte(readPos));
+    }
+    Wire.endTransmission(); 
+
+    push(addr);
+    natI2CmasterWWait();
+    currPage++;
+  }
+}
+
+Word i2c_readWord () {
+  return (Word) (Wire.read() << 8 | Wire.read());
+}
+
+void natEEPromVerify () {  // (pageSize startPage i2cAddress -- )
+  doNatEEPromLoad(true);
+}
+
+void natEEPromLoad () {  // (pageSize startPage i2cAddress -- )
+  doNatEEPromLoad(false);
+}
+
+void doNatEEPromLoad (bool verifyOnly) {
+  Word addr=pop();
+  Word currPage=pop();
+  Word pageSize=pop();
+
+  // first page contains length and the protect tag
+  Serial.print(F("Reading status page at 0x"));
+  Serial.println(pageSize*currPage,16);
+  Wire.beginTransmission((byte) addr);
+  i2c_sendWord(pageSize * currPage); 
+  Wire.endTransmission();  
+
+  Wire.requestFrom((int) addr, 4);
+  Word protectTag=i2c_readWord();
+  Word length=i2c_readWord();
+
+  Serial.print(F("Got length="));
+  Serial.println(length);
+
+  if (protectTag != firmwareProtectTag) {
+    Serial.println(F("Incompatible version (&PROTECT tag)"));
+    return;
+  }
+
+  // Update HERE
+  HERE = protectTag + length;
+
+  // read pages
+  currPage++;
+  for (Word pagePos=firmwareProtectTag; pagePos<HERE; pagePos+=pageSize) {
+    Serial.print(F("Loading heap to EEPROM page at 0x"));
+    Serial.println(pageSize*currPage,16);
+
+    Wire.beginTransmission((byte) addr);
+    i2c_sendWord(pageSize * currPage);
+    Wire.endTransmission();
+
+    Wire.requestFrom((int) addr, (int) pageSize);
+    for (Word i=0; i<pageSize; i++) {
+      Word writePos=pagePos+i;
+      if (writePos < HERE) {
+        byte b=Wire.read();
+        if (verifyOnly) {
+          if (b != readByte(writePos)) {
+            Serial.print(F("Verify: differing at pos "));
+            Serial.println(writePos, 16);
+          }
+        }
+        writeByte(writePos,b);
+      }
+    }
+    currPage++;
+  }
+
+  // restart interpreter from address 0 
+  cforce(0);
+
+}
