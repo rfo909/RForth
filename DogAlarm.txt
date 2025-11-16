@@ -77,9 +77,6 @@ EMPTY-WORD Silence
 ;
 
 : Status
-  cr
-  tHigh Millis 10000 < IF "H .str THEN
-  tLow Millis 2000 < IF "L .str THEN
 ;
   
   

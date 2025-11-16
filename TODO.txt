@@ -3,12 +3,13 @@
 
 2025-11
 
- 	- write bootloader (256 bytes) for onchip EEPROM, to load versioned and checksummed version of HEAP from
-      external EEPROM, with data on i2c address, EEPROM pos, and page size, and jump to certain address, 
-      or fail with blink code on internal LED
+	- store compiled code in onchip EEPROM that runs on restart, to load from external EEPROM,
+	  using NATIVE
+	  
+	- or: store settings onchip for how to load HEAP image from external EEPROM followed by auto-run
+	  - will be needing separate system words for doing this
 
-	- test saving HEAP, from address &PROTECT to HERE, on external EEPROM
-
+ 
 	- store source code in 32 byte blocks, with 2 bytes next pointers and 1 status byte
 	- create eval or something to process lines from EEPROM	
 	
