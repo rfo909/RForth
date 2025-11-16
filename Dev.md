@@ -582,6 +582,26 @@ but which terminates when we press Enter (or some other key in a raw terminal).
 : counter 0 => i BEGIN i print# cr i 1+ => i 1000 NATIVE Sys.Delay key not AGAIN? ;
 ```
 
+2025-11-16 save/load heap to EEPROM
+-----------------------------------
+Created two NATIVE commands, which save and load the data from &PROTECT tag to HERE 
+onto the EEPROM. The parameters for both are
+
+```
+<PageSize> <StartPage> <i2c-address> ...
+
+ex
+
+64 0 0x50 NATIVE EEProm.save
+64 0 0x50 NATIVE EEProm.load
+```
+
+Note that if EEPROM page size is unknown, it is always safe using a small power of 2, like 8, 16 or 32, 
+as long as loading uses the same as save. 
+
+Added some defines to the top of ACode.txt and added two dictionary words, Save and Load, which
+save/load the current state to/from location zero on the EEPROM.
+
 
 References
 ----------
