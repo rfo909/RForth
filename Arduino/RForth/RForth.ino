@@ -1,4 +1,5 @@
 #include <Wire.h>
+#include <EEPROM.h>
 
 #include "Constants.h"
 #include "Firmware.h"
@@ -803,6 +804,13 @@ const NativeFunction nativeFunctions[]={
   {"Sys.TimerGet",  &natSysTimerGet,        "(timerId -- millis) return time since timer set"},
   {"Sys.TimerCancel", &natSysTimerCancel,   "(timerId --) set timer to expired"},
 
+  {"Sys.EE.Length",   &natSysEELength,      "(-- length) return length of onchip EEPROM"},
+  {"Sys.EE.Write",    &natSysEEWrite ,      "(byte index --) write to onchip EEPROM"},
+  {"Sys.EE.Read",     &natSysEERead,        "(index -- byte) read from onchip EEPROM"},
+  {"Sys.EE.SetAutorun",  &natSysEESetAutorun,   "(codePtr -- ) copy word code to onchip EEPROM for auto run"},
+  {"Sys.EE.GetAutorun",  &natSysEEGetAutorun,   "( -- codePtr) return heap copy of onchip EEPROM autorun code"},
+  {"Sys.EE.ClearAutorun",  &natSysEEClearAutorun,   "( -- ) invalidate autorun, defaulting to single ret op"},
+
   {"Pin.ModeOut", &natPinModeOut,           "(pin -- ) set pin mode"},
   {"Pin.ModeIn",  &natPinModeIn,            "(pin -- ) set pin mode"},
   {"Pin.ModeInPullup",  &natPinModeInPullup,"(pin -- ) set pin mode"},
@@ -816,11 +824,9 @@ const NativeFunction nativeFunctions[]={
   {"I2C.masterWrite",       &natI2CmasterWrite,          "(sendBufPtr addr -- ) master write"},
   {"I2C.masterWWait",   &natI2CmasterWWait,      "(addr -- ) master wait for data write (eeprom) to complete"},
   {"I2C.masterRead",       &natI2CmasterRead,          "(recvBufPtr addr -- ) master read"},
-//  {"I2C.masterWR",      &natI2CmasterWR,         "(sendBufPtr recvBufPtr addr -- recvCount) master write then read"},
-
-  {"EEProm.save",       &natEEPromSave,          "(pageSize startPage i2cAddress -- ) save &PROTECT -> HEAP bytes"},
-  {"EEProm.verify",       &natEEPromVerify,          "(pageSize startPage i2cAddress -- ) verify after save"},
-  {"EEProm.load",       &natEEPromLoad,          "(pageSize startPage i2cAddress -- ) load &PROTECT -> HEAP bytes"},
+  {"I2C.EE.save",       &natEEPromSave,          "(pageSize startPage i2cAddress -- ) save &PROTECT -> HEAP bytes"},
+  {"I2C.EE.verify",       &natEEPromVerify,          "(pageSize startPage i2cAddress -- ) verify after save"},
+  {"I2C.EE.load",       &natEEPromLoad,          "(pageSize startPage i2cAddress -- ) load &PROTECT -> HEAP bytes"},
 
   {"",0,""} 
 };
@@ -918,6 +924,78 @@ void natSysTimerCancel() { // (timerId --)
   Word timerId=pop();
   cancelTimer(timerId);
 }
+
+// ----------------
+// Onboard EEPROM
+// ----------------
+
+void natSysEELength () { // ( -- length )
+  push((Word) EEPROM.length());
+}
+
+void natSysEEWrite () { // ( byte index -- ) 
+  Word pos=pop();
+  Word value=pop();
+  EEPROM.write(pos,value);
+}
+
+void natSysEERead () { // ( index -- byte ) 
+  Word pos=pop();
+  push(EEPROM.read(pos));
+}
+
+
+void configEEInit() {
+  if (EEPROM.read(0)==0xCA && EEPROM.read(1)==0xFE && EEPROM.read(2)==0xBA && EEPROM.read(3)==0xBE) {
+    // valid magic, config is ok
+    return;
+  }
+  Serial.println(F("Initializing onchip EEPROM"));
+  EEPROM.write(0,0xCA);
+  EEPROM.write(1,0xFE);
+  EEPROM.write(2,0xBA);
+  EEPROM.write(3,0xBE);
+
+  EEPROM.write(4,1); // 1 byte of code
+  EEPROM.write(5,0x52); // "ret" 
+}
+
+// System function called on load, should return 0 if nothing found
+Word configEEGetAutorun () {
+  configEEInit();
+  Word count=EEPROM.read(4);
+  if (count==0) return;
+  // got code
+  Word ptr=HERE;
+  HERE=HERE+count+1; // "allot" space for buffer with length byte
+  writeByte(ptr,count);
+  for (int i=0; i<count; i++) {
+    writeByte(ptr+i+1, EEPROM.read(5+i));
+  }
+
+  return (ptr+1);  // past length byte
+}
+
+Word natSysEEGetAutorun () { // ( -- codePointer )
+  push(configEEGetAutorun());
+}
+
+void natSysEESetAutorun () { // (codePointer -- )
+  configEEInit();
+  Word codePointer=pop();
+  Word len=readByte(codePointer-1);
+  Serial.print(F("Code length = "));
+  Serial.println(len);
+  EEPROM.write(4,len);
+  for (int i=0; i<len; i++) {
+    EEPROM.write(5+i,readByte(codePointer+i));
+  }
+}
+
+void natSysEEClearAutorun () { // (--) clears autorun by corrupting the magic bytes
+  EEPROM.write(0,0);
+}
+
 
 // -------------------------------
 // Pin.*
@@ -1170,3 +1248,4 @@ void doNatEEPromLoad (bool verifyOnly) {
   cforce(0);
 
 }
+

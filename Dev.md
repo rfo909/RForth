@@ -537,10 +537,8 @@ pointer and mode, otherwise creates dictionary entry as before.
 The content of the dictionary is the same as before, the changes
 are only when :ExecuteWord comes across the combination of mode==NORMAL
 in compile mode. Then it emits the code-ptr-ptr instead of the
-code-ptr as before, followed by the dcall op.
+code-ptr as before, followed by the "dcall" op.
 
-This makes no difference with regards to the initial dictionary, since
-reading below PROTECT is allowed. 
 
 ```
 : x 1 ;
@@ -597,10 +595,52 @@ ex
 ```
 
 Note that if EEPROM page size is unknown, it is always safe using a small power of 2, like 8, 16 or 32, 
-as long as loading uses the same as save. 
+as long as loading uses the same as save. Shorter than 8 is not possible, because the first page
+contains status data spanning 6 bytes
 
-Added some defines to the top of ACode.txt and added two dictionary words, Save and Load, which
-save/load the current state to/from location zero on the EEPROM.
+2025-11-16 onboard EEPROM
+-------------------------
+Added NATIVE commands for interacting with the onboard EEPROM (256 bytes on Nano Every). Using
+a magic number in the first 4 bytes (CAFE BABE) to indicate the EEPROM has been initialized.
+
+Added code to copy compiled code for some word into the onboard EEPROM following the magic bytes.
+Note that this code can not refer other dictionary words, because those will not be present
+when the code is run later.
+
+The plan now is to let the interpreter, when starting, at some point check if there exists
+autorun-code in the onboard EEPROM. If there is, it is copied into HEAP space and called.
+
+Then, the dictionary is checked for a word called Main, which is automatically called if
+defined. It should regularly call the "key" word and terminate on key press, in order to
+be available for interactive examination.
+
+```
+(To make a project runnable)
+
+: save 64 0 0x50 NATIVE I2C.EE.save ;
+: load 64 0 0x50 NATIVE I2C.EE.load ;
+
+
+(
+Set up code for auto run:
+-------------------------
+NOTE can not call dictionary words nor use strings, as those get 
+compiled into heap locations unavailable when this code runs
+)
+
+save
+
+"load ?C NATIVE Sys.EE.SetAutorun
+
+load
+```
+
+The ?C word returns the code address of the word given as string on the stack.
+
+After resetting the microcontroller, the C implementation should do the following:
+
+- NATIVE Sys.EE.GetAutorun call
+- Lookup Main and call it
 
 
 References

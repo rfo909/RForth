@@ -80,10 +80,6 @@
 
 #define CELL 2
 
-#define EE_I2C		0x50
-#define EE_PAGESIZE	64
- 
-
 ;; dictionary entry modes: use these in code
 
 #define MODE_NORMAL	0
@@ -604,18 +600,6 @@
 		PANIC
 		ret
 	
-
-:Str_EEProm.save   %'EEProm.save
-:Str_EEProm.load   %'EEProm.load
-
-:Save
-	EE_PAGESIZE 0 EE_I2C &Str_EEProm.save nativec native 
-	ret
-   
-:Load
-	EE_PAGESIZE 0 EE_I2C &Str_EEProm.load nativec native
-	ret
-
 		
 :BufCopy ( src target -- ) (for buffer with length byte)
 	swap
@@ -1310,9 +1294,6 @@
 	;; ----------------------------------------------------------
 	;; More system words
 	
-	%'Save			%Save			BIN_NORMAL		%NEXT
-	%'Load			%Load			BIN_NORMAL		%NEXT
-
 	%'BufReset		%BufReset		BIN_NORMAL		%NEXT
 	%'BufAdd		%BufAdd			BIN_NORMAL		%NEXT
 	%'BufAddC		%BufAddC		BIN_NORMAL		%NEXT

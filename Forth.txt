@@ -1,4 +1,36 @@
+(To make a project runnable)
 
+: save 64 0 0x50 NATIVE I2C.EE.save ;
+: load 64 0 0x50 NATIVE I2C.EE.load ;
+
+
+(
+Set up code for auto run:
+-------------------------
+NOTE can not call dictionary words nor use strings, as those get 
+compiled into heap locations unavailable when this code runs
+)
+
+save
+
+"load ?C NATIVE Sys.EE.SetAutorun
+
+load
+
+
+
+#END
+
+(Reset the device, then -automatically- run
+the following - note that for uninitialized
+onboard EEPROM it returns a single instruction,
+"ret" - this should be followed by looking up
+the word "Main", and if it exists, call it)
+
+NATIVE Sys.EE.GetAutorun call
+
+ 
+#END
 Dict [input]
 [input] DictUse
 
