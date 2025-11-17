@@ -797,7 +797,7 @@ typedef struct {
 const NativeFunction nativeFunctions[]={
   {"?",           &natList,                 "( -- ) show list of native functions"},
 
-  {"Sys.Free",    &natSysFree,              "( -- n) return number of free bytes of heap space"},
+  {"Sys.Free",    &natSysFree,              "(--) displays amount of free memory"},
   {"Sys.Delay",   &natSysDelay,             "(ms -- ) sleep a number of millis"},
   {"Sys.DelayUs",   &natSysDelayUs,         "(us -- ) sleep a number of microseconds"},
   {"Sys.TimerSet",  &natSysTimerSet,        "(timerId --) initiate timer to current time"},
@@ -897,7 +897,20 @@ void natList() {
 
 void natSysFree () {
   Word here=HERE-firmwareProtectTag; // actual index in heap
-  push(RAM_SIZE-here);
+  Word used=here;
+  Word free=RAM_SIZE-used;
+  int usedPercent=(100*used/RAM_SIZE);
+  Serial.print(F("Heap: "));
+  Serial.print(RAM_SIZE);
+  Serial.println(F(" bytes"));
+  Serial.print(F("Used: "));
+  Serial.println(used);
+  Serial.print(F("      "));
+  Serial.print(usedPercent);
+  Serial.println(" %");
+  
+  Serial.print(F("Free: "));
+  Serial.println(free);
 }
 
 void natSysDelay() {
