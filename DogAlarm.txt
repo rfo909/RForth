@@ -1,14 +1,31 @@
 (
-If low sensor detects movement and the
-high sensors have not for at least 10 seconds,
-then sound the alarm
+Detect dog trying to steal something from
+a shelf. Uses two PIR sensors, one low and
+one high. The low sensor only sees a narrow 
+band, horizontally, along the shelf, while
+the high sensor is mounted higher, and is limited
+by a flat plane, so it does not see the floor.
+
+The high sensor sees people, while the low
+sensor also sees people, but if the low sensor
+triggers with the high sensor inactive for at
+least 10 seconds, then we sound the alarm.
+
+Hooked a small piezo element to pin 5 for making
+alarm. I'm using two system timers, implemented
+in C on the mcu. These count millis, and because
+of cell size 16 bits, the max delay is 65 seconds.
+--
+This code uses 504 bytes of heap memory. 
+
 )
 
 (pins)
 14 CONSTANT LowSensor
 15 CONSTANT HighSensor
 
-13 CONSTANT Speaker
+5 CONSTANT Speaker
+13 CONSTANT Led
 
 (timers)
 1 CONSTANT tHigh
@@ -23,6 +40,7 @@ then sound the alarm
   LowSensor NATIVE Pin.ModeIn
   HighSensor NATIVE Pin.ModeIn
   Speaker NATIVE Pin.ModeOut
+  Led NATIVE Pin.ModeOut
 ;
 
 
@@ -33,7 +51,7 @@ then sound the alarm
   it controls the alarm sound)
   
   LowSensor Read 
-    tLow Millis 5000 > && 
+    tLow Millis 3000 > && 
   IF 
     tLow Start 
   THEN
@@ -44,39 +62,46 @@ then sound the alarm
   a b / b * a swap -
 ;
 
+(forward declarations)
 
 EMPTY-WORD Alarm
 EMPTY-WORD Silence
 
 : Alarm?
-  0 => play
-  
-  (delay the tLow timer by a quarter of a second,
+  (delay the tLow timer by a little,
    to allow for the tHigh to be enabled, if there
    is a person there after all
   )
   tHigh Millis 10000 >
-    tLow Millis 250 > && 
-    tLow Millis 2000 < &&
-  IF 
-    Alarm
+    tLow Millis 500 > && 
+    tLow Millis 1700 < &&
+  IF
+    tLow Millis 400 modulo 100 >
+    (0|1)
+    50 *
+      Speaker NATIVE Pin.WriteAnalog
   ELSE
-    Silence
-  THEN
-;
-
-: Alarm
-  tLow Millis 
-    100 / 
-    2 modulo 
-      Speaker NATIVE Pin.WriteDigital
-;
-
-: Silence
-  0 Speaker NATIVE Pin.WriteDigital
+    0 Speaker NATIVE Pin.WriteDigital
+  THEN  
 ;
 
 : Status
+  (solid light means blocked by human = high sensor)
+  tHigh Millis 10000 < IF
+  	1 Led NATIVE Pin.WriteDigital
+  	ret
+  THEN
+  
+  (blinking = sounding alarm)
+  tLow Millis => m
+  m 1500 < IF
+    m 200 modulo 
+      100 > 
+        Led NATIVE Pin.WriteDigital
+    ret
+  THEN
+  
+  0 Led NATIVE Pin.WriteDigital
 ;
   
   
@@ -90,6 +115,12 @@ EMPTY-WORD Silence
     cr "Terminated .str
 ;
 
-HERE 4154 - .
+
+(load save and auto run)
+
+: save 64 0 0x50 NATIVE I2C.EE.save ;
+: load 64 0 0x50 NATIVE I2C.EE.load ;
+
+"load ?C NATIVE Sys.EE.SetAutorun
 
 

@@ -25,6 +25,9 @@
 # --
 	P(1,Input("File name").get) => fname
 	file=Dir.file(fname)
+
+	#terminate loop waiting for key
+	SendLine(" ")
 	
 	file.read->line
 		break(line.startsWith("#END"))
