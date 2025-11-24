@@ -1,9 +1,16 @@
 2025-08 v3
 
 
-2025-11	  
-	- test motion detector (Pin interface)
-	- test GPS receiver (Serial)
+2025-11
+	- implement the autorun string from onboard EEPROM
+	- it should return the address of the word to call after executing the code, before doing a cforce return to address 0
+	
+	- put length of dictionary names in high-byte of status word
+	- create disassembler in C that now can look up word names from the code pointer-pointer 
+	- and knows length from offset -1 of code segments
+	
+	- create memory dump in C for listing out content complete address space	
+
 	- alnum displays i2c
 
 	  
