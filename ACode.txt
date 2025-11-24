@@ -1151,6 +1151,7 @@
 :GetAddrAllBuffersEnd &AllBuffersEnd ret
 :GetAddrCREATE-HERE &CREATE-HERE ret
 :GetAddrPROTECT &PROTECT ret
+:GetAddrSAVESTART &SAVESTART ret
 
 ;; Utility Forth words for buffer processing
 
@@ -1329,6 +1330,7 @@
 	%'&CompileStackEnd	%GetAddrCompileStackEnd		BIN_NORMAL	%NEXT
 	%'&CREATE-HERE		%GetAddrCREATE-HERE		BIN_NORMAL	%NEXT
 	%'&PROTECT		%GetAddrPROTECT			BIN_NORMAL	%NEXT
+	%'&SAVESTART		%GetAddrSAVESTART		BIN_NORMAL	%NEXT
 	
 	;; ----------------------------------------------------------
 	;; Colon, local variables, semicolon etc
@@ -1346,9 +1348,6 @@
 
 :DebugFlag		b0
 
-:DictionaryHead %Dictionary
-
-:CustomDictionaryHeadPtr w0
 
 ;;; ---------------------------------------------------------------------------------
 ;;; buffers used to process input and compile code - available for scratch use
@@ -1356,7 +1355,6 @@
 ;;; are placed next to each other in memory). Including the NextNumber and the
 ;;; CompileStack, we get a AllBuffers of 137 bytes
 ;;; ---------------------------------------------------------------------------------
-
 
 
 :IsCompiling		b0
@@ -1390,6 +1388,19 @@
 
 :CompileStackEnd
 :AllBuffersEnd
+
+;; When saving HEAP we actually save from this position, so that the buffers above are
+;; left undisturbed. Using the autorun feature (Sys.EE.SetAutorun) copies the code of
+;; some function into onchip EEPROM, and when fetching it with Sys.EE.GetAutorun, we
+;; copy it into the CompileBuf, and run it, which means it doesn't get overwritten
+;; by loading from external EEPROM.
+
+:SAVESTART
+
+:DictionaryHead %Dictionary
+
+:CustomDictionaryHeadPtr w0
+
 
 :MemoryEnd
 

@@ -974,13 +974,20 @@ void configEEInit() {
 }
 
 // System function called on load, should return 0 if nothing found
+// Get the autorun code bytes from onboard EEPROM, and write them to
+// the CompileBuf, then return pointer to copy of code in CompileBuf,
+// which should then get executed. It can not safely load a heap image,
+// because it should write from the SAVESTART tag only.
 Word configEEGetAutorun () {
   configEEInit();
   Word count=EEPROM.read(4);
+  Serial.print(F("Code length = "));
+  Serial.println(count);
+
   if (count==0) return;
-  // got code
-  Word ptr=HERE;
-  HERE=HERE+count+1; // "allot" space for buffer with length byte
+  // got code, now save it to CompileBuf, which is not overwritten at load, so
+  // it's a safe place to run the autorun code
+  Word ptr=compileBuf;
   writeByte(ptr,count);
   for (int i=0; i<count; i++) {
     writeByte(ptr+i+1, EEPROM.read(5+i));
@@ -1131,21 +1138,6 @@ void natI2CmasterRead() {
   writeByte(recvBuf,count);
 }
 
-// (sendBufPtr recvBufPtr addr -- actualRecvCount) 
-// with no WWait inbetween
-/*
-void natI2CmasterWR() {
-  Word addr=pop();
-  Word recvBuf=pop();
-
-  push(addr);
-  natI2CmasterWrite();
-
-  push(recvBuf);
-  push(addr);
-  natI2CmasterRead(); // pushes actual count on stack
-}*/
-
 
 void i2c_sendWord (Word w) {
   byte hi=(byte) ((w >> 8) & 0xFF);
@@ -1164,8 +1156,8 @@ void natEEPromSave () {  // (pageSize startPage i2cAddress -- )
   Serial.println(pageSize*currPage,16);
   Wire.beginTransmission((byte) addr);
   i2c_sendWord(pageSize * currPage);
-  Word length=HERE-firmwareProtectTag;
-  i2c_sendWord(firmwareProtectTag);
+  Word length=HERE-heapSaveStart;
+  i2c_sendWord(heapSaveStart);
   i2c_sendWord(length);
   Wire.endTransmission();  
 
@@ -1173,7 +1165,7 @@ void natEEPromSave () {  // (pageSize startPage i2cAddress -- )
   natI2CmasterWWait();
 
   currPage++;
-  for (Word pagePos=firmwareProtectTag; pagePos<HERE; pagePos+=pageSize) {
+  for (Word pagePos=heapSaveStart; pagePos<HERE; pagePos+=pageSize) {
     Serial.print(F("Saving heap to EEPROM page at 0x"));
     Serial.println(pageSize*currPage,16);
 
@@ -1216,23 +1208,23 @@ void doNatEEPromLoad (bool verifyOnly) {
   Wire.endTransmission();  
 
   Wire.requestFrom((int) addr, 4);
-  Word protectTag=i2c_readWord();
+  Word saveStart=i2c_readWord();
   Word length=i2c_readWord();
 
   Serial.print(F("Got length="));
   Serial.println(length);
 
-  if (protectTag != firmwareProtectTag) {
-    Serial.println(F("Incompatible version (&PROTECT tag)"));
+  if (saveStart != heapSaveStart) {
+    Serial.println(F("Incompatible version (&SAVESTART tag)"));
     return;
   }
 
   // Update HERE
-  HERE = protectTag + length;
+  HERE = heapSaveStart + length;
 
   // read pages
   currPage++;
-  for (Word pagePos=firmwareProtectTag; pagePos<HERE; pagePos+=pageSize) {
+  for (Word pagePos=heapSaveStart; pagePos<HERE; pagePos+=pageSize) {
     Serial.print(F("Loading heap to EEPROM page at 0x"));
     Serial.println(pageSize*currPage,16);
 

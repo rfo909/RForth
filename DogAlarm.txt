@@ -121,6 +121,9 @@ EMPTY-WORD Silence
 : save 64 0 0x50 NATIVE I2C.EE.save ;
 : load 64 0 0x50 NATIVE I2C.EE.load ;
 
-"load ?C NATIVE Sys.EE.SetAutorun
+: run 64 0 0x50 NATIVE I2C.EE.load "Main ?C call ;
+
+"run ?C NATIVE Sys.EE.SetAutorun 
+ 
 
 
