@@ -1249,8 +1249,5 @@ void doNatEEPromLoad (bool verifyOnly) {
     currPage++;
   }
 
-  // restart interpreter from address 0 
-  cforce(0);
-
 }
 

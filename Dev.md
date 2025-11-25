@@ -615,33 +615,73 @@ defined. It should regularly call the "key" word and terminate on key press, in 
 be available for interactive examination.
 
 ```
-(To make a project runnable)
+(To save and load)
 
 : save 64 0 0x50 NATIVE I2C.EE.save ;
 : load 64 0 0x50 NATIVE I2C.EE.load ;
-
-
-(
-Set up code for auto run:
--------------------------
-NOTE can not call dictionary words nor use strings, as those get 
-compiled into heap locations unavailable when this code runs
-)
-
-save
-
-"load ?C NATIVE Sys.EE.SetAutorun
-
-load
 ```
 
-The ?C word returns the code address of the word given as string on the stack.
 
-After resetting the microcontroller, the C implementation should do the following:
+2025-11-25 autorun
+------------------
+Added NATIVE commands for creating and using a piece of code that is supposed to
+run as the microcontroller is started. This also exists in the onboard EEPROM.
 
-- NATIVE Sys.EE.GetAutorun call
-- Lookup Main and call it
+```
+(set up autorun)
 
+"Main ?C CONSTANT MainRef  (temporary constant, for compiling autorun word)
+
+: autorun 
+  64 0 0x50 NATIVE I2C.EE.load 
+  MainRef ?C
+;
+
+"autorun ?C NATIVE Sys.EE.SetAutorun 
+
+```
+In order for the autorun word to return the address of the word Main, we need to define
+a constant, since autorun code can not contain strings nor call other words. The reason is
+that both strings and other words are compiled to the heap, and will not be present when
+running the autorun code in a newly initiated environment.
+
+The ?C word returns the call address for the word given as string. The Sys.EE.SetAutorun command
+copies the code for the "autorun" word into the onboard EEPROM, utilizing
+the fact that all code segments have a length byte at index -1. The "autorun" word in
+turn returns the address of the "Main" word, via the constant, which when compiled generates
+the value directly as code. 
+
+### Execution
+
+Note that execution is supposed to take place as the system starts. Logically
+it performs the following:
+
+```
+NATIVE Sys.EE.GetAutorun
+&CompileBuf 1+ call cforce
+```
+
+The Sys.EE.GetAutorun copies the code from onboard EEPROM to &CompileBuf, with
+an initial length byte, which means the code starts at &CompileBuf plus one.
+
+### Testing
+
+*NOTE* the above code is conceptual. Trying to run this from the interactive prompt,
+will fail, because interactive commands use the &CompileBuf for executing the
+INLINE words, in this case "call".
+
+If the autorun does not in fact load code, it can be tested with a custom word, which
+when compiled runs safely without messing with the content of &CompileBuf. 
+
+```
+: testAutorun
+  NATIVE Sys.EE.GetAutorun
+  &CompileBuf 1+ call cforce
+;
+```
+
+However, if the autorun code loads data, it will overwrite the test word "mid sentence", and
+fail.
 
 References
 ----------
