@@ -969,8 +969,9 @@ void configEEInit() {
   EEPROM.write(2,0xBA);
   EEPROM.write(3,0xBE);
 
-  EEPROM.write(4,1); // 1 byte of code
-  EEPROM.write(5,0x52); // "ret" 
+  EEPROM.write(4,2); // 2 bytes of code
+  EEPROM.write(5,0xC0); // literal 0 = value to cforce return to after init code complete
+  EEPROM.write(6,0x52); // "ret" 
 }
 
 // System function called on load, should return 0 if nothing found
