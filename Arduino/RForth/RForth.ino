@@ -982,10 +982,11 @@ void configEEInit() {
 Word configEEGetAutorun () {
   configEEInit();
   Word count=EEPROM.read(4);
-  Serial.print(F("Code length = "));
+  Serial.println();
+  Serial.print(F("configEEGetAutorun: Code length = "));
   Serial.println(count);
 
-  if (count==0) return;
+  if (count==0) return 0;
   // got code, now save it to CompileBuf, which is not overwritten at load, so
   // it's a safe place to run the autorun code
   Word ptr=compileBuf;

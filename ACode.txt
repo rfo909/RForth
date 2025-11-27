@@ -115,10 +115,45 @@
 
 
 
-;; When executing code, we start at PC=0x0000 (&Init)
+;; When executing code, we start at PC=0x0000
 
 :Init	
 	&PostCompile call
+	
+	&Autorun call
+	
+	&REPL jmp
+	
+	
+:Str_SysEEGetAutorun %'Sys.EE.GetAutorun
+:Str_CallingAutorunCode %"Calling_Autorun_code
+:Str_DoingCForceOnAddr %"Doing_cforce_on_addr_
+:Str_AutorunAlreadyCalled %"Autorun_already_called
+
+:Autorun
+	&AutorunCalled readb 0 eq &*tryAutorun jmp?
+		cr &Str_AutorunAlreadyCalled .str
+		ret
+	
+	:*tryAutorun
+	
+	1 &AutorunCalled writeb
+	
+	&Str_SysEEGetAutorun nativec native
+	cpush (a=code pointer)
+	a null eq &*noPointer jmp?
+		cr &Str_CallingAutorunCode .str
+		a call cpush (b = pointer to code to run after the Autorun)
+		b null eq &*noMain jmp? (if pointer 0 just ignore)
+		cr &Str_DoingCForceOnAddr .str b print
+		;; cforce make the ret statement return to that address instead of Init
+		b cforce 
+		ret	
+	:*noPointer
+	:*noMain
+		ret
+
+	
 
 :REPL
 	&GetNextWord call
@@ -1348,6 +1383,7 @@
 
 :DebugFlag		b0
 
+:AutorunCalled		HEX:00
 
 ;;; ---------------------------------------------------------------------------------
 ;;; buffers used to process input and compile code - available for scratch use
