@@ -1,10 +1,14 @@
 2025-08 v3
 
+RTC for sleep and wake
+Movement sensor PIR for sleep and wake (Christmas decorations)
+	MOSFET powered by movement sensor, boots MCU
+	MCU has 2 seconds to start program, pulling an output HIGH to a second MOSFET, ensuring it gets power
+	It continously reads the output of the PIR.
+	After a certain while since last PIR signal, the MCU dims the decoration then writes LOW to the second MOSFET
+	This halts the MCU and the decoration. 	
 
 2025-11
-	- implement the autorun string from onboard EEPROM
-	- it should return the address of the word to call after executing the code, before doing a cforce return to address 0
-	
 	- put length of dictionary names in high-byte of status word
 	- create disassembler in C that now can look up word names from the code pointer-pointer 
 	- and knows length from offset -1 of code segments
@@ -13,24 +17,10 @@
 
 	- alnum displays i2c
 
-	  
-	  
+	- Consider moving interactive REPL to SoftSerial at 9600 baud or lower (?) to free up hardware serial
 
+	- Implement native functions for SPI and Serial
 
-2025-10-17
-
-- Implement native functions for SPI and Serial
-
-- Implement breakable loops, like BEGIN ... cond BREAK ... cond BREAK ... AGAIN
-
-- Add external 24FC256-I/P EEPROM, save code to it via "screens" editor (in firmware)
-
-- Create a disassembler (code length byte at index -1 already in place)
-
-- Define a way to both automatically run a certain word, and some startup condition to enter interactive 
-	mode instead, like a pin reading HIGH or LOW
-
-- Consider moving interactive REPL to SoftSerial at 9600 baud or lower (?) to free up hardware serial
 
 
 
