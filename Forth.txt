@@ -1,24 +1,22 @@
-: Main "running_main .str cr ;
+: pOut (pin) NATIVE Pin.ModeOut ;
+: zzz (ms) NATIVE Sys.Delay ;
+: pw (val pin -- ) NATIVE Pin.WriteDigital ;
+
+: Main 13 pOut
+  BEGIN
+  1 13 pw
+  200 zzz
+  0 13 pw
+  200 zzz
+  key not AGAIN?
+  0 13 pw
+;     
+  
 
 (To make a project automatically runnable)
 
 : save 64 0 0x50 NATIVE I2C.EE.save ;
 : load 64 0 0x50 NATIVE I2C.EE.load ;
-
-: eedump
-  0 => i BEGIN
-  i NATIVE Sys.EE.Read print cr
-  i 1+ => i
-  i 20 < AGAIN?
-;
-
-: dump (count pos) 
-  => pos => count BEGIN 
-  pos readb print cr
-  pos 1+ => pos
-  count 1 - => count
-  count 0 > AGAIN? 
-;
 
 save 
 

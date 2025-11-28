@@ -653,7 +653,8 @@ NATIVE Sys.EE.GetAutorun
 The Sys.EE.GetAutorun copies the code from onboard EEPROM to &CompileBuf, with
 an initial length byte, which means the code starts at &CompileBuf plus one.
 
-Note that this code can not be run interactively, because, interactive code uses the CompileBuf. 
+Note that this code *can not* be run interactively, because, interactive code
+uses the CompileBuf. 
 
 
 ### Testing
@@ -684,6 +685,22 @@ when compiled runs safely without messing with the content of &CompileBuf.
 
 However, if the autorun code loads data, it will overwrite the test word "mid sentence", and
 fail.
+
+### New code
+
+When using autorun to load code, every time the microcontroller is given power, it performs
+this. If we want to create a new application, we want to first reset it in a way that
+does not load anything. 
+
+The simplest way to do that is to invalidate the header of the autorun code
+
+```
+NATIVE Sys.EE.ClearAutorun
+```
+
+Now when resetting the device, it runs a default autorun code which just returns 
+value 0, which means, no "main" word. 
+
 
 References
 ----------
