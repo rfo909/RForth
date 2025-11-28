@@ -698,6 +698,8 @@
 	println("const int firmwareProtectTag = " + tags.get("PROTECT") + "; // used to catch invalid writes")
 	println("const int heapSaveStart = " + tags.get("SAVESTART") + ";  // used for save/load of heap")
 	println("const int compileBuf = " + tags.get("CompileBuf") + ";  // used for autorun feature")
+	println("const int autorunDisabled = " + tags.get("AutorunDisabled") + "; // used for hard reset")
+	println
 	println("const byte firmware[]={")
 	showFirmware(codeArray)
 	println("};")

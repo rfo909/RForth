@@ -1,4 +1,5 @@
 : pOut (pin) NATIVE Pin.ModeOut ;
+: pIn (pin) NATIVE Pin.ModeIn ;
 : zzz (ms) NATIVE Sys.Delay ;
 : pw (val pin -- ) NATIVE Pin.WriteDigital ;
 
@@ -11,7 +12,7 @@
   key not AGAIN?
   0 13 pw
 ;     
-  
+
 
 (To make a project automatically runnable)
 

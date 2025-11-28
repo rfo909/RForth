@@ -128,16 +128,16 @@
 :Str_SysEEGetAutorun %'Sys.EE.GetAutorun
 :Str_CallingAutorunCode %"Calling_Autorun_code
 :Str_Invoking_main_program_at %"Invoking_main_program_at_addr_
-:Str_AutorunAlreadyCalled %"Autorun_already_called_(or_disabled)
+:Str_AutorunDisabled %"Autorun_disabled
 
 :Autorun
-	&AutorunCalled readb 0 eq &*tryAutorun jmp?
-		cr &Str_AutorunAlreadyCalled .str
+	&AutorunDisabled readb 0 eq &*tryAutorun jmp?
+		cr &Str_AutorunDisabled .str
 		ret
 	
 	:*tryAutorun
 	
-	1 &AutorunCalled writeb
+	1 &AutorunDisabled writeb 
 	
 	&Str_SysEEGetAutorun nativec native
 	cpush (a=code pointer)
@@ -1382,7 +1382,7 @@
 
 :DebugFlag		b0
 
-:AutorunCalled		HEX:00
+:AutorunDisabled	b0
 
 ;;; ---------------------------------------------------------------------------------
 ;;; buffers used to process input and compile code - available for scratch use

@@ -45,9 +45,26 @@ void setError (char *msg) {
   hasError=true;
 }
 
+/* 
+ * To block autorun, connect digital pins 2 and 4
+ */
+int blockAutorun() {
+  pinMode(2,OUTPUT);
+  pinMode(4,INPUT);
+  digitalWrite(2,HIGH);
+  delay(1);
+  int high = (digitalRead(4) == HIGH);
+  digitalWrite(2,LOW);
+  delay(1);
+  int low = (digitalRead(4) == LOW);
+  return high && low;
+}
+
+
 void setup() {
-  Wire.begin();
   Serial.begin(9600);
+
+  Wire.begin();
   Serial.println();
   Serial.println(F("RFOrth - an interactive Forth-like language"));
   Serial.println(F("For: Arduino Nano Every"));
@@ -64,6 +81,12 @@ void setup() {
   populateOps();
   populateRAM();
   initTimers();
+
+  Serial.println(F("If pins 2 and 4 are connected, block autorun"));
+  if (blockAutorun()) {
+    Serial.println(F("*** Blocking autorun ***"));    
+    writeByte(autorunDisabled, 1);
+  }
 
   Serial.print(F("(Ready) HERE="));
   Serial.println(HERE);
