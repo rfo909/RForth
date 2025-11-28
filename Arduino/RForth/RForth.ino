@@ -262,6 +262,9 @@ Word getTimer (Word timerId) {
     // rollover
     result=((unsigned long) 0xFFFFFFFE)-t+now;
   }
+  if (timerId >= FIRST_SEC_TIMER) {
+    result=result/1000;  // millis to seconds
+  }
   // result is 16 bits only
   if (result > 0xFFFF) {
     return 0xFFFF;

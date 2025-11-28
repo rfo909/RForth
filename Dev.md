@@ -2,6 +2,14 @@
 Development log
 ===============
 
+Started this third attempt at writing my own Forth-like language in August 2025. 
+
+First git checkin for this version was 2025-08-10.
+
+
+Virtual assembly
+----------------
+
 In order to create a Forth REPL, I started out defining a virtual stack machine, which executes
 byte code instructions. I then made an assembler for this, which handles addresses. In this assembly
 language I wrote the REPL for Forth, and a few key Forth words, like COLON, SEMICOLON, IF, THEN, ELSE, 
@@ -9,7 +17,7 @@ CONSTANT and VARIABLE.
 
 The "assembly" code is found ACode.txt
 
-I created an interpreter in a script language, to play around with, stepping through code, setting break
+I created an interpreter in a script language, to play around with the code, stepping through code, setting break
 points, examine memory structures etc.
 
 The point of this whole project is just to have fun. 
@@ -433,52 +441,6 @@ Compiling this consumes 78 bytes, which stores both the compiled code and the di
 
 
 
-2025-10-18 save Forth heap to EEPROM - cforce
----------------------------------------------
-
-I want to save the heap with all compiled words and the dictionary entries for those. 
-
-I thought moving the stacks from the C heap to Forth heap would make sense, in terms of
-saving current state. But it turns out to be the opposite, because in order to save and
-restore a runnable image, we need to execute code. That code must exist in the "firmware"
-part (below the PROTECT tag), which means it lives only in flash.
-
-Local variables and parameters require the three stacks to operate, so they must exist 
-outside the block of memory being saved or loaded back in.
-
-The actual stack content should not be necessary to restart the system. If it starts
-running with PC=0, it should then operate normally. The code should be extended to reading a
-start word from somewhere, unless some pin X is HIGH or LOW, deciding between automatic
-running or interactive mode. 
-
-The Forth heap contains the following:
-
-- compiled code: words, constants and variables
-- dictionary entries
-- data between the PROTECT tag and the end of the firmware (ACode.txt run through assembler).
-
-Calling code from compiled Forth to load an image means the return address back to that Forth word
-becomes invalid. To fix this, I added a bytecode op, "cforce", which takes an address (usually zero).
-
-It clears all three stacks, then "fakes" the given return address on to the call stack. It
-keeps local variables from current frame, but when returning from current frame, we instead
-return to the address given as parameter to the cforce op, typically 0.
-
-Example:
-
-```
-: test 0xcafe cpush 0xface cpush 0 cforce cr a print cr b print ;
-: xx test "return_from_test cr .str ;
-```
-
-Calling xx in turn calls test. It pushes two values on the call stack, 
-then calls 0 cforce. The code continues, running normally, as demonstrated by printing
-the variables a and b, but when it returns, it does not return to the xx word, 
-instead it picks up from address 0, which re-initiates the REPL.
-
-Still a work in progress ...
-
-
 2025-10-21 Forth local variables
 ---------------------------------
 Implemented proper local variables inside COLON-words. Removed the automatic names
@@ -555,20 +517,27 @@ y
 
 Note that the stacks are modestly sized, so no deep recursion!!
 
+2025-11-xx Timers
+-----------------
+Implemented NATIVE commands for 8 timers. The first six (0-5) count *milliseconds*, and the last
+two (6-7) count *seconds*. With CELL size being just two bytes, the millis timers can only time up to
+65.535 seconds, a little over a minute, while the seconds timers can track time past 18 hours.
 
-2025-11-08 EEPROM dev
----------------------
-After failing to get EEPROM RFOrth code stable, I implemented a new
-NATIVE routine for doing write followed by a read, in case there
-was a timing issue. I then wrote some code in RFOrth, and it works.
+When a timer expires, its value remains 0xFFFF, which also is -1 when written on signed decimal form.
 
-And the old method of first calling "write" with the two byte address,
-followed by a "read" for a desired number of bytes, works too.
+The underlying counters are 4 bytes, and roll over after some 50+ days. The code should handle
+that correctly. 
 
-I also shortened the names of the NATIVE functions, and eliminated the
-count parameter when reading data. Instead setting the length byte
-of the buffer to indicate the intended number of bytes, which gets 
-updated to the actual count before returning.
+```
+Sys.TimerSet  (timerId --) initiate timer to current time
+Sys.TimerGet  (timerId -- millis) return time since timer set
+Sys.TimerCancel  (timerId --) set timer to expired
+```
+The function to cancel a timer sets its value to the polar opposite of the current value,
+which is a value that will be reached in half the time span of the underlying 4 byte values,
+which is half of the 50+ days.
+
+
 
 
 2025-11-10 New op: key
@@ -606,6 +575,7 @@ a magic number in the first 4 bytes (CAFE BABE) to indicate the EEPROM has been 
 Added code to copy compiled code for some word into the onboard EEPROM following the magic bytes.
 Note that this code can not refer other dictionary words, because those will not be present
 when the code is run later.
+
 
 2025-11-28 autorun
 ------------------

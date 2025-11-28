@@ -9,7 +9,8 @@
 
 #define RAM_SIZE          4096
 
-#define TIMER_COUNT       8
+#define TIMER_COUNT       8   // timers 0-7
+#define FIRST_SEC_TIMER   6   // timers that count seconds (6-7) the others count millis
 
 const bool READC_ECHO = true;
 
