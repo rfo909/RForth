@@ -1,6 +1,6 @@
 : Main "running_main .str cr ;
 
-(To make a project runnable)
+(To make a project automatically runnable)
 
 : save 64 0 0x50 NATIVE I2C.EE.save ;
 : load 64 0 0x50 NATIVE I2C.EE.load ;
@@ -17,28 +17,18 @@
   pos readb print cr
   pos 1+ => pos
   count 1 - => count
-  count 0 > AGAIN? ;
-
-: testAutorun
-  NATIVE Sys.EE.GetAutorun
-  &CompileBuf 1+ call cforce
+  count 0 > AGAIN? 
 ;
 
 save 
 
 (set up autorun)
 
-(temporary constant for compiling autorun word, as
- autorun code can not contain strings, which are compiled
- to the heap, so we use a constant, which when referred
- in code generates code for the numeric literal directly
- in the compiled output)
- 
 "Main ?C CONSTANT MainRef
 
 : autorun 
   64 0 0x50 NATIVE I2C.EE.load 
-  MainRef ?C
+  MainRef (return pointer to Main - after load)
 ;
 
 "autorun ?C NATIVE Sys.EE.SetAutorun 

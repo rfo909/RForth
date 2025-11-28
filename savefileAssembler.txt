@@ -229,7 +229,6 @@
 	
 	cpush		:O   	;; push 1 value from data stack to callstack
 				;; up to 3 values accessible as local variables a@ a! b@ b! c@ c! (single instructions)
-	cforce		:f	;; force a certain return address
 
 	cget		:3	;; copy value off call stack indexed from frame base (must be cpush'ed first)
 	cset		:4	;; set value on call stack (must be cpush'ed first)

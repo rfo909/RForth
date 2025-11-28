@@ -301,7 +301,6 @@ void populateOps() {
   ops[98]=&op_print_decimal_signed;
   ops[99]=&op_nativec;
   ops[100]=&op_1_plus;
-  ops[102]=&op_cforce;
   ops[103]=&op_HERE;
   ops[104]=&op_ne;
   ops[105]=&op_not;
@@ -375,7 +374,6 @@ void op_u2spc () { Word ptr=pop(); u2spc(ptr); }
 void op_native () { Word pos=pop(); callNative(pos);}
 void op_nativec () { Word strPtr=pop(); push(lookupNative(strPtr));}
 void op_1_plus () {push(pop()+1);}
-void op_cforce () {Word addr=pop(); cforce(addr);}
 void op_HERE () {push(HERE);}
 void op_ne () {Word b=pop(); Word a=pop(); push(a!=b);}
 void op_not () {Word x=pop(); push(!x);}
@@ -616,41 +614,6 @@ void returnFromCode () {
   fpop();
   fpush(base,size);
 }
-
-
-void cforce (Word addr) {
-  // clear data stack, then modify call stack and frame stack so that
-  // local variables are preserved, but next "ret" returns to given
-  // address, typically 0.
-  dStackNext=0;
-
-  // identify local variables in current frame
-  Word base=fpeekBase();
-  Word size=fpeekSize(); // #locals
-
-  // push single return address on cstack 
-  cStackNext=0;
-
-  // (can not use cpush, as it manages the frame stack)
-  cStack[cStackNext++]=addr; 
- 
-  // preserve local variables on cstack (if any)
-  for (int i=0; i<size; i++) {
-    cStack[cStackNext++]=cStack[base+i];
-  }
-  
-  // push two frames on frame stack
-  fStackNext=0;
-  fpush(0,1);  // return address frame
-  fpush(1,size);
-
-  showState();
-  Serial.println();
-  Serial.print(F("(cforce ready) HERE="));
-  Serial.println(HERE);
-
-}
-
 
 Word callReturnAddrGet () {
   Word base=fpeekBase();
@@ -970,7 +933,7 @@ void configEEInit() {
   EEPROM.write(3,0xBE);
 
   EEPROM.write(4,2); // 2 bytes of code
-  EEPROM.write(5,0xC0); // literal 0 = value to cforce return to after init code complete
+  EEPROM.write(5,0xC0); // literal 0 = address of Main word (0=no address)
   EEPROM.write(6,0x52); // "ret" 
 }
 

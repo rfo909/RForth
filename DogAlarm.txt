@@ -121,7 +121,11 @@ EMPTY-WORD Silence
 : save 64 0 0x50 NATIVE I2C.EE.save ;
 : load 64 0 0x50 NATIVE I2C.EE.load ;
 
-: run 64 0 0x50 NATIVE I2C.EE.load "Main ?C call ;
+save
+
+"Main ?C CONSTANT MainAddr
+
+: run 64 0 0x50 NATIVE I2C.EE.load MainAddr ;
 
 "run ?C NATIVE Sys.EE.SetAutorun 
  

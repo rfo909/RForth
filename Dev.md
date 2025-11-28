@@ -607,22 +607,7 @@ Added code to copy compiled code for some word into the onboard EEPROM following
 Note that this code can not refer other dictionary words, because those will not be present
 when the code is run later.
 
-The plan now is to let the interpreter, when starting, at some point check if there exists
-autorun-code in the onboard EEPROM. If there is, it is copied into HEAP space and called.
-
-Then, the dictionary is checked for a word called Main, which is automatically called if
-defined. It should regularly call the "key" word and terminate on key press, in order to
-be available for interactive examination.
-
-```
-(To save and load)
-
-: save 64 0 0x50 NATIVE I2C.EE.save ;
-: load 64 0 0x50 NATIVE I2C.EE.load ;
-```
-
-
-2025-11-25 autorun
+2025-11-28 autorun
 ------------------
 Added NATIVE commands for creating and using a piece of code that is supposed to
 run as the microcontroller is started. This also exists in the onboard EEPROM.
@@ -641,43 +626,60 @@ run as the microcontroller is started. This also exists in the onboard EEPROM.
 
 ```
 In order for the autorun word to return the address of the word Main, we need to define
-a constant, since autorun code can not contain strings nor call other words. The reason is
-that both strings and other words are compiled to the heap, and will not be present when
+a constant, since autorun code can not contain strings nor call other (user created) words. 
+
+The reason is that both strings and other words will not be present when
 running the autorun code in a newly initiated environment.
 
 The ?C word returns the call address for the word given as string. The Sys.EE.SetAutorun command
 copies the code for the "autorun" word into the onboard EEPROM, utilizing
-the fact that all code segments have a length byte at index -1. The "autorun" word in
-turn returns the address of the "Main" word, via the constant, which when compiled generates
-the value directly as code. 
+the fact that all code segments have a length byte at index -1. 
+
+The "autorun" code loads a heap image, then returns the address of the "Main" word, 
+via the constant. When autorun is compiled, the constant is inlined as a literal, and
+not as a lookup.  
 
 ### Execution
 
-Note that execution is supposed to take place as the system starts. Logically
-it performs the following:
+The execution of the autorun code is done as the system starts, implemented in ACode.txt,
+under the :Init tag, calling the :Autorun tag. After checking that autorun has not already
+been executed, it effectively does the following:
 
 ```
-NATIVE Sys.EE.GetAutorun
-&CompileBuf 1+ call cforce
+NATIVE Sys.EE.GetAutorun 
+&CompileBuf 1+ call call
 ```
 
 The Sys.EE.GetAutorun copies the code from onboard EEPROM to &CompileBuf, with
 an initial length byte, which means the code starts at &CompileBuf plus one.
 
+Note that this code can not be run interactively, because, interactive code uses the CompileBuf. 
+
+
 ### Testing
 
 *NOTE* the above code is conceptual. Trying to run this from the interactive prompt,
 will fail, because interactive commands use the &CompileBuf for executing the
-INLINE words, in this case "call".
+INLINE words, in this case "1+" and "call".
 
 If the autorun does not in fact load code, it can be tested with a custom word, which
 when compiled runs safely without messing with the content of &CompileBuf. 
 
 ```
+: Main cr "this_is_main .str ;
+
+"Main ?C CONSTANT mainAddr
+
+: myAutorun cr 9901 print# cr mainAddr ;
+
+"myAutorun ?C NATIVE Sys.EE.SetAutorun
+
 : testAutorun
   NATIVE Sys.EE.GetAutorun
-  &CompileBuf 1+ call cforce
+  &CompileBuf 1+ call call
 ;
+
+(should print 9901, then "this is main")
 ```
 
 However, if the autorun code loads data, it will overwrite the test word "mid sentence", and

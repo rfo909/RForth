@@ -127,8 +127,8 @@
 	
 :Str_SysEEGetAutorun %'Sys.EE.GetAutorun
 :Str_CallingAutorunCode %"Calling_Autorun_code
-:Str_DoingCForceOnAddr %"Doing_cforce_on_addr_
-:Str_AutorunAlreadyCalled %"Autorun_already_called
+:Str_Invoking_main_program_at %"Invoking_main_program_at_addr_
+:Str_AutorunAlreadyCalled %"Autorun_already_called_(or_disabled)
 
 :Autorun
 	&AutorunCalled readb 0 eq &*tryAutorun jmp?
@@ -145,9 +145,9 @@
 		cr &Str_CallingAutorunCode .str
 		a call cpush (b = pointer to code to run after the Autorun)
 		b null eq &*noMain jmp? (if pointer 0 just ignore)
-		cr &Str_DoingCForceOnAddr .str b print
-		;; cforce make the ret statement return to that address instead of Init
-		b cforce 
+		
+		cr &Str_Invoking_main_program_at .str b print
+		b call 
 		ret	
 	:*noPointer
 	:*noMain
@@ -1262,7 +1262,6 @@
 	%'atoi          HEX:0031        BIN_INSTR       %NEXT        ;; 1
 	%'call          HEX:0051        BIN_INSTR       %NEXT        ;; Q
 	%'cellsize      HEX:006B        BIN_INSTR       %NEXT        ;; k
-	%'cforce        HEX:0066        BIN_INSTR       %NEXT        ;; f
 	%'clear         HEX:0077        BIN_INSTR       %NEXT        ;; w
 	%'cpush         HEX:004F        BIN_INSTR       %NEXT        ;; O
 	%'cset          HEX:0034        BIN_INSTR       %NEXT        ;; 4

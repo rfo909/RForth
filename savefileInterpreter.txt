@@ -308,10 +308,6 @@
 		self.cpush(self.pop)
 	}
 	
-	self._f = Lambda { # cforce (addr -- ) modify stacks, so "ret" returns to given addr
-		# not implemented here, only in Arduino
-	}
-	
 	self._3=Lambda{ # cget ( index -- value ) get value by index from call stack, indexed from call frame base
 		#println("PC=" + self.PC.hex(4))
 		index=self.pop
