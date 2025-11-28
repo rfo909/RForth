@@ -3,7 +3,9 @@
 : zzz (ms) NATIVE Sys.Delay ;
 : pw (val pin -- ) NATIVE Pin.WriteDigital ;
 
-: Main 13 pOut
+(a plain blink)
+
+: Main 13 pOut 
   BEGIN
   1 13 pw
   200 zzz
@@ -18,6 +20,15 @@
 
 : save 64 0 0x50 NATIVE I2C.EE.save ;
 : load 64 0 0x50 NATIVE I2C.EE.load ;
+
+(note: load is ok to undo recent changes
+ as long as those don't rewrite the load word 
+ itself!
+)
+
+: noAutorun NATIVE Sys.EE.ClearAutorun ;
+
+
 
 save 
 
