@@ -580,8 +580,8 @@ but which terminates when we press Enter (or some other key in a raw terminal).
 : counter 0 => i BEGIN i print# cr i 1+ => i 1000 NATIVE Sys.Delay key not AGAIN? ;
 ```
 
-2025-11-16 save/load heap to EEPROM
------------------------------------
+2025-11-16 save/load heap to external EEPROM
+--------------------------------------------
 Created two NATIVE commands, which save and load the data from &PROTECT tag to HERE 
 onto the EEPROM. The parameters for both are
 
@@ -596,7 +596,7 @@ ex
 
 Note that if EEPROM page size is unknown, it is always safe using a small power of 2, like 8, 16 or 32, 
 as long as loading uses the same as save. Shorter than 8 is not possible, because the first page
-contains status data spanning 6 bytes
+contains status data spanning 6 bytes.
 
 2025-11-16 onboard EEPROM
 -------------------------
@@ -610,7 +610,9 @@ when the code is run later.
 2025-11-28 autorun
 ------------------
 Added NATIVE commands for creating and using a piece of code that is supposed to
-run as the microcontroller is started. This also exists in the onboard EEPROM.
+run as the microcontroller is started. It is stored in the onboard EEPROM. The autorun
+code MUST return an address for the "main" word to call after the autorun, which
+is typically used to load a snapshot from external EEPROM or some other device. 
 
 ```
 (set up autorun)
@@ -628,8 +630,8 @@ run as the microcontroller is started. This also exists in the onboard EEPROM.
 In order for the autorun word to return the address of the word Main, we need to define
 a constant, since autorun code can not contain strings nor call other (user created) words. 
 
-The reason is that both strings and other words will not be present when
-running the autorun code in a newly initiated environment.
+The reason is that strings compiled to the heap as well as other words will not be present when
+running the autorun code immediately after power-on.
 
 The ?C word returns the call address for the word given as string. The Sys.EE.SetAutorun command
 copies the code for the "autorun" word into the onboard EEPROM, utilizing
@@ -637,7 +639,7 @@ the fact that all code segments have a length byte at index -1.
 
 The "autorun" code loads a heap image, then returns the address of the "Main" word, 
 via the constant. When autorun is compiled, the constant is inlined as a literal, and
-not as a lookup.  
+not as a lookup.
 
 ### Execution
 
@@ -686,20 +688,28 @@ when compiled runs safely without messing with the content of &CompileBuf.
 However, if the autorun code loads data, it will overwrite the test word "mid sentence", and
 fail.
 
-### New code
+### Cancel autorun
 
 When using autorun to load code, every time the microcontroller is given power, it performs
 this. If we want to create a new application, we want to first reset it in a way that
 does not load anything. 
 
-The simplest way to do that is to invalidate the header of the autorun code
-
+There are two ways of doing this. First, if the main loop can be stopped, we may then proceed
+by invalidating the header of the autorun code in the onboard EEPROM, followed by a reset:
 ```
 NATIVE Sys.EE.ClearAutorun
 ```
 
-Now when resetting the device, it runs a default autorun code which just returns 
-value 0, which means, no "main" word. 
+When resetting the device, it now runs a default autorun code which just returns 
+value 0, which means, no "main" word, and so consumes no heap memory.
+
+### Hard reset of autorun
+
+If the main word can not be stopped via serial terminal, we do a hard block of the
+autoload by connecting the digital pins 2 and 4 with a short piece of wire. The
+C-code, on start, if it decides those are connected, sets a flag that prevents
+the ACode.txt init-code from calling the autorun code.
+ 
 
 
 References

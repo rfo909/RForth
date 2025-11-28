@@ -67,12 +67,7 @@ void setup() {
   Wire.begin();
   Serial.println();
   Serial.println(F("RFOrth - an interactive Forth-like language"));
-  Serial.println(F("For: Arduino Nano Every"));
-  Serial.println(F("Copyright (C) 2025-  Roar Foshaug"));
-  Serial.println();
   Serial.println(F("This program comes with ABSOLUTELY NO WARRANTY."));
-  Serial.println(F("This is free software, and you are welcome to redistribute it"));
-  Serial.println(F("under certain conditions; see the LICENSE file."));
   Serial.println();
 
   delay(100);
@@ -82,10 +77,12 @@ void setup() {
   populateRAM();
   initTimers();
 
-  Serial.println(F("If pins 2 and 4 are connected, block autorun"));
+  Serial.println(F("D2 and D4 connected?"));
   if (blockAutorun()) {
-    Serial.println(F("*** Blocking autorun ***"));    
+    Serial.println(F("  YES, blocking autorun!"));    
     writeByte(autorunDisabled, 1);
+  } else {
+    Serial.println(F("  NO, autorun enabled."));
   }
 
   Serial.print(F("(Ready) HERE="));
@@ -1189,7 +1186,7 @@ void doNatEEPromLoad (bool verifyOnly) {
   Word pageSize=pop();
 
   // first page contains length and the protect tag
-  Serial.print(F("Reading status page at 0x"));
+  //Serial.print(F("Reading status page at 0x"));
   Serial.println(pageSize*currPage,16);
   Wire.beginTransmission((byte) addr);
   i2c_sendWord(pageSize * currPage); 
@@ -1213,8 +1210,8 @@ void doNatEEPromLoad (bool verifyOnly) {
   // read pages
   currPage++;
   for (Word pagePos=heapSaveStart; pagePos<HERE; pagePos+=pageSize) {
-    Serial.print(F("Loading heap to EEPROM page at 0x"));
-    Serial.println(pageSize*currPage,16);
+    //Serial.print(F("Loading heap to EEPROM page at 0x"));
+    //Serial.println(pageSize*currPage,16);
 
     Wire.beginTransmission((byte) addr);
     i2c_sendWord(pageSize * currPage);

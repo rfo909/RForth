@@ -127,7 +127,7 @@
 	
 :Str_SysEEGetAutorun %'Sys.EE.GetAutorun
 :Str_CallingAutorunCode %"Calling_Autorun_code
-:Str_Invoking_main_program_at %"Invoking_main_program_at_addr_
+:Str_CallMainWord %"Call_main_word_
 :Str_AutorunDisabled %"Autorun_disabled
 
 :Autorun
@@ -137,7 +137,7 @@
 	
 	:*tryAutorun
 	
-	1 &AutorunDisabled writeb 
+	1 &AutorunDisabled writeb (prevent multiple attempts at autorun, following errors)
 	
 	&Str_SysEEGetAutorun nativec native
 	cpush (a=code pointer)
@@ -146,7 +146,7 @@
 		a call cpush (b = pointer to code to run after the Autorun)
 		b null eq &*noMain jmp? (if pointer 0 just ignore)
 		
-		cr &Str_Invoking_main_program_at .str b print
+		cr &Str_CallMainWord .str b print
 		b call 
 		ret	
 	:*noPointer
