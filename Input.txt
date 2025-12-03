@@ -1,0 +1,48 @@
+(
+Letting #buf indicate a
+static buffer that has the
+length byte set to the size
+of the buffer
+)
+
+: fillSpaces (#buf) 
+  => buf
+  buf readb 1 - => pos
+  BEGIN 
+    0x20 buf pos + 1+ writeb
+    pos 1 - => pos
+    pos AGAIN? ;
+
+: CRLF? (ch) dup 13 == 
+  swap 10 == || ;
+  
+: readLine (#buf)
+  dup fillSpaces 
+  dup readb => len
+  => buf 0 => pos
+  0 => c (define before loop)
+  BEGIN
+    readc => c
+    c CRLF?
+      pos buf readb >= || 
+      IF ret THEN
+    c buf pos + 1+ writeb
+    pos 1+ => pos  
+    1 AGAIN?
+;
+
+
+(
+Testing
+=======
+
+HERE 32 allot CONSTANT buf
+31 buf writeb
+buf readLine
+  <enter line>
+buf .str
+)
+
+
+#END
+

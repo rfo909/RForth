@@ -1,0 +1,25 @@
+
+: save 64 0 0x50 NATIVE I2C.EE.save ;
+: load 64 0 0x50 NATIVE I2C.EE.load ;
+
+(note: load is ok to undo recent changes
+ as long as those don't rewrite the load word 
+ itself!
+)
+
+: clearAutorun NATIVE Sys.EE.ClearAutorun ;
+
+save 
+
+(set up autorun to just load)
+
+: autorun 
+  64 0 0x50 NATIVE I2C.EE.load 
+  0 (no Main word)
+;
+
+"autorun ?C NATIVE Sys.EE.SetAutorun 
+
+(purge autorun code from heap)
+
+load

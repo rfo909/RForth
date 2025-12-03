@@ -79,10 +79,10 @@ void setup() {
 
   Serial.println(F("D2 and D4 connected?"));
   if (blockAutorun()) {
-    Serial.println(F("  YES, blocking autorun!"));    
+    Serial.println(F("  YES: blocking autorun!"));    
     writeByte(autorunDisabled, 1);
   } else {
-    Serial.println(F("  NO, autorun enabled."));
+    Serial.println(F("  NO: autorun enabled."));
   }
 
   Serial.print(F("(Ready) HERE="));
