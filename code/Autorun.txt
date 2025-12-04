@@ -1,6 +1,8 @@
 
-: save 64 0 0x50 NATIVE I2C.EE.save ;
-: load 64 0 0x50 NATIVE I2C.EE.load ;
+32768 4096 - CONSTANT i2c.ee.heap
+
+: save 64 i2c.ee.heap 0x50 NATIVE I2C.EE.save ;
+: load 64 i2c.ee.heap 0x50 NATIVE I2C.EE.load ;
 
 (note: load is ok to undo recent changes
  as long as those don't rewrite the load word 
@@ -14,7 +16,7 @@ save
 (set up autorun to just load)
 
 : autorun 
-  64 0 0x50 NATIVE I2C.EE.load 
+  64 i2c.ee.heap 0x50 NATIVE I2C.EE.load 
   0 (no Main word)
 ;
 
