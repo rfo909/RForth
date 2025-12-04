@@ -23,10 +23,13 @@
 	
 # Send
 # --
-	P(1,Input("File name").get) => fname
-	file=Dir.file(fname)
+	Sys.savefile.dir.sub("code") => codeDir
+	{codeDir.files->f println(f.name)}
+	
+	Input("File name").get => fname
+	file=codeDir.file(fname)
 
-	#terminate loop waiting for key
+	#terminate possible current loop waiting for key 
 	SendLine(" ")
 	
 	file.read->line
