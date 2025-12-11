@@ -1,5 +1,6 @@
 2025-08 v3
 
+
 RTC for sleep and wake
 Movement sensor PIR for sleep and wake (Christmas decorations)
 	MOSFET powered by movement sensor, boots MCU
@@ -8,11 +9,23 @@ Movement sensor PIR for sleep and wake (Christmas decorations)
 	After a certain while since last PIR signal, the MCU dims the decoration then writes LOW to the second MOSFET
 	This halts the MCU and the decoration. 	
 
-2025-11
-	- put length of dictionary names in high-byte of status word
-	- create disassembler in C that now can look up word names from the code pointer-pointer 
-	- and knows length from offset -1 of code segments
+
+2025-12
+	- change dictionary entry (DE) so it points to string representation instead of inlining it
+	- internalize all words (to lower case) on the heap, so that dict lookup becomes pointer equality instead of streq call
+	- create FIND to look up a word from string representation
 	
+	- create code editor as list of words + newlines + indents, with freelists (words = 4,8,16,32 minus 2 bytes for linked list)
+	- move saving dump of heap to address 32k - 4k (single image)
+	- use rest for code editor
+
+	- create interpreter in Java for testing and desktop use
+	
+	- create disassembler in C after changing DE format
+	  
+	- implement lists  [ ... ]
+	- implement ." ... " 
+
 	- create memory dump in C for listing out content complete address space	
 
 	- alnum displays i2c

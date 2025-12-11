@@ -1,0 +1,42 @@
+(Editor content is linked list of references to words)
+
+(Test using a global list of symbols)
+
+0 VARIABLE SymbolFirst
+
+: Find ( "&NextWord" -- addr|null )
+  SymbolFirst => ptr
+  0 => addr
+  BEGIN
+    ptr CELL+ &NextWord streq IF
+       ptr CELL+ => addr
+    ELSE 
+       ptr @ => ptr
+    THEN
+    ptr 0 != addr 0 == &&
+    AGAIN?
+  addr
+;
+
+: Add ( "&NextWord" -- addr )
+  Find dup IF ret THEN drop
+
+  &NextWord BufCreateCopy => ptr
+  2 CELLS allot => cons
+  SymbolFirst cons !
+  ptr cons CELL+ !
+  cons SymbolFirst !
+  ptr
+;
+
+(Special pointer values)
+
+
+
+0 CONSTANT EDIT_EOF
+1 CONSTANT EDIT_NEWLINE
+2 CONSTANT EDIT_COLON
+
+0 VARIABLE EDITOR_FIRST_SYMB
+0 VARIABLE EDITOR_CURR
+
