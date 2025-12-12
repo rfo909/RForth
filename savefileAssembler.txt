@@ -168,6 +168,26 @@
 		report(name,code,num,"0x"+(num.hex))
 /NDoc
 
+
+# Generate instruction name lookup table in C
+# --
+	array=Std.Array(Std.Data.yes(128,"<undefined>"))
+	
+	NDoc->row
+		pos=row.get(2)
+		name=row.get(0)
+		array.set(pos,name)
+	|
+	println("const char *iNames[] = {")
+	i=0
+	array.list->name
+		hex="0x" + i.hex
+		println("  /* " + i + " " + hex +  " */ " + '"' + name + '",')
+		i=i+1
+	|
+	println("};")
+/DisNames
+
 # Generate numeric values for instructions in C
 # --
 	NDoc->row

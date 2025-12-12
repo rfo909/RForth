@@ -680,6 +680,18 @@ autoload by connecting the digital pins 2 and 4 with a short piece of wire. The
 C-code, on start, if it decides those are connected, sets a flag that prevents
 the ACode.txt init-code from calling the autorun code.
  
+ 
+2025-12-12 disassembler
+-----------------------
+Created a disassembler for the Arduino, as the autorun stuff is incompatible with 
+the CFT interpreter.
+
+```
+"CompiledWord ?C NATIVE Sys.Dis
+```
+
+Have not implemented reference lookups, because the Dictionary Entry format needs to
+change, in order to map a code pointer-pointer (into DE) to the word string.
 
 
 References

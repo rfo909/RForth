@@ -1,6 +1,22 @@
 2025-08 v3
 
 
+Bugs:
+   The compile stack must be cleaned up when all values are zeroes
+   (It overflows with 3x IF THEN in a word)
+   
+
+ret?
+   Extremely useful in loops, for now implement as
+   
+: ret? IMMEDIATE
+  0xC2 EmitByte   (numeric 2 = offset)
+  0x36 EmitByte   (rfwd?)
+  0x52 EmitByte   (ret)
+;
+
+
+
 RTC for sleep and wake
 Movement sensor PIR for sleep and wake (Christmas decorations)
 	MOSFET powered by movement sensor, boots MCU

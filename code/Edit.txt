@@ -1,25 +1,37 @@
 (Editor content is linked list of references to words)
 
+: ret? IMMEDIATE
+  0xC2 EmitByte   (numeric 2 = offset)
+  0x36 EmitByte   (rfwd?)
+  0x52 EmitByte   (ret)
+;
+
+
 (Test using a global list of symbols)
 
 0 VARIABLE SymbolFirst
 
 : Find ( "&NextWord" -- addr|null )
+
   SymbolFirst => ptr
-  0 => addr
+  
   BEGIN
-    ptr CELL+ &NextWord streq IF
-       ptr CELL+ => addr
-    ELSE 
-       ptr @ => ptr
-    THEN
-    ptr 0 != addr 0 == &&
-    AGAIN?
-  addr
+    (if ptr==0 return 0)
+    0 ptr not ret? drop
+
+    (if match return str-pointer)
+    ptr CELL+ @ => s
+    s dup &NextWord streq 
+    	ret? drop
+  
+    ptr @ => ptr (ptr=ptr.next)
+    1 AGAIN?
 ;
 
+
 : Add ( "&NextWord" -- addr )
-  Find dup IF ret THEN drop
+  (if Find != 0 return that value)
+  Find dup ret? drop
 
   &NextWord BufCreateCopy => ptr
   2 CELLS allot => cons
@@ -28,6 +40,16 @@
   cons SymbolFirst !
   ptr
 ;
+
+: InputLoop
+  BEGIN
+     GetNextWord 
+     &NextWord "q streq ret?
+     cr Add print
+  1 AGAIN?
+;
+
+#END
 
 (Special pointer values)
 

@@ -783,7 +783,9 @@ typedef struct {
 const NativeFunction nativeFunctions[]={
   {"?",           &natList,                 "( -- ) show list of native functions"},
 
-  {"Sys.Free",    &natSysFree,              "(--) displays amount of free memory"},
+  {"Sys.Dis",     &natSysDis,               "(addr--) disassemble word"},
+
+  {"Sys.Free",    &natSysFree,              "(--) displays amount of free memory"},  
   {"Sys.Delay",   &natSysDelay,             "(ms -- ) sleep a number of millis"},
   {"Sys.DelayUs",   &natSysDelayUs,         "(us -- ) sleep a number of microseconds"},
   {"Sys.TimerSet",  &natSysTimerSet,        "(timerId --) initiate timer to current time"},
@@ -880,6 +882,29 @@ void natList() {
 // -------------------------------
 // Sys.*
 // -------------------------------
+
+void natSysDis () {
+  Word addr=pop();
+  Word len=readByte(addr-1);
+  Serial.print("len=");
+  Serial.println(len);
+
+  for (Word i=0; i<len; i++) {
+    Serial.print(i);
+    Serial.print(" - ");
+    Word byte=readByte(addr+i);
+    if (byte >= 0xC0) {
+      Serial.print(byte,16);
+    } else {
+      Serial.print(byte,16);
+      Serial.print(" ");
+      Serial.print(iNames[byte]);
+    }
+    Serial.println();
+  }
+}
+
+
 
 void natSysFree () {
   Word here=HERE-firmwareProtectTag; // actual index in heap
