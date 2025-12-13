@@ -889,15 +889,27 @@ void natSysDis () {
   Serial.print("len=");
   Serial.println(len);
 
+  Word currVal=0;
+
   for (Word i=0; i<len; i++) {
     Serial.print(i);
     Serial.print(" - ");
     Word byte=readByte(addr+i);
-    if (byte >= 0xC0) {
-      Serial.print(byte,16);
+    Serial.print(byte,16);
+    if (byte & 0x80) {
+      // numeric literal
+      if (byte & 0x40) {
+        Serial.print(" ");
+        currVal = (byte & 0x3F);
+      } else {
+        Serial.print(" -> ");
+        currVal = currVal*64 + (byte & 0x3F);
+      }
+      Serial.print(currVal);
     } else {
-      Serial.print(byte,16);
+      // instruction
       Serial.print(" ");
+
       Serial.print(iNames[byte]);
     }
     Serial.println();

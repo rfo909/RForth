@@ -16,7 +16,8 @@
 	#println(line)
 	line.getBytes("ISO-8859-1").getList(0)->byte
 		file.write(byte)
-		Sys.sleep(50)
+		Sys.sleep(10)
+		if (byte==32 || byte==10) Sys.sleep(40)
 	|
 	file.write(Newline)
 /SendLine

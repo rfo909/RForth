@@ -1118,10 +1118,11 @@
 		a native
 		ret
 
-:immediate
+:IMMEDIATE
 	;; change the CompilingWordMode to immediate
 	1 &CompilingWordMode writeb
-	ret		
+	ret
+	
 	
 :Str_Separator		%'--
 :Str_Space		%"_
@@ -1375,7 +1376,7 @@
 	%':			%COLON		BIN_NORMAL	%NEXT
 	%'=>			%LVSet		BIN_IMMEDIATE	%NEXT
 	HEX:013B		%SEMICOLON	BIN_IMMEDIATE	%NEXT
-	%'IMMEDIATE		%immediate	BIN_IMMEDIATE	w0	;; <-- w0 = terminating the linked list
+	%'IMMEDIATE		%IMMEDIATE	BIN_IMMEDIATE	w0	;; <-- w0 = terminating the linked list
 :DictionaryEnd
 
 :PROTECT		;; protects data before this point against writes - reads are allowed
