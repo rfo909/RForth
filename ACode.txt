@@ -1117,7 +1117,16 @@
 	:*interpreting
 		a native
 		ret
-
+		
+:ret?
+	(marked as immediate in dictionary !!)
+	(if not condition advance past the ret instruction)
+	0x69 &EmitByte call   (not)
+	0xC2 &EmitByte call   (numeric 2 = offset)
+	0x36 &EmitByte call   (rfwd?)
+	0x52 &EmitByte call   (ret)	
+	ret
+	
 :IMMEDIATE
 	;; change the CompilingWordMode to immediate
 	1 &CompilingWordMode writeb
@@ -1376,6 +1385,7 @@
 	%':			%COLON		BIN_NORMAL	%NEXT
 	%'=>			%LVSet		BIN_IMMEDIATE	%NEXT
 	HEX:013B		%SEMICOLON	BIN_IMMEDIATE	%NEXT
+	%'ret?			%ret?		BIN_IMMEDIATE	%NEXT
 	%'IMMEDIATE		%IMMEDIATE	BIN_IMMEDIATE	w0	;; <-- w0 = terminating the linked list
 :DictionaryEnd
 

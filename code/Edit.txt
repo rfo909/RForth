@@ -1,13 +1,6 @@
 (Editor content is linked list of references to words)
 
-: ret? IMMEDIATE
-  0xC2 EmitByte   (numeric 2 = offset)
-  0x36 EmitByte   (rfwd?)
-  0x52 EmitByte   (ret)
-;
-
 : DIS GetNextWord &NextWord ?C NATIVE Sys.Dis ;
-
 
 (Test using a global list of symbols)
 
@@ -22,11 +15,14 @@
     0 ptr not ret? drop
 
     (if match return str-pointer)
-    ptr CELL+ @ => s
-    s dup &NextWord streq 
-    	ret? drop
+    ptr CELL+ @ 
+    dup 
+      &NextWord streq
+    	ret? 
+      drop
   
-    ptr @ => ptr (ptr=ptr.next)
+    (ptr=ptr.next)
+    ptr @ => ptr
     1 AGAIN?
 ;
 
@@ -45,10 +41,15 @@
 
 : InputLoop
   BEGIN
+     cr "Enter_line_ .str
      GetNextWord 
-     &NextWord "q streq ret?
+     &NextWord "quit streq .s ret?
      cr Add print
   1 AGAIN?
+;
+
+: Main
+  InputLoop cr "Terminated .str
 ;
 
 #END

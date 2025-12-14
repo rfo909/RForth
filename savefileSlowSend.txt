@@ -14,10 +14,16 @@
 	P(1) => line
 	file=RawFile("/dev/ttyACM0")
 	#println(line)
+	ws=false
 	line.getBytes("ISO-8859-1").getList(0)->byte
 		file.write(byte)
-		Sys.sleep(10)
-		if (byte==32 || byte==10) Sys.sleep(40)
+		if (byte==32) {
+			if (!ws) Sys.sleep(50)
+			ws=true
+		} else {
+			ws=false
+			Sys.sleep(10)
+		}
 	|
 	file.write(Newline)
 /SendLine
@@ -37,7 +43,7 @@
 		break(line.startsWith("#END"))
 		reject(line.trim.startsWith("#"))
 		println(fname,"|",line)
-		SendLine(line)
+		SendLine(" " + line)
 /SendFile
 
 

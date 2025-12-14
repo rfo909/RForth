@@ -41,6 +41,7 @@ IN                  IN <DictName> <WordName> -- call word in custom Dict
 =>                  => <name> -- create or update local variable inside colon def
 .W                  .W <word> -- prints address of Dictionary Entry for word (in hex)
 ?C                  (str -- addr) 'str ?C -- returns address of code for word (on stack)
+ret?                (bool -- ) conditional return
 BufReset            (bufPtr -- ) Write a 0 in the first byte (length)
 BufAdd              (byte bufPtr -- ) Append byte to buf
 BufAddC             (cell bufPtr -- ) Append two byte cell value to buffer
