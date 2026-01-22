@@ -1,0 +1,101 @@
+(
+Creating torch light from an RGB led
+
+Uses only red and green, and noted that the green part is much stronger
+than the red. Using PWM pins for controlling the individual colors
+
+)
+
+3 CONSTANT rPin
+5 CONSTANT gPin
+6 CONSTANT bPin
+
+: pOut NATIVE Pin.ModeOut ;
+
+: init rPin pOut gPin pOut bPin pOut ;
+
+: w NATIVE Pin.WriteAnalog ;
+
+: rgb bPin w gPin w rPin w ;
+
+(--- examples ---)
+: yellow 80 10 0 rgb ;
+: bright-orange 80 5 0 rgb ;
+: dark-orange 80 3 0 rgb ;
+
+
+: z NATIVE Sys.Delay ;
+
+: off 0 0 0 rgb ;
+
+: test
+  init
+  255 0 0 rgb 300 z
+  0 255 0 rgb 300 z
+  0 0 255 rgb 300 z
+  off
+  600 z
+;
+
+: mod (x y -- modulo)
+  => y => x
+  x x y / y * -
+ ;
+
+101 VARIABLE _rnd
+
+: random (n -- 0->n)
+  _rnd @ 1+ => x
+  x 1003 > IF 101 => x THEN
+  x _rnd !
+  31000 x mod swap mod
+;
+
+2019 VARIABLE aCounter
+
+: updateCounters
+	aCounter @ 13 random + => a
+	a 9501 > IF 2019 => a THEN
+	a aCounter !
+;
+
+
+: flicker
+  aCounter @ => a
+
+  (** Without pre-declaring variables, the below calculation goes wild ... BUG)
+  0 => red
+  0 => grn
+  0 => fact
+ 
+  a 33 / 
+    a 18 mod 2 + / 20 + => red
+
+  8 random 5 + => fact
+  
+  red fact / => grn
+
+  (
+  "red:_ .str red print# "_green:_ .str grn print# cr
+  )
+  
+  red grn 0 rgb
+  80 random 20 + z
+;
+
+: t
+  => red
+  red 5 / => grn
+  "green_ .str grn print#
+;
+
+: main
+  test
+  BEGIN
+  	updateCounters
+  	flicker
+  key not AGAIN?
+  off
+  "Done .str cr
+;
+

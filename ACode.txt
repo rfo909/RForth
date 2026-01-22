@@ -1413,10 +1413,15 @@
 :CompilingWord	b0 w0 w0 w0 w0 w0 w0 w0 w0		;; 16 characters stringbuffer
 :CompilingWordEnd
 
-:CompileBuf	w0 w0 w0 w0 w0 w0 w0 w0 		;; + up to 63 code bytes (1 byte length)
+:CompileBuf	w0 w0 w0 w0 w0 w0 w0 w0 		;; + up to 127 code bytes (1 byte length)
 		w0 w0 w0 w0 w0 w0 w0 w0			;; 
 		w0 w0 w0 w0 w0 w0 w0 w0			;; For colon compiler
 		w0 w0 w0 w0 w0 w0 w0 w0			;; and as scratch buffer at runtime
+
+		w0 w0 w0 w0 w0 w0 w0 w0			;; 
+		w0 w0 w0 w0 w0 w0 w0 w0			;; 
+		w0 w0 w0 w0 w0 w0 w0 w0			;; 
+		w0 w0 w0 w0 w0 w0 w0 w0			;; 
 			
 :CompileBufEnd
 

@@ -694,6 +694,10 @@ Have not implemented reference lookups, because the Dictionary Entry format need
 change, in order to map a code pointer-pointer (into DE) to the word string.
 
 
+2026-01-22 CompileBuf 128 bytes
+-------------------------------
+Needed support for bigger word code.
+
 References
 ----------
 
