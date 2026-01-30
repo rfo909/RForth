@@ -124,13 +124,21 @@
 	
 	&REPL jmp
 	
-	
+
+:Str_OnSimulator %"Simulator:_no_autorun
 :Str_SysEEGetAutorun %'Sys.EE.GetAutorun
 :Str_CallingAutorunCode %"Calling_Autorun_code
 :Str_CallMainWord %"Call_main_word_
 :Str_AutorunDisabled %"Autorun_disabled
 
 :Autorun
+	&OnSimulator readb not &*notSimulator jmp?
+		(on simulator - abandon autorun)
+		cr &Str_OnSimulator .str cr
+		ret
+
+	:*notSimulator
+
 	&AutorunDisabled readb 0 eq &*tryAutorun jmp?
 		cr &Str_AutorunDisabled .str
 		ret
@@ -1179,6 +1187,7 @@
 ;; look up data addresses after the PROTECT tag
 
 :GetAddrDictionaryHead &DictionaryHead ret
+:GetAddrOnSimulator &OnSimulator ret
 :GetAddrDebugFlag &DebugFlag ret
 :GetAddrCompileBuf &CompileBuf ret
 :GetAddrCompileBufEnd &CompileBufEnd ret
@@ -1224,6 +1233,7 @@
 
 
 :DATA
+
 
 ;; The dictionary entry has the following format:
 ;;
@@ -1357,6 +1367,7 @@
 	;; System addresses as words
 
 	%'&DictionaryHead	%GetAddrDictionaryHead		BIN_NORMAL	%NEXT
+	%'&OnSimulator		%GetAddrOnSimulator			BIN_NORMAL		%NEXT
 	%'&DebugFlag 		%GetAddrDebugFlag		BIN_NORMAL	%NEXT
 	%'&CompileBuf 		%GetAddrCompileBuf		BIN_NORMAL	%NEXT
 	%'&CompileBufEnd	%GetAddrCompileBufEnd		BIN_NORMAL	%NEXT
@@ -1391,9 +1402,21 @@
 
 :PROTECT		;; protects data before this point against writes - reads are allowed
 
+
+;; We need to differentiate between running in the simulator and
+;; running on the microcontroller. The default value is set to 0
+;; which means "real hardware", so it falls on the simulator to
+;; set it to 1 before executing code.
+
+:OnSimulator b0
+
+
 :DebugFlag		b0
 
 :AutorunDisabled	b0
+
+
+
 
 ;;; ---------------------------------------------------------------------------------
 ;;; buffers used to process input and compile code - available for scratch use
@@ -1413,7 +1436,8 @@
 :CompilingWord	b0 w0 w0 w0 w0 w0 w0 w0 w0		;; 16 characters stringbuffer
 :CompilingWordEnd
 
-:CompileBuf	w0 w0 w0 w0 w0 w0 w0 w0 		;; + up to 127 code bytes (1 byte length)
+:CompileBuf	
+		w0 w0 w0 w0 w0 w0 w0 w0 		;; + up to 127 code bytes (1 byte length)
 		w0 w0 w0 w0 w0 w0 w0 w0			;; 
 		w0 w0 w0 w0 w0 w0 w0 w0			;; For colon compiler
 		w0 w0 w0 w0 w0 w0 w0 w0			;; and as scratch buffer at runtime

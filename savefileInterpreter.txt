@@ -31,6 +31,13 @@
 
 	self.PC=0
 	self.haltFlag=false
+
+
+	# --- OnSimulator byte
+
+	println("Setting OnSimulator byte to 1")
+	self.memory.writeByte(tagLookup.get("OnSimulator"),1)
+
 	
 	# --- output 
 
@@ -836,7 +843,6 @@
 	tags=dict.tags
 	tagListSorted=dict.tagListSorted
 	metaInfo=dict.metaInfo
-	
 	
 	
 	runUntilCount=-1		# Sys.currentTimeMillis
