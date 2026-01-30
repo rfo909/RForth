@@ -4,6 +4,8 @@ Creating torch light from an RGB led
 Uses only red and green, and noted that the green part is much stronger
 than the red. Using PWM pins for controlling the individual colors
 
+So a green value of red / 8 gives a good yellow tone
+
 )
 
 3 CONSTANT rPin
@@ -28,15 +30,6 @@ than the red. Using PWM pins for controlling the individual colors
 
 : off 0 0 0 rgb ;
 
-: test
-  init
-  255 0 0 rgb 300 z
-  0 255 0 rgb 300 z
-  0 0 255 rgb 300 z
-  off
-  600 z
-;
-
 : mod (x y -- modulo)
   => y => x
   x x y / y * -
@@ -51,23 +44,9 @@ than the red. Using PWM pins for controlling the individual colors
   31000 x mod swap mod
 ;
 
-2019 VARIABLE aCounter
-
-: updateCounters
-	aCounter @ 13 random + => a
-	a 9501 > IF 2019 => a THEN
-	a aCounter !
-;
-
-
 : flicker
-  aCounter @ => a
-
-  a 33 / 
-    a 18 mod 2 + / 20 + => red
-
-  8 random 5 + => fact
-  
+  30 random 50 + => red
+  5 random 7 + => fact  (bigger factor gives redder light)
   red fact / => grn
 
   (
@@ -78,16 +57,10 @@ than the red. Using PWM pins for controlling the individual colors
   80 random 20 + z
 ;
 
-: t
-  => red
-  red 5 / => grn
-  "green_ .str grn print#
-;
 
 : main
-  test
+  init
   BEGIN
-  	updateCounters
   	flicker
   key not AGAIN?
   off
