@@ -698,6 +698,17 @@ change, in order to map a code pointer-pointer (into DE) to the word string.
 -------------------------------
 Needed support for bigger word code.
 
+
+2025-01-30 &OnSimulator flag
+----------------------------
+In order for the simulator script to work, we needed to prevent :Autorun (ACode) from 
+calling native code that exists only on the microcontroller. The cleanest way was adding
+a global status byte &OnSimulator which defaults to 0. The interpreter sets it to 1 before
+executing code, and the :Autorun code checks it.
+
+Added the &OnSimulator word to the dictionary, as with other constants and buffers.
+
+
 References
 ----------
 

@@ -1,7 +1,7 @@
 Firmware words
 --------------
 
-2025-11-09
+2026-01-30
 
 In addition to the Forth words that are assembly op's from the virtual
 bytecode machine architecture, a number of useful words are made available
@@ -80,6 +80,7 @@ as add or print.
 Status fields
 -------------
 &DictionaryHead              (cell)
+&OnSimulator                 (byte) 0/1 
 &DebugFlag                   (byte) 0/1
 &IsCompiling                 (byte) 0/1
 &CompilingWordMode           (byte) 0=NORMAL 1=IMMEDIATE 2=INSTR 3=CONSTANT
@@ -107,6 +108,11 @@ All buffers as one
 The &CompileBuf, &LVBuf, &NextWord and &CompilingWord can be used as independent buffers, but
 they are located next to each other, and can alternatively be used via the &AllBuffers and &AllBuffersEnd
 addresses.
+
+The &OnSimulator is used to let code decide if it runs on a microcontroller or not. This is mainly
+of interest when doing NATIVE calls. The default value is 0, so the C implementation does not need
+to touch it, leaving the Interpreter script responsible for setting it to 1 before executing code,
+specifically to signal to the ":Autorun" in ACode to back out.
 
 Buffers and strings
 -------------------
