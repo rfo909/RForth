@@ -63,11 +63,6 @@ than the red. Using PWM pins for controlling the individual colors
 : flicker
   aCounter @ => a
 
-  (** Without pre-declaring variables, the below calculation goes wild ... BUG)
-  0 => red
-  0 => grn
-  0 => fact
- 
   a 33 / 
     a 18 mod 2 + / 20 + => red
 

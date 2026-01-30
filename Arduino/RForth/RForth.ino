@@ -922,7 +922,7 @@ void natSysFree () {
   Word here=HERE-firmwareProtectTag; // actual index in heap
   Word used=here;
   Word free=RAM_SIZE-used;
-  int usedPercent=(100*used/RAM_SIZE);
+  int usedPercent=(10*used/RAM_SIZE)*10;
   Serial.print(F("Heap: "));
   Serial.print(RAM_SIZE);
   Serial.println(F(" bytes"));

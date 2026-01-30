@@ -708,6 +708,10 @@ executing code, and the :Autorun code checks it.
 
 Added the &OnSimulator word to the dictionary, as with other constants and buffers.
 
+2025-01-30 Bugfix Local variables
+---------------------------------
+Fixed bug in ACode.txt related to traversing the LVBuf.
+
 
 References
 ----------

@@ -329,7 +329,9 @@
 			streq &*found jmp?
 
 		;; go to next
-		b &LVBuf readb add 1+ b!
+		b 
+			&LVBuf b add readb add 
+			1+ b!
 		a 1+ a!
 
 		;; repeat
@@ -368,7 +370,6 @@
 	0 &CompilingWordMode writeb
 	0 &CompileBuf writeb
 	0 &CompileStack writeb
-	0 &LVBuf writeb
 	ret
 
 :FillZeroes ( buf count )
@@ -917,11 +918,13 @@
 			&*add jmp?
 
 		;; match?
-		&NextWord &LVBuf b add 
+		&NextWord &LVBuf b add
 			streq &*found jmp?
 
 		;; go to next
-		b &LVBuf readb add 1+ b!
+		b 
+			&LVBuf b add readb add 
+			1+ b!
 		a 1+ a!
 
 		;; repeat
@@ -930,7 +933,7 @@
 	:*add
 		(b is at the terminating 0)
 		(WARNING: no boundary check)
-
+		
 		&NextWord
 			&LVBuf b add
 				c 1+ memcpy
@@ -1288,6 +1291,7 @@
 	%'cget          HEX:0033        BIN_INSTR       %NEXT        ;; 3
 	%'cr            HEX:0058        BIN_INSTR       %NEXT        ;; X
 	%'crget         HEX:0041        BIN_INSTR       %NEXT        ;; A
+	%'dcall         HEX:004D        BIN_INSTR       %NEXT        ;; M
 	%'drop          HEX:006A        BIN_INSTR       %NEXT        ;; j
 	%'dup           HEX:006C        BIN_INSTR       %NEXT        ;; l
 	%'dump          HEX:0070        BIN_INSTR       %NEXT        ;; p
