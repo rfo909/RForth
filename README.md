@@ -1,7 +1,7 @@
 RFOrth - a Forth like language
 ==============================
 
-2025-11-09 RFO
+2026-01-30 RFO
 
 ```
 13 CONSTANT Led
@@ -443,7 +443,7 @@ The word "AGAIN?" is a conditional jump back to BEGIN.
 The BEGIN ... AGAIN? currently (October 2025) is the only loop construct, and it does
 not support breaking out of the loop other than supplying false to the AGAIN? word.
 
-There is a way somewhat around this, which is the assembly instruction "ret", which means
+There is a way around this, which is the assembly instruction "ret", which means
 return from current word. Granted, it's not the same as a break, which would imply 
 continuing code after the AGAIN?, but since words should be kept short and do small
 incremental stuff towards an end-goal, doing much after an AGAIN? isn't necessarily
@@ -456,6 +456,18 @@ a good idea.
   ...
   ;
 ```
+
+As this turned out to be a practical way of writing words, I added the system word "ret?" (conditional return). 
+It simplifies the code a little and readability a bit more.
+
+```
+: someWord
+  ...
+  x y == ret?
+  ...
+  ;
+```
+
 
 Extending the compiler
 ----------------------
@@ -502,7 +514,9 @@ HERE as it was when CREATE was invoked. The standard example:
 ```
 
 It works as it should, although the implementation differs a bit from normal
-Forths, because CREATE does in fact not create a dictionary entry. 
+Forths, because CREATE does in fact not create a dictionary entry. It reads the "next word"
+and stores it into &CompilingWord at runtime, for the DODOES (to which a call is generated
+by immediate DOES> word) to pick up.
 
 It just sets some state variables. DOES> is immediate, and generates a little
 bit of code to call another hidden word DODOES, which in turn generates code
@@ -511,6 +525,8 @@ DOES> in the Const word. It invokes the SEMICOLON word, which is responsible for
 creating the dictionary entry.
 
 Fully understanding and implementing DOES> has been great fun!!
+
+And reviewing it some months later, quite complex. But it works!
 
 
 Custom dictionaries
@@ -591,7 +607,7 @@ mistyping when redefining a word, ending up redefining a word in the global dict
 instead. That would be hard to debug!
 
 _Note:_ It is not possible to redefine system words defined on the default global stack,
-as it exists below the PROTECT limit, which means it exists in Flash at runtime. In that
+as those exist below the PROTECT address limit, which means it exists in Flash at runtime. In that
 case a new word will be pushed on top of the dictionary, hiding the old.
 
 ### EMPTY-WORD
