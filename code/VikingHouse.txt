@@ -1,0 +1,71 @@
+(
+The Viking home
+---------------
+This program simulates up to 3 torches with one PWM pin each, and
+one main fire, using two pins, to make it change between orange and
+red by controlling red and green pins of RGB Led. For the torches,
+using RGB led, the output lines are assumed to control red, with
+a resistor from red to green to control the color. Experiments
+show that a green value of red/8 gives a good yellowish tone.
+)
+
+(-- torch pins --)
+3 CONSTANT t1
+5 CONSTANT t2
+6 CONSTANT t3
+
+(-- fire pins --)
+9 CONSTANT fRed
+10 CONSTANT fGreen
+
+: pOut NATIVE Pin.ModeOut ;
+
+: init t1 pOut t2 pOut t3 pOut fRed pOut fGreen pOut ;
+
+: w NATIVE Pin.WriteAnalog ;
+
+: z NATIVE Sys.Delay ;
+
+: mod (x y -- modulo)
+  => y => x
+  x x y / y * -
+ ;
+
+101 VARIABLE _rnd
+
+: random (n -- 0->n)
+  _rnd @ 1+ => x
+  x 1003 > IF 101 => x THEN
+  x _rnd !
+  31000 x mod swap mod
+;
+
+: tvalue 30 random 50 + ;
+
+: delay 20 random 1 + z ;
+
+: flicker
+  (-- torches --)
+  tvalue t1 w delay
+  tvalue t2 w delay
+  tvalue t3 w delay
+  
+  (-- main fire--)
+  20 random 30 + => red
+  5 random 10 + => fact
+  red fact / => green
+  
+  red fRed w
+  green fGreen w
+  delay
+;
+
+
+: main
+  init
+  BEGIN
+  	flicker
+  key not AGAIN?
+  "Done .str cr
+;
+
