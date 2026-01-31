@@ -62,11 +62,6 @@ This code uses 504 bytes of heap memory.
   a b / b * a swap -
 ;
 
-(forward declarations)
-
-EMPTY-WORD Alarm
-EMPTY-WORD Silence
-
 : Alarm?
   (delay the tLow timer by a little,
    to allow for the tHigh to be enabled, if there

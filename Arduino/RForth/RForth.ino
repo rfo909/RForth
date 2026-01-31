@@ -279,7 +279,7 @@ void populateOps() {
   for (int i=0; i<128; i++) {
     ops[i]=0;
   }
-
+  ops[37]=&op_mod;
   ops[38]=&op_and;
   ops[42]=&op_mul;
   ops[43]=&op_add;
@@ -351,6 +351,7 @@ void op_mul () {Word b=pop(); Word a=pop(); push(a*b);}
 void op_add () {Word b=pop(); Word a=pop(); push(a+b);}
 void op_sub () {Word b=pop(); Word a=pop(); push(a-b);}
 void op_div () {Word b=pop(); Word a=pop(); push(a/b);}
+void op_mod () {Word b=pop(); Word a=pop(); push(a%b);}
 void op_PANIC () {setError("PANIC");}
 
 void op_atoi () {Word targetPtr=pop(); Word strPtr=pop(); push(myAtoi(strPtr, targetPtr));}
@@ -922,7 +923,7 @@ void natSysFree () {
   Word here=HERE-firmwareProtectTag; // actual index in heap
   Word used=here;
   Word free=RAM_SIZE-used;
-  int usedPercent=(10*used/RAM_SIZE)*10;
+  long usedPercent=(100*((long)used)/RAM_SIZE);
   Serial.print(F("Heap: "));
   Serial.print(RAM_SIZE);
   Serial.println(F(" bytes"));

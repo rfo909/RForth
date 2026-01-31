@@ -10,13 +10,13 @@ show that a green value of red/8 gives a good yellowish tone.
 )
 
 (-- torch pins --)
-3 CONSTANT t1
-5 CONSTANT t2
-6 CONSTANT t3
+6 CONSTANT t1
+9 CONSTANT t2
+10 CONSTANT t3
 
 (-- fire pins --)
-9 CONSTANT fRed
-10 CONSTANT fGreen
+3 CONSTANT fRed
+5 CONSTANT fGreen
 
 : pOut NATIVE Pin.ModeOut ;
 
@@ -26,18 +26,13 @@ show that a green value of red/8 gives a good yellowish tone.
 
 : z NATIVE Sys.Delay ;
 
-: mod (x y -- modulo)
-  => y => x
-  x x y / y * -
- ;
-
 101 VARIABLE _rnd
 
 : random (n -- 0->n)
   _rnd @ 1+ => x
   x 1003 > IF 101 => x THEN
   x _rnd !
-  31000 x mod swap mod
+  31000 x % swap %
 ;
 
 : tvalue 30 random 50 + ;
@@ -51,8 +46,8 @@ show that a green value of red/8 gives a good yellowish tone.
   tvalue t3 w delay
   
   (-- main fire--)
-  20 random 30 + => red
-  5 random 10 + => fact
+  10 random 50 + => red
+  5 random 15 + => fact
   red fact / => green
   
   red fRed w

@@ -49,8 +49,9 @@
 
 # Main loop
 # --
+	Lib:Header("Enter line, q to stop, f to send file")
 	loop
-		readLine("Enter line, q to stop, f to send file") => str
+		readLine => str
 		if (str=="f") {
 			SendFile
 			continue

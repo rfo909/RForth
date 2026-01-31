@@ -30,18 +30,13 @@ So a green value of red / 8 gives a good yellow tone
 
 : off 0 0 0 rgb ;
 
-: mod (x y -- modulo)
-  => y => x
-  x x y / y * -
- ;
-
 101 VARIABLE _rnd
 
 : random (n -- 0->n)
   _rnd @ 1+ => x
   x 1003 > IF 101 => x THEN
   x _rnd !
-  31000 x mod swap mod
+  31000 x % swap %
 ;
 
 : flicker

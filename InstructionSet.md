@@ -12,6 +12,7 @@
 -        | ( a b -- a-b ) sub
 .str     | print string
 /        | ( a b -- a/b ) div
+%        | ( a b -- a%b ) modulo
 1+       | ( n -- n+1 )
 <        | ( a b -- 0|1 ) lt
 <<       | left shift  ( val n -- val )

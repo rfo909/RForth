@@ -1265,6 +1265,7 @@
 	%'-             HEX:002D        BIN_INSTR       %NEXT        ;; -
 	%'*             HEX:002A        BIN_INSTR       %NEXT        ;; *
 	%'/             HEX:002F        BIN_INSTR       %NEXT        ;; /
+	%'%             HEX:0025        BIN_INSTR       %NEXT        ;; %
 	%'.str          HEX:0043        BIN_INSTR       %NEXT        ;; C
 	%'1+            HEX:0064        BIN_INSTR       %NEXT        ;; d
 	%'<<            HEX:0074        BIN_INSTR       %NEXT        ;; t

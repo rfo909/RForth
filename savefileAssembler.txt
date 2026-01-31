@@ -265,6 +265,7 @@
 	sub		:-
 	mul		:*
 	div		:/
+	mod		:%
 	1+		:d
 
 	;; logical operations
@@ -751,4 +752,21 @@
 
 Compile
 /t
+
+
+# Show available characters for new instructions
+# --
+	allChars=AvailableByteCodes.chars
+	usedChars=InstructionsLookup.keys 
+	allChars -> ch
+		reject(usedChars.contains(ch))
+		print(ch)
+	| 
+	println
+/AvailableInstrChars
+
+AvailableInstrChars
+/aic
+	
+	
 

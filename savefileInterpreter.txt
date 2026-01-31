@@ -214,6 +214,7 @@
 	self.set("_-", Lambda{b=self.pop a=self.pop self.push(a-b)}) # - ( a b -- a-b ) sub
 	self.set("_*", Lambda{b=self.pop a=self.pop self.push(a*b)}) # * ( a b -- a*b ) mul
 	self.set("_/", Lambda{b=self.pop a=self.pop self.push((a/b).i)}) # / ( a b -- a/b ) div
+	self.set("_%", Lambda{b=self.pop a=self.pop self.push((a%b).i)}) # / ( a b -- a/b ) mod
 	self.set("_<", Lambda{b=self.pop a=self.pop value=if(a<b,1,0) self.push(value)}) # < ( a b -- 0|1 ) lt
 	self.set("_=", Lambda{b=self.pop a=self.pop value=if(a==b,1,0) self.push(value)}) # == ( a b -- 0|1 ) eq
 	self.set("_>", Lambda{b=self.pop a=self.pop value=if(a>b,1,0) self.push(value)}) # > ( a b -- 0|1 ) gt

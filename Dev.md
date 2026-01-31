@@ -712,6 +712,9 @@ Added the &OnSimulator word to the dictionary, as with other constants and buffe
 ---------------------------------
 Fixed bug in ACode.txt related to traversing the LVBuf.
 
+2025-01-31 modulo instruction '%' added
+---------------------------------------
+An oversight not having implemented it. Unsigned values only.
 
 References
 ----------
