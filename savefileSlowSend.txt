@@ -27,14 +27,26 @@
 	|
 	file.write(Newline)
 /SendLine
-	
-# Send
+
+
+# Code directory
 # --
-	Sys.savefile.dir.sub("code") => codeDir
-	{codeDir.files->f println(f.name)}
+	Sys.savefile.dir.sub("code")
+/CodeDir
+
+
+# Ask for file
+# --
+	Inner{CodeDir.files->f println(f.name)}
+	Input("File name").get
+//AskForFilename
+
+# Send file
+# --
+	P(1) => fname
 	
-	Input("File name").get => fname
-	file=codeDir.file(fname)
+	if (fname==null) fname = AskForFilename
+	file=CodeDir.file(fname)
 
 	#terminate possible current loop waiting for key 
 	SendLine(" ")
@@ -42,8 +54,15 @@
 	file.read->line
 		break(line.startsWith("#END"))
 		reject(line.trim.startsWith("#"))
+		if (line.trim.startsWith("@@")) {
+			filename=line.trim.after("@@").trim
+			SendFile(filename)
+			continue
+		} 	
 		println(fname,"|",line)
 		SendLine(" " + line)
+	|
+	println(fname,"COMPLETE")
 /SendFile
 
 

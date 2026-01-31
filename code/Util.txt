@@ -1,0 +1,22 @@
+Dict /Random
+/Random DictUse
+
+101 VARIABLE _rnd
+
+: random (n -- 0->n)
+  _rnd @ 1+ => x
+  x 1003 > IF 101 => x THEN
+  x _rnd !
+  31000 x % swap %
+;
+
+DictClear
+
+: random (n -- 0->n-1) IN /Random random ;
+
+# Save to EEPROM and load
+
+: save 64 0 0x50 NATIVE I2C.EE.save ;
+: load 64 0 0x50 NATIVE I2C.EE.load ;
+
+

@@ -1,12 +1,14 @@
-(
-Creating torch light from an RGB led
+#
+# Creating torch light from an RGB led
+#
+# Uses only red and green, and noted that the green part is much stronger
+# than the red. Using PWM pins for controlling the individual colors
+#
+# So a green value of red / 8 gives a good yellow tone
+#
 
-Uses only red and green, and noted that the green part is much stronger
-than the red. Using PWM pins for controlling the individual colors
+@@ Util.txt
 
-So a green value of red / 8 gives a good yellow tone
-
-)
 
 3 CONSTANT rPin
 5 CONSTANT gPin
@@ -29,15 +31,6 @@ So a green value of red / 8 gives a good yellow tone
 : z NATIVE Sys.Delay ;
 
 : off 0 0 0 rgb ;
-
-101 VARIABLE _rnd
-
-: random (n -- 0->n)
-  _rnd @ 1+ => x
-  x 1003 > IF 101 => x THEN
-  x _rnd !
-  31000 x % swap %
-;
 
 : flicker
   30 random 50 + => red

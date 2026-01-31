@@ -1,13 +1,15 @@
-(
-The Viking home
----------------
-This program simulates up to 3 torches with one PWM pin each, and
-one main fire, using two pins, to make it change between orange and
-red by controlling red and green pins of RGB Led. For the torches,
-using RGB led, the output lines are assumed to control red, with
-a resistor from red to green to control the color. Experiments
-show that a green value of red/8 gives a good yellowish tone.
-)
+#
+# The Viking home
+# ---------------
+# This program simulates up to 3 torches with one PWM pin each, and
+# one main fire, using two pins, to make it change between orange and
+# red by controlling red and green pins of RGB Led. For the torches,
+# using RGB led, the output lines are assumed to control red, with
+# a resistor from red to green to control the color. Experiments
+# show that a green value of red/8 gives a good yellowish tone.
+# 
+
+@@ Util.txt
 
 (-- torch pins --)
 6 CONSTANT t1
@@ -27,13 +29,6 @@ show that a green value of red/8 gives a good yellowish tone.
 : z NATIVE Sys.Delay ;
 
 101 VARIABLE _rnd
-
-: random (n -- 0->n)
-  _rnd @ 1+ => x
-  x 1003 > IF 101 => x THEN
-  x _rnd !
-  31000 x % swap %
-;
 
 : tvalue 30 random 50 + ;
 
