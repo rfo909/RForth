@@ -9,14 +9,20 @@
 	10
 /Newline
 
+# Serial device
+# --
+	RawFile("/dev/ttyACM0")
+/Device
+
 # Send line
 # --
-	P(1) => line
-	file=RawFile("/dev/ttyACM0")
+	P(1) as RawFile => device
+	P(2) as String => line
+	
 	#println(line)
 	ws=false
 	line.getBytes("ISO-8859-1").getList(0)->byte
-		file.write(byte)
+		device.write(byte)
 		if (byte==32) {
 			if (!ws) Sys.sleep(50)
 			ws=true
@@ -25,7 +31,7 @@
 			Sys.sleep(10)
 		}
 	|
-	file.write(Newline)
+	device.write(Newline)
 /SendLine
 
 
@@ -43,8 +49,9 @@
 
 # Send file
 # --
-	P(1) => fname
-	
+	P(1) as RawFile => device
+	P(2) as String? => fname
+		
 	if (fname==null) fname = AskForFilename
 	file=CodeDir.file(fname)
 
@@ -56,11 +63,11 @@
 		reject(line.trim.startsWith("#"))
 		if (line.trim.startsWith("@@")) {
 			filename=line.trim.after("@@").trim
-			SendFile(filename)
+			SendFile(device,filename)
 			continue
 		} 	
 		println(fname,"|",line)
-		SendLine(" " + line)
+		SendLine(device," " + line)
 	|
 	println(fname,"COMPLETE")
 /SendFile
@@ -68,15 +75,19 @@
 
 # Main loop
 # --
+	device=Device
+	
 	Lib:Header("Enter line, q to stop, f to send file")
 	loop
 		readLine => str
 		if (str=="f") {
-			SendFile
+			SendFile(device)
 			continue
 		}
 		break(str=="q")
-		SendLine(str)
+		SendLine(device,str)
 		LogFile.append(str)
+	|
+	device.close
 		
 /Main
