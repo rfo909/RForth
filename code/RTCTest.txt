@@ -1,0 +1,31 @@
+(
+Model number DS3231
+-------------------
+My model does not have alarm pins, but it has an onboard battery / cap (WHICH DOESN'T WORK)
+
+Stores data in registers.
+Uses binary coded decimal representation of time
+
+Seconds consist of 4 bits for 0-9 and 3 bits for 0-5
+Minutes the same
+Hours 4 bits for 0-9 and 2 bits for 0-2
+
+To use from other dictionary
+
+ex.
+
+IN RTC ShowTime
+
+Power draw
+----------
+
+Standby supply current @ 5V : 170 uA
+Timekeeping battery current: 1 uA
+
+At these low numbers, it can be powered via a GPIO pin, which we may turn off before
+deep sleep, leaving it in 1 uA mode.
+)
+
+
+IN RTC Show
+
