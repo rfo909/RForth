@@ -132,6 +132,7 @@ HERE 4 allot CONSTANT Buffer
 	GetHour 60 *
 		GetMinute +
 ;
+
 	
 : ShowTime
 	cr
@@ -160,16 +161,7 @@ HERE 4 allot CONSTANT Buffer
  
 (Read Control Register 0x0e and Status Register 0x0f)
 : Status
-  1 Buffer writeb
-  0x0e Buffer 1+ writeb
-  Buffer DeviceAddress NATIVE I2C.masterWrite
-  
-  2 Buffer writeb  (read 2 bytes)
-  
-  Buffer DeviceAddress NATIVE I2C.masterRead
-  
-  cr
-  Buffer 1+ readb cr printb
-  Buffer 2 + readb cr printb
+	cr "Ctrl_ .str REG_CONTROL ReadReg printb
+	cr "Stat_ .str REG_STATUS ReadReg printb
   ;
   
