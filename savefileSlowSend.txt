@@ -56,7 +56,7 @@
 	file=CodeDir.file(fname)
 
 	#terminate possible current loop waiting for key 
-	SendLine(" ")
+	SendLine(device," ")
 	
 	file.read->line
 		break(line.startsWith("#END"))

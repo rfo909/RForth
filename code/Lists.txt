@@ -1,0 +1,38 @@
+
+0 VARIABLE ListHead
+
+: listAdd (value -- ) 
+  (store parameter in local variable)
+  => value
+
+  (store HERE into data local variable)
+  HERE => data
+
+  (allocate 2 cells worth of data - advances HERE by 4 bytes)
+  2 CELLS allot
+
+  (write value into the first cell)
+  value data !
+
+  (write ListHead value into second cell - this is the next-pointer)
+  ListHead @
+    data CELL+ !
+
+  (store pointer to the new list element in ListHead variable)
+  data ListHead !
+;
+
+: showList (--)
+  ListHead @ => ptr
+  ptr not ret?
+  BEGIN
+	cr ptr @ . 
+	ptr CELL+ @ => ptr
+  ptr AGAIN?
+;
+
+4 listAdd
+5 listAdd
+showList
+
+

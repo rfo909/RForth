@@ -1,24 +1,11 @@
-2025-08 v3
 
 
-Bugs:
-   The compile stack must be cleaned up when all values are zeroes
-   (It overflows with 3x IF THEN in a word)
-   
+RTC for sleep and wake, and for timing
+Solar charging circuit with NIMH
 
-ret?
-   Extremely useful in loops, for now implement as
-   
-: ret? IMMEDIATE
-  0xC2 EmitByte   (numeric 2 = offset)
-  0x36 EmitByte   (rfwd?)
-  0x52 EmitByte   (ret)
-;
+Port to Pi Pico?
 
-
-
-RTC for sleep and wake
-Movement sensor PIR for sleep and wake (Christmas decorations)
+Movement sensor PIR for sleep and wake
 	MOSFET powered by movement sensor, boots MCU
 	MCU has 2 seconds to start program, pulling an output HIGH to a second MOSFET, ensuring it gets power
 	It continously reads the output of the PIR.
@@ -28,21 +15,18 @@ Movement sensor PIR for sleep and wake (Christmas decorations)
 
 2025-12
 	- change dictionary entry (DE) so it points to string representation instead of inlining it
-	- internalize all words (to lower case) on the heap, so that dict lookup becomes pointer equality instead of streq call
+	- internalize all words on the heap, so that dict lookup becomes pointer equality instead of streq call
+	  (new op: atomic-string - astr)
+	  
 	- create FIND to look up a word from string representation
 	
-	- create code editor as list of words + newlines + indents, with freelists (words = 4,8,16,32 minus 2 bytes for linked list)
-	- move saving dump of heap to address 32k - 4k (single image)
-	- use rest for code editor
-
-	- create interpreter in Java for testing and desktop use
+	- modify "xxx_yyy to call astr for the words, then build a LIST or something like that
 	
-	- create disassembler in C after changing DE format
-	  
+	- update disassembler in C after changing DE format: look up dcall words by name
+	- create breakpoints and interactive instruction stepping in C?
+	 
+	- implement CONS cells 
 	- implement lists  [ ... ]
-	- implement ." ... " 
-
-	- create memory dump in C for listing out content complete address space	
 
 	- alnum displays i2c
 

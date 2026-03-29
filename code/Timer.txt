@@ -1,0 +1,175 @@
+(
+Model number DS3231
+-------------------
+My model does not have alarm pins, but it has an onboard battery / cap
+
+Stores data in registers.
+Uses binary coded decimal representation of time
+
+Seconds consist of 4 bits for 0-9 and 3 bits for 0-5
+Minutes the same
+Hours 4 bits for 0-9 and 2 bits for 0-2
+)
+
+
+
+(device i2c addr)
+0x68 CONSTANT DeviceAddress
+
+0x00 CONSTANT REG_SECONDS
+0x01 CONSTANT REG_MINUTES
+0x02 CONSTANT REG_HOURS
+
+0x11 CONSTANT REG_TEMP_HIGH
+0x12 CONSTANT REG_TEMP_LOW
+
+0x0e CONSTANT REG_CONTROL
+0x0f CONSTANT REG_STATUS
+
+HERE 4 allot CONSTANT Buffer
+
+(from https://github.com/NorthernWidget/DS3231/blob/master/DS3231.cpp)
+
+: decToBcd (val--val)
+	=> val
+	val 10 / 16 * 
+		val 10 % +
+  ;
+  
+: bcdToDec (val--val)
+	=> val
+	val 16 / 10 *
+		val 16 % +
+;
+
+
+(Read single register)
+: ReadReg (register-- val)
+	=> reg
+	1 Buffer writeb
+	reg Buffer 1+ writeb
+	Buffer DeviceAddress NATIVE I2C.masterWrite
+	
+	1 Buffer writeb  (number of bytes to read) 
+	Buffer DeviceAddress NATIVE I2C.masterRead
+	
+	Buffer 1+ readb
+;
+
+(Write single register byte)
+: WriteReg (val register --)
+	=> reg 
+	=> val
+	2 Buffer writeb (2 values to send)
+	reg Buffer 1+ writeb
+	val Buffer 2 + writeb
+	Buffer DeviceAddress NATIVE I2C.masterWrite
+	
+;
+
+: Set24h
+	b01000000 inv => mask
+	REG_HOURS ReadReg mask & 
+		REG_HOURS WriteReg
+;	
+
+: GetOscStopFlag ( -- 0/1 )
+	REG_STATUS ReadReg b10000000 &
+;
+
+: ResetOscStopFlag (--)  (reset Oscillator Stop Flag)
+	REG_STATUS ReadReg b01111111 & REG_STATUS WriteReg
+;
+
+: SetSecond (sec -- )
+	decToBcd REG_SECONDS WriteReg
+;
+
+: SetMinute (min -- )
+	decToBcd REG_MINUTES WriteReg
+;
+
+: SetHour (hour -- )
+	=> hour
+	REG_HOURS ReadReg b11000000 & => topBits
+	hour decToBcd  
+		topBits | REG_HOURS WriteReg
+;	
+
+: Reset
+	0 SetHour 
+	0 SetMinute
+	0 SetSecond
+	ResetOscStopFlag
+;		
+
+
+
+
+: Init
+	(enable oscillator)
+	0x0e ReadReg b11100111 & => ctrl (zero out RS2 and RS1)
+	REG_CONTROL b01000000 | => ctrl (BBSQW enable)
+	
+	ctrl b01111111 & => ctrl (~EOSC enable) 
+	ctrl b00011000 | => ctrl (Square wave freq 8192 kHz)
+	
+	ctrl REG_CONTROL WriteReg
+	
+	Set24h
+;
+
+: GetSecond ( -- second )
+	REG_SECONDS ReadReg bcdToDec ;
+
+: GetMinute ( -- minute )
+	REG_MINUTES ReadReg bcdToDec ;
+	
+: GetHour ( -- hour )
+	REG_HOURS ReadReg b00111111 & bcdToDec ;
+	
+: GetMOD ( -- minutes-of-day )
+	GetHour 60 *
+		GetMinute +
+;
+	
+: ShowTime
+	cr
+	GetHour print# ': .str
+	GetMinute print# ': .str
+	GetSecond print#
+;
+
+
+: GetTemp ( -- temperature ) ( signed value - bit 7 is sign ) 
+	REG_TEMP_HIGH ReadReg
+  		(doc says this is 2nd complement - it is not but it has a sign bit)
+  		(REG_TEMP_LOW deals with fractions, resolution 0.25 - ignoring)
+  	=> temp
+  	temp b10000000 & => minus
+  	temp b01111111 & => temp
+  	minus IF -1 temp * => temp THEN
+  	temp	
+ ;
+ 
+
+: ShowTemp
+	cr GetTemp print#s "_C .str
+;
+ 
+ 
+(Read Control Register 0x0e and Status Register 0x0f)
+: Status
+  1 Buffer writeb
+  0x0e Buffer 1+ writeb
+  Buffer DeviceAddress NATIVE I2C.masterWrite
+  
+  2 Buffer writeb  (read 2 bytes)
+  
+  Buffer DeviceAddress NATIVE I2C.masterRead
+  
+  cr
+  Buffer 1+ readb cr printb
+  Buffer 2 + readb cr printb
+  ;
+  
