@@ -9,7 +9,7 @@ RTC DictUse
 Model number DS3231
 )
 
-( 734 bytes compiled to byte code ) 
+( 495 bytes compiled to byte code ) 
 
 (device i2c addr)
 0x68 CONSTANT I2CAddr

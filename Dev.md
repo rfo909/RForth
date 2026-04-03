@@ -33,7 +33,7 @@ Writing code in Forth, to compile Forth ... that's awesome!
 Design decision - cell size 2 bytes
 -----------------------------------
 To keep code fairly small, the core of the language operates with 2 bytes cell size. All stacks
-store word size values, while the byte code instructions are single byte sized. 
+store cell size values, while the byte code instructions are single byte sized. 
 
 To address physical memory, flash, devices, registers on the Pi Pico, which has 32 bits word
 length, we might combine two RForth cells to form a base and add an offset in order to address
@@ -430,14 +430,27 @@ NATIVE Sys.Free .
 ----------------
 Added a few native functions related to GPIO pins on Arduino, enabling the traditional blink example.
 
+Note from the future: the old example is obsolete and has been removed. Below is an updated version,
+blinking pin 13 until pressing a key (on the serial).
+
+
 ```
-: pOut NATIVE Pin.ModeOut ;
-: flash cpush 50 1 a NATIVE Pin.PulseDigitalMs ;
-: Z NATIVE Sys.Delay ;
-: blink 13 pOut BEGIN 13 flash 500 Z 1 AGAIN? ;
+: pOut (pin -- ) 
+	NATIVE Pin.ModeOut ;
+: flash (pin -- )
+	=> pin
+	50 1 pin NATIVE Pin.PulseDigitalMs ;
+: Z (ms -- )
+	NATIVE Sys.Delay ;
+: blink 
+	13 pOut 
+	BEGIN 13 flash 500 Z 
+	key not AGAIN? ;
 ```
 
-Compiling this consumes 78 bytes, which stores both the compiled code and the dictionary entries.
+Compiling this consumes 82 bytes of heap space, which includes both the compiled code and
+the dictionary entries.
+
 
 
 
