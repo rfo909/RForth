@@ -3,8 +3,13 @@ DictClear
 Dict RTC
 RTC DictUse
 
+(
+2026-03 RFO
 
-# 735 bytes
+Model number DS3231
+)
+
+( 734 bytes compiled to byte code ) 
 
 (device i2c addr)
 0x68 CONSTANT I2CAddr
@@ -108,13 +113,14 @@ HERE 4 allot CONSTANT Buf
 
 : Show
 	cr 
-	H print# "_ .str
-	M print# "_ .str
+	H print# ': .str
+	M print# ': .str
 	S print# "_ .str
-	T print#s "_C .str
+	T print#s 'C .str
 	
 ;
 
-#DictClear
+
+(DictClear)
 
 

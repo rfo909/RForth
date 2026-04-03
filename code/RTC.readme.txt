@@ -1,4 +1,4 @@
-(
+
 Model number DS3231
 -------------------
 My model does not have alarm pins, but it has an onboard battery / cap (WHICH DOESN'T WORK)
@@ -10,11 +10,13 @@ Seconds consist of 4 bits for 0-9 and 3 bits for 0-5
 Minutes the same
 Hours 4 bits for 0-9 and 2 bits for 0-2
 
-To use from other dictionary
+Written as a named dictionary RTC
+---------------------------------
+To use from other dictionary use keyword IN
 
-ex.
+ex
 
-IN RTC ShowTime
+IN RTC Show
 
 Power draw
 ----------
@@ -23,9 +25,7 @@ Standby supply current @ 5V : 170 uA
 Timekeeping battery current: 1 uA
 
 At these low numbers, it can be powered via a GPIO pin, which we may turn off before
-deep sleep, leaving it in 1 uA mode.
-)
+deep sleep, leaving it in 1 uA mode. A 3V button cell should power it indefinitely.
 
 
-IN RTC Show
 
