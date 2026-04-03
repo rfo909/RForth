@@ -1,23 +1,30 @@
 DictClear
+
 Dict RTC
 RTC DictUse
 
+
+# 735 bytes
+
 (device i2c addr)
-0x68 CONSTANT DeviceAddress
+0x68 CONSTANT I2CAddr
 
-0x00 CONSTANT REG_SECONDS
-0x01 CONSTANT REG_MINUTES
-0x02 CONSTANT REG_HOURS
+(registers)
 
-0x11 CONSTANT REG_TEMP_HIGH
-0x12 CONSTANT REG_TEMP_LOW
+0x02 CONSTANT RH	(hours)
+0x01 CONSTANT RM	(minutes)
+0x00 CONSTANT RS	(seconds)
 
-0x0e CONSTANT REG_CONTROL
-0x0f CONSTANT REG_STATUS
+0x11 CONSTANT RTH	(temp high)
+0x12 CONSTANT RTL	(temp low)
 
-HERE 4 allot CONSTANT Buffer
+0x0e CONSTANT RCtrl	(control register)
+0x0f CONSTANT RStat	(status register)
+
+HERE 4 allot CONSTANT Buf
 
 (from https://github.com/NorthernWidget/DS3231/blob/master/DS3231.cpp)
+(hms are stored as binary coded decimal "bcd", need to convert)
 
 : decToBcd (val--val)
 	=> val
@@ -33,102 +40,79 @@ HERE 4 allot CONSTANT Buffer
 
 
 (Read single register)
-: ReadReg (register-- val)
+: Reg@ (register-- val)
 	=> reg
-	1 Buffer writeb
-	reg Buffer 1+ writeb
-	Buffer DeviceAddress NATIVE I2C.masterWrite
+	1 Buf writeb (bytes to write = register to read from)
+	reg Buf 1+ writeb
+	Buf I2CAddr NATIVE I2C.masterWrite
 	
-	1 Buffer writeb  (number of bytes to read) 
-	Buffer DeviceAddress NATIVE I2C.masterRead
+	1 Buf writeb  (number of bytes to read) 
+	Buf I2CAddr NATIVE I2C.masterRead
 	
-	Buffer 1+ readb
+	Buf 1+ readb
 ;
 
 (Write single register byte)
-: WriteReg (val register --)
+: Reg! (val register --)
 	=> reg 
 	=> val
-	2 Buffer writeb (2 values to send)
-	reg Buffer 1+ writeb
-	val Buffer 2 + writeb
-	Buffer DeviceAddress NATIVE I2C.masterWrite
+	2 Buf writeb (2 values to send)
+	reg Buf 1+ writeb  (register address)
+	val Buf 2 + writeb (value)
 	
+	Buf I2CAddr NATIVE I2C.masterWrite
 ;
 
-: Set24h
-	b01000000 inv => mask
-	REG_HOURS ReadReg mask & 
-		REG_HOURS WriteReg
-;	
-
-: SetSecond (sec -- )
-	decToBcd REG_SECONDS WriteReg
-;
-
-: SetMinute (min -- )
-	decToBcd REG_MINUTES WriteReg
-;
-
-: SetHour (hour -- )
+: Set (hour minute sec -- )
+	=> sec
+	=> min
 	=> hour
-	REG_HOURS ReadReg b11000000 & => topBits
+
+	RH Reg@ b11000000 & => topBits
 	hour decToBcd  
-		topBits | REG_HOURS WriteReg
-;	
+		topBits | RH Reg!
 
-(Enable the oscillator on battery)
-: EnableOscillator 
-	b00011100 REG_CONTROL WriteReg
-	0 REG_STATUS WriteReg
+	min decToBcd RM Reg!
+	
+	sec decToBcd RS Reg!
 ;
-
 
 : Init
-	EnableOscillator
-	Set24h
+	(oscillator config)
+	b00011100 RCtrl Reg!
+	0 RStat Reg!
+
+	(set 24h clock - bit in hours register)
+	b01000000 inv => mask
+	RH Reg@ mask & 
+		RH Reg!
 ;
 
-: GetSecond ( -- second )
-	REG_SECONDS ReadReg bcdToDec ;
+: H ( -- hours )
+	RH Reg@ b00111111 & bcdToDec ;
 
-: GetMinute ( -- minute )
-	REG_MINUTES ReadReg bcdToDec ;
+: M ( -- minutes )
+	RM Reg@ bcdToDec ;
 	
-: GetHour ( -- hour )
-	REG_HOURS ReadReg b00111111 & bcdToDec ;
-	
-: GetMOD ( -- minutes-of-day )
-	GetHour 60 *
-		GetMinute +
-;
+: S ( -- seconds )
+	RS Reg@ bcdToDec ;
 
-
-: GetTemp ( -- temperature ) ( signed value - bit 7 is sign ) 
-	REG_TEMP_HIGH ReadReg
-  		(doc says this is 2nd complement - it is not but it has a sign bit)
-  		(REG_TEMP_LOW deals with fractions, resolution 0.25 - ignoring)
-  	=> temp
-  	temp b10000000 & => minus
-  	temp b01111111 & => temp
-  	minus IF -1 temp * => temp THEN
-  	temp	
+(temperature in celsius)
+: T ( -- temperature ) 
+	(RTL deals with fractions, resolution 0.25 - ignoring)
+	RTH Reg@
  ;
  
 
 (Display time and temperature)
-: Show
-	cr
-	GetHour print# ': .str
-	GetMinute print# ': .str
-	GetSecond print# '_ .str
-	GetTemp print#s "_C .str
-	
-;
 
-: Status
-	cr "Ctrl:_ .str REG_CONTROL ReadReg printb
-	cr "Stat:_ .str REG_STATUS ReadReg printb
+: Show
+	cr 
+	H print# "_ .str
+	M print# "_ .str
+	S print# "_ .str
+	T print#s "_C .str
+	
 ;
 
 #DictClear
