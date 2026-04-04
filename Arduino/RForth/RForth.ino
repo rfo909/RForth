@@ -817,6 +817,8 @@ const NativeFunction nativeFunctions[]={
   {"I2C.EE.verify",       &natEEPromVerify,          "(pageSize startPage i2cAddress -- ) verify after save"},
   {"I2C.EE.load",       &natEEPromLoad,          "(pageSize startPage i2cAddress -- ) load &PROTECT -> HEAP bytes"},
 
+  {"Util.Itoa",       &natUtilItoa,              "(val base buf -- ) convert int value to string base 10/16"},
+
   {"",0,""} 
 };
 
@@ -1274,6 +1276,31 @@ void doNatEEPromLoad (bool verifyOnly) {
     }
     currPage++;
   }
+}
 
+// -------------------------------
+// Util.*
+// -------------------------------
+
+
+void natUtilItoa () {  // (value base buf -- )
+  Word buf=pop();
+  Word base=pop();
+  Word value=pop();
+  
+  if (base==16) {
+    sprintf(temp, "0x%X", value);
+  } else {
+    sprintf(temp,"%d",value);
+  }
+  Word currLength=readByte(buf);
+
+  Word len=strlen(temp);
+  writeByte(buf,currLength+len);
+  for (int i=0; i<len; i++) {
+    Word addr=buf+1+currLength+i;
+    Word value=temp[i];
+    writeByte(addr, value);
+  }
 }
 
