@@ -5,9 +5,10 @@ Dict /Random
 101 VARIABLE s     (small value)
 
 (Overflow to initial value if too big)
-: OFlow ( val limit -- val )
+: OFlow ( val init limit -- val )
 	=> limit
-	dup limit > IF drop limit THEN
+	=> init
+	dup limit > IF drop init THEN
 ;
 
 (28 bytes)
@@ -16,7 +17,7 @@ Dict /Random
 	=> init 
 	=> var 
 	var @ 1+  (val)
-	limit OFlow  (val)
+	init limit OFlow  (val)
 	dup var !
 ;
 

@@ -57,23 +57,24 @@ HERE 4 allot CONSTANT Buf
 	Buf writeb ;
 	
 
+: Write Buf I2CAddr NATIVE I2C.masterWrite ;
+: Read Buf I2CAddr NATIVE I2C.masterRead ;
+
 (Read single register)
 : Reg@ (register-- val)
 	=> reg
-	Clear reg Add
-	Buf I2CAddr NATIVE I2C.masterWrite
-	
-	1 Prep
-	Buf I2CAddr NATIVE I2C.masterRead
-	
+
+	Clear reg Add Write
+	1 Prep Read
 	Buf 1+ readb
 ;
 
 (Write single register byte)
 : Reg! (val register --)
-	Clear Add (reg)
-	Add (value)
-	Buf I2CAddr NATIVE I2C.masterWrite
+	Clear 
+	(register) Add
+	(value) Add
+	Write
 ;
 
 : S! ( seconds -- ) decToBcd RS Reg! ;
