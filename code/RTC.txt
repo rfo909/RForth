@@ -1,7 +1,7 @@
 DictClear
 
-Dict RTC
-RTC DictUse
+Dict /RTC
+/RTC DictUse
 
 (
 2026-03 RFO
@@ -44,14 +44,26 @@ HERE 4 allot CONSTANT Buf
 ;
 
 
+: Clear
+	0 Buf writeb ;
+	
+: Add (n -- )
+	Buf >>str writeb
+	Buf readb 1+ Buf writeb
+;
+	
+(prepare receive of n bytes)
+: Prep (n -- )
+	Buf writeb ;
+	
+
 (Read single register)
 : Reg@ (register-- val)
 	=> reg
-	1 Buf writeb (bytes to write = register to read from)
-	reg Buf 1+ writeb
+	Clear reg Add
 	Buf I2CAddr NATIVE I2C.masterWrite
 	
-	1 Buf writeb  (number of bytes to read) 
+	1 Prep
 	Buf I2CAddr NATIVE I2C.masterRead
 	
 	Buf 1+ readb
@@ -59,28 +71,20 @@ HERE 4 allot CONSTANT Buf
 
 (Write single register byte)
 : Reg! (val register --)
-	=> reg 
-	=> val
-	2 Buf writeb (2 values to send)
-	reg Buf 1+ writeb  (register address)
-	val Buf 2 + writeb (value)
-	
+	Clear Add (reg)
+	Add (value)
 	Buf I2CAddr NATIVE I2C.masterWrite
 ;
 
-: Set (hour minute sec -- )
-	=> sec
-	=> min
-	=> hour
-
+: S! ( seconds -- ) decToBcd RS Reg! ;
+: M! ( minutes -- ) decToBcd RM Reg! ;
+: H! ( hours -- )
 	RH Reg@ b11000000 & => topBits
-	hour decToBcd  
+	(hour) decToBcd  
 		topBits | RH Reg!
-
-	min decToBcd RM Reg!
-	
-	sec decToBcd RS Reg!
 ;
+
+: Set (hour minute sec -- ) S! M! H! ;
 
 : Init
 	(oscillator config)
@@ -106,7 +110,9 @@ HERE 4 allot CONSTANT Buf
 : T ( -- temperature ) 
 	(RTL deals with fractions, resolution 0.25 - ignoring)
 	RTH Reg@
- ;
+;
+ 
+ 
  
 
 (Display time and temperature)
@@ -116,11 +122,9 @@ HERE 4 allot CONSTANT Buf
 	H print# ': .str
 	M print# ': .str
 	S print# "_ .str
-	T print#s 'C .str
-	
 ;
 
 
-(DictClear)
+DictClear
 
 

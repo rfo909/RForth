@@ -1,0 +1,35 @@
+
+: save 64 0 0x50 NATIVE I2C.EE.save ;
+: load 64 0 0x50 NATIVE I2C.EE.load ;
+
+(
+Set up autorun:
+---------------
+
+The following code can be called anything, because it isn't
+saved other than as bytecode, in the onboard EEPROM, with the MainRef
+resolved directly to a value.
+
+Remember to save the heap image with the save word above.
+
+The autorun word can be called anything, it isn't saved.
+It returns the address of the word to run, via a constant.
+ 
+"Main ?C CONSTANT MainRef
+
+: autorun 
+  64 0 0x50 NATIVE I2C.EE.load 
+  MainRef
+;
+
+"autorun ?C NATIVE Sys.EE.SetAutorun 
+
+Disable autorun
+---------------
+
+NATIVE Sys.EE.ClearAutorun
+
+- or -
+
+Connect pins 2 and 4 and reset the mcu
+)

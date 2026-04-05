@@ -1,25 +1,32 @@
 DictClear
-Dict Curses
-Curses DictUse
+Dict /Curses
+/Curses DictUse
 
 HERE 8 allot CONSTANT Buf
 
 (initialize esc sequence)
 
-: esc 
-	1 Buf writeb
+: Esc 
+	2 Buf writeb
 	0x1b Buf 1+ writeb
+	0x5b Buf 2 + writeb 
+;	
+
+: r+w (incr addr -- )
+	dup => addr
+	readb + addr writeb
 ;
 
+
 : Str ( str -- ) 
-	=> str
-	str readb => len
-	0 => i
-	BEGIN
-		str 1+ i + readb 
-			Buf BufAdd
-		i 1+ => i
-	i len < AGAIN?
+	=> s
+	s readb => len
+	
+	s 1+				(source)
+		Buf dup readb + 1+	(target)
+			len memcpy
+			
+	len Buf r+w
 ;
 
 : Int ( n -- ) 10 Buf NATIVE Util.Itoa ;
@@ -27,24 +34,17 @@ HERE 8 allot CONSTANT Buf
 : Out Buf .str ;
 	
 
-: cls esc '[2J Str Out ;
-: home esc '[H Str Out ;
-: up esc '[1A Str Out ;
-: down esc '[1B Str Out ;
-: left esc '[1D Str Out ;
-: right esc '[1C Str Out ;
+: cls Esc '2J Str Out ;
+: home Esc 'H Str Out ;
+
+: down ( n -- )
+	Esc Int 'B Str Out ;
+	
+: right ( n -- )
+	Esc Int 'C Str Out ;
 
 : goto (y x --)
-  => x => y
-  home
-  esc '[ Str x Int 'C Str Out
-  esc '[ Str y Int 'B Str Out
+  home right down
 ;
 
-
-: test 
-	0 Buf writeb
-	235 10 Buf NATIVE Util.Itoa
-	Buf .str
-;
-
+DictClear

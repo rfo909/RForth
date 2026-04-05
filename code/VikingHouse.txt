@@ -9,7 +9,13 @@
 # show that a green value of red/8 gives a good yellowish tone.
 # 
 
-@@ Util.txt
+@@ Random.txt
+
+DictClear
+
+: random (n -- m)
+	IN /Random random
+;
 
 (-- torch pins --)
 6 CONSTANT t1
@@ -32,30 +38,36 @@
 
 : tvalue 30 random 50 + ;
 
-: delay 20 random 1 + z ;
+: delay 20 random 1+ z ;
 
-: flicker
-  (-- torches --)
-  tvalue t1 w delay
-  tvalue t2 w delay
-  tvalue t3 w delay
-  
-  (-- main fire--)
-  10 random 50 + => red
-  5 random 15 + => fact
-  red fact / => green
-  
-  red fRed w
-  green fGreen w
-  delay
+: torch (pin --) 
+	=> pin 
+	tvalue pin w delay 
+;
+
+: torches
+  t1 torch
+  t2 torch
+  t3 torch
+;
+
+: red 10 random 50 + ;
+: fact 5 random 15 + ;
+
+: fire
+	red
+	dup fRed w
+	dup fact /	(green)
+		fGreen w
 ;
 
 
 : main
   init
   BEGIN
-  	flicker
+  	torches
+  	fire
+  	delay
   key not AGAIN?
-  "Done .str cr
 ;
 

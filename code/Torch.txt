@@ -7,12 +7,15 @@
 # So a green value of red / 8 gives a good yellow tone
 #
 
-@@ Util.txt
 
+@@ Random.txt
 
 3 CONSTANT rPin
 5 CONSTANT gPin
 6 CONSTANT bPin
+
+: random (n -- m) IN /Random random ;
+	
 
 : pOut NATIVE Pin.ModeOut ;
 
@@ -28,23 +31,20 @@
 : dark-orange 80 3 0 rgb ;
 
 
-: z NATIVE Sys.Delay ;
+: zzz 80 random 20 + NATIVE Sys.Delay ;
 
 : off 0 0 0 rgb ;
 
+: red 30 random 50 + ;
+: fact 5 random 7 + ;
+	(bigger factor gives redder light)
+
 : flicker
-  30 random 50 + => red
-  5 random 7 + => fact  (bigger factor gives redder light)
-  red fact / => grn
-
-  (
-  "red:_ .str red print# "_green:_ .str grn print# cr
-  )
-  
-  red grn 0 rgb
-  80 random 20 + z
+	red		(red)
+	dup fact /	(green)
+	0 rgb 
+	zzz
 ;
-
 
 : main
   init

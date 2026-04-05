@@ -1,6 +1,6 @@
-#define DSTACK_SIZE       30    // data stack
+#define DSTACK_SIZE       16    // data stack
 #define CSTACK_SIZE       30    // call stack
-#define FSTACK_SIZE       20    // call stack frames: each frame is 2 values
+#define FSTACK_SIZE       16    // call stack frames: each frame is 2 values in one Word
 
 #define CELLSIZE    2
 

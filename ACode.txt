@@ -1442,20 +1442,13 @@
 :CompilingWordEnd
 
 :CompileBuf	
-		w0 w0 w0 w0 w0 w0 w0 w0 		;; + up to 127 code bytes (1 byte length)
+		w0 w0 w0 w0 w0 w0 w0 w0 		;; + up to 47 code bytes (1 byte length)
 		w0 w0 w0 w0 w0 w0 w0 w0			;; 
-		w0 w0 w0 w0 w0 w0 w0 w0			;; For colon compiler
-		w0 w0 w0 w0 w0 w0 w0 w0			;; and as scratch buffer at runtime
-
-		w0 w0 w0 w0 w0 w0 w0 w0			;; 
-		w0 w0 w0 w0 w0 w0 w0 w0			;; 
-		w0 w0 w0 w0 w0 w0 w0 w0			;; 
-		w0 w0 w0 w0 w0 w0 w0 w0			;; 
+		w0 w0 w0 w0 w0 w0 w0 w0			;; For colon compiler and as scratch buffer at runtime
 			
 :CompileBufEnd
 
-:NextWord	w0 w0 w0 w0 w0 w0 w0 w0 		;; string buffer
-		w0 w0 w0 w0 w0 w0 w0 w0			;; and scratch buffer at runtime
+:NextWord	b0 w0 w0 w0 w0 w0 w0 w0 w0 		;; string buffer - and scratch buffer at runtime
 :NextWordEnd
 
 :LVBuf		w0 w0 w0 w0 w0 w0 w0 w0 		;; local variables in colon compiler - 32 bytes
