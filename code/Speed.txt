@@ -1,0 +1,97 @@
+(Speed testing)
+
+: IsPrime (n -- bool)
+  => n
+  n 2 / 1+ => i
+  BEGIN
+  	0 n i % 0 == ret? drop
+  	i 1 - => i
+  i 1 > AGAIN?
+  1
+;
+
+
+(83.4k/s)
+: PrimeTest
+  NATIVE SpeedTest.Start
+  13001 IsPrime drop
+  13001 IsPrime drop
+  13001 IsPrime drop
+  NATIVE SpeedTest.Stop
+;
+  
+  
+: LoopVar
+  13001 => i
+  BEGIN
+  	i 1 - => i
+  i AGAIN?
+;
+
+(86.6k/s)
+: LoopTest1
+  NATIVE SpeedTest.Start
+  LoopVar
+  LoopVar
+  NATIVE SpeedTest.Stop
+;
+
+
+
+: LoopNoVar
+	13001
+	BEGIN
+		1 - 
+	dup AGAIN?
+	drop
+;
+
+(85.3k/s)
+: LoopTest2
+  NATIVE SpeedTest.Start
+  LoopNoVar
+  LoopNoVar
+  NATIVE SpeedTest.Stop
+;
+
+
+(82.4k/s)
+: ReadWrite
+	HERE => addr
+	CELL allot
+	
+	20000 => i
+	BEGIN
+		i 1 - => i
+		i addr !
+		addr @ drop
+	i AGAIN?
+;
+
+
+: RWTest
+  NATIVE SpeedTest.Start
+  ReadWrite
+  ReadWrite
+  NATIVE SpeedTest.Stop
+;
+
+
+
+: Dummy ;
+
+(76.9k/s)
+: Calls
+	20000 => i
+	BEGIN
+		Dummy
+		i 1 - => i
+	i AGAIN?
+;
+
+: CallTest
+  NATIVE SpeedTest.Start
+  Calls
+  NATIVE SpeedTest.Stop
+;
+

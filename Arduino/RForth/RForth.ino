@@ -819,6 +819,10 @@ const NativeFunction nativeFunctions[]={
 
   {"Util.Itoa",       &natUtilItoa,              "(val base buf -- ) convert int value to string base 10/16"},
 
+  {"SpeedTest.Start",       &natSpeedTestStart,              "(--) stores instruction count"},
+  {"SpeedTest.Stop",       &natSpeedTestStop,              "(--) prints number of instructions per second"},
+  
+
   {"",0,""} 
 };
 
@@ -1302,5 +1306,28 @@ void natUtilItoa () {  // (value base buf -- )
     Word value=temp[i];
     writeByte(addr, value);
   }
+}
+
+
+unsigned long testStartCount=0L;
+unsigned long testStartTime=0L;
+
+void natSpeedTestStart () {
+  testStartCount=instructionCount;
+  testStartTime=millis();
+}
+
+void natSpeedTestStop () {
+  unsigned long count=instructionCount-testStartCount;
+  unsigned long time=millis()-testStartTime;
+  Serial.print("Time: ");
+  Serial.print(time);
+  Serial.println(" ms");
+  Serial.print("Instructions: ");
+  Serial.println(count);
+  double instrPerMs=((double) count) / ((double) time);
+  
+  Serial.print("Per second: ");
+  Serial.println(instrPerMs*1000.0);
 }
 

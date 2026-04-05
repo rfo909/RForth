@@ -1,32 +1,48 @@
-: clear &NextWord BufReset ;
+@@Curses.txt
 
-: readword (-- newline?)
+DictClear
+Dict Edit
+Edit DictUse
+
+(Parsing terminal input)
+
+127 CONSTANT BackSpace
+13 CONSTANT CR
+32 CONSTANT SPC
+
+( INPUT processing
+
+   left 7[D   7 91 68
+   right 7[C  7 91 67
+   up 7[A     7 91 65
+   down 7[B   7 91 66
+   home 7[1~  7 91 49 126
+   end 7[4~   7 91 62 126
+)
+
+(show key codes, space to exit)
+: keys
   0 => c
+  BEGIN readc => c
+  c print# cr
+  c 32 != AGAIN?
+  cr 'done .str
+;
+
+
+
+: ParseEsc
+  readc 91 != ret?
+  readc => c
+  c 65 == IF IN Curses up .str THEN
+; 
+
+: Input
   BEGIN
-    readc => c
-  
-    1 c 10 == c 13 == || ret? drop
-    0 c 32 == ret? drop
-    c &NextWord BufAdd
-    1 AGAIN?
+     readc => c
+     c 7 == IF ParseEsc ELSE c printc THEN
+     c 32 != AGAIN?
 ;
 
-: addword (ptr)
-  => ptr
-  ptr readb 0 > IF
-    "Adding:_ .str ptr .str cr
-  THEN
-;
-
-
-: sequence
-  0 => newline
-  BEGIN 
-    clear
-    readword => newline
-    &NextWord addword
-    newline IF "(NEWLINE) addword THEN
-    &NextWord "; streq ret?
-    1 AGAIN?
-;
+     
      
