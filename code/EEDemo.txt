@@ -1,66 +1,61 @@
-33 CONSTANT buf#
+10 CONSTANT BufLen
+HERE BufLen allot CONSTANT Buf
+0x50 CONSTANT I2CAddr
+128 CONSTANT Loc              (EEPROM data location - page size is 64)
 
-HERE buf# allot CONSTANT s (send buffer)
-HERE buf# allot CONSTANT r (recv buffer)
+: Prep (n -- ) (prepare to read N bytes by setting the length byte)
+	Buf writeb
+;
 
-0x50 CONSTANT &i2c
-32 CONSTANT eeloc
+: Init (initialize buffer to zero length)
+	0 => i
+	BEGIN
+		0 Buf i + writeb
+		i 1+ => i
+	i BufLen < AGAIN?
+;
 
-: s0 0 s writeb ;
+: Add (byte -- )
+	(byte) Buf Buf readb + 1+ writeb
+	Buf readb 1+ Buf writeb
+;
 
-: r<n (n) r writeb ; 
-  (n=bytes to read)
-
-: s# s readb ; 
-  (length of s)
-
-: s<b (byte) 
-  s s# + 1+ writeb 
-  s# 1+ s writeb ;
-: s<w (word) => w 
-  w 8 >> 0xFF & s<b 
-  w 0xFF & s<b ;
+: AddW (word -- )
+	dup 8 >> 0xFF & Add
+	0xFF & Add
+;
     
 (set data)
-: loc eeloc s<w ;
-: data 0xCAFE s<w 0xBADE s<w 0xCADA s<w ;
+: Loc Loc AddW ;
+: Data 0xCAFE AddW 0xBADE AddW 0xCADA AddW ;
+
+: Send Buf I2CAddr NATIVE I2C.masterWrite ;
+: Wait I2CAddr NATIVE I2C.masterWWait ;
+: Recv Buf I2CAddr NATIVE I2C.masterRead ;
 
 (write to EEPROM)
-: write 
-  s0 loc data
-  s &i2c NATIVE I2C.mW
-  (wait a bit)
-  &i2c NATIVE I2C.mWWait
+: Write 
+  Init Loc Data Send
+  (wait a bit to give EEPROM time to update)
+  Wait
 ;
 
-(read from EEPROM - with mWR)
-: read
-  s0 loc 
-  6 r<n (bytes to read)
-  s r &i2c 
-    NATIVE I2C.mWR
+(read from EEPROM)
+: Read
+  Init Loc Send (no wait, because no data written, only address into a register)
+  6 Prep Recv (6 bytes to receive)
 ;
 
-(read from EEPROM - old - separate W and R)
-: read-old
-  s0 loc
-  s &i2c NATIVE I2C.mW
-  
-  6 r<n (bytes to read)
-  r &i2c NATIVE I2C.mR
-;
 
- 
-: Br (B=glasses=show :-)
-  0 => i BEGIN
-    r i + readb print cr
+: Show (show Buf including length byte)
+  0 => i 
+  BEGIN
+    Buf i + readb print cr
     i 1+ => i
-    i buf# < AGAIN?
+    i BufLen < AGAIN?
 ;
 
 
-(both work!)
-: test-old write read-old Br ;
-: test-new write read Br ;
+: Test Write Read Show ;
 
 
