@@ -16,7 +16,203 @@ byte fStackNext=0;
 unsigned long timers[TIMER_COUNT];
 
 // opCode array of function pointers
-void (*ops[128]) ();
+void op_mod();
+void op_and();
+void op_mul();
+void op_add();
+void op_sub();
+void op_div();
+void op_PANIC();
+void op_atoi();
+void op_n2code();
+void op_rget();
+void op_rset();
+void op_rfwd_opt();
+void op_rback_opt();
+void op_lt();
+void op_eq();
+void op_gt();
+void op_crget();
+void op_streq();
+void op_dot_str();
+void op_memcpy();
+void op_ge();
+void op_le();
+void op_readb();
+void op_writeb();
+void op_read();
+void op_write();
+void op_allot();
+void op_printb();
+void op_dcall();
+void op_cpush();
+void op_PC();
+void op_call();
+void op_ret();
+void op_jmp();
+void op_jmp_optional();
+void op_printc();
+void op_print();
+void op_cr();
+void op_print_decimal_unsigned();
+void op_halt();
+void op_u2spc();
+void op_native();
+void op_print_decimal_signed();
+void op_nativec();
+void op_1_plus();
+void op_HERE();
+void op_ne();
+void op_not();
+void op_drop();
+void op_cellsize();
+void op_dup();
+void op_swap();
+void op_CELL_plus();
+void op_over();
+void op_dump();
+void op_andb();
+void op_orb();
+void op_inv();
+void op_shift_left();
+void op_shift_right();
+void op_readc();
+void op_clear();
+void op_key();
+void op_null();
+void op_or();
+
+
+const void (*ops[128]) () = {
+  0,                             /* 0 */
+  0,                             /* 1 */
+  0,                             /* 2 */
+  0,                             /* 3 */
+  0,                             /* 4 */
+  0,                             /* 5 */
+  0,                             /* 6 */
+  0,                             /* 7 */
+  0,                             /* 8 */
+  0,                             /* 9 */
+  0,                             /* 10 */
+  0,                             /* 11 */
+  0,                             /* 12 */
+  0,                             /* 13 */
+  0,                             /* 14 */
+  0,                             /* 15 */
+  0,                             /* 16 */
+  0,                             /* 17 */
+  0,                             /* 18 */
+  0,                             /* 19 */
+  0,                             /* 20 */
+  0,                             /* 21 */
+  0,                             /* 22 */
+  0,                             /* 23 */
+  0,                             /* 24 */
+  0,                             /* 25 */
+  0,                             /* 26 */
+  0,                             /* 27 */
+  0,                             /* 28 */
+  0,                             /* 29 */
+  0,                             /* 30 */
+  0,                             /* 31 */
+  0,                             /* 32 */
+  0,                             /* 33 */
+  0,                             /* 34 */
+  0,                             /* 35 */
+  0,                             /* 36 */
+  &op_mod,                       /* 37 */
+  &op_and,                       /* 38 */
+  0,                             /* 39 */
+  0,                             /* 40 */
+  0,                             /* 41 */
+  &op_mul,                       /* 42 */
+  &op_add,                       /* 43 */
+  0,                             /* 44 */
+  &op_sub,                       /* 45 */
+  0,                             /* 46 */
+  &op_div,                       /* 47 */
+  &op_PANIC,                     /* 48 */
+  &op_atoi,                      /* 49 */
+  &op_n2code,                    /* 50 */
+  &op_rget,                      /* 51 */
+  &op_rset,                      /* 52 */
+  0,                             /* 53 */
+  &op_rfwd_opt,                  /* 54 */
+  &op_rback_opt,                 /* 55 */
+  0,                             /* 56 */
+  0,                             /* 57 */
+  0,                             /* 58 */
+  0,                             /* 59 */
+  &op_lt,                        /* 60 */
+  &op_eq,                        /* 61 */
+  &op_gt,                        /* 62 */
+  0,                             /* 63 */
+  0,                             /* 64 */
+  &op_crget,                     /* 65 */
+  &op_streq,                     /* 66 */
+  &op_dot_str,                   /* 67 */
+  &op_memcpy,                    /* 68 */
+  &op_ge,                        /* 69 */
+  &op_le,                        /* 70 */
+  &op_readb,                     /* 71 */
+  &op_writeb,                    /* 72 */
+  &op_read,                      /* 73 */
+  &op_write,                     /* 74 */
+  &op_allot,                     /* 75 */
+  &op_printb,                    /* 76 */
+  &op_dcall,                     /* 77 */
+  0,                             /* 78 */
+  &op_cpush,                     /* 79 */
+  &op_PC,                        /* 80 */
+  &op_call,                      /* 81 */
+  &op_ret,                       /* 82 */
+  &op_jmp,                       /* 83 */
+  &op_jmp_optional,              /* 84 */
+  &op_printc,                    /* 85 */
+  0,                             /* 86 */
+  &op_print,                     /* 87 */
+  &op_cr,                        /* 88 */
+  &op_print_decimal_unsigned,    /* 89 */
+  &op_halt,                      /* 90 */
+  0,                             /* 91 */
+  0,                             /* 92 */
+  0,                             /* 93 */
+  0,                             /* 94 */
+  &op_u2spc,                     /* 95 */
+  0,                             /* 96 */
+  &op_native,                    /* 97 */
+  &op_print_decimal_signed,      /* 98 */
+  &op_nativec,                   /* 99 */
+  &op_1_plus,                    /* 100 */
+  0,                             /* 101 */
+  0,                             /* 102 */
+  &op_HERE,                      /* 103 */
+  &op_ne,                        /* 104 */
+  &op_not,                       /* 105 */
+  &op_drop,                      /* 106 */
+  &op_cellsize,                  /* 107 */
+  &op_dup,                       /* 108 */
+  &op_swap,                      /* 109 */
+  &op_CELL_plus,                 /* 110 */
+  &op_over,                      /* 111 */
+  &op_dump,                      /* 112 */
+  &op_andb,                      /* 113 */
+  &op_orb,                       /* 114 */
+  &op_inv,                       /* 115 */
+  &op_shift_left,                /* 116 */
+  &op_shift_right,               /* 117 */
+  &op_readc,                     /* 118 */
+  &op_clear,                     /* 119 */
+  &op_key,                       /* 120 */
+  0,                             /* 121 */
+  &op_null,                      /* 122 */
+  0,                             /* 123 */
+  &op_or,                        /* 124 */
+  0,                             /* 125 */
+  0,                             /* 126 */
+  0                              /* 127 */
+};
 
 char temp[10];
 
@@ -73,7 +269,6 @@ void setup() {
   delay(100);
 
   fpush(0,0);
-  populateOps();
   populateRAM();
   initTimers();
 
@@ -113,51 +308,53 @@ void populateRAM() {
 }
 
 void loop() {
-  if (hasError) {  
-    Serial.println();
-    showState();
+  for(;;) {
+    if (hasError) {  
+      Serial.println();
+      showState();
 
-    // got an error situation
-    Serial.print(F("Got ERROR, press ENTER"));
-    clearSerialInputBuffer();
-    readSerialChar();
+      // got an error situation
+      Serial.print(F("Got ERROR, press ENTER"));
+      clearSerialInputBuffer();
+      readSerialChar();
 
-    doReset();
-    return;
-  }
-  Word pc=programCounter;
-  Word op=readByte(programCounter);
-
-  if (op & 0x80) {
-    // number literal
-    if (op & 0x40) {
-      push(op & 0x3F);
-    } else {
-      Word w=(pop() << 6) | (op & 0x3F);
-      push(w);
-    }
-  } else {
-    // not number literal
-    
-    void (*funcPtr) () = ops[op];
-    
-    if (funcPtr==0) {
-      Serial.print(F("funcPtr is 0, op="));
-      Serial.println( op);
-      setError("x");
+      doReset();
       return;
     }
+    Word pc=programCounter;
+    Word op=readByte(programCounter);
 
-    // call op
-    funcPtr ();
+    if (op & 0x80) {
+      // number literal
+      if (op & 0x40) {
+        push(op & 0x3F);
+      } else {
+        Word w=(pop() << 6) | (op & 0x3F);
+        push(w);
+      }
+    } else {
+      // not number literal
+      
+      void (*funcPtr) () = ops[op];
+      
+      if (funcPtr==0) {
+        Serial.print(F("funcPtr is 0, op="));
+        Serial.println( op);
+        setError("x");
+        return;
+      }
+
+      // call op
+      funcPtr ();
+    }
+
+    if (hasError) return;
+    
+    // increase programcounter, unless this op has modified it
+    if (programCounter==pc) programCounter++;
+
+    instructionCount++;
   }
-
-  if (hasError) return;
-  
-  // increase programcounter, unless this op has modified it
-  if (programCounter==pc) programCounter++;
-
-  instructionCount++;
 
 }
 
@@ -275,76 +472,6 @@ Word getTimer (Word timerId) {
 }
 
 
-void populateOps() {
-  for (int i=0; i<128; i++) {
-    ops[i]=0;
-  }
-  ops[37]=&op_mod;
-  ops[38]=&op_and;
-  ops[42]=&op_mul;
-  ops[43]=&op_add;
-  ops[45]=&op_sub;
-  ops[47]=&op_div;
-  ops[48]=&op_PANIC;
-  ops[49]=&op_atoi;
-  ops[50]=&op_n2code;
-  ops[51]=&op_rget;
-  ops[52]=&op_rset;
-  ops[54]=&op_rfwd_opt;
-  ops[55]=&op_rback_opt;
-  ops[60]=&op_lt;
-  ops[61]=&op_eq;
-  ops[62]=&op_gt;
-  ops[65]=&op_crget;
-  ops[66]=&op_streq;
-  ops[67]=&op_dot_str;
-  ops[68]=&op_memcpy;
-  ops[69]=&op_ge;
-  ops[70]=&op_le;
-  ops[71]=&op_readb;
-  ops[72]=&op_writeb;
-  ops[73]=&op_read;
-  ops[74]=&op_write;
-  ops[75]=&op_allot;
-  ops[76]=&op_printb;
-  ops[77]=&op_dcall;
-  ops[79]=&op_cpush;
-  ops[80]=&op_PC;
-  ops[81]=&op_call;
-  ops[82]=&op_ret;
-  ops[83]=&op_jmp;
-  ops[84]=&op_jmp_optional;
-  ops[85]=&op_printc;
-  ops[87]=&op_print;
-  ops[88]=&op_cr;
-  ops[89]=&op_print_decimal_unsigned;
-  ops[90]=&op_halt;
-  ops[95]=&op_u2spc;
-  ops[97]=&op_native;
-  ops[98]=&op_print_decimal_signed;
-  ops[99]=&op_nativec;
-  ops[100]=&op_1_plus;
-  ops[103]=&op_HERE;
-  ops[104]=&op_ne;
-  ops[105]=&op_not;
-  ops[106]=&op_drop;
-  ops[107]=&op_cellsize;
-  ops[108]=&op_dup;
-  ops[109]=&op_swap;
-  ops[110]=&op_CELL_plus;
-  ops[111]=&op_over;
-  ops[112]=&op_dump;
-  ops[113]=&op_andb;
-  ops[114]=&op_orb;
-  ops[115]=&op_inv;
-  ops[116]=&op_shift_left;
-  ops[117]=&op_shift_right;
-  ops[118]=&op_readc;
-  ops[119]=&op_clear;
-  ops[120]=&op_key;
-  ops[122]=&op_null;
-  ops[124]=&op_or;
-}
 
 void op_and () {Word b=pop(); Word a=pop(); push(a != 0 && b != 0);}
 void op_mul () {Word b=pop(); Word a=pop(); push(a*b);}

@@ -1,4 +1,4 @@
-#define DSTACK_SIZE       16    // data stack
+#define DSTACK_SIZE       12    // data stack
 #define CSTACK_SIZE       30    // call stack
 #define FSTACK_SIZE       16    // call stack frames: each frame is 2 values in one Word
 
@@ -7,10 +7,10 @@
 #define WORD_INVALID      0xFFFF
 #define WORD_NULL         0
 
-#define RAM_SIZE          4096
+#define RAM_SIZE          5120
 
-#define TIMER_COUNT       8   // timers 0-7
-#define FIRST_SEC_TIMER   6   // timers that count seconds (6-7) the others count millis
+#define TIMER_COUNT       4   // timers 0-4
+#define FIRST_SEC_TIMER   3   // timers that count seconds (#3) the others count millis
 
 const bool READC_ECHO = true;
 
