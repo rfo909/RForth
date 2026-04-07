@@ -1,0 +1,10 @@
+Having optimized the implementation of RFOrth, I tried compiling on an Uno.
+
+However, when compiling for that one, const doesn't automatically mean store in Flash.
+
+It is back to PROGMEM, and worse, using special code to read those data at runtime.
+
+So even as RFOrth now runs fine with 5K heap on a 6K device, which should mean
+a 1K heap on a 2K device, it is not feasible.
+
+QED
