@@ -11,7 +11,7 @@ in the opCodes table, and calls via function pointer.
 
 v0.0.1 has the compiler working, as well as the interpreter, and the runtime.codeSegment
 
-OpCodes: zero bval cval ret + cr . dup >R R> ? jmp jmp? ?W
+OpCodes: zero bval cval ret + cr . dup >R R> ? jmp jmp? ?W dis
 
 Shortcuts? 
   DictEntry is a C struct.
@@ -28,6 +28,28 @@ Example output
 ; 4 bytes
 b . Ok
 12 
+
+?W b dis 
+length=4
+12  a
+13  a
+14  +
+15  ret
+ Ok
+
+
+?W a dis Ok
+length=9
+2  bval
+3    1
+4  bval
+5    2
+6  bval
+7    3
+8  +
+9  +
+10  ret
+
 
 */
 
@@ -172,7 +194,14 @@ DictEntry *dictLookupNextWord () {
 }
 
 
-
+DictEntry *dictLookupByAddr (byte addr) {
+  DictEntry *ptr=dictionaryHead;
+  while (ptr != NULL) {
+    if (ptr->address==addr) return ptr;
+    ptr=ptr->next;
+  }
+  return NULL;
+}
 
 // -------
 // opcodes
@@ -190,7 +219,7 @@ void op_colon() {
 
   // write dummy length byte (patched at semicolon)
   // (this enables disassembling)
-  codeSegment[currPos++]=0;
+  codeSegment[currPos++]=99;
 
   for (;;) {
     readNextWord();
@@ -307,12 +336,14 @@ void op_word_addr() {
   if (de==0) {
     push(0);
   } else {
-    push(definedWords[de->address]);
+    push(definedWords[de->address - OPCODE_COUNT]);
   }
 }
 
+
+
 const OpCode opCodes[]={
-  {"", &op_undefined}, 
+  {"undefined", &op_undefined}, 
   {":", &op_colon},
 
   {"zero", &op_zero},     // 2
@@ -331,12 +362,50 @@ const OpCode opCodes[]={
   {"R>", &op_r_from},
   {"?", &op_words},
   {"?W", &op_word_addr},
+  {"dis", &op_dis},
 
   // end-marker
   {"",0}
 };
 
+void op_dis() {
+  Word codeAddr = pop();
+  byte len=codeSegment[codeAddr-1];
+  Serial.println();
+  Serial.print("length=");
+  Serial.println(len);
 
+  byte dataBytes=0;
+  for (byte i=0; i<len; i++) {
+    Word addr=codeAddr + i;
+    Serial.print(addr);
+    Serial.print("  ");
+
+    byte op=codeSegment[addr];
+    if (dataBytes > 0) {
+      Serial.print("  ");
+      Serial.println(op);
+      dataBytes--;
+      continue;
+    }
+    if (op & 0x80) {
+      // scan dictionary to get name
+      DictEntry *de = dictLookupByAddr(op);
+      if (de==NULL) {
+        Serial.println("<NULL>");
+      } else {
+        Serial.println(de->name);
+      }
+    } else {
+      Serial.println(opCodes[op].name);
+      if (op==OP_BVAL) {
+        dataBytes=1;
+      } else if (op==OP_CVAL) {
+        dataBytes=2;
+      }
+    }
+  }
+}
 
 byte assembleNextWord () {
   byte pos=0;
@@ -379,6 +448,17 @@ void executeCode() {
 void loop() {
   executeCode();
 
+  /*
+  // debug  show codeSegment
+  Serial.print("code: ");
+  for (int i=0; i<codeSegmentNext; i++) {
+    Serial.print(i);
+    Serial.print(": ");
+    Serial.print(codeSegment[i]);
+    Serial.println();
+  }
+  Serial.println();
+  */
   readNextWord();
   int i=atoi(nextWord);
   if (i != 0) {
