@@ -405,6 +405,15 @@ void op_call() {
     callForthWord(de);
   }
 }
+void op_dcall() {     // dynamic call
+  Word addr=pop();
+  DictEntry *de=dictLookupByAddr(addr);
+  if (de==NULL) {
+    error("unknown","address");
+  } else {
+    callForthWord(de);
+  }
+}
 void op_add() {Word b=pop(); Word a=pop(); push(a+b);}
 void op_sub() {Word b=pop(); Word a=pop(); push(a-b);}
 void op_mul() {Word b=pop(); Word a=pop(); push(a*b);}
@@ -492,6 +501,7 @@ const OpCode opCodes[]={
   {"jmp?", &op_cond_jmp}, // 6
   {"call", &op_call},     // 7
   
+  {"dcall", &op_dcall},
   {"ret?", &op_cond_ret},
   {"zret?", &op_zret},            // return on zero otherwise leave value on stack
 
