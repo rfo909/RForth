@@ -15,7 +15,7 @@ v0.0.1 has the compiler working, as well as the interpreter, and the runtime.cod
 
 OpCodes: zero bval cval ret + cr . dup >R R> ? jmp jmp? ?W dis
 
-v0.0.1b added up to 10 tags &1 to &9 and up to 5 references to tag *1 to *9, to use with 
+v0.0.1b added up to 5 tags &1 to &5 and up to 5 references to tags *1 to *5, to use with 
   jmp and jmp? to create loops and conditionals. Patches both forward and backward.
 
 ex.
@@ -46,50 +46,53 @@ typedef struct {
 
 typedef unsigned int Word;
 
-Word dStack[16];
+#define DSTACK_SIZE     16
+#define RSTACK_SIZE     16
+
+Word dStack[DSTACK_SIZE];
 byte dStackNext=0;
-Word rStack[16];
+Word rStack[RSTACK_SIZE];
 byte rStackNext=0;
 
-#define DE_TYPE_NORMAL 1
-#define DE_TYPE_IMMEDIATE 2
+#define DE_TYPE_NORMAL      1
+#define DE_TYPE_IMMEDIATE   2
+#define DE_TYPE_CONSTANT    3  // value stored in address field
 
 typedef struct DictEntry {
   char *name;
   byte type;
-  byte address;
+  Word address;
 
   struct DictEntry *next;
 } DictEntry;
 
 
-#define OP_ZERO  2
-#define OP_BVAL  3
-#define OP_CVAL  4
-#define OP_RET   5
-#define OP_JMP   6
-#define OP_COND_JMP 7
+#define OP_BVAL  2
+#define OP_CVAL  3
+#define OP_RET   4
+#define OP_JMP   5
+#define OP_COND_JMP 6
+#define OP_CALL  7
 
 
 #define MAX_WORD_LENGTH   16
 
 
-Word errorCode = 0;
+boolean errorCode = false;
 
 byte codeSegment[200];
 byte dataSegment[200];
 
-Word codeSegmentNext=1;  // programCounter 0 means no code running (keeping it unsigned)
+Word codeNext=1;  // programCounter 0 means no code running (keeping it unsigned)
+Word compileNext=1;
+
+void compileOut (byte b) {
+  codeSegment[compileNext++]=b;
+}
+
 Word dataSegmentNext=0;
 
 char nextWord[MAX_WORD_LENGTH+1];  // input buffer
-
-Word definedWords[127]; 
-  // map single bytes with upper bit stripped to Word addresses for compiled Forth words, 
-  // stored in the codeSegment
-
-
-byte nextDefinedWord=0;
 
 Word programCounter=0;
 
@@ -102,12 +105,12 @@ void setup() {
   Serial.println("Ok");
 }
 
-void error (Word code, char *msg) {
+void error (char *category, char *detail) {
   Serial.print("Error ");
-  Serial.print(code);
-  Serial.print(" ");
-  Serial.println(msg);
-  errorCode=code;
+  Serial.print(category);
+  Serial.print(": ");
+  Serial.println(detail);
+  errorCode=true;
   clearInputBuffer();
 }
 
@@ -144,7 +147,7 @@ void readNextWord () {
       } // else ignore
     } else {
       if (pos > MAX_WORD_LENGTH-1) {
-        error(1,"Input word too long");
+        error("overflow","nextword");
         nextWord[pos]='\0';
 
         return;
@@ -155,29 +158,35 @@ void readNextWord () {
 }
 
 void push (Word v) {
-  //Serial.print("Push: ");
-  //Serial.println(v);
+  if (dStackNext >= DSTACK_SIZE-1) {
+    error("overflow","dStack");
+    return;
+  }
   dStack[dStackNext++]=v;
 }
 
 Word pop () {
-  Word value = dStack[--dStackNext];
-  //Serial.print("Pop: ");
-  //Serial.println(value);
-  return value;
+  if (dStackNext==0) {
+    error("underflow","dStack");
+    return 0;
+  }
+  return dStack[--dStackNext];
 }
 
 void rpush (Word v) {
-  //Serial.print("Push: ");
-  //Serial.println(v);
+  if (dStackNext >= RSTACK_SIZE-1) {
+    error("overflow","rStack");
+    return;
+  }
   rStack[rStackNext++]=v;
 }
 
 Word rpop () {
-  Word value = rStack[--rStackNext];
-  //Serial.print("Pop: ");
-  //Serial.println(value);
-  return value;
+  if (rStackNext==0) {
+    error("underflow","rStack");
+    return 0;
+  }
+  return rStack[--rStackNext];
 }
 
 
@@ -201,7 +210,7 @@ DictEntry *dictLookupNextWord () {
 }
 
 
-DictEntry *dictLookupByAddr (byte addr) {
+DictEntry *dictLookupByAddr (Word addr) {
   DictEntry *ptr=dictionaryHead;
   while (ptr != NULL) {
     if (ptr->address==addr) return ptr;
@@ -210,52 +219,80 @@ DictEntry *dictLookupByAddr (byte addr) {
   return NULL;
 }
 
-/*
-* Compile nextWord, return currPos or -1 if error
-*/
-int compileNextWord (int currPos) {
-  if (!strcmp(nextWord,"0")) {
-    codeSegment[currPos++] = OP_ZERO;
-    return currPos;
+
+void compileNumberByte (byte b) {
+    compileOut(OP_BVAL);
+    compileOut(b);
+}
+
+void compileNumberCell (Word w) {
+    compileOut(OP_CVAL);
+    compileOut((w>>8) & 0xFF);
+    compileOut(w & 0xFF);
+}
+
+void compileNumber (Word w) {
+  if (w < 255) {
+    compileNumberByte(w);
+  } else {
+    compileNumberCell(w);
   }
-  int i=atoi(nextWord);  // can not match 0 with atoi, generating OP_ZERO above
+}
+/*
+* Compile nextWord, true if ok, false if error
+*/
+boolean compileNextWord () {
+  if (!strcmp(nextWord,"0")) {
+    compileNumber(0);
+    return true;
+  }
+  int i=atoi(nextWord);  // can not match 0 with atoi, generating zero above
   if (i != 0) {
-    if (i < 255) {
-      codeSegment[currPos++]=OP_BVAL;
-      codeSegment[currPos++]=i;
-    } else {
-      codeSegment[currPos++]=OP_CVAL;
-      codeSegment[currPos++]=(i>>8) & 0xFF;
-      codeSegment[currPos++]=i & 0xFF;
-    }
-    return currPos;
+    compileNumber(i);
+    return true;
   } 
   
   DictEntry *de=dictLookupNextWord();
   if (de != NULL) {
     if (de->type==DE_TYPE_NORMAL) {
-      codeSegment[currPos++] = de->address;
+      compileOut(OP_CALL);
+      compileOut((de->address >> 8) & 0xFF);
+      compileOut(de->address & 0xFF);
     } else if (de->type==DE_TYPE_IMMEDIATE) {
-      executeInstruction(de->address);
+      callForthWord(de);
+    } else if (de->type==DE_TYPE_CONSTANT) {
+      compileNumber(de->address);
     }
-    return currPos;
+    return true;
   }
 
-  byte addr=assembleNextWord();
+  byte addr=lookupOpCode();
   if (addr == 0) {
-    Serial.print("Unknown: ");
-    Serial.println(nextWord);
-    return 0;
+    error("unknown",nextWord);
+    return false;
   }
-  codeSegment[currPos++] = addr;
-  return currPos;
+  compileOut(addr);
+  return true;
 }
+
+
+void create () {
+  readNextWord();
+  char *ptr=(char *) malloc(strlen(nextWord)+1);
+  strcpy(ptr,nextWord);
+
+  DictEntry *de=(DictEntry *) malloc(sizeof(DictEntry));
+  de->name=ptr;
+  de->type=DE_TYPE_CONSTANT;
+  de->address=0;
+  de->next=dictionaryHead;
+  dictionaryHead=de;
+}
+
 
 // -------
 // opcodes
 // -------
-
-void op_reserved() {Serial.print("Undefined");}
 
 struct Ref {
   byte tag;
@@ -264,8 +301,14 @@ struct Ref {
 
 #define NUM_TAGS_REFS     5
 
+void op_reserved() {
+  Serial.print("undefined");
+}
+
+
 void op_colon() {  
-  Word currPos=codeSegmentNext;
+  compileNext=codeNext;
+  Word startPos=codeNext;
 
   Word tags[NUM_TAGS_REFS]; 
   struct Ref refs[NUM_TAGS_REFS];
@@ -276,36 +319,38 @@ void op_colon() {
   
   byte nextRef=0;
 
-  // name of word
-  readNextWord();
-  char *ptr=(char *) malloc(strlen(nextWord)+1);
-  strcpy(ptr,nextWord);
+  // create dictionary entry (CONSTANT address=0)
+  create();
 
   // write dummy length byte (patched at semicolon)
   // (this enables disassembling)
-  codeSegment[currPos++]=99;
+  compileOut(99);
 
   for (;;) {
     readNextWord();
 
-    if (*nextWord=='&') {
+    // define tag?
+    if (*nextWord=='*') {
       int i=atoi(nextWord+1);
       if (i > 0) {
-        tags[i-1] = currPos;
+        tags[i-1] = compileNext;
         continue;
       }
     }
 
-    if (*nextWord=='*') {
+    // look up tag?
+    if (*nextWord=='&') {
       int i=atoi(nextWord+1);
       if (i>0) {
-        codeSegment[currPos++]=OP_CVAL;
+
+        compileOut(OP_CVAL);
+
         refs[nextRef].tag=i-1;
-        refs[nextRef].addr=currPos;
+        refs[nextRef].addr=compileNext;
 
         // place holder to be patched
-        codeSegment[currPos++]=0;
-        codeSegment[currPos++]=0;
+        compileOut(0);
+        compileOut(0);
         
         nextRef++;
         continue;
@@ -313,7 +358,7 @@ void op_colon() {
     }
 
     if (!strcmp(nextWord,";")) {
-      codeSegment[currPos++]=OP_RET;
+      compileOut(OP_RET);
 
       // patch tag references
       for (int i=0; i<nextRef; i++) {
@@ -324,45 +369,42 @@ void op_colon() {
         codeSegment[patchAddr+1] = tagAddr & 0xFF;
       }
 
-      DictEntry *de=(DictEntry *) malloc(sizeof(DictEntry));
-      de->name=ptr;
-      de->type=DE_TYPE_NORMAL;
-      de->next=dictionaryHead;
-
-      Word byteCount=currPos-codeSegmentNext-1;  // length byte not included
+      byte byteCount=(byte) (compileNext-startPos-1);  // length byte not included
+      DictEntry *de=dictionaryHead;  // from call to create() 
 
       Serial.println();
-      Serial.print(ptr);
+      Serial.print(de->name);
       Serial.print(" ");
       Serial.print(byteCount);
       Serial.println(" bytes");
 
       // patch length byte
-      codeSegment[codeSegmentNext] = byteCount;
+      codeSegment[startPos]=byteCount;
 
-      // using byte-indexed indirection array, for custom words, 
-      // containing the actual address as a Word
-      de->address=nextDefinedWord | 0x80; // set high bit
-      definedWords[nextDefinedWord]=codeSegmentNext+1; // past length byte
-      nextDefinedWord++;
+      de->address=startPos+1;  // past length byte
+      de->type=DE_TYPE_NORMAL;
 
-      dictionaryHead=de;
-      codeSegmentNext=currPos;
+      codeNext=compileNext;
 
       return;
     }
-    int x = compileNextWord(currPos);
-    if (x<0) return;  // error
-    else currPos=(Word) x;
-
+    boolean ok = compileNextWord();
+    if (!ok) return;  // error
   }
 }
 
 
-void op_zero() {push(0);}
 void op_bval() {push(getOpcodeParameter());}
 void op_cval() {push(getOpcodeParameter()<<8 | getOpcodeParameter());}
-
+void op_call() {
+  Word addr=getOpcodeParameter()<<8 | getOpcodeParameter();
+  DictEntry *de=dictLookupByAddr(addr);
+  if (de==NULL) {
+    error("unknown","address");
+  } else {
+    callForthWord(de);
+  }
+}
 void op_add() {Word b=pop(); Word a=pop(); push(a+b);}
 void op_sub() {Word b=pop(); Word a=pop(); push(a-b);}
 void op_mul() {Word b=pop(); Word a=pop(); push(a*b);}
@@ -381,6 +423,9 @@ void op_ret() {programCounter=rpop();}
 void op_cond_ret() {Word cond=pop(); if (cond != 0) programCounter=rpop();}
 void op_zret() {Word cond=pop(); if (cond==0) programCounter=rpop(); else push(cond);}
 
+void op_create() {
+  create();
+}
 void op_immediate() {
   if (dictionaryHead != NULL) dictionaryHead->type=DE_TYPE_IMMEDIATE;
 }
@@ -395,7 +440,9 @@ void op_words() {
     Serial.print(" ");
     Serial.print(ptr->address);
     Serial.print(" ");
-    Serial.println(definedWords[ptr->address & 0x7F]);
+    if (ptr->type==DE_TYPE_IMMEDIATE) Serial.print("immediate");
+    if (ptr->type==DE_TYPE_CONSTANT) Serial.print("constant");
+    Serial.println();
     ptr=ptr->next;
   }
 }
@@ -418,10 +465,10 @@ void op_cond_jmp() {
 void op_word_addr() {
   readNextWord();
   DictEntry *de=dictLookupNextWord();
-  if (de==0) {
+  if (de==NULL) {
     push(0);
   } else {
-    push(definedWords[de->address  & 0x7F]);
+    push(de->address);
   }
 }
 
@@ -438,15 +485,17 @@ const OpCode opCodes[]={
   {"", &op_reserved}, 
   {":", &op_colon},
 
-  {"zero", &op_zero},     // 2
-  {"bval", &op_bval},     // 3
-  {"cval", &op_cval},     // 4
-  {"ret", &op_ret},       // 5
-  {"jmp", &op_jmp},       // 6
-  {"jmp?", &op_cond_jmp},       // 7
+  {"bval", &op_bval},     // 2
+  {"cval", &op_cval},     // 3
+  {"ret", &op_ret},       // 4
+  {"jmp", &op_jmp},       // 5
+  {"jmp?", &op_cond_jmp}, // 6
+  {"call", &op_call},     // 7
   
   {"ret?", &op_cond_ret},
   {"zret?", &op_zret},            // return on zero otherwise leave value on stack
+
+  {"create", &op_create}, 
   {"immediate", &op_immediate}, 
   {"+", &op_add},
   {"-", &op_sub},
@@ -500,34 +549,34 @@ void op_dis() {
       dataBytes--;
       continue;
     }
-    if (op & 0x80) {
-      // scan dictionary to get name
-      DictEntry *de = dictLookupByAddr(op);
-      if (de==NULL) {
-        Serial.println("<NULL>");
-      } else {
-        Serial.println(de->name);
-      }
-    } else {
-      Serial.println(opCodes[op].name);
-      if (op==OP_BVAL) {
-        dataBytes=1;
-      } else if (op==OP_CVAL) {
-        dataBytes=2;
-        Word val=(codeSegment[addr+1] << 8) | codeSegment[addr+2];
-        Serial.print("  (");
-        Serial.print(val);
-        Serial.println(")");
-      }
+  
+    Serial.print(opCodes[op].name);
+    if (op==OP_BVAL) {
+      dataBytes=1;
+    } else if (op==OP_CVAL) {
+      dataBytes=2;
+      Word val=(codeSegment[addr+1] << 8) | codeSegment[addr+2];
+      Serial.print(" ");
+      Serial.print(val);
+    } else if (op==OP_CALL) {
+      dataBytes=2;
+      Word val=(codeSegment[addr+1] << 8) | codeSegment[addr+2];
+      Serial.print(" ");
+      Serial.print(val);
+
+      DictEntry *de=dictLookupByAddr(val);
+      Serial.print(" ");
+      Serial.print(de->name);
     }
+    Serial.println();
   }
 }
 
 // check nextWord against the opCodes array, return index or -1 if not found
-int assembleNextWord () {
+int lookupOpCode () {
   byte pos=0;
-  for (byte pos=0; pos < 0x80 ; pos++) {
-    if (opCodes[pos].f == 0) return 0;
+  for (byte pos=0; pos < 255 ; pos++) {
+    if (opCodes[pos].f == 0) return -1;  // end of list, not found
     if (!strcmp(nextWord,opCodes[pos].name)) return pos;
   }
   return -1;
@@ -535,20 +584,17 @@ int assembleNextWord () {
 
 
 
-void callForthWord (Word codeAddress) {
-  rpush(programCounter);
-  programCounter=codeAddress;
+void callForthWord (DictEntry *de) {
+  if (de->type==DE_TYPE_CONSTANT) {
+    push(de->address);
+  } else {
+    rpush(programCounter);
+    programCounter=de->address;
+  }
 }
 
-void executeInstruction (byte addr) {
-  if (addr & 0x80) {
-    // high bit 1 means Forth word
-    Word codeAddress=definedWords[addr & 0x7F];
-    callForthWord(codeAddress);
-  } else {
-    // high bit 0 means opcode
-    opCodes[addr].f();
-  }
+void executeInstruction (byte opcode) {
+  opCodes[opcode].f();
 }
 
 void executeCode() {
@@ -562,34 +608,27 @@ void executeCode() {
 void loop() {
   executeCode();
 
-  /*
-  // debug  show codeSegment
-  Serial.print("code: ");
-  for (int i=0; i<codeSegmentNext; i++) {
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.print(codeSegment[i]);
-    Serial.println();
-  }
-  Serial.println();
-  */
   readNextWord();
+  if (!strcmp(nextWord,"0")) {
+    push(0);
+    return;
+  }
   int i=atoi(nextWord);
   if (i != 0) {
     push(i);
+    return;
+  }
+
+  DictEntry *de=dictLookupNextWord();
+  if (de != NULL) {
+    callForthWord(de);
   } else {
-    DictEntry *de=dictLookupNextWord();
-    if (de != NULL) {
-      executeInstruction(de->address);
+    int op = lookupOpCode();
+    if (op<0) {
+      error("unknown",nextWord);
     } else {
-      int op = assembleNextWord();
-      if (op<0) {
-        Serial.print("Unknown: ");
-        Serial.println(nextWord);
-      } else {
-        // execute op
-        opCodes[op].f();
-      }
+      // execute op
+      opCodes[op].f();
     }
   }
 }
