@@ -10,6 +10,8 @@ address of the code. If upper bit is 0, it is an opCode, which we look up
 in the opCodes table, and calls via function pointer. 
 
 v0.0.1 has the compiler working, as well as the interpreter, and the runtime.codeSegment
+  Implemented the ?W <word> to get the address of a word, and the dis which
+  is a disassembler
 
 OpCodes: zero bval cval ret + cr . dup >R R> ? jmp jmp? ?W dis
 
@@ -17,38 +19,6 @@ Shortcuts?
   DictEntry is a C struct.
   No support for dataSegment use
     - VARIABLE + allot?
-
-Example output
---------------  
-: a 1 2 3 + + ; Ok
-
-; 9 bytes
-: b a a + ; Ok
-
-; 4 bytes
-b . Ok
-12 
-
-?W b dis 
-length=4
-12  a
-13  a
-14  +
-15  ret
- Ok
-
-
-?W a dis Ok
-length=9
-2  bval
-3    1
-4  bval
-5    2
-6  bval
-7    3
-8  +
-9  +
-10  ret
 
 
 */
@@ -64,6 +34,9 @@ Word dStack[16];
 byte dStackNext=0;
 Word rStack[16];
 byte rStackNext=0;
+
+#define DE_TYPE_NORMAL 1
+#define DE_TYPE_IMMEDIATE 2
 
 typedef struct DictEntry {
   char *name;
@@ -81,8 +54,8 @@ typedef struct DictEntry {
 #define OP_JMP   6
 #define OP_COND_JMP 7
 
-#define DE_TYPE_NORMAL 1
-#define DE_TYPE_IMMEDIATE 2
+
+
 #define MAX_WORD_LENGTH   16
 
 #define OPCODE_COUNT    128
@@ -142,6 +115,12 @@ void readNextWord () {
         return;
       } // else ignore
     } else {
+      if (pos > MAX_WORD_LENGTH-1) {
+        Serial.println(F("Word too long"));
+        nextWord[pos]='\0';
+
+        return;
+      }
       nextWord[pos++]=ch;
     }
   }
@@ -203,6 +182,47 @@ DictEntry *dictLookupByAddr (byte addr) {
   return NULL;
 }
 
+/*
+* Return currPos or -1 if error
+*/
+int compileNextWord (int currPos) {
+  if (!strcmp(nextWord,"0")) {
+    codeSegment[currPos++] = OP_ZERO;
+    return currPos;
+  }
+  int i=atoi(nextWord);  // can not match 0 with atoi, generating OP_ZERO above
+  if (i != 0) {
+    if (i < 255) {
+      codeSegment[currPos++]=OP_BVAL;
+      codeSegment[currPos++]=i;
+    } else {
+      codeSegment[currPos++]=OP_CVAL;
+      codeSegment[currPos++]=(i>>8) & 0xFF;
+      codeSegment[currPos++]=i & 0xFF;
+    }
+    return currPos;
+  } 
+  
+  DictEntry *de=dictLookupNextWord();
+  if (de != NULL) {
+    if (de->type==DE_TYPE_NORMAL) {
+      codeSegment[currPos++] = de->address;
+    } else if (de->type==DE_TYPE_IMMEDIATE) {
+      executeInstruction(de->address);
+    }
+    return currPos;
+  }
+
+  byte addr=assembleNextWord();
+  if (addr == 0) {
+    Serial.print("Unknown: ");
+    Serial.println(nextWord);
+    return 0;
+  }
+  codeSegment[currPos++] = addr;
+  return currPos;
+}
+
 // -------
 // opcodes
 // -------
@@ -254,41 +274,10 @@ void op_colon() {
 
       return;
     }
-    if (!strcmp(nextWord,"0")) {
-      codeSegment[currPos++] = OP_ZERO;
-      continue;
-    }
-    int i=atoi(nextWord);  // can not match 0 with atoi, generating OP_ZERO above
-    if (i != 0) {
-      if (i < 255) {
-        codeSegment[currPos++]=OP_BVAL;
-        codeSegment[currPos++]=i;
-      } else {
-        codeSegment[currPos++]=OP_CVAL;
-        codeSegment[currPos++]=(i>>8) & 0xFF;
-        codeSegment[currPos++]=i & 0xFF;
-      }
-      continue;
-    } 
-    
-    DictEntry *de=dictLookupNextWord();
-    if (de != NULL) {
-      if (de->type==DE_TYPE_NORMAL) {
-        codeSegment[currPos++] = de->address;
-      } else if (de->type==DE_TYPE_IMMEDIATE) {
-        executeInstruction(de->address);
-      }
-      continue;
-    }
+    int x = compileNextWord(currPos);
+    if (x<0) return;  // error
+    else currPos=(Word) x;
 
-    byte addr=assembleNextWord();
-    if (addr == 0) {
-      Serial.print("Unknown: ");
-      Serial.println(nextWord);
-      return;
-    } else {
-      codeSegment[currPos++] = addr;
-    }
   }
 }
 
@@ -297,6 +286,8 @@ void op_zero() {push(0);}
 void op_bval() {push(getOpcodeParameter());}
 void op_cval() {push(getOpcodeParameter()<<8 | getOpcodeParameter());}
 void op_add() {Word b=pop(); Word a=pop(); push(a+b);}
+void op_sub() {Word b=pop(); Word a=pop(); push(a-b);}
+void op_mul() {Word b=pop(); Word a=pop(); push(a*b);}
 void op_cr() {Serial.println();}
 void op_dot() {Word x=pop(); Serial.print(x); Serial.print(" ");}
 void op_ret() {programCounter=rpop();}
@@ -310,7 +301,9 @@ void op_words() {
   while (ptr != NULL) {
     Serial.print(ptr->name);
     Serial.print(" ");
-    Serial.println(ptr->address);
+    Serial.print(ptr->address);
+    Serial.print(" ");
+    Serial.println(definedWords[ptr->address - OPCODE_COUNT]);
     ptr=ptr->next;
   }
 }
@@ -355,6 +348,8 @@ const OpCode opCodes[]={
   
   {"immediate", &op_immediate}, 
   {"+", &op_add},
+  {"-", &op_sub},
+  {"*", &op_mul},
   {"cr", &op_cr},
   {".", &op_dot},
   {"dup", &op_dup},
