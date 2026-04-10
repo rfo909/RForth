@@ -1,0 +1,12 @@
+# 21 bytes
+
+: loop 1
+  *1
+  	dup .
+  	1 +
+  	dup 10 > &2 jmp?
+  	&1 jmp
+  *2
+  	drop ;
+  
+  

@@ -10,23 +10,21 @@ address of the code. If upper bit is 0, it is an opCode, which we look up
 in the opCodes table, and calls via function pointer. 
 
 v0.0.1 has the compiler working, as well as the interpreter, and the runtime.codeSegment
-  Implemented the ?W <word> to get the address of a word, and the dis which
+  Implemented the ' <word> to get the address of a word, and the dis which
   is a disassembler
 
-OpCodes: zero bval cval ret + cr . dup >R R> ? jmp jmp? ?W dis
-
-v0.0.1b added up to 5 tags &1 to &5 and up to 5 references to tags *1 to *5, to use with 
+v0.0.1b added up to 5 tags /1 to /5 and up to 5 references to tags &1 to &5, to use with 
   jmp and jmp? to create loops and conditionals. Patches both forward and backward.
 
 ex.
 
-: test 1 
-  &1 
+: count-up 1 
+  /1 
   dup . 
   1 + 
-  dup 30 > *2 jmp? 
-  *1 jmp 
-  &2 drop ;
+  dup 30 > &2 jmp? 
+  &1 jmp 
+  /2 drop ;
 
 Compiles to 21 bytes no IF, no LOOP.
 
@@ -95,6 +93,7 @@ Word dataSegmentNext=0;
 char nextWord[MAX_WORD_LENGTH+1];  // input buffer
 
 Word programCounter=0;
+unsigned long instructionCount=0;
 
 DictEntry *dictionaryHead=NULL; 
 
@@ -136,11 +135,21 @@ Word readSerialChar () {
   }
 }
 
+int commentLevel=0;  // nested parantheses count
 void readNextWord () {
   byte pos=0;
+
   for(;;) {
-    Word ch=readSerialChar();
-    if (ch==13 || ch==10 || ch==32) {
+    char ch=readSerialChar();
+    if (ch=='(') {
+      commentLevel++;
+      continue;
+    } else if (ch==')') {
+      commentLevel--;
+      if (commentLevel < 0) commentLevel=0;
+      continue;
+    }
+    if (ch==13 || ch==10 || ch==32 || commentLevel>0) {
       if (pos > 0) {
         nextWord[pos]='\0';
         return;
@@ -330,7 +339,7 @@ void op_colon() {
     readNextWord();
 
     // define tag?
-    if (*nextWord=='*') {
+    if (*nextWord=='/') {
       int i=atoi(nextWord+1);
       if (i > 0) {
         tags[i-1] = compileNext;
@@ -338,7 +347,7 @@ void op_colon() {
       }
     }
 
-    // look up tag?
+    // tag lookup?
     if (*nextWord=='&') {
       int i=atoi(nextWord+1);
       if (i>0) {
@@ -364,6 +373,10 @@ void op_colon() {
       for (int i=0; i<nextRef; i++) {
         byte tag=refs[i].tag;
         Word tagAddr=tags[tag];
+        if (tagAddr==0) {
+          error("null","tag");
+          return;
+        }
         Word patchAddr=refs[i].addr;
         codeSegment[patchAddr] = (tagAddr >> 8) & 0xFF;
         codeSegment[patchAddr+1] = tagAddr & 0xFF;
@@ -440,6 +453,18 @@ void op_immediate() {
 }
 void op_dup() {Word x=pop(); push(x); push(x);}
 void op_drop() {pop();}
+void op_show_stack() {
+  Serial.println();
+  Serial.print("[");
+  for (byte i=0; i<dStackNext; i++) {
+    if (i>0) Serial.print(" ");
+    Serial.print(dStack[i]);
+  }
+  Serial.println("]");
+}
+void op_clear_stack() {
+  dStackNext=0;
+}
 
 void op_words() {
   DictEntry *ptr=dictionaryHead;
@@ -524,11 +549,13 @@ const OpCode opCodes[]={
 
   {"dup", &op_dup},
   {"drop", &op_drop},
+  {".s", &op_show_stack},
+  {"clear", &op_clear_stack},
   
   {">R", &op_to_r},
   {"R>", &op_r_from},
   {"?", &op_words},
-  {"?W", &op_word_addr},
+  {"'", &op_word_addr},
   {"key", &op_key},
   {"readc", &op_readc},
 
@@ -603,42 +630,45 @@ void callForthWord (DictEntry *de) {
   }
 }
 
-void executeInstruction (byte opcode) {
-  opCodes[opcode].f();
-}
-
 void executeCode() {
   while (programCounter != 0) {
     byte b=codeSegment[programCounter++];
-    executeInstruction(b);
+    opCodes[b].f();
+    instructionCount++;
   }
 }
 
 // interpreting main loop
 void loop() {
-  executeCode();
+  for(;;) {
+    Serial.println();
+    Serial.print("iCount ");
+    Serial.println(instructionCount);
 
-  readNextWord();
-  if (!strcmp(nextWord,"0")) {
-    push(0);
-    return;
-  }
-  int i=atoi(nextWord);
-  if (i != 0) {
-    push(i);
-    return;
-  }
+    executeCode();
 
-  DictEntry *de=dictLookupNextWord();
-  if (de != NULL) {
-    callForthWord(de);
-  } else {
-    int op = lookupOpCode();
-    if (op<0) {
-      error("unknown",nextWord);
+    readNextWord();
+    if (!strcmp(nextWord,"0")) {
+      push(0);
+      return;
+    }
+    int i=atoi(nextWord);
+    if (i != 0) {
+      push(i);
+      return;
+    }
+
+    DictEntry *de=dictLookupNextWord();
+    if (de != NULL) {
+      callForthWord(de);
     } else {
-      // execute op
-      opCodes[op].f();
+      int op = lookupOpCode();
+      if (op<0) {
+        error("unknown",nextWord);
+      } else {
+        // execute op
+        opCodes[op].f();
+      }
     }
   }
 }
