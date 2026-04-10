@@ -60,8 +60,12 @@ immediate                 set newest word immediate
 * 
 /
 >
+>=
 <
+<=
 ==
+!=
+
 and                       logical and
 or                        logical or
 not                       logical not
@@ -112,12 +116,12 @@ Todo
 Immediate words have not been tested. The compiler should support it, but we need to add opCode
 or emitting bytes.
 
-- b@ b!
-- ge le
+- bitwise andb orb neg
+- byte read write b@ b!
 - compileOut
 - codeNext
 
-Also have no way of interacting with the data segment.
+Also have no way of *interacting with the data segment*.
 
 The idea here is that the codeSegment may eventually live in flash, with a continuation for
 new words, living in RAM, while the data segment always lives in RAM. 

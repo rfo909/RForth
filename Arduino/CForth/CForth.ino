@@ -433,8 +433,11 @@ void op_mul() {Word b=pop(); Word a=pop(); push(a*b);}
 void op_div() {Word b=pop(); Word a=pop(); push(a/b);}
 
 void op_gt() {Word b=pop(); Word a=pop(); push(a>b ? 1 : 0);}
+void op_ge() {Word b=pop(); Word a=pop(); push(a>=b ? 1 : 0);}
 void op_lt() {Word b=pop(); Word a=pop(); push(a<b ? 1 : 0);}
+void op_le() {Word b=pop(); Word a=pop(); push(a<=b ? 1 : 0);}
 void op_eq() {Word b=pop(); Word a=pop(); push(a==b ? 1 : 0);}
+void op_ne() {Word b=pop(); Word a=pop(); push(a!=b ? 1 : 0);}
 void op_and() {Word b=pop(); Word a=pop(); push(a != 0 && b != 0 ? 1 : 0);}
 void op_or() {Word b=pop(); Word a=pop(); push(a != 0 || b != 0 ? 1 : 0);}
 void op_not() {Word x=pop(); push(x==0 ? 1 : 0);}
@@ -538,8 +541,11 @@ const OpCode opCodes[]={
   {"/", &op_div},
 
   {">", &op_gt},
+  {">=", &op_ge},
   {"<", &op_lt},
+  {"<=", &op_le},
   {"==", &op_eq},
+  {"!=", &op_ne},
   {"and", &op_and},
   {"or", &op_or},
   {"not", &op_not},
