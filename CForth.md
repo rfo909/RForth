@@ -41,9 +41,9 @@ from the stack.
 OpCodes
 -------
 
-```
-# Number literals
+2026-04-11: 44 opcodes so far
 
+```
 bval n                    push single byte value on stack 
 cval n n                  push cell value on stack
 ret                       return
@@ -52,13 +52,16 @@ ret                       return
 call n n                  call Forth code on given address
 <addr> dcall              dynamic call, taking address from stack
 <cond> ret?               conditional return
-<value> zret?             if <value> is 0, drop it and return, if not leave <value> on stack
+
 create (name)             create dictionary entry as type constant, value 0
 immediate                 set newest word immediate
+
 +
 -
 * 
 /
+%
+
 >
 >=
 <
@@ -71,22 +74,33 @@ or                        logical or
 not                       logical not
 
 cr                        carriage return
-.                         print TOS value
+.                         print TOS value (signed)
+.u                        unsigned
+.hex                      hex  
 
 dup
+2dup
 drop
+over
+pick
+
+?                         list words in dictionary
 .s                        show stack
 clear                     clear stack
+
+[test                     start timed test for opcount/second
+test]                     end timed test
+
 >R                        move value from data stack to return stack
 R>                        move value from return stack to data stack
 
-?                         list words in dictionary
 key                       return boolean for if a key has been pressed (serial)
 readc                     read character from serial
 
-' (word)                  return address of word
+' (word)                  get address of word
 <addr> dis                disassemble word
 ```
+
 
 Tags
 ----

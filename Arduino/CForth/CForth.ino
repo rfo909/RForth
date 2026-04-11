@@ -109,6 +109,8 @@ DictEntry *dictionaryHead=NULL;
 
 void setup() {
   Serial.begin(9600);
+  Serial.print(F_CPU / 1000000.0);
+  Serial.println(" MHz");
   Serial.println("Ok");
 }
 
@@ -592,7 +594,6 @@ void op_dot_hex() {Word x=pop(); Serial.print("0x"); Serial.print(x,16); Serial.
 
 void op_ret() {programCounter=rpop();}
 void op_cond_ret() {Word cond=pop(); if (cond != 0) programCounter=rpop();}
-void op_zret() {Word cond=pop(); if (cond==0) programCounter=rpop(); else push(cond);}
 
 void op_create() {
   create();
@@ -703,7 +704,6 @@ const OpCode opCodes[]={
   
   {"dcall", &op_dcall},
   {"ret?", &op_cond_ret},
-  {"zret?", &op_zret},            // return on zero otherwise leave value on stack
 
   {"create", &op_create}, 
   {"immediate", &op_immediate}, 
@@ -735,6 +735,7 @@ const OpCode opCodes[]={
   {"over", &op_over},
   {"pick", &op_pick},
    
+  {"?", &op_words},
   {".s", &op_show_stack},
   {"clear", &op_clear_stack},
 
@@ -744,12 +745,11 @@ const OpCode opCodes[]={
   
   {">R", &op_to_r},
   {"R>", &op_r_from},
-  {"?", &op_words},
-  {"'", &op_word_addr},
   {"key", &op_key},
   {"readc", &op_readc},
 
 
+  {"'", &op_word_addr},
   {"dis", &op_dis},
 
   // end-marker
