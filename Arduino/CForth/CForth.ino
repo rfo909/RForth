@@ -13,28 +13,36 @@ v0.0.1 has the compiler working, as well as the interpreter, and the runtime.cod
   Implemented the ' <word> to get the address of a word, and the dis which
   is a disassembler
 
-v0.0.1b added up to 5 tags /1 to /5 and up to 5 references to tags &1 to &5, to use with 
+v0.0.1b added up to 5 tags /0 to /4 and up to 5 references to tags &0 to &4, to use with 
   jmp and jmp? to create loops and conditionals. Patches both forward and backward.
 
-ex.
+2026-04-11
+----------
+Added proper integer parsing, supporting signed hex, binary and decimal
+  0xCAFE 
+  b10010
+Fixed various bugs.
 
-: count-up 1 
-  /1 
-  dup . 
-  1 + 
-  dup 30 > &2 jmp? 
-  &1 jmp 
-  /2 drop ;
+Code of the day:
+----------------
+: prime (n -- bool)
+	dup
+	(n) 2 /		(counter value, counting down)
+	/1
+		2dup % 
+			0 == &2 jmp?
+		(n count) 1 -
+			dup 1 == &3 jmp?
+		&1 jmp
+	/2 drop drop 0 ret  (divisor found)
+	/3 drop drop 1  (count reach zero - diviser not found => prime)
+;
+		
+(speed test: 106543 ops/second on 20MHz Arduino Every Nano)
 
-Compiles to 21 bytes no IF, no LOOP.
-
-
-Shortcuts? 
-  DictEntry is a C struct.
-  No support for dataSegment use
-    - VARIABLE + allot?
-
-
+: test
+	[test 31013 prime drop test]
+;
 */
 
 typedef struct {
@@ -76,7 +84,7 @@ typedef struct DictEntry {
 #define MAX_WORD_LENGTH   16
 
 
-boolean errorCode = false;
+boolean hasError = false;
 
 byte codeSegment[200];
 byte dataSegment[200];
@@ -105,12 +113,16 @@ void setup() {
 }
 
 void error (char *category, char *detail) {
-  Serial.print("Error ");
+  hasError=true;
+  Serial.println();
+  for (byte i=0; i<20; i++) Serial.print("-");
+  Serial.println();
+  Serial.print("Error: ");
   Serial.print(category);
-  Serial.print(": ");
+  Serial.print(" ");
   Serial.println(detail);
-  errorCode=true;
-  clearInputBuffer();
+  for (byte i=0; i<20; i++) Serial.print("-");
+  Serial.println();
 }
 
 void clearInputBuffer() {
@@ -126,7 +138,7 @@ Word readSerialChar () {
     int ch=Serial.read();
     if (ch >= 0) {
       if (ch==13 || ch==10) {
-        if (READC_ECHO) Serial.println(" Ok");
+        if (READC_ECHO) Serial.println();
       }  else {
         if (READC_ECHO) Serial.print((char) ch);
       }
@@ -180,6 +192,14 @@ Word pop () {
     return 0;
   }
   return dStack[--dStackNext];
+}
+
+Word pick (Word n) {
+  if (dStack-1-n < 0) {
+    error("underflow","dStack");
+    return 0;
+  }
+  return dStack[dStackNext-1-n];
 }
 
 void rpush (Word v) {
@@ -247,20 +267,95 @@ void compileNumber (Word w) {
     compileNumberCell(w);
   }
 }
+
+/*
+Enhanced atoi, recognizes decimal, hex (0x...) and binary (b....) and negative, returns boolean to 
+indicate success or failure. Writes result int *target
+*/
+boolean myAtoi (int *target) {
+  int readPos=0;
+  
+  boolean negative=false;
+  if (nextWord[readPos]=='-') {
+    negative=true;
+    readPos++;
+    if(nextWord[readPos] == '\0') return false;
+  }
+
+  long value=0; 
+
+  if (!strncmp(nextWord+readPos,"0x",2)) {
+    // parsing hex
+    readPos+=2;
+
+    while(nextWord[readPos] != '\0') {
+      char c=nextWord[readPos++];
+      if (c=='\0') return false; // no digits
+
+      if (c>='0' && c <= '9') {
+        value=value*16 + (c-'0');
+      } else if (c>='A' && c<='F') {
+        value=value*16 + (c-'A') + 10;
+      } else if (c>='a' && c<='f') {
+        value=value*16 + (c-'a') + 10;
+      } else {
+        return false;  // fail
+      }
+    }
+    // ok
+  } else if (nextWord[readPos]=='b') {
+    // possibly binary
+    readPos++;
+    if (nextWord[readPos]=='\0') return false; // no digits
+
+    while(nextWord[readPos] != '\0') {
+      char c=(char) nextWord[readPos++];
+      if (c>='0' && c <= '1') {
+        value=value*2 + (c-'0');
+      } else {
+        return false;  // fail
+      }
+    }
+    // ok
+  } else {
+    // decimal?
+    while(nextWord[readPos] != '\0') {
+      char c=(char) nextWord[readPos++];
+      if (c>='0' && c <= '9') {
+        value=value*10 + (c-'0');
+      } else {
+        return false;  // fail
+      }
+    }
+    // ok
+  } 
+
+  if (negative) value=-value;
+  *target=value;
+  return true; // success
+}
+
+
 /*
 * Compile nextWord, true if ok, false if error
 */
 boolean compileNextWord () {
+
+  // check for number (TODO: replace atoi - its an ugly hack)
+  int i=0;
+  if (myAtoi(&i)) {
+    Word w=(Word) i;
+    compileNumber(i);
+    return true;
+  } 
+
+
+
+
   if (!strcmp(nextWord,"0")) {
     compileNumber(0);
     return true;
   }
-  int i=atoi(nextWord);  // can not match 0 with atoi, generating zero above
-  if (i != 0) {
-    compileNumber(i);
-    return true;
-  } 
-  
   DictEntry *de=dictLookupNextWord();
   if (de != NULL) {
     if (de->type==DE_TYPE_NORMAL) {
@@ -275,13 +370,14 @@ boolean compileNextWord () {
     return true;
   }
 
-  byte addr=lookupOpCode();
-  if (addr == 0) {
-    error("unknown",nextWord);
-    return false;
+  int opcode=lookupOpCode();
+  if (opcode >= 0) {
+    compileOut(opcode);
+    return true;
   }
-  compileOut(addr);
-  return true;
+
+  return false;
+  
 }
 
 
@@ -300,15 +396,31 @@ void create () {
 
 
 // -------
-// opcodes
+// opcode implemenations
 // -------
+
+#define NUM_TAGS_REFS     5
+  // 0-4
+
+boolean getTagNumber (char *ptr, int *tag) {
+  if (*ptr == '\0') return false;
+  if (*(ptr+1) != '\0') return false; // single digit only
+  if (*ptr >= '0' && *ptr <= '4') {
+    *tag = *ptr - '0';
+    if (*tag < 0 || *tag >= NUM_TAGS_REFS) {
+      error("unknown","tag");
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
 
 struct Ref {
   byte tag;
   Word addr;
 };
 
-#define NUM_TAGS_REFS     5
 
 void op_reserved() {
   Serial.print("undefined");
@@ -336,27 +448,42 @@ void op_colon() {
   compileOut(99);
 
   for (;;) {
+    if (hasError) return;
+
     readNextWord();
 
     // define tag?
     if (*nextWord=='/') {
-      int i=atoi(nextWord+1);
-      if (i > 0) {
-        tags[i-1] = compileNext;
+      int tag=0;
+      if (getTagNumber(nextWord+1, &tag)) {
+        /*
+        Serial.println();
+        Serial.print("*** tag ");
+        Serial.print(tag);
+        Serial.print("=");
+        Serial.println(compileNext);
+        */
+        tags[tag] = compileNext;
         continue;
       }
     }
 
     // tag lookup?
     if (*nextWord=='&') {
-      int i=atoi(nextWord+1);
-      if (i>0) {
+      int tag=0;
+      if (getTagNumber(nextWord+1, &tag)) {
 
         compileOut(OP_CVAL);
 
-        refs[nextRef].tag=i-1;
+        refs[nextRef].tag=tag;
         refs[nextRef].addr=compileNext;
-
+        /*
+        Serial.println();
+        Serial.print("*** ref ");
+        Serial.print(tag);
+        Serial.print(" at ");
+        Serial.println(compileNext);
+        */
         // place holder to be patched
         compileOut(0);
         compileOut(0);
@@ -378,6 +505,16 @@ void op_colon() {
           return;
         }
         Word patchAddr=refs[i].addr;
+        /*
+        Serial.println();
+        Serial.print("*** PATCHING ref ");
+        Serial.print(tag);
+        Serial.print(" at ");
+        Serial.print(patchAddr);
+        Serial.print(" -> ");
+        Serial.println(tagAddr);
+        */
+
         codeSegment[patchAddr] = (tagAddr >> 8) & 0xFF;
         codeSegment[patchAddr+1] = tagAddr & 0xFF;
       }
@@ -401,8 +538,13 @@ void op_colon() {
 
       return;
     }
+
+    // all other words except semicolon
     boolean ok = compileNextWord();
-    if (!ok) return;  // error
+    if (!ok) {
+      error("unknown", nextWord);
+      return;
+    }
   }
 }
 
@@ -431,6 +573,7 @@ void op_add() {Word b=pop(); Word a=pop(); push(a+b);}
 void op_sub() {Word b=pop(); Word a=pop(); push(a-b);}
 void op_mul() {Word b=pop(); Word a=pop(); push(a*b);}
 void op_div() {Word b=pop(); Word a=pop(); push(a/b);}
+void op_modulo() {Word b=pop(); Word a=pop(); push(a%b);}
 
 void op_gt() {Word b=pop(); Word a=pop(); push(a>b ? 1 : 0);}
 void op_ge() {Word b=pop(); Word a=pop(); push(a>=b ? 1 : 0);}
@@ -454,8 +597,13 @@ void op_create() {
 void op_immediate() {
   if (dictionaryHead != NULL) dictionaryHead->type=DE_TYPE_IMMEDIATE;
 }
-void op_dup() {Word x=pop(); push(x); push(x);}
+
+void op_dup() {push(pick(0));}
+void op_2dup() {push(pick(1)); push(pick(1));}
 void op_drop() {pop();}
+void op_over() {push(pick(1));}
+void op_pick() {Word n=pop(); push(pick(n));}
+
 void op_show_stack() {
   Serial.println();
   Serial.print("[");
@@ -468,6 +616,27 @@ void op_show_stack() {
 void op_clear_stack() {
   dStackNext=0;
 }
+
+// Speed testing
+
+unsigned long testStart=0L;
+unsigned long testCount=0L;
+
+void op_start_test () {
+  testStart=millis();
+  testCount=instructionCount;
+}
+
+void op_end_test () {
+  Serial.println();
+  unsigned long duration=millis()-testStart;
+  unsigned long count=instructionCount-testCount;
+  double seconds=duration/1000.0;
+  Serial.print("op/s ");
+  double op_per_s = count/seconds;
+  Serial.println(op_per_s);
+}
+
 
 void op_words() {
   DictEntry *ptr=dictionaryHead;
@@ -539,6 +708,7 @@ const OpCode opCodes[]={
   {"-", &op_sub},
   {"*", &op_mul},
   {"/", &op_div},
+  {"%", &op_modulo},
 
   {">", &op_gt},
   {">=", &op_ge},
@@ -554,9 +724,17 @@ const OpCode opCodes[]={
   {".", &op_dot},
 
   {"dup", &op_dup},
+  {"2dup", &op_2dup},
   {"drop", &op_drop},
+  {"over", &op_over},
+  {"pick", &op_pick},
+   
   {".s", &op_show_stack},
   {"clear", &op_clear_stack},
+
+  {"[test", &op_start_test},
+  {"test]", &op_end_test},
+
   
   {">R", &op_to_r},
   {"R>", &op_r_from},
@@ -638,6 +816,11 @@ void callForthWord (DictEntry *de) {
 
 void executeCode() {
   while (programCounter != 0) {
+    if (hasError) {
+      programCounter=0;
+      return;     
+    }
+
     byte b=codeSegment[programCounter++];
     opCodes[b].f();
     instructionCount++;
@@ -646,37 +829,31 @@ void executeCode() {
 
 // interpreting main loop
 void loop() {
-  for(;;) {
-    Serial.println();
-    Serial.print("iCount ");
-    Serial.println(instructionCount);
+  hasError=false;
 
-    executeCode();
+  executeCode();
+  if (hasError) return;
 
-    readNextWord();
-    if (!strcmp(nextWord,"0")) {
-      push(0);
-      return;
-    }
-    int i=atoi(nextWord);
-    if (i != 0) {
-      push(i);
-      return;
-    }
+  readNextWord();
 
-    DictEntry *de=dictLookupNextWord();
-    if (de != NULL) {
-      callForthWord(de);
-    } else {
-      int op = lookupOpCode();
-      if (op<0) {
-        error("unknown",nextWord);
-      } else {
-        // execute op
-        opCodes[op].f();
-      }
-    }
+  int i=0;
+  if (myAtoi(&i)) {
+    push ((Word) i);
+    return;
   }
+
+  DictEntry *de=dictLookupNextWord();
+  if (de != NULL) {
+    callForthWord(de);
+    return;
+  }
+  
+  int op = lookupOpCode();
+  if (op>=0) {
+    opCodes[op].f();
+    return;
+  }
+  error("unknown",nextWord);
 }
 
 
