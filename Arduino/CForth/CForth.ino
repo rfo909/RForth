@@ -586,7 +586,10 @@ void op_or() {Word b=pop(); Word a=pop(); push(a != 0 || b != 0 ? 1 : 0);}
 void op_not() {Word x=pop(); push(x==0 ? 1 : 0);}
 
 void op_cr() {Serial.println();}
-void op_dot() {Word x=pop(); Serial.print(x); Serial.print(" ");}
+void op_dot() {int i=(int) pop(); Serial.print(i); Serial.print(" ");}
+void op_dot_u() {Word x=pop(); Serial.print(x); Serial.print(" ");}
+void op_dot_hex() {Word x=pop(); Serial.print("0x"); Serial.print(x,16); Serial.print(" ");}
+
 void op_ret() {programCounter=rpop();}
 void op_cond_ret() {Word cond=pop(); if (cond != 0) programCounter=rpop();}
 void op_zret() {Word cond=pop(); if (cond==0) programCounter=rpop(); else push(cond);}
@@ -722,6 +725,9 @@ const OpCode opCodes[]={
 
   {"cr", &op_cr},
   {".", &op_dot},
+  {".u", &op_dot_u},
+  {".hex", &op_dot_hex},
+
 
   {"dup", &op_dup},
   {"2dup", &op_2dup},

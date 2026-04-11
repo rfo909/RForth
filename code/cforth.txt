@@ -19,3 +19,13 @@
 : test
 	[test 31013 prime drop test]
 ;
+
+
+: count-up
+1 (counter)
+/1 (tag at start of loop)
+dup . 1 + dup 30 > &2 jmp? (termination condition)
+&1 jmp (repeat loop)
+/2 drop ; (cleanup and return)
+
+
