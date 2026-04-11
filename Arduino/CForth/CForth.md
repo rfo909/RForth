@@ -14,9 +14,8 @@ use less RAM.
 Also, the representation of literal values is more straight forward, using
 "bval" and "cval" op-codes, followed by 1 or 2 bytes, respectively. 
 
-
-First attempt
--------------
+v0.0.1
+------ 
 Imagined it would be nice to have forth word calls as compact as possible, using
 single bytes. Would discriminate on top bit, allowing 127 op-codes written in C,
 and 127 Forth word references. 
@@ -24,12 +23,15 @@ and 127 Forth word references.
 This worked, but allocating the array for "definedWords" in advance, with each 
 element being Cell sized, meant wasting 254 bytes that may never be fully used.
 
-Created a word to look up the address of a word, and a disassembler, in order
-to debug the workings of the compiler.
+Has the compiler working, as well as the REPL, and the runtime.
+
+Implemented the ' <word> to get the address of a word, and the dis which
+is a disassembler
 
 
-Second version
---------------
+
+v0.0.2
+------
 Rewrote the code into a more traditional format, with the address in the
 dictionary entries being Cell sized (2 bytes), and creating a "call" opCode
 which is followed by the address (2 bytes).
@@ -37,11 +39,52 @@ which is followed by the address (2 bytes).
 Then created the "dcall" opcode, in order for Forth to call any address,
 from the stack.
 
+Added up to 5 tags /0 to /4 and up to 5 references to tags on format &0 to &4, 
+to use with jmp and jmp? to create loops and conditionals. Patches both
+forward and backward at base level inside the colon compiler.
+
+v0.0.3 2026-04-11
+-----------------
+Added proper integer parsing, supporting signed hex, binary and decimal
+  0xCAFE 
+  b10010
+Fixed various bugs.
+
+
+
+v0.0.4 2026-04-11
+-----------------
+Removed the "call" opCode. Decided that a 15 bit total address space is
+more than enough for this toy Forth. That corresponds to 32 K, which we
+then split into two again, for 16K addressable space of compiled Forth, 
+and 16K addressable space for data.
+
+Depending on the microcontroller, the actual sizes of these segments
+might be (much) smaller. 
+
+Intending to make the code segment span both a Flash part and a "live"
+part, which can at most total 16k.
+
+=> This decision opened for reducing Forth calls to 2 bytes. 
+
+The built-in opCodes count 43 now, and are projected to be far fewer
+than 127, which means their byte codes have high bit zero.
+
+Calls are now compiled into a byte with high bit 1, followed by a 0, and
+then 6 bits + another byte = 14 bits. The runtime uses this high bit to
+detect a call, and assembles a 14 bit address using that byte and the next.
+
+
+It works!
+
+I am keeping the "dcall" opCode (d for dynamic) which takes the Forth call
+address off the stack, for function pointer support.
+
 
 OpCodes
 -------
 
-2026-04-11: 44 opcodes so far
+Updated 2026-04-11
 
 ```
 bval n                    push single byte value on stack 
@@ -49,7 +92,6 @@ cval n n                  push cell value on stack
 ret                       return
 <addr> jmp                jump to address 
 <cond> <addr> jmp?        conditional jump to address if <cond> != 0
-call n n                  call Forth code on given address
 <addr> dcall              dynamic call, taking address from stack
 <cond> ret?               conditional return
 
