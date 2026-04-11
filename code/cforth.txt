@@ -1,6 +1,7 @@
 
 (compiles to 38 bytes of code)
 
+
 : prime (n -- bool)
 	dup
 	(n) 2 /		(counter value, counting down)
@@ -14,8 +15,8 @@
 	/3 drop drop 1  (count reach zero - diviser not found => prime)
 ;
 		
-(speed test: 106543 ops/second Arduino Nano Every @16MHz)
-(            111873 ops/second atmega328p @16MHz )
+(speed test: 107 K ops/second Arduino Nano Every @16MHz)
+(            101 K ops/second after adding check on: if (b & 0x80) (to detect 2 byte Forth calls) )
 
 
 : test
@@ -23,11 +24,25 @@
 ;
 
 
+(speed test2: doing frequent Forth calls)
+(            102800 ops/second Arduino Nano Every @16MHz)
+
+: test2 [test 
+	1
+	/0
+		13 prime drop
+		1 + dup 4000 > &2 jmp?
+		&0 jmp
+	/2 drop
+	test]
+;
+
+
 : count-up
-1 (counter)
-/1 (tag at start of loop)
-dup . 1 + dup 30 > &2 jmp? (termination condition)
-&1 jmp (repeat loop)
-/2 drop ; (cleanup and return)
+	1 (counter)
+	/1 (tag at start of loop)
+		dup . 1 + dup 30 > &2 jmp? (termination condition)
+		&1 jmp (repeat loop)
+	/2 drop ; (cleanup and return)
 
 

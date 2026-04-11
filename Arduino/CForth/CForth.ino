@@ -38,7 +38,7 @@ Code of the day:
 	/3 drop drop 1  (count reach zero - diviser not found => prime)
 ;
 		
-(speed test: 106543 ops/second on 20MHz Arduino Every Nano)
+(speed test: 106543 ops/second on 16MHz Arduino Every Nano)
 
 : test
 	[test 31013 prime drop test]
@@ -78,7 +78,6 @@ typedef struct DictEntry {
 #define OP_RET   4
 #define OP_JMP   5
 #define OP_COND_JMP 6
-#define OP_CALL  7
 
 
 #define MAX_WORD_LENGTH   16
@@ -338,12 +337,17 @@ boolean myAtoi (int *target) {
 }
 
 
+void callForth (Word addr) {
+  rpush(programCounter);
+  programCounter=addr;
+}
+
+
 /*
 * Compile nextWord, true if ok, false if error
 */
 boolean compileNextWord () {
-
-  // check for number (TODO: replace atoi - its an ugly hack)
+  // check for number
   int i=0;
   if (myAtoi(&i)) {
     Word w=(Word) i;
@@ -351,21 +355,15 @@ boolean compileNextWord () {
     return true;
   } 
 
-
-
-
-  if (!strcmp(nextWord,"0")) {
-    compileNumber(0);
-    return true;
-  }
   DictEntry *de=dictLookupNextWord();
   if (de != NULL) {
     if (de->type==DE_TYPE_NORMAL) {
-      compileOut(OP_CALL);
-      compileOut((de->address >> 8) & 0xFF);
-      compileOut(de->address & 0xFF);
+      // ensure 14 bit address, then set high bit=1
+      Word addr=(de->address & 0x3FFF) | 0x8000;
+      compileOut((addr>>8) & 0xFF); 
+      compileOut(addr & 0xFF);
     } else if (de->type==DE_TYPE_IMMEDIATE) {
-      callForthWord(de);
+      callForth(de->address);
     } else if (de->type==DE_TYPE_CONSTANT) {
       compileNumber(de->address);
     }
@@ -553,23 +551,10 @@ void op_colon() {
 
 void op_bval() {push(getOpcodeParameter());}
 void op_cval() {push(getOpcodeParameter()<<8 | getOpcodeParameter());}
-void op_call() {
-  Word addr=getOpcodeParameter()<<8 | getOpcodeParameter();
-  DictEntry *de=dictLookupByAddr(addr);
-  if (de==NULL) {
-    error("unknown","address");
-  } else {
-    callForthWord(de);
-  }
-}
+
 void op_dcall() {     // dynamic call
   Word addr=pop();
-  DictEntry *de=dictLookupByAddr(addr);
-  if (de==NULL) {
-    error("unknown","address");
-  } else {
-    callForthWord(de);
-  }
+  callForth(addr);
 }
 void op_add() {Word b=pop(); Word a=pop(); push(a+b);}
 void op_sub() {Word b=pop(); Word a=pop(); push(a-b);}
@@ -700,7 +685,6 @@ const OpCode opCodes[]={
   {"ret", &op_ret},       // 4
   {"jmp", &op_jmp},       // 5
   {"jmp?", &op_cond_jmp}, // 6
-  {"call", &op_call},     // 7
   
   {"dcall", &op_dcall},
   {"ret?", &op_cond_ret},
@@ -776,6 +760,33 @@ void op_dis() {
       dataBytes--;
       continue;
     }
+
+    if (op & 0x80) {
+      // high bit indicates two byte representation of 14 bit Forth call address
+      dataBytes=1;
+      Serial.print("  ");
+      Serial.print(op);
+      Serial.print(" ");
+      Serial.print("(call)");
+      Word forthAddr=(op << 8) | codeSegment[addr+1];
+      // strip away topmost 2 bits
+      forthAddr=forthAddr & 0x3FFF;
+      Serial.print(" ");
+      Serial.print(forthAddr);
+
+      DictEntry *de=dictLookupByAddr(forthAddr);
+      Serial.print(" ");
+      if (de==NULL) {
+        Serial.print("unknown");
+        Serial.print(" ");
+        Serial.println("addr");
+      } else {
+        Serial.print("=>");
+        Serial.print(" ");
+        Serial.println(de->name);
+      }
+      continue;      
+    }
   
     Serial.print(opCodes[op].name);
     if (op==OP_BVAL) {
@@ -785,15 +796,6 @@ void op_dis() {
       Word val=(codeSegment[addr+1] << 8) | codeSegment[addr+2];
       Serial.print(" ");
       Serial.print(val);
-    } else if (op==OP_CALL) {
-      dataBytes=2;
-      Word val=(codeSegment[addr+1] << 8) | codeSegment[addr+2];
-      Serial.print(" ");
-      Serial.print(val);
-
-      DictEntry *de=dictLookupByAddr(val);
-      Serial.print(" ");
-      Serial.print(de->name);
     }
     Serial.println();
   }
@@ -811,15 +813,6 @@ int lookupOpCode () {
 
 
 
-void callForthWord (DictEntry *de) {
-  if (de->type==DE_TYPE_CONSTANT) {
-    push(de->address);
-  } else {
-    rpush(programCounter);
-    programCounter=de->address;
-  }
-}
-
 void executeCode() {
   while (programCounter != 0) {
     if (hasError) {
@@ -828,7 +821,17 @@ void executeCode() {
     }
 
     byte b=codeSegment[programCounter++];
-    opCodes[b].f();
+
+    // detect high bit set, this indicates a Forth call address (14 bits)
+
+    if (b & 0x80) {
+      // high bit indicates Forth word call (14 bits)
+      Word address = (b<<8) | getOpcodeParameter();
+      address = address & 0x3FF;  // strip two top bits
+      callForth(address);
+    } else {
+      opCodes[b].f();
+    }
     instructionCount++;
   }
 }
@@ -838,8 +841,12 @@ void loop() {
   hasError=false;
 
   executeCode();
-  if (hasError) return;
-
+  if (hasError) {
+    delay(2000);
+    clearInputBuffer();
+    return;
+  }
+  
   readNextWord();
 
   int i=0;
@@ -850,7 +857,11 @@ void loop() {
 
   DictEntry *de=dictLookupNextWord();
   if (de != NULL) {
-    callForthWord(de);
+    if (de->type==DE_TYPE_CONSTANT) {
+      push(de->address);
+    } else {
+      callForth(de->address);
+    }
     return;
   }
   
