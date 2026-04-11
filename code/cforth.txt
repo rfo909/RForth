@@ -14,7 +14,9 @@
 	/3 drop drop 1  (count reach zero - diviser not found => prime)
 ;
 		
-(speed test: 106543 ops/second)
+(speed test: 106543 ops/second Arduino Nano Every @20MHz)
+(            111873 ops/second atmega328p @16MHz )
+
 
 : test
 	[test 31013 prime drop test]
