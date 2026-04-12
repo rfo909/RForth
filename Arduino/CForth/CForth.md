@@ -49,10 +49,6 @@ Added proper integer parsing, supporting signed hex, binary and decimal 0xCAFE, 
   
 Fixed various bugs.
 
-
-
-v0.0.4 2026-04-11
------------------
 Removed the "call" opCode. Decided that a 15 bit total address space is
 more than enough for this toy Forth. That corresponds to 32 K, which we
 then split into two again, for 16K addressable space of compiled Forth, 
@@ -79,7 +75,7 @@ It works!
 I am keeping the "dcall" opCode (d for dynamic) which takes the Forth call
 address off the stack, for function pointer support.
 
-v0.0.5 2026-04-12
+v0.0.4 2026-04-12
 -----------------
 Optimized for low memory on atmega328p.
 
@@ -90,20 +86,28 @@ Added ops for
 - b!
 - b@
 - comp.out
-- comp.next    (codeHere)
+- comp.next    (compileNext)
+- csegHERE     (codeNext)
 - HERE         (dataHere)
 - variable
 - constant
 - .str         (print string)
+- .c           (print character)
 
-Got "immediate" to work, and tested generation of byte code via code.out. 
+Got "immediate" to work, and tested generation of byte code via comp.out. 
+
+Implemented and tested the " word (quote) in Forth. It is an immediate word, which
+builds code (OP_BLOB) with length byte and sequence of characters up until finding matching
+quote.
+
+
 
 OpCodes
 -------
 
 Updated 2026-04-12
 
-60 opcodes
+65 opcodes
 
 ```
 bval n                    push single byte value on stack 
@@ -112,6 +116,8 @@ ret                       return
 <addr> jmp                jump to address 
 <cond> <addr> jmp?        conditional jump to address if <cond> != 0
 blob n ...                just skips the data bytes and returns pointer to the n byte
+zero
+one
 
 <addr> dcall              dynamic call, taking address from stack
 <cond> ret?               conditional return
@@ -124,6 +130,7 @@ immediate                 set newest word immediate
 * 
 /
 %
+1+
 
 >
 >=
@@ -144,6 +151,7 @@ cr                        carriage return
 .                         print TOS value (signed)
 .u                        unsigned
 .hex                      hex  
+<byte> .c                 print single character
 <addr> .str               print string (n ...)
 
 csegHERE                  address of next byte in code segment
@@ -160,6 +168,7 @@ HERE                      next address on data segment
 <addr> b@                 read byte
 
 dup
+swap
 2dup
 drop
 over
@@ -209,30 +218,27 @@ will not be known inside nested structures, if and when such are created.
 Todo
 ====
 
-Immediate words have not been tested. The compiler should support it, but we need to add opCode
-or emitting bytes.
+Move dictionary into codeSegment
+Move dictionaryHead into codeSegment
+On boot, create variable (in RAM) that points to dictionaryHead in code segment
 
-- bitwise andb orb neg
-- byte read write b@ b!
-- compileOut
-- codeNext
+Need to move op-names to Flash, presumably as a byte array, with pointers into it from the opCodes
+array, since F("xx") is troublesome to work with, it seems.
 
-Also have no way of *interacting with the data segment*.
+Build code in Forth to export binary data from code segment, to paste into C code, for
+standard Forth words, and fix address resolution towards Flash vs codeSegment (simple offset).
 
-The idea here is that the codeSegment may eventually live in flash, with a continuation for
-new words, living in RAM, while the data segment always lives in RAM. 
+
+---
 
 To save the current state would then mean to save data from the RAM part of the code segment,
 plus the data in the data segment.
 
-Haven't decided how to allocate memory in the dataSegment, only that allot will work on it,
-while both constants and variables (which are constants containing addresses) live in the
-code segment.
 
 The address space of the system must contain
 
-- the Flash part of the code segment
-- the RAM part of the code segment
+- the Flash code (lower code segment)
+- the RAM part of the code segment (at offset)
 - at an offset: the data segment
 
 

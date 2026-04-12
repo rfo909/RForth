@@ -38,6 +38,8 @@ typedef struct DictEntry {
 #define OP_JMP   5
 #define OP_COND_JMP 6
 #define OP_BLOB  7
+#define OP_ZERO  8
+#define OP_ONE   9
 
 #define BYTE_CALL_BIT   0x80
 #define CALL_BIT    0x8000      
@@ -360,8 +362,14 @@ DictEntry *dictLookupByAddr (Word addr) {
 
 
 void compileNumberByte (byte b) {
-    compileOut(OP_BVAL);
-    compileOut(b);
+    if (b==0) {
+      compileOut(OP_ZERO);
+    } else if (b==1) {
+      compileOut(OP_ONE);
+    } else {
+      compileOut(OP_BVAL);
+      compileOut(b);
+    }
 }
 
 void compileNumberCell (Word w) {
@@ -676,11 +684,14 @@ void op_dcall() {     // dynamic call
   Word addr=pop();
   callForth(addr);
 }
+void op_zero() {push(0);}
+void op_one() {push(1);}
 void op_add() {Word b=pop(); Word a=pop(); push(a+b);}
 void op_sub() {Word b=pop(); Word a=pop(); push(a-b);}
 void op_mul() {Word b=pop(); Word a=pop(); push(a*b);}
 void op_div() {Word b=pop(); Word a=pop(); push(a/b);}
 void op_modulo() {Word b=pop(); Word a=pop(); push(a%b);}
+void op_incr() {Word x=pop(); push(x+1);}
 
 void op_gt() {Word b=pop(); Word a=pop(); push(a>b ? 1 : 0);}
 void op_ge() {Word b=pop(); Word a=pop(); push(a>=b ? 1 : 0);}
@@ -700,6 +711,7 @@ void op_cr() {Serial.println();}
 void op_dot() {int i=(int) pop(); Serial.print(i); Serial.print(" ");}
 void op_dot_u() {Word x=pop(); Serial.print(x); Serial.print(" ");}
 void op_dot_hex() {Word x=pop(); Serial.print("0x"); Serial.print(x,16); Serial.print(" ");}
+void op_dot_c() {Word x=pop(); char c=(x&0xFF); Serial.print(c);}
 void op_dot_str() {Word addr=pop(); printStr(addr); }
 
 void op_cseg_here() {Word addr=generateCodeAddress(codeNext); push(addr);}
@@ -744,6 +756,7 @@ void op_immediate() {
 }
 
 void op_dup() {push(pick(0));}
+void op_swap() {Word b=pop(); Word a=pop(); push(b); push(a);}
 void op_2dup() {push(pick(1)); push(pick(1));}
 void op_drop() {pop();}
 void op_over() {push(pick(1));}
@@ -853,6 +866,8 @@ const OpCode opCodes[]={
   {"jmp", &op_jmp},       // 5
   {"jmp?", &op_cond_jmp}, // 6
   {"blob", &op_blob},     // 7
+  {"zero", &op_zero},     // 8
+  {"one", &op_one},     // 9
   
   {"dcall", &op_dcall},
   {"ret?", &op_cond_ret},
@@ -864,6 +879,7 @@ const OpCode opCodes[]={
   {"*", &op_mul},
   {"/", &op_div},
   {"%", &op_modulo},
+  {"1+", &op_incr},
 
   {">", &op_gt},
   {">=", &op_ge},
@@ -884,6 +900,7 @@ const OpCode opCodes[]={
   {".", &op_dot},
   {".u", &op_dot_u},
   {".hex", &op_dot_hex},
+  {".c", &op_dot_c},
   {".str", &op_dot_str},
 
   {"csegHERE", &op_cseg_here},
@@ -904,6 +921,7 @@ const OpCode opCodes[]={
   
 
   {"dup", &op_dup},
+  {"swap", &op_swap},
   {"2dup", &op_2dup},
   {"drop", &op_drop},
   {"over", &op_over},

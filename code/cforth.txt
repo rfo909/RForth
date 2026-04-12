@@ -28,7 +28,7 @@
 	1
 	/0
 		13 prime drop
-		1 + dup 4000 > &2 jmp?
+		1+ dup 4000 > &2 jmp?
 		&0 jmp
 	/2 drop
 	test]
@@ -38,7 +38,7 @@
 : count-up
 	1 (counter)
 	/1 (tag at start of loop)
-		dup . 1 + dup 30 > &2 jmp? (termination condition)
+		dup . 1+ dup 30 > &2 jmp? (termination condition)
 		&1 jmp (repeat loop)
 	/2 drop ; (cleanup and return)
 

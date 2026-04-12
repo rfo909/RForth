@@ -1,46 +1,53 @@
-: testStr (prints ABC)
-	comp.next >R
-	3 comp.out
-	65 comp.out
-	66 comp.out
-	67 comp.out
-	R> .str
+2 constant OP_BVAL
+3 constant OP_CVAL
+4 constant OP_RET
+5 constant OP_JMP
+6 constant OP_COND_JMP
+7 constant OP_BLOB
+8 constant OP_ZERO
+9 constant OP_ONE
+
+34 constant QUOT		(The " character)
+
+
+: BufClear (addr) 0 swap b! ;
+
+: BufAdd (val addr -- )
+	dup 
+		dup b@ + 1+        (val addr writePos)
+	2 pick swap        (val addr val writePos)
+		b!         (val addr)
+	swap drop          (addr)
+	dup
+		b@ 1+      (addr newLength)
+	swap b!
 ;
 
+(Creates blob (string) of bytes up to the end quote)
+(Only works for compile, as it generates code      )
 
-: hello
-	7 comp.out  (blob)
-	3 comp.out  (#chars)
-	65 comp.out
-	66 comp.out
-	67 comp.out
-; immediate
-
-: a hello .str ;
-  
-  
-
-
-34 constant Quot		(The " character)
-7 constant OP_BLOB
-
-: " (creates blob of bytes up to the end quote)
+: " ( -- )
 	OP_BLOB comp.out
 	
 	comp.next >R   (store address of length field)
-	0 comp.out    (length field)
+	0 comp.out    (length field dummy value)
 	
-	0	(length value)
+	0	(count)
 	/0
 		readc 
-		dup Quot == &2 jmp?
-		comp.out
-		1 +
+		dup 			(count char char)
+			QUOT == &2 jmp?   (--- matching quote found)
+		(char) comp.out           (count)
+		1+
 		&0 jmp
 	/2
-		R> b!  (patch the length field)
+		drop
+		R> 
+			b!  (patch the length field)
 ; immediate
 
-(
-: test 33 " this" ;
-)
+
+(-------- ^^^ WORKS! )
+
+(: test " this is a test" .str ;)
+
