@@ -90,7 +90,10 @@ Added ops for
 - b!
 - b@
 - comp.out
-- comp.next
+- comp.next    (codeHere)
+- HERE         (dataHere)
+- variable
+- constant
 
  
 	!
@@ -140,6 +143,8 @@ cr                        carriage return
 comp.next                 return address of next byte in code segment, when compiling
 HERE                      next address on data segment
 <n> allot                 increase HERE 
+<value> constant (name)
+<value> variable (name)
 
 <value> <addr> !          write cell sized value 
 <addr> @                  read cell sized value

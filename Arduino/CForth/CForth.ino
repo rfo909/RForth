@@ -55,6 +55,23 @@ Word compileNext=1;
 
 Word dataNext=0;   // "dataHERE"
 
+Word generateCodeAddress (Word codeSegmentPos) {
+  return codeSegmentPos | 0x8000;   // 10xxxxxx xxxxxxxx
+}
+
+Word generateDataAddress (Word dataSegmentPos) {
+  return dataSegmentPos | 0xC000;   // 11xxxxxx xxxxxxxx
+}
+
+Word codeHere() {
+  return generateDataAddress(codeNext);
+}
+
+Word dataHere() {
+  return generateDataAddress(dataNext);
+}
+
+
 
 void compileOut (byte b) {
   /*
@@ -82,7 +99,7 @@ void verifyAddress (Word addr) {
       Serial.print(F("Invalid data segment address: "));
       Serial.print(addr);
       Serial.print(" HERE=");
-      Serial.println(dataNext);
+      Serial.println(dataHere());
       return;
     }
   } else {
@@ -661,11 +678,11 @@ void op_dot_str() {Word addr=pop(); printStr(addr); }
 void op_comp_out() {Word x=pop(); compileOut(x & 0xFF);}
 void op_comp_next() {
   // convert to valid address, setting high bit to 1
-  push(compileNext | 0x8000);
+  push(codeHere);
 }
 void op_HERE() {
   // convert into address with bit 15 set
-  push(dataNext | 0x4000);
+  push(dataHere());
 }
 
 void op_allot() {
@@ -676,6 +693,21 @@ void op_allot() {
     return;
   }
   dataNext += count;
+}
+
+void op_constant() {
+  Word value=pop();
+  create();
+  dictionaryHead->type=DE_TYPE_CONSTANT;
+  dictionaryHead->address=value;
+}
+
+void op_variable() {
+  Word variableAddr=dataHere();  
+  dataNext += 2;
+  writeWord(variableAddr,pop());
+  push(variableAddr);
+  op_constant();
 }
 
 void op_write() {Word addr=pop(); Word value=pop(); writeWord(addr,value);}
@@ -835,6 +867,8 @@ const OpCode opCodes[]={
   {"comp.next", &op_comp_next},
   {"HERE", &op_HERE},
   {"allot", &op_allot},
+  {"constant", &op_constant},
+  {"variable", &op_variable},
    
   {"!", &op_write},
   {"@", &op_read},
