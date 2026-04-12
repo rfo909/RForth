@@ -8,9 +8,21 @@
 ;
 
 
+: hello
+	7 comp.out  (blob)
+	3 comp.out  (#chars)
+	65 comp.out
+	66 comp.out
+	67 comp.out
+; immediate
 
-: Quot 34 ;
-: OP_BLOB 7 ;
+: a hello .str ;
+  
+  
+
+
+34 constant Quot		(The " character)
+7 constant OP_BLOB
 
 : " (creates blob of bytes up to the end quote)
 	OP_BLOB comp.out

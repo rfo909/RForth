@@ -39,6 +39,16 @@ typedef struct DictEntry {
 #define OP_COND_JMP 6
 #define OP_BLOB  7
 
+#define BYTE_CALL_BIT   0x80
+#define CALL_BIT    0x8000      
+  // high bit of 2 byte word, indicates the remaining 15 bits is an 
+  // address that is to be auto-called
+#define DATA_BIT    0x4000
+
+#define ADDR_CODE_MASK      0x3FFF
+#define ADDR_DATA_MASK      0x3FFF
+
+
 #define MAX_WORD_LENGTH   16
 
 #define READC_ECHO  true
@@ -50,25 +60,40 @@ boolean hasError = false;
 byte codeSegment[CODE_SEGMENT_SIZE];
 byte dataSegment[DATA_SEGMENT_SIZE];
 
-Word codeNext=1;  // "codeHERE" - programCounter 0 means no code running (keeping it unsigned)
-Word compileNext=1;
+Word codeNext=1;  // "code.here" - programCounter 0 means no code running (keeping it unsigned)
+Word compileNext=1;  // "comp.next"
 
-Word dataNext=0;   // "dataHERE"
+Word dataNext=0;   // "HERE"
 
-Word generateCodeAddress (Word codeSegmentPos) {
-  return codeSegmentPos | 0x8000;   // 10xxxxxx xxxxxxxx
+Word generateCodeAddress (Word ptr) {
+  if (ptr & DATA_BIT) {
+    setHasError();
+    Serial.print(F("Invalid code address: bit 15 set => data segment "));
+    Serial.println(ptr);
+    return;
+  }
+  return (ptr & ADDR_CODE_MASK);   // 00xxxxxx xxxxxxxx
 }
 
-Word generateDataAddress (Word dataSegmentPos) {
-  return dataSegmentPos | 0xC000;   // 11xxxxxx xxxxxxxx
+Word generateDataAddress (Word ptr) {
+  return (ptr & ADDR_DATA_MASK) | DATA_BIT;   // 01xxxxxx xxxxxxxx
 }
 
-Word codeHere() {
-  return generateDataAddress(codeNext);
+Word generateCallAddress (Word ptr) {
+  return generateCodeAddress(ptr) | CALL_BIT;  // 10xxxxxx xxxxxxxx
 }
 
-Word dataHere() {
+Word addrHERE() {
   return generateDataAddress(dataNext);
+}
+
+void allot (Word count) {
+    if (dataNext+count >= DATA_SEGMENT_SIZE) {
+    setHasError();
+    Serial.println(F("Data segment overflow"));
+    return;
+  }
+  dataNext += count;
 }
 
 
@@ -83,28 +108,21 @@ void compileOut (byte b) {
   codeSegment[compileNext++]=b;
 }
 
-void verifyAddress (Word addr) {
-  if (addr & 0x8000 == 0) {
-    // opcode
-    setHasError();
-    Serial.print(F("Invalid address (opcode space): "));
-    Serial.println(addr);
-    return;
-  }
-  if (addr & 0x4000) {
+void verifyReadWriteAddress (Word addr) {
+  if (addr & DATA_BIT) {
     // data segment
-    addr=addr & 0x3FFF;
+    addr=addr & ADDR_DATA_MASK;
     if (addr >= dataNext) {
       setHasError();
       Serial.print(F("Invalid data segment address: "));
       Serial.print(addr);
-      Serial.print(" HERE=");
-      Serial.println(dataHere());
+      Serial.print(" dataNext=");
+      Serial.println(dataNext);
       return;
     }
   } else {
     // code segment
-    addr=addr & 0x3FFF;
+    addr=addr & ADDR_CODE_MASK;
     if (addr >= CODE_SEGMENT_SIZE) {
       setHasError();
       Serial.print(F("Invalid code segment address: "));
@@ -117,32 +135,32 @@ void verifyAddress (Word addr) {
 }
 
 void writeByte (Word addr, byte b) {
-  verifyAddress(addr);
+  verifyReadWriteAddress(addr);
   if (hasError) return;
 
-  if (addr & 0x4000) {
+  if (addr & DATA_BIT) {
     // data segment
-    addr=addr & 0x3FFF;
+    addr=addr & ADDR_DATA_MASK;
     dataSegment[addr]=b;
   } else {
     // code segment
-    addr=addr & 0x3FFF;
+    addr=addr & ADDR_CODE_MASK;
     codeSegment[addr] = b;
   }
 
 }
 
 byte readByte (Word addr) {
-  verifyAddress(addr);
+  verifyReadWriteAddress(addr);
   if (hasError) return 0;
 
-  if (addr & 0x4000) {
+  if (addr & DATA_BIT) {
     // data segment
-    addr=addr & 0x3FFF;
+    addr=addr & ADDR_DATA_MASK;
     return dataSegment[addr];
   } else {
     // code segment
-    addr=addr & 0x3FFF;
+    addr=addr & ADDR_CODE_MASK;
     return codeSegment[addr];
   }
 
@@ -329,8 +347,10 @@ DictEntry *dictLookupNextWord () {
 }
 
 
+// Used by disassembler
 DictEntry *dictLookupByAddr (Word addr) {
   DictEntry *ptr=dictionaryHead;
+  addr=generateCodeAddress(addr);
   while (ptr != NULL) {
     if (ptr->address==addr) return ptr;
     ptr=ptr->next;
@@ -428,45 +448,56 @@ boolean myAtoi (int *target) {
 
 void callForth (Word addr) {
   rpush(programCounter);
-  programCounter=addr;
+  programCounter=addr & ADDR_CODE_MASK;
+  //Serial.print("callForth addr=");
+  //Serial.println(programCounter);
 }
 
 
 /*
 * Compile nextWord, true if ok, false if error
 */
-boolean compileNextWord () {
+void compileNextWord () {
+  /*
+  Serial.println();
+  Serial.print("compileNextWord ");
+  Serial.print(nextWord);
+  Serial.print(" compileNext=");
+  Serial.println(compileNext);
+  */
   // check for number
   int i=0;
   if (myAtoi(&i)) {
     Word w=(Word) i;
     compileNumber(i);
-    return true;
+    return;
   } 
 
   DictEntry *de=dictLookupNextWord();
   if (de != NULL) {
     if (de->type==DE_TYPE_NORMAL) {
       // ensure 14 bit address, then set high bit=1
-      Word addr=(de->address & 0x3FFF) | 0x8000;
+      Word addr=generateCallAddress(de->address);
       compileOut((addr>>8) & 0xFF); 
       compileOut(addr & 0xFF);
     } else if (de->type==DE_TYPE_IMMEDIATE) {
       callForth(de->address);
+      executeCode();
     } else if (de->type==DE_TYPE_CONSTANT) {
       compileNumber(de->address);
     }
-    return true;
+    return;
   }
 
   int opcode=lookupOpCode();
   if (opcode >= 0) {
     compileOut(opcode);
-    return true;
+    return;
   }
 
-  return false;
-  
+  setHasError();
+  Serial.print(F("Unknown: "));
+  Serial.println(nextWord);
 }
 
 
@@ -624,7 +655,7 @@ void op_colon() {
       // patch length byte
       codeSegment[startPos]=byteCount;
 
-      de->address=startPos+1;  // past length byte
+      de->address=generateCodeAddress(startPos+1);  // past length byte
       de->type=DE_TYPE_NORMAL;
 
       codeNext=compileNext;
@@ -633,13 +664,7 @@ void op_colon() {
     }
 
     // all other words except semicolon
-    boolean ok = compileNextWord();
-    if (!ok) {
-      setHasError();
-      Serial.print(F("Unknown word: "));
-      Serial.println(nextWord);
-      return;
-    }
+    compileNextWord();
   }
 }
 
@@ -666,7 +691,9 @@ void op_ne() {Word b=pop(); Word a=pop(); push(a!=b ? 1 : 0);}
 void op_and() {Word b=pop(); Word a=pop(); push(a != 0 && b != 0 ? 1 : 0);}
 void op_or() {Word b=pop(); Word a=pop(); push(a != 0 || b != 0 ? 1 : 0);}
 void op_not() {Word x=pop(); push(x==0 ? 1 : 0);}
-
+void op_bin_and() {Word b=pop(); Word a=pop(); push(a&b);}
+void op_bin_or() {Word b=pop(); Word a=pop(); push(a|b);}
+void op_bin_inv() {Word x=pop(); push(~x);}
 
 
 void op_cr() {Serial.println();}
@@ -675,24 +702,15 @@ void op_dot_u() {Word x=pop(); Serial.print(x); Serial.print(" ");}
 void op_dot_hex() {Word x=pop(); Serial.print("0x"); Serial.print(x,16); Serial.print(" ");}
 void op_dot_str() {Word addr=pop(); printStr(addr); }
 
+void op_cseg_here() {Word addr=generateCodeAddress(codeNext); push(addr);}
+void op_comp_next() {Word addr=generateCodeAddress(compileNext); push(addr);}
 void op_comp_out() {Word x=pop(); compileOut(x & 0xFF);}
-void op_comp_next() {
-  // convert to valid address, setting high bit to 1
-  push(codeHere);
-}
-void op_HERE() {
-  // convert into address with bit 15 set
-  push(dataHere());
-}
+
+void op_HERE() {push(addrHERE());}
 
 void op_allot() {
   Word count=pop();
-  if (dataNext+count >= DATA_SEGMENT_SIZE) {
-    setHasError();
-    Serial.println(F("Data segment overflow"));
-    return;
-  }
-  dataNext += count;
+  allot(count);
 }
 
 void op_constant() {
@@ -703,7 +721,7 @@ void op_constant() {
 }
 
 void op_variable() {
-  Word variableAddr=dataHere();  
+  Word variableAddr=addrHERE();  
   dataNext += 2;
   writeWord(variableAddr,pop());
   push(variableAddr);
@@ -722,7 +740,7 @@ void op_create() {
   create();
 }
 void op_immediate() {
-  if (dictionaryHead != NULL) dictionaryHead->type=DE_TYPE_IMMEDIATE;
+  if (dictionaryHead != NULL && dictionaryHead->type==DE_TYPE_NORMAL) dictionaryHead->type=DE_TYPE_IMMEDIATE;
 }
 
 void op_dup() {push(pick(0));}
@@ -803,7 +821,7 @@ void op_blob() {
   byte length=getOpcodeParameter();
   programCounter += length;
   // convert to address by setting high bit
-  push(lengthPointer | 0x8000);
+  push(generateCodeAddress(lengthPointer));
 }
 
 void op_key() {
@@ -820,7 +838,7 @@ void op_word_addr() {
   if (de==NULL) {
     push(0);
   } else {
-    push(de->address);
+    push(generateCodeAddress(de->address));
   }
 }
 
@@ -857,14 +875,20 @@ const OpCode opCodes[]={
   {"or", &op_or},
   {"not", &op_not},
 
+  {"&", &op_bin_and},
+  {"|", &op_bin_or},
+  {"inv", &op_bin_inv},
+
+
   {"cr", &op_cr},
   {".", &op_dot},
   {".u", &op_dot_u},
   {".hex", &op_dot_hex},
   {".str", &op_dot_str},
 
-  {"comp.out", &op_comp_out},
+  {"csegHERE", &op_cseg_here},
   {"comp.next", &op_comp_next},
+  {"comp.out", &op_comp_out},
   {"HERE", &op_HERE},
   {"allot", &op_allot},
   {"constant", &op_constant},
@@ -910,7 +934,9 @@ void op_dis() {
   Word codeAddr = pop();
   byte len=codeSegment[codeAddr-1];
   Serial.println();
-  Serial.print(F("length="));
+  Serial.print(F("codeAddr="));
+  Serial.print(codeAddr);
+  Serial.print(F(" length="));
   Serial.println(len);
 
   byte dataBytes=0;
@@ -920,48 +946,63 @@ void op_dis() {
     Serial.print("  ");
 
     byte op=codeSegment[addr];
+    Serial.print(op);
+  
     if (dataBytes > 0) {
-      Serial.print("  ");
-      Serial.println(op);
+      Serial.println(F(" (data)"));
       dataBytes--;
       continue;
     }
 
-    if (op & 0x80) {
-      // high bit indicates two byte representation of 14 bit Forth call address
+    Serial.print(" ");
+    if (op & BYTE_CALL_BIT) {
       dataBytes=1;
-      Serial.print("  ");
-      Serial.print(op);
-      Serial.print(" ");
       Serial.print(F("(call)"));
       Word forthAddr=(op << 8) | codeSegment[addr+1];
       // strip away topmost 2 bits
-      forthAddr=forthAddr & 0x3FFF;
-      Serial.print(" ");
+      forthAddr=forthAddr & ADDR_CODE_MASK;
+      Serial.print(F(" forthAddr="));
       Serial.print(forthAddr);
 
       DictEntry *de=dictLookupByAddr(forthAddr);
-      Serial.print(" ");
       if (de==NULL) {
-        Serial.print(F("unknown"));
-        Serial.print(" ");
-        Serial.println(F("address"));
-      } else {
-        Serial.print(F("=>"));
-        Serial.print(" ");
-        Serial.println(de->name);
+        setHasError();
+        Serial.println(F("unknown forth code address"));
+        return;
+      } 
+      Serial.print(" ");
+      Serial.print(F("=>"));
+      Serial.print(" ");
+      Serial.println(de->name);
+
+      if (de->type != DE_TYPE_NORMAL && de->type != DE_TYPE_IMMEDIATE) {
+        setHasError();
+        Serial.println(" constant - not callable!");
+        return;
       }
       continue;      
     }
   
+    // op = opcode 
     Serial.print(opCodes[op].name);
     if (op==OP_BVAL) {
+      Word val=codeSegment[addr+1];
+      Serial.print(" ");
+      Serial.print(val);
+      Serial.print(" ");
+      Serial.print("0x");
+      Serial.print(val,16);
       dataBytes=1;
     } else if (op==OP_CVAL) {
       dataBytes=2;
       Word val=(codeSegment[addr+1] << 8) | codeSegment[addr+2];
       Serial.print(" ");
       Serial.print(val);
+      Serial.print(" ");
+      Serial.print("0x");
+      Serial.print(val,16);
+    } else if (op==OP_BLOB) {
+      dataBytes=codeSegment[addr+1]+1;
     }
     Serial.println();
   }
@@ -990,12 +1031,13 @@ void executeCode() {
 
     // detect high bit set, this indicates a Forth call address (14 bits)
 
-    if (b & 0x80) {
-      // high bit indicates Forth word call (14 bits)
+    if (b & BYTE_CALL_BIT) {
       Word address = (b<<8) | getOpcodeParameter();
-      address = address & 0x3FF;  // strip two top bits
+      Serial.print("call=");
+      Serial.println(address);
       callForth(address);
     } else {
+      // opcode
       opCodes[b].f();
     }
     instructionCount++;

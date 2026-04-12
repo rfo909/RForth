@@ -94,15 +94,16 @@ Added ops for
 - HERE         (dataHere)
 - variable
 - constant
+- .str         (print string)
 
- 
-	!
-
+Got "immediate" to work, and tested generation of byte code via code.out. 
 
 OpCodes
 -------
 
 Updated 2026-04-12
+
+60 opcodes
 
 ```
 bval n                    push single byte value on stack 
@@ -110,6 +111,8 @@ cval n n                  push cell value on stack
 ret                       return
 <addr> jmp                jump to address 
 <cond> <addr> jmp?        conditional jump to address if <cond> != 0
+blob n ...                just skips the data bytes and returns pointer to the n byte
+
 <addr> dcall              dynamic call, taking address from stack
 <cond> ret?               conditional return
 
@@ -133,14 +136,19 @@ and                       logical and
 or                        logical or
 not                       logical not
 
+&                         binary and
+|                         binary or
+inv                       binary not
+
 cr                        carriage return
 .                         print TOS value (signed)
 .u                        unsigned
 .hex                      hex  
 <addr> .str               print string (n ...)
 
-<byte> comp.out           add byte to code segment (when compiling)
-comp.next                 return address of next byte in code segment, when compiling
+csegHERE                  address of next byte in code segment
+comp.next                 address of next byte - when compiling
+<byte> comp.out           add byte to code segment - when compiling
 HERE                      next address on data segment
 <n> allot                 increase HERE 
 <value> constant (name)
