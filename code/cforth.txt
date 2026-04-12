@@ -15,17 +15,14 @@
 	/3 drop drop 1  (count reach zero - diviser not found => prime)
 ;
 		
-(speed test: 107 K ops/second Arduino Nano Every @16MHz)
-(            101 K ops/second after adding check on: if (b & 0x80) (to detect 2 byte Forth calls) )
-
+(speed test: 105.8 K ops/second Arduino Uno (atmega328p) 16 MHz)
 
 : test
 	[test 31013 prime drop test]
 ;
 
 
-(speed test2: doing frequent Forth calls)
-(            102800 ops/second Arduino Nano Every @16MHz)
+(speed test2: 107.8 K ops/second Arduino Uno (atmega328p) 16 MHz)
 
 : test2 [test 
 	1

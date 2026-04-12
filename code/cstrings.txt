@@ -1,0 +1,34 @@
+: testStr (prints ABC)
+	comp.next >R
+	3 comp.out
+	65 comp.out
+	66 comp.out
+	67 comp.out
+	R> .str
+;
+
+
+
+: Quot 34 ;
+: OP_BLOB 7 ;
+
+: " (creates blob of bytes up to the end quote)
+	OP_BLOB comp.out
+	
+	comp.next >R   (store address of length field)
+	0 comp.out    (length field)
+	
+	0	(length value)
+	/0
+		readc 
+		dup Quot == &2 jmp?
+		comp.out
+		1 +
+		&0 jmp
+	/2
+		R> b!  (patch the length field)
+; immediate
+
+(
+: test 33 " this" ;
+)

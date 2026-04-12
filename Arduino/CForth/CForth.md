@@ -45,9 +45,8 @@ forward and backward at base level inside the colon compiler.
 
 v0.0.3 2026-04-11
 -----------------
-Added proper integer parsing, supporting signed hex, binary and decimal
-  0xCAFE 
-  b10010
+Added proper integer parsing, supporting signed hex, binary and decimal 0xCAFE, b10010.
+  
 Fixed various bugs.
 
 
@@ -80,11 +79,27 @@ It works!
 I am keeping the "dcall" opCode (d for dynamic) which takes the Forth call
 address off the stack, for function pointer support.
 
+v0.0.5 2026-04-12
+-----------------
+Optimized for low memory on atmega328p.
+
+Added ops for
+
+- !
+- @
+- b!
+- b@
+- comp.out
+- comp.next
+
+ 
+	!
+
 
 OpCodes
 -------
 
-Updated 2026-04-11
+Updated 2026-04-12
 
 ```
 bval n                    push single byte value on stack 
@@ -119,6 +134,17 @@ cr                        carriage return
 .                         print TOS value (signed)
 .u                        unsigned
 .hex                      hex  
+<addr> .str               print string (n ...)
+
+<byte> comp.out           add byte to code segment (when compiling)
+comp.next                 return address of next byte in code segment, when compiling
+HERE                      next address on data segment
+<n> allot                 increase HERE 
+
+<value> <addr> !          write cell sized value 
+<addr> @                  read cell sized value
+<byte> <addr> b!          write byte sized value
+<addr> b@                 read byte
 
 dup
 2dup
@@ -147,11 +173,12 @@ readc                     read character from serial
 Tags
 ----
 The colon compiler supports up to 5 tags, and up to 5 lookups of tags. The tags
-have the names /1 to /5 and the lookups are on the format &1 to &5. 
+have the names /0 to /4 and the lookups are on the format &0 to &4. 
 
 Patching of tag references is done when hitting the semicolon, so the following
 works as expected, with both forward and back jumps.
 
+```
 : count-up 1 
   /1 
   dup . 
@@ -159,7 +186,7 @@ works as expected, with both forward and back jumps.
   dup 30 > &2 jmp? 
   &1 jmp 
   /2 drop ;
-  
+```
 
 Note that the tags feature is a colon compiler baseline feature, which means it
 will not be known inside nested structures, if and when such are created. 
@@ -195,10 +222,4 @@ The address space of the system must contain
 - the RAM part of the code segment
 - at an offset: the data segment
 
-We may just split the address space in two, allowing up to 32 K for each (code and data).
-
-Doing this rigorously, letting data addresses always be above 32k means the actual size
-of the code segment may change, without affecting data pointers.
-
-The data segment addresses must be
 
