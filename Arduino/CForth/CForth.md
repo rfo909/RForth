@@ -100,6 +100,10 @@ Implemented and tested the " word (quote) in Forth. It is an immediate word, whi
 builds code (OP_BLOB) with length Byte and sequence of characters up until finding matching
 quote.
 
+v0.0.5 2026-04-13
+-----------------
+Refactoring code into multiple files, for easier handling.
+
 
 
 OpCodes
