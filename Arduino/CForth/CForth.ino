@@ -1,5 +1,7 @@
 #define ATMEGA328p
 
+#include <avr/pgmspace.h>
+
 
 typedef struct {
   char *name;
@@ -855,6 +857,7 @@ void op_word_addr() {
   }
 }
 
+// may represent this list fully as a string of PROGMEM bytes
 
 const OpCode opCodes[]={
   {"", &op_reserved}, 
@@ -917,9 +920,6 @@ const OpCode opCodes[]={
   {"b!", &op_writeb},
   {"b@", &op_readb},
 
-
-  
-
   {"dup", &op_dup},
   {"swap", &op_swap},
   {"2dup", &op_2dup},
@@ -933,7 +933,6 @@ const OpCode opCodes[]={
 
   {"[test", &op_start_test},
   {"test]", &op_end_test},
-
   
   {">R", &op_to_r},
   {"R>", &op_r_from},
@@ -947,6 +946,7 @@ const OpCode opCodes[]={
   // end-marker
   {"",0}
 };
+
 
 void op_dis() {
   Word codeAddr = pop();
@@ -1099,3 +1099,10 @@ void loop() {
   Serial.println(nextWord);
 }
 
+////////
+
+const PROGMEM byte lookupTable[] = {0,1,2,3,5};
+
+void readExample() {
+  uint16_t verdi = pgm_read_byte_near(2);
+}

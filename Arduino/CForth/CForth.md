@@ -215,18 +215,46 @@ will not be known inside nested structures, if and when such are created.
 
 (Although the support for tags possibly precludes the creation of IF ELSE THEN and BEGIN AGAIN).
 
+NOTE: basic opCodes do not have the option of being IMMEDIATE (yet), so all code that needs to
+be, must be written in Forth. Like the '"' word (quote).
+
 Todo
 ====
 
-Move dictionary into codeSegment
-Move dictionaryHead into codeSegment
-On boot, create variable (in RAM) that points to dictionaryHead in code segment
+- Move dictionary into codeSegment
+- Including static strings
+- Move dictionaryHead into codeSegment
 
-Need to move op-names to Flash, presumably as a byte array, with pointers into it from the opCodes
-array, since F("xx") is troublesome to work with, it seems.
 
-Build code in Forth to export binary data from code segment, to paste into C code, for
+- Move opCodes content to text format, and generate PROGMEM arrays. Should save approx 500 bytes of RAM
+	Currently using 1306 for global variables, including 400 bytes for code/data-segments
+	1300 - 500 - 400 = overhead 400 bytes
+	-> adding frame stack 10 deep = 20 bytes => 450 bytes overhead
+	=> That is 1600 bytes free
+
+	Reserving 200 for C locals and C call stack
+	
+	=> data 1000 bytes
+	=> code 400 bytes
+	
+On boot, create variable (in RAM) that points to dictionaryHead, in first 2 bytes of the data segment
+(code generate C constant for it)
+
+Generate symbol for it in dictionary (_dictHead)
+
+
+Frame stack of words keeping track of what's added to return stack -> local variables
+	Works the same as in RForth
+
+
+- Build code in C / Forth to export binary data from code segment, to paste into C code, for
 standard Forth words, and fix address resolution towards Flash vs codeSegment (simple offset).
+
+
+- Plugins form a different array of bytes in PROGMEM. Instead of compiling to index, we
+can compile directly to C pointers (2 bytes on atmega328p)
+
+
 
 
 ---
