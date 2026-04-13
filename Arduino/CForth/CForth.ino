@@ -1,197 +1,7 @@
 #define ATMEGA328p
 
 #include <avr/pgmspace.h>
-
-
-typedef struct {
-  char *name;
-  void (*f) ();
-} OpCode;
-
-typedef unsigned int Word;
-
-#define DSTACK_SIZE     16
-#define RSTACK_SIZE     16
-
-#define CODE_SEGMENT_SIZE     200
-#define DATA_SEGMENT_SIZE     200
-
-Word dStack[DSTACK_SIZE];
-byte dStackNext=0;
-Word rStack[RSTACK_SIZE];
-byte rStackNext=0;
-
-#define DE_TYPE_NORMAL      1
-#define DE_TYPE_IMMEDIATE   2
-#define DE_TYPE_CONSTANT    3  // value stored in address field
-
-typedef struct DictEntry {
-  char *name;
-  byte type;
-  Word address;
-
-  struct DictEntry *next;
-} DictEntry;
-
-
-#define OP_BVAL  2
-#define OP_CVAL  3
-#define OP_RET   4
-#define OP_JMP   5
-#define OP_COND_JMP 6
-#define OP_BLOB  7
-#define OP_ZERO  8
-#define OP_ONE   9
-
-#define BYTE_CALL_BIT   0x80
-#define CALL_BIT    0x8000      
-  // high bit of 2 byte word, indicates the remaining 15 bits is an 
-  // address that is to be auto-called
-#define DATA_BIT    0x4000
-
-#define ADDR_CODE_MASK      0x3FFF
-#define ADDR_DATA_MASK      0x3FFF
-
-
-#define MAX_WORD_LENGTH   16
-
-#define READC_ECHO  true
-
-#define WORD_INVALID      0xFFFF
-
-boolean hasError = false;
-
-byte codeSegment[CODE_SEGMENT_SIZE];
-byte dataSegment[DATA_SEGMENT_SIZE];
-
-Word codeNext=1;  // "code.here" - programCounter 0 means no code running (keeping it unsigned)
-Word compileNext=1;  // "comp.next"
-
-Word dataNext=0;   // "HERE"
-
-Word generateCodeAddress (Word ptr) {
-  if (ptr & DATA_BIT) {
-    setHasError();
-    Serial.print(F("Invalid code address: bit 15 set => data segment "));
-    Serial.println(ptr);
-    return;
-  }
-  return (ptr & ADDR_CODE_MASK);   // 00xxxxxx xxxxxxxx
-}
-
-Word generateDataAddress (Word ptr) {
-  return (ptr & ADDR_DATA_MASK) | DATA_BIT;   // 01xxxxxx xxxxxxxx
-}
-
-Word generateCallAddress (Word ptr) {
-  return generateCodeAddress(ptr) | CALL_BIT;  // 10xxxxxx xxxxxxxx
-}
-
-Word addrHERE() {
-  return generateDataAddress(dataNext);
-}
-
-void allot (Word count) {
-    if (dataNext+count >= DATA_SEGMENT_SIZE) {
-    setHasError();
-    Serial.println(F("Data segment overflow"));
-    return;
-  }
-  dataNext += count;
-}
-
-
-
-void compileOut (byte b) {
-  /*
-  Serial.print(F("compileOut compileNext="));
-  Serial.print(compileNext);
-  Serial.print(F(" byte="));
-  Serial.println(b);
-  */
-  codeSegment[compileNext++]=b;
-}
-
-void verifyReadWriteAddress (Word addr) {
-  if (addr & DATA_BIT) {
-    // data segment
-    addr=addr & ADDR_DATA_MASK;
-    if (addr >= dataNext) {
-      setHasError();
-      Serial.print(F("Invalid data segment address: "));
-      Serial.print(addr);
-      Serial.print(" dataNext=");
-      Serial.println(dataNext);
-      return;
-    }
-  } else {
-    // code segment
-    addr=addr & ADDR_CODE_MASK;
-    if (addr >= CODE_SEGMENT_SIZE) {
-      setHasError();
-      Serial.print(F("Invalid code segment address: "));
-      Serial.print(addr);
-      Serial.print(F(" CODE_SEGMENT_SIZE="));
-      Serial.println(CODE_SEGMENT_SIZE);
-      return;
-    }
-  }
-}
-
-void writeByte (Word addr, byte b) {
-  verifyReadWriteAddress(addr);
-  if (hasError) return;
-
-  if (addr & DATA_BIT) {
-    // data segment
-    addr=addr & ADDR_DATA_MASK;
-    dataSegment[addr]=b;
-  } else {
-    // code segment
-    addr=addr & ADDR_CODE_MASK;
-    codeSegment[addr] = b;
-  }
-
-}
-
-byte readByte (Word addr) {
-  verifyReadWriteAddress(addr);
-  if (hasError) return 0;
-
-  if (addr & DATA_BIT) {
-    // data segment
-    addr=addr & ADDR_DATA_MASK;
-    return dataSegment[addr];
-  } else {
-    // code segment
-    addr=addr & ADDR_CODE_MASK;
-    return codeSegment[addr];
-  }
-
-}
-
-Word readWord (Word addr) {
-  Word a=readByte(addr);
-  Word b=readByte(addr+1);
-  Word value = a << 8 | b;
-  return value;
-}
-
-void writeWord (Word addr, Word value) {
-  writeByte(addr, (value >> 8) & 0xFF);
-  writeByte(addr+1, value & 0xFF);
-}
-
-
-
-char nextWord[MAX_WORD_LENGTH+1];  // input buffer
-
-Word programCounter=0;
-unsigned long instructionCount=0;
-
-DictEntry *dictionaryHead=NULL; 
-
-char temp[8];
+#include "Constants.h"
 
 
 
@@ -201,21 +11,68 @@ void setup() {
   Serial.print(F_CPU / 1000000.0);
   Serial.println(F(" MHz"));
   Serial.println(F("Ok"));
+  memInit();
+  stacksInit();
+}
+
+char nextWord[MAX_WORD_LENGTH+1];  // input buffer
+
+Word programCounter=0;
+unsigned long instructionCount=0;
+
+DictEntry *dictionaryHead=NULL; 
+
+
+boolean errorFlag = false;
+
+char temp[8];
+
+
+
+
+void sPrint (char *msg) {
+  Serial.print(msg);
+}
+
+void sPrintWord (Word word) {
+  Serial.print(word);
+}
+
+void sPrintByte (Byte b) {
+  Serial.print(b);
+}
+
+void sPrintDouble (double d) {
+  Serial.print(d);
+}
+
+void sPrintln () {
+  Serial.println();
+}
+
+
+void clearHasError() {
+  errorFlag=false;
 }
 
 void setHasError () {
-  if (!hasError) {
-    hasError=true;
+  if (!errorFlag) {
+    errorFlag=true;
     Serial.println();
-    for (byte i=0; i<20; i++) Serial.print("-");
+    for (Byte i=0; i<20; i++) Serial.print("-");
     Serial.println();
     Serial.println(F("Error"));
-    for (byte i=0; i<20; i++) Serial.print("-");
+    for (Byte i=0; i<20; i++) Serial.print("-");
     Serial.println();
     delay(1000);
     clearInputBuffer();
   }
 }
+
+Byte hasError() {
+  return errorFlag;
+}
+
 
 void clearInputBuffer() {
   while (Serial.available()) Serial.read();
@@ -253,7 +110,7 @@ void printStr (Word ptr) {
 
 int commentLevel=0;  // nested parantheses count
 void readNextWord () {
-  byte pos=0;
+  Byte pos=0;
 
   for(;;) {
     char ch=readSerialChar();
@@ -284,56 +141,10 @@ void readNextWord () {
 }
 
 
-void push (Word v) {
-  if (dStackNext >= DSTACK_SIZE-1) {
-    setHasError();
-    Serial.println(F("overflow data stack"));
-    return;
-  }
-  dStack[dStackNext++]=v;
-}
 
-Word pop () {
-  if (dStackNext==0) {
-    setHasError();
-    Serial.println(F("underflow data stack"));
-    return 0;
-  }
-  return dStack[--dStackNext];
-}
-
-Word pick (Word n) {
-  if (dStack-1-n < 0) {
-    setHasError();
-    Serial.println(F("underflow data stack"));
-    return 0;
-  }
-  return dStack[dStackNext-1-n];
-}
-
-void rpush (Word v) {
-  if (dStackNext >= RSTACK_SIZE-1) {
-    setHasError();
-    Serial.println(F("overflow return stack"));
-    return;
-  }
-  rStack[rStackNext++]=v;
-}
-
-Word rpop () {
-  if (rStackNext==0) {
-    setHasError();
-    Serial.println(F("underflow return stack"));
-
-    return 0;
-  }
-  return rStack[--rStackNext];
-}
-
-
-// when an op requires additional bytes (bval and cval - push byte and cell value)
-byte getOpcodeParameter() {
-  return codeSegment[programCounter++];
+// when an op requires additional Bytes (bval and cval - push Byte and cell value)
+Byte getOpcodeParameter() {
+  return codeSegmentGet(programCounter++);
 }
 
 
@@ -363,7 +174,7 @@ DictEntry *dictLookupByAddr (Word addr) {
 }
 
 
-void compileNumberByte (byte b) {
+void compileNumberByte (Byte b) {
     if (b==0) {
       compileOut(OP_ZERO);
     } else if (b==1) {
@@ -549,7 +360,7 @@ boolean getTagNumber (char *ptr, int *tag) {
 }
 
 struct Ref {
-  byte tag;
+  Byte tag;
   Word addr;
 };
 
@@ -560,8 +371,8 @@ void op_reserved() {
 
 
 void op_colon() {  
-  compileNext=codeNext;
-  Word startPos=codeNext;
+  initCompileNext();
+  Word startPos=getCodeNext();
 
   Word tags[NUM_TAGS_REFS]; 
   struct Ref refs[NUM_TAGS_REFS];
@@ -570,17 +381,17 @@ void op_colon() {
     tags[i]=0;
   }
   
-  byte nextRef=0;
+  Byte nextRef=0;
 
   // create dictionary entry (CONSTANT address=0)
   create();
 
-  // write dummy length byte (patched at semicolon)
+  // write dummy length Byte (patched at semicolon)
   // (this enables disassembling)
   compileOut(99);
 
   for (;;) {
-    if (hasError) return;
+    if (hasError()) return;
 
     readNextWord();
 
@@ -595,7 +406,7 @@ void op_colon() {
         Serial.print("=");
         Serial.println(compileNext);
         */
-        tags[tag] = compileNext;
+        tags[tag] = getCompileNext();
         continue;
       }
     }
@@ -608,7 +419,7 @@ void op_colon() {
         compileOut(OP_CVAL);
 
         refs[nextRef].tag=tag;
-        refs[nextRef].addr=compileNext;
+        refs[nextRef].addr=getCompileNext();
         /*
         Serial.println();
         Serial.print("*** ref ");
@@ -630,7 +441,7 @@ void op_colon() {
 
       // patch tag references
       for (int i=0; i<nextRef; i++) {
-        byte tag=refs[i].tag;
+        Byte tag=refs[i].tag;
         Word tagAddr=tags[tag];
         if (tagAddr==0) {
           setHasError();
@@ -649,26 +460,27 @@ void op_colon() {
         Serial.println(tagAddr);
         */
 
-        codeSegment[patchAddr] = (tagAddr >> 8) & 0xFF;
-        codeSegment[patchAddr+1] = tagAddr & 0xFF;
+        codeSegmentSet(patchAddr, (tagAddr >> 8) & 0xFF);
+        codeSegmentSet(patchAddr+1, tagAddr & 0xFF);
       }
 
-      byte byteCount=(byte) (compileNext-startPos-1);  // length byte not included
+      Byte ByteCount=(Byte) (getCompileNext()-startPos-1);  // length Byte not included
       DictEntry *de=dictionaryHead;  // from call to create() 
 
       Serial.println();
       Serial.print(de->name);
       Serial.print(" ");
-      Serial.print(byteCount);
-      Serial.println(F(" bytes"));
+      Serial.print(ByteCount);
+      Serial.println(F(" Bytes"));
 
-      // patch length byte
-      codeSegment[startPos]=byteCount;
+      // patch length Byte
+      
+      codeSegmentSet(startPos, ByteCount);
 
-      de->address=generateCodeAddress(startPos+1);  // past length byte
+      de->address=generateCodeAddress(startPos+1);  // past length Byte
       de->type=DE_TYPE_NORMAL;
 
-      codeNext=compileNext;
+      setCodeNext(getCompileNext());
 
       return;
     }
@@ -716,8 +528,8 @@ void op_dot_hex() {Word x=pop(); Serial.print("0x"); Serial.print(x,16); Serial.
 void op_dot_c() {Word x=pop(); char c=(x&0xFF); Serial.print(c);}
 void op_dot_str() {Word addr=pop(); printStr(addr); }
 
-void op_cseg_here() {Word addr=generateCodeAddress(codeNext); push(addr);}
-void op_comp_next() {Word addr=generateCodeAddress(compileNext); push(addr);}
+void op_cseg_here() {Word addr=generateCodeAddress(getCodeNext()); push(addr);}
+void op_comp_next() {Word addr=generateCodeAddress(getCompileNext()); push(addr);}
 void op_comp_out() {Word x=pop(); compileOut(x & 0xFF);}
 
 void op_HERE() {push(addrHERE());}
@@ -735,8 +547,8 @@ void op_constant() {
 }
 
 void op_variable() {
-  Word variableAddr=addrHERE();  
-  dataNext += 2;
+  Word variableAddr=addrHERE(); 
+  allot(2); 
   writeWord(variableAddr,pop());
   push(variableAddr);
   op_constant();
@@ -766,16 +578,11 @@ void op_pick() {Word n=pop(); push(pick(n));}
 
 
 void op_show_stack() {
-  Serial.println();
-  Serial.print(F("Stack: ["));
-  for (byte i=0; i<dStackNext; i++) {
-    if (i>0) Serial.print(" ");
-    Serial.print(dStack[i]);
-  }
-  Serial.println(F("]"));
+  dStackShow();
 }
+
 void op_clear_stack() {
-  dStackNext=0;
+  dStackClear();
 }
 
 // Speed testing
@@ -830,10 +637,10 @@ void op_cond_jmp() {
 }
 
 void op_blob() {
-  // followed by length field n, then n bytes
-  // skip the data, and push the address of the length byte 
+  // followed by length field n, then n Bytes
+  // skip the data, and push the address of the length Byte 
   Word lengthPointer = programCounter;
-  byte length=getOpcodeParameter();
+  Byte length=getOpcodeParameter();
   programCounter += length;
   // convert to address by setting high bit
   push(generateCodeAddress(lengthPointer));
@@ -857,7 +664,7 @@ void op_word_addr() {
   }
 }
 
-// may represent this list fully as a string of PROGMEM bytes
+// may represent this list fully as a string of PROGMEM Bytes
 
 const OpCode opCodes[]={
   {"", &op_reserved}, 
@@ -941,6 +748,7 @@ const OpCode opCodes[]={
 
 
   {"'", &op_word_addr},
+  {"step", &op_step},
   {"dis", &op_dis},
 
   // end-marker
@@ -948,22 +756,42 @@ const OpCode opCodes[]={
 };
 
 
+void op_step() {
+  programCounter=pop();
+  Serial.print(F("programCounter="));
+  Serial.println(programCounter);
+  dStackShow();
+
+  Byte op=codeSegmentGet(programCounter++);
+  Serial.print(F("op="));
+  Serial.println(op);
+
+  executeCodeByte(op);
+  Serial.print(F("programCounter="));
+  Serial.println(programCounter);
+  dStackShow();
+  push(programCounter);
+
+  // prevent auto processing
+  programCounter=0;
+}
+
 void op_dis() {
   Word codeAddr = pop();
-  byte len=codeSegment[codeAddr-1];
+  Byte len=codeSegmentGet(codeAddr-1);
   Serial.println();
   Serial.print(F("codeAddr="));
   Serial.print(codeAddr);
   Serial.print(F(" length="));
   Serial.println(len);
 
-  byte dataBytes=0;
-  for (byte i=0; i<len; i++) {
+  Byte dataBytes=0;
+  for (Byte i=0; i<len; i++) {
     Word addr=codeAddr + i;
     Serial.print(addr);
     Serial.print("  ");
 
-    byte op=codeSegment[addr];
+    Byte op=codeSegmentGet(addr);
     Serial.print(op);
   
     if (dataBytes > 0) {
@@ -976,7 +804,7 @@ void op_dis() {
     if (op & BYTE_CALL_BIT) {
       dataBytes=1;
       Serial.print(F("(call)"));
-      Word forthAddr=(op << 8) | codeSegment[addr+1];
+      Word forthAddr=(op << 8) | codeSegmentGet(addr+1);
       // strip away topmost 2 bits
       forthAddr=forthAddr & ADDR_CODE_MASK;
       Serial.print(F(" forthAddr="));
@@ -1004,7 +832,7 @@ void op_dis() {
     // op = opcode 
     Serial.print(opCodes[op].name);
     if (op==OP_BVAL) {
-      Word val=codeSegment[addr+1];
+      Word val=codeSegmentGet(addr+1);
       Serial.print(" ");
       Serial.print(val);
       Serial.print(" ");
@@ -1013,14 +841,14 @@ void op_dis() {
       dataBytes=1;
     } else if (op==OP_CVAL) {
       dataBytes=2;
-      Word val=(codeSegment[addr+1] << 8) | codeSegment[addr+2];
+      Word val=(codeSegmentGet(addr+1) << 8) | codeSegmentGet(addr+2);
       Serial.print(" ");
       Serial.print(val);
       Serial.print(" ");
       Serial.print("0x");
       Serial.print(val,16);
     } else if (op==OP_BLOB) {
-      dataBytes=codeSegment[addr+1]+1;
+      dataBytes=codeSegmentGet(addr+1)+1;
     }
     Serial.println();
   }
@@ -1028,46 +856,46 @@ void op_dis() {
 
 // check nextWord against the opCodes array, return index or -1 if not found
 int lookupOpCode () {
-  byte pos=0;
-  for (byte pos=0; pos < 255 ; pos++) {
+  Byte pos=0;
+  for (Byte pos=0; pos < 255 ; pos++) {
     if (opCodes[pos].f == 0) return -1;  // end of list, not found
     if (!strcmp(nextWord,opCodes[pos].name)) return pos;
   }
   return -1;
 }
 
+void executeCodeByte (Byte b) {
+  // detect high bit set, this indicates a Forth call address (14 bits)
+
+  if (b & BYTE_CALL_BIT) {
+    Word address = (b<<8) | getOpcodeParameter();
+    /*Serial.print("call=");
+    Serial.println(address);*/
+    callForth(address);
+  } else {
+    // opcode
+    opCodes[b].f();
+  }
+  instructionCount++;
+}
 
 
 void executeCode() {
   while (programCounter != 0) {
-    if (hasError) {
+    if (hasError()) {
       programCounter=0;
       return;     
     }
-
-    byte b=codeSegment[programCounter++];
-
-    // detect high bit set, this indicates a Forth call address (14 bits)
-
-    if (b & BYTE_CALL_BIT) {
-      Word address = (b<<8) | getOpcodeParameter();
-      Serial.print("call=");
-      Serial.println(address);
-      callForth(address);
-    } else {
-      // opcode
-      opCodes[b].f();
-    }
-    instructionCount++;
+    executeCodeByte(codeSegmentGet(programCounter++));
   }
 }
 
 // interpreting main loop
 void loop() {
-  hasError=false;
+  clearHasError();
 
   executeCode();
-  if (hasError) {
+  if (hasError()) {
     return;
   }
   
@@ -1101,7 +929,7 @@ void loop() {
 
 ////////
 
-const PROGMEM byte lookupTable[] = {0,1,2,3,5};
+const PROGMEM Byte lookupTable[] = {0,1,2,3,5};
 
 void readExample() {
   uint16_t verdi = pgm_read_byte_near(2);

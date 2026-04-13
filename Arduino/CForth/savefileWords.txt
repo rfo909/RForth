@@ -1,0 +1,50 @@
+# Process file
+# --
+	P(1) as File => file
+	file.read(false)->line
+		if (line.trim.startsWith("sPrint(")) {
+			pre=line.before("sPrint")
+			str=line.after('"').before('"')
+			MySplit(str)->part
+				out(pre + 'sPrint("' + part.toLower + '");')
+				space=true
+		} else {
+			out(line)
+		}
+/Process
+
+
+# Split into parts
+# --
+	P(1) as String => line
+	line=line.replace(":", " :")
+	line=line.replace("  :", " :")
+	line=line.replace("="," = ")
+	line=line.replace("  =", " =")
+	line=line.replace("=  ", "= ")
+	line=line.replace("^t".unEsc," ")
+	
+	println(line)
+
+	word=""
+	line.chars->c
+		if (c==" ") {
+			if (word.length > 0) {
+				out(word)
+				word=""
+			}
+			out(" ")
+		} else {
+			word=word+c
+		}
+	| => list
+	if (word.length > 0) list.add(word)
+	list
+/MySplit
+
+# Main
+# --
+	Dir.allFiles("*.cpp")->f
+		Lib:Header(f.path)
+		f.create(Process(f))
+/t

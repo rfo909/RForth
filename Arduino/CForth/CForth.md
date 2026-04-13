@@ -12,16 +12,16 @@ implemented in ACode.txt. This should make the compiler faster, and generally
 use less RAM.
 
 Also, the representation of literal values is more straight forward, using
-"bval" and "cval" op-codes, followed by 1 or 2 bytes, respectively. 
+"bval" and "cval" op-codes, followed by 1 or 2 Bytes, respectively. 
 
 v0.0.1
 ------ 
 Imagined it would be nice to have forth word calls as compact as possible, using
-single bytes. Would discriminate on top bit, allowing 127 op-codes written in C,
+single Bytes. Would discriminate on top bit, allowing 127 op-codes written in C,
 and 127 Forth word references. 
 
 This worked, but allocating the array for "definedWords" in advance, with each 
-element being Cell sized, meant wasting 254 bytes that may never be fully used.
+element being Cell sized, meant wasting 254 Bytes that may never be fully used.
 
 Has the compiler working, as well as the REPL, and the runtime.
 
@@ -33,8 +33,8 @@ is a disassembler
 v0.0.2
 ------
 Rewrote the code into a more traditional format, with the address in the
-dictionary entries being Cell sized (2 bytes), and creating a "call" opCode
-which is followed by the address (2 bytes).
+dictionary entries being Cell sized (2 Bytes), and creating a "call" opCode
+which is followed by the address (2 Bytes).
 
 Then created the "dcall" opcode, in order for Forth to call any address,
 from the stack.
@@ -60,14 +60,14 @@ might be (much) smaller.
 Intending to make the code segment span both a Flash part and a "live"
 part, which can at most total 16k.
 
-=> This decision opened for reducing Forth calls to 2 bytes. 
+=> This decision opened for reducing Forth calls to 2 Bytes. 
 
 The built-in opCodes count 43 now, and are projected to be far fewer
-than 127, which means their byte codes have high bit zero.
+than 127, which means their Byte codes have high bit zero.
 
-Calls are now compiled into a byte with high bit 1, followed by a 0, and
-then 6 bits + another byte = 14 bits. The runtime uses this high bit to
-detect a call, and assembles a 14 bit address using that byte and the next.
+Calls are now compiled into a Byte with high bit 1, followed by a 0, and
+then 6 bits + another Byte = 14 bits. The runtime uses this high bit to
+detect a call, and assembles a 14 bit address using that Byte and the next.
 
 
 It works!
@@ -94,10 +94,10 @@ Added ops for
 - .str         (print string)
 - .c           (print character)
 
-Got "immediate" to work, and tested generation of byte code via comp.out. 
+Got "immediate" to work, and tested generation of Byte code via comp.out. 
 
 Implemented and tested the " word (quote) in Forth. It is an immediate word, which
-builds code (OP_BLOB) with length byte and sequence of characters up until finding matching
+builds code (OP_BLOB) with length Byte and sequence of characters up until finding matching
 quote.
 
 
@@ -110,12 +110,12 @@ Updated 2026-04-12
 65 opcodes
 
 ```
-bval n                    push single byte value on stack 
+bval n                    push single Byte value on stack 
 cval n n                  push cell value on stack
 ret                       return
 <addr> jmp                jump to address 
 <cond> <addr> jmp?        conditional jump to address if <cond> != 0
-blob n ...                just skips the data bytes and returns pointer to the n byte
+blob n ...                just skips the data Bytes and returns pointer to the n Byte
 zero
 one
 
@@ -151,12 +151,12 @@ cr                        carriage return
 .                         print TOS value (signed)
 .u                        unsigned
 .hex                      hex  
-<byte> .c                 print single character
+<Byte> .c                 print single character
 <addr> .str               print string (n ...)
 
-csegHERE                  address of next byte in code segment
-comp.next                 address of next byte - when compiling
-<byte> comp.out           add byte to code segment - when compiling
+csegHERE                  address of next Byte in code segment
+comp.next                 address of next Byte - when compiling
+<Byte> comp.out           add Byte to code segment - when compiling
 HERE                      next address on data segment
 <n> allot                 increase HERE 
 <value> constant (name)
@@ -164,8 +164,8 @@ HERE                      next address on data segment
 
 <value> <addr> !          write cell sized value 
 <addr> @                  read cell sized value
-<byte> <addr> b!          write byte sized value
-<addr> b@                 read byte
+<Byte> <addr> b!          write Byte sized value
+<addr> b@                 read Byte
 
 dup
 swap
@@ -226,18 +226,18 @@ Todo
 - Move dictionaryHead into codeSegment
 
 
-- Move opCodes content to text format, and generate PROGMEM arrays. Should save approx 500 bytes of RAM
-	Currently using 1306 for global variables, including 400 bytes for code/data-segments
-	1300 - 500 - 400 = overhead 400 bytes
-	-> adding frame stack 10 deep = 20 bytes => 450 bytes overhead
-	=> That is 1600 bytes free
+- Move opCodes content to text format, and generate PROGMEM arrays. Should save approx 500 Bytes of RAM
+	Currently using 1306 for global variables, including 400 Bytes for code/data-segments
+	1300 - 500 - 400 = overhead 400 Bytes
+	-> adding frame stack 10 deep = 20 Bytes => 450 Bytes overhead
+	=> That is 1600 Bytes free
 
 	Reserving 200 for C locals and C call stack
 	
-	=> data 1000 bytes
-	=> code 400 bytes
+	=> data 1000 Bytes
+	=> code 400 Bytes
 	
-On boot, create variable (in RAM) that points to dictionaryHead, in first 2 bytes of the data segment
+On boot, create variable (in RAM) that points to dictionaryHead, in first 2 Bytes of the data segment
 (code generate C constant for it)
 
 Generate symbol for it in dictionary (_dictHead)
@@ -251,8 +251,8 @@ Frame stack of words keeping track of what's added to return stack -> local vari
 standard Forth words, and fix address resolution towards Flash vs codeSegment (simple offset).
 
 
-- Plugins form a different array of bytes in PROGMEM. Instead of compiling to index, we
-can compile directly to C pointers (2 bytes on atmega328p)
+- Plugins form a different array of Bytes in PROGMEM. Instead of compiling to index, we
+can compile directly to C pointers (2 Bytes on atmega328p)
 
 
 
