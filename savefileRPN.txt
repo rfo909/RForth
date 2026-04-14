@@ -1,0 +1,223 @@
+# RPN stack trainer
+# --
+<<< EOF
+Define a number of operations, in terms of what they take from the stack and
+what they put back. We use strings for values, not real values, so for example
+
+[address offset] add -> [sum]
+>>> EOF
+/Readme
+
+# Data stack
+# --
+	Db2:Get(Sys.scriptId,"DataStack",List)
+//DataStack
+
+# Return stack
+# --
+	Db2:Get(Sys.scriptId,"ReturnStack",List)
+//ReturnStack
+
+# Save data stack
+# --
+	P(1) as List => st
+	Db2:Set(Sys.scriptId,"DataStack",st)
+//DataSave
+
+# Command list
+# --
+	Db2:Get(Sys.scriptId,"Commands",List)
+//Commands
+
+# Save commands
+# --
+	P(1) as List => list
+	Db2:Set(Sys.scriptId,"Commands",list)
+//CommandsSave
+
+
+# Save return stack
+# --
+	P(1) as List => st
+	Db2:Set(Sys.scriptId,"ReturnStack",st)
+//ReturnSave
+
+# Show
+# --
+	println("data:   [" + DataStack.concat(" ") + "]")
+	println("return: [" + ReturnStack.concat(" ") + "]")
+	println
+	println(Commands.concat(" "))
+	println
+	true
+//Show
+
+
+# Add command
+# --
+	P(1, Input("Command").get) => c
+	clist = Commands.add(c)
+	CommandsSave(clist)
+//cmd
+
+# Clear
+# --
+	DataSave(List)
+	ReturnSave(List)
+	CommandsSave(List)
+//clear
+
+
+# Rename last
+# --
+	P(1, readLine("Rename last to")) as String => val
+	XPop
+	XPush(val)
+//renameLast
+
+
+# Push
+# --
+	P(1, readLine("Enter value string")) as String => s
+	ds=DataStack.add(s)
+	DataSave(ds)
+//XPush
+
+# Pop (X = helper)
+# --
+	ds=DataStack
+	val=ds.last
+	ds.removeLast
+	DataSave(ds)
+	val
+//XPop
+
+
+# Dup
+# --
+	ds=DataStack
+	ds.add(DataStack.last)
+	DataSave(ds)
+//dup
+
+# Swap
+# --
+	a=XPop
+	b=XPop
+	XPush(a)
+	XPush(b)
+//swap
+
+# Over
+# --
+	ds=DataStack
+	val=DataStack.get(ds.length-2)
+	XPush(val)
+//over
+
+# Pick
+# --
+	P(1, readLine("Pick (int)").parseInt) as int => n
+	ds=DataStack
+	val=DataStack.get(ds.length-1-n)
+	XPush(val)
+//pick
+
+
+# >R
+# --
+	rs=ReturnStack.add(XPop)
+	ReturnSave(rs)
+//toR
+	
+# R>
+# --
+	rs=ReturnStack
+	val=rs.last
+	rs.removeLast
+	ReturnSave(rs)
+	XPush(val)
+//fromR
+	
+
+# Rules
+# --
+<<< EOF
+b@	1	byte
+@	1	word
+b!	2	-
+!	2	-
++	2	sum
+-	2	diff
+*	2	mult
+1+  1	incr
+>>> EOF
+//Rules
+
+# Mappings
+# --
+<<< EOF
+#clear  clear
+#r		renameLast
+#enter  XPush
+push	XPush
+drop	XPop
+dup		dup
+swap	swap
+over	over
+pick	pick
+>R		toR
+R>		fromR
+>>> EOF
+//Mappings
+
+# Lookup command
+# --
+	P(1) as String => command
+	found=false
+	Mappings->line
+		if (line.split.first==command) {
+			s=line.split.last
+			Sys.eval(s)
+			if (!command.startsWith("#")) cmd(command)
+			found=true
+			break
+		}
+	|
+	if (!found) {
+		Rules->line
+			if (line.split.first==command) {
+				pops=line.split.get(1).parseInt
+				Inner{ loop break(pops==0) XPop pops=pops-1 }
+				val=line.split.last
+				if (val != "-") XPush(val)
+				cmd(command)
+				found=true
+				break
+			}
+	}
+
+	found
+//ExecuteCommand
+			
+			
+# Valid commands as list
+# --
+	Mappings->x out(x.split.first) | _=> a
+	Rules->x out(x.split.first) | _=> b
+	a+b
+//ValidCommands
+
+
+# Main loop
+# --
+	loop
+		Show
+		readLine("Enter command, #r to rename last, ? for help, #q to quit") => s
+		break(s=="#q")
+		if (s=="?") {
+			println(ValidCommands.concat(" "))
+		} else {
+			ExecuteCommand(s)
+		}
+/Main
