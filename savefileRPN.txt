@@ -4,8 +4,38 @@
 Define a number of operations, in terms of what they take from the stack and
 what they put back. We use strings for values, not real values, so for example
 
-[address offset] add -> [sum]
+Commands
+--------
+#q                   - quit
+
+#clear               - reset the state
+#enter               - push value without storing in command list
+#r                   - rename last value
+push                 - push value
+drop
+dup
+swap
+over
+pick                 - asked about N
+>R
+R>
+b@
+@
+b!
+!
++ 
+-
+*
+1+
+
+When entering a command that pushes a value on the stack, we can optionally
+supply a second word, to give the name for the latest value on the stack.
+Ex:
+
+> 1+ newLength
+
 >>> EOF
+	->line println("|", line)
 /Readme
 
 # Data stack
@@ -13,16 +43,22 @@ what they put back. We use strings for values, not real values, so for example
 	Db2:Get(Sys.scriptId,"DataStack",List)
 //DataStack
 
-# Return stack
-# --
-	Db2:Get(Sys.scriptId,"ReturnStack",List)
-//ReturnStack
-
 # Save data stack
 # --
 	P(1) as List => st
 	Db2:Set(Sys.scriptId,"DataStack",st)
 //DataSave
+
+# Return stack
+# --
+	Db2:Get(Sys.scriptId,"ReturnStack",List)
+//ReturnStack
+
+# Save return stack
+# --
+	P(1) as List => st
+	Db2:Set(Sys.scriptId,"ReturnStack",st)
+//ReturnSave
 
 # Command list
 # --
@@ -36,11 +72,25 @@ what they put back. We use strings for values, not real values, so for example
 //CommandsSave
 
 
-# Save return stack
+# History - contains commands and stack snap
 # --
-	P(1) as List => st
-	Db2:Set(Sys.scriptId,"ReturnStack",st)
-//ReturnSave
+	Db2:Get(Sys.scriptId,"History",List)
+//History
+
+# Save history
+# --
+	P(1) as List => list
+	Db2:Set(Sys.scriptId,"History",list)
+//HistorySave
+
+
+# History add
+# --
+	P(1) as String => s
+	h=History
+	h.add(s)
+	HistorySave(h)
+//HistoryAdd
 
 # Show
 # --
@@ -65,6 +115,7 @@ what they put back. We use strings for values, not real values, so for example
 	DataSave(List)
 	ReturnSave(List)
 	CommandsSave(List)
+	HistorySave(List)
 //clear
 
 
@@ -121,6 +172,7 @@ what they put back. We use strings for values, not real values, so for example
 	ds=DataStack
 	val=DataStack.get(ds.length-1-n)
 	XPush(val)
+	HistoryAdd(""+n)
 //pick
 
 
@@ -196,6 +248,7 @@ R>		fromR
 				break
 			}
 	}
+	|
 
 	found
 //ExecuteCommand
@@ -218,6 +271,24 @@ R>		fromR
 		if (s=="?") {
 			println(ValidCommands.concat(" "))
 		} else {
-			ExecuteCommand(s)
+			customName=null
+			if (s.split.length>1) {
+				customName=s.split.last
+				s=s.split.first
+			}
+			ok = ExecuteCommand(s)
+			if (ok && customName != null) renameLast(customName)
+			if (ok) {
+				h=History
+				s=s+"                    "	
+				h.add(s.first(20) + "( " + DataStack.concat(" ") + " )")
+				HistorySave(h)
+			}
 		}
 /Main
+
+# Show history
+# --
+	History.print
+/Hist
+

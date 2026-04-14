@@ -13,14 +13,21 @@
 : BufClear (addr) 0 swap b! ;
 
 : BufAdd (val addr -- )
-	dup 
-		dup b@ + 1+        (val addr writePos)
-	2 pick swap        (val addr val writePos)
-		b!         (val addr)
-	swap drop          (addr)
-	dup
-		b@ 1+      (addr newLength)
-	swap b!
+	dup                 ( val addr addr )
+	dup                 ( val addr addr addr )
+	b@                  ( val addr addr length )
+	+                   ( val addr offset )
+	1+                  ( val addr offset )
+	2 pick              ( val addr offset val )
+	swap                ( val addr val offset )
+	b!                  ( val addr )
+	swap                ( addr val )
+	drop                ( addr )
+	dup                 ( addr addr )
+	b@                  ( addr length )
+	1+                  ( addr updatedLength )
+	swap                ( updatedLength addr )
+	b!                  (  )
 ;
 
 (Creates blob (string) of bytes up to the end quote)
