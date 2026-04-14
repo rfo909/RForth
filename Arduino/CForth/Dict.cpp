@@ -1,6 +1,6 @@
 #include "Constants.h"
 
-DictEntry *dictionaryHead=NULL; 
+static DictEntry *dictionaryHead=NULL; 
 
 
 DictEntry *getDictionaryHead() {

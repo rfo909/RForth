@@ -13,12 +13,12 @@ void setup() {
   stacksInit();
 }
 
-char nextWord[MAX_WORD_LENGTH+1];  // input buffer
+static char nextWord[MAX_WORD_LENGTH+1];  // input buffer
 
-Word programCounter=0;
-unsigned long instructionCount=0;
+static Word programCounter=0;
+static unsigned long instructionCount=0;
 
-Boolean errorFlag = false;
+static Boolean errorFlag = false;
 
 void sPrint (char *msg) {
   Serial.print(msg);
@@ -87,7 +87,7 @@ Word readSerialChar () {
 }
 
 
-int commentLevel=0;  // nested parantheses count
+static int commentLevel=0;  // nested parantheses count
 void readNextWord () {
   Byte pos=0;
 

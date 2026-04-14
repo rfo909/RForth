@@ -1,12 +1,13 @@
 #include "Constants.h"
 
-Byte codeSegment[CODE_SEGMENT_SIZE];
-Byte dataSegment[DATA_SEGMENT_SIZE];
+static Byte codeSegment[CODE_SEGMENT_SIZE];
+static Byte dataSegment[DATA_SEGMENT_SIZE];
 
-Word codeNext;  // "code.here" - programCounter 0 means no code running (keeping it unsigned)
-Word compileNext;  // "comp.next"
+static Word codeNext;  // "code.here" - programCounter 0 means no code running (keeping it unsigned)
+static Word compileNext;  // "comp.next"
 
-Word dataNext;   // "HERE"
+static Word dataNext;   // "HERE"
+
 
 void memInit(void) {
   codeNext=1;

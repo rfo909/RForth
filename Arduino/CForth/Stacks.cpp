@@ -1,9 +1,9 @@
 #include "Constants.h"
 
-Word dStack[DSTACK_SIZE];
-Byte dStackNext;
-Word rStack[RSTACK_SIZE];
-Byte rStackNext;
+static Word dStack[DSTACK_SIZE];
+static Byte dStackNext;
+static Word rStack[RSTACK_SIZE];
+static Byte rStackNext;
 
 void stacksInit(void) {
   dStackNext=0;
