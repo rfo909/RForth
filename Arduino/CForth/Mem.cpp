@@ -3,6 +3,7 @@
 static Byte codeSegment[CODE_SEGMENT_SIZE];
 static Byte dataSegment[DATA_SEGMENT_SIZE];
 
+static Word staticCodeBytes=0;
 static Word codeNext;  // "code.here" - programCounter 0 means no code running (keeping it unsigned)
 static Word compileNext;  // "comp.next"
 
@@ -10,9 +11,11 @@ static Word dataNext;   // "HERE"
 
 
 void memInit(void) {
-  codeNext=1;
-  compileNext=1;
   dataNext=0;
+
+  staticCodeBytes = staticDataSize();
+  codeNext=staticCodeBytes;
+  compileNext=staticCodeBytes;
 }
 
 
@@ -82,11 +85,11 @@ Word generateCallAddress (Word ptr) {
   return generateCodeAddress(ptr) | CALL_BIT;  // 10xxxxxx xxxxxxxx
 }
 
-Word addrHERE() {
+Word HERE() {
   return generateDataAddress(dataNext);
 }
 
-void allot (Word count) {
+void memAllot (Word count) {
     if (dataNext+count >= DATA_SEGMENT_SIZE) {
     setHasError();
     sPrint("data");
@@ -131,18 +134,12 @@ static void verifyReadWriteAddress (Word addr) {
   } else {
     // code segment
     addr=addr & ADDR_CODE_MASK;
-    if (addr >= CODE_SEGMENT_SIZE) {
+    if (addr >= CODE_SEGMENT_SIZE + staticCodeBytes) {
       setHasError();
       sPrint("invalid");
       sPrint(" ");
-      sPrint("code");
-      sPrint(" ");
-      sPrint("segment");
-      sPrint(" ");
       sPrint("address");
-      sPrint(" ");
-      sPrint(":");
-      sPrint(" ");
+      sPrint("=");
       sPrintWord(addr);
       sPrint(" ");
       sPrint("code");
@@ -150,10 +147,15 @@ static void verifyReadWriteAddress (Word addr) {
       sPrint("segment");
       sPrint("_");
       sPrint("size");
-      sPrint(" ");
       sPrint("=");
-      sPrint(" ");
       sPrintWord(CODE_SEGMENT_SIZE);
+      sPrint(" ");
+      sPrint("static");
+      sPrint("=");
+      sPrintWord(staticCodeBytes);
+      sPrint(" ");
+      sPrint("=>");
+      sPrintWord(CODE_SEGMENT_SIZE + staticCodeBytes);
       sPrintln();
       return;
     }
@@ -178,14 +180,25 @@ void writeByte (Word addr, Byte b) {
     //sPrintln();
     // code segment
     addr=addr & ADDR_CODE_MASK;
-    codeSegment[addr] = b;
+    if (addr < staticCodeBytes) {
+      setHasError();
+      sPrint("invalid");
+      sPrint(" ");
+      sPrint("address");
+      sPrint(":");
+      sPrint(" ");
+      sPrint("static");
+      sPrintln();
+      return;
+    }
+    codeSegment[addr-staticCodeBytes] = b;
   }
 
 }
 
 Byte readByte (Word addr) {
   verifyReadWriteAddress(addr);
-  if (hasError()) return 0;
+  if (hasError()) return 255;
 
   if (addr & DATA_BIT) {
     // data segment
@@ -194,7 +207,11 @@ Byte readByte (Word addr) {
   } else {
     // code segment
     addr=addr & ADDR_CODE_MASK;
-    return codeSegment[addr];
+    if (addr < staticCodeBytes) {
+      return staticDataRead(addr);
+    } else {
+      return codeSegment[addr-staticCodeBytes];
+    }
   }
 
 }

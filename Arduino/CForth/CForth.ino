@@ -4,21 +4,45 @@
 #include "Constants.h"
 
 
-void setup() {
-  Serial.begin(9600);
-  Serial.print(F_CPU / 1000000.0);
-  Serial.println(F(" MHz"));
-  Serial.println(F("Ok"));
-  memInit();
-  stacksInit();
-}
-
 static char nextWord[MAX_WORD_LENGTH+1];  // input buffer
 
 static Word programCounter=0;
 static unsigned long instructionCount=0;
 
 static Boolean errorFlag = false;
+
+static Word dStack[DSTACK_SIZE];
+static Byte dStackNext = 0;
+static Word rStack[RSTACK_SIZE];
+static Byte rStackNext = 0;
+
+void setup() {
+  Serial.begin(9600);
+  Serial.print(F_CPU / 1000000.0);
+  Serial.println(F(" MHz"));
+
+  memInit();
+
+  // copy Dictionary Header pointer from static data segment lower two bytes to RAM
+  // (note address 0 in code segment is reserved, so data are in location 1 and 2)
+
+  memAllot(2);
+  Word srcAddr=generateCodeAddress(1);
+  Word dataAddr=generateDataAddress(0); // points into the static part
+  Serial.print(F("Dictionary head: 0x"));
+  Serial.println(dataAddr,16);
+
+  writeByte(dataAddr, readByte(srcAddr));  
+  writeByte(dataAddr+1, readByte(srcAddr+1));  
+  Serial.println(F("Ok"));
+
+}
+
+
+// -------------------------------------------
+// Serial output (public)
+// -------------------------------------------
+
 
 void sPrint (char *msg) {
   Serial.print(msg);
@@ -41,7 +65,116 @@ void sPrintln () {
 }
 
 
-void clearHasError() {
+// -------------------------------------------
+// Stacks
+// -------------------------------------------
+
+
+static void inline push (Word v) {
+  if (dStackNext >= DSTACK_SIZE-1) {
+    setHasError();
+    sPrint("overflow");
+    sPrint(" ");
+    sPrint("data");
+    sPrint(" ");
+    sPrint("stack");
+    sPrintln();
+    return;
+  }
+  dStack[dStackNext++]=v;
+}
+
+static Word inline pop () {
+  if (dStackNext==0) {
+    setHasError();
+    sPrint("underflow");
+    sPrint(" ");
+    sPrint("data");
+    sPrint(" ");
+    sPrint("stack");
+    sPrintln();
+    return 0;
+  }
+  return dStack[--dStackNext];
+}
+
+static Word pick (Word n) {
+  if (dStack-1-n < 0) {
+    setHasError();
+    sPrint("underflow");
+    sPrint(" ");
+    sPrint("data");
+    sPrint(" ");
+    sPrint("stack");
+    sPrintln();
+    return 0;
+  }
+  return dStack[dStackNext-1-n];
+}
+
+static void rpush (Word v) {
+  /* Print("rpush ");
+  sPrintWord(v);
+  sPrintln(); */
+  if (dStackNext >= RSTACK_SIZE-1) {
+    setHasError();
+    sPrint("overflow");
+    sPrint(" ");
+    sPrint("return");
+    sPrint(" ");
+    sPrint("stack");
+    sPrintln();
+    return;
+  }
+  rStack[rStackNext++]=v;
+}
+
+static Word rpop () {
+  if (rStackNext==0) {
+    setHasError();
+    sPrint("underflow");
+    sPrint(" ");
+    sPrint("return");
+    sPrint(" ");
+    sPrint("stack");
+    sPrintln();
+
+    return 0;
+  }
+  rStackNext--;
+  Word v = rStack[rStackNext];
+  /* sPrint("rpop ");
+  sPrintWord(v);
+  sPrintln(); */
+  return v;
+}
+
+static void dStackShow() {
+  sPrintln();
+  sPrint("stack");
+  sPrint(" ");
+  sPrint(":");
+  sPrint(" ");
+  sPrint("[");
+  for (Byte i=0; i<dStackNext; i++) {
+    if (i>0) sPrint(" ");
+    sPrintWord(dStack[i]);
+  }
+  sPrint("]");
+  sPrintln();
+}
+
+static void dStackClear() {
+  dStackNext=0;
+}
+
+// -------------------------------------------
+// Error handling
+// -------------------------------------------
+
+
+
+static void clearHasError() {
   errorFlag=false;
 }
 
@@ -59,7 +192,7 @@ void setHasError () {
   }
 }
 
-Byte hasError() {
+Boolean hasError() {
   return errorFlag;
 }
 
@@ -213,15 +346,7 @@ void compileNextWord () {
 
 void create () {
   readNextWord();
-  char *ptr=(char *) malloc(strlen(nextWord)+1);
-  strcpy(ptr,nextWord);
-
-  DictEntry *de=(DictEntry *) malloc(sizeof(DictEntry));
-  de->name=ptr;
-  de->type=DE_TYPE_CONSTANT;
-  de->address=0;
-  de->next=getDictionaryHead();
-  setDictionaryHead(de);
+  dictCreate(nextWord);
 }
 
 
@@ -417,15 +542,15 @@ void op_dot_hex() {Word x=pop(); Serial.print("0x"); Serial.print(x,16); Serial.
 void op_dot_c() {Word x=pop(); char c=(x&0xFF); Serial.print(c);}
 void op_dot_str() {Word addr=pop(); printStr(addr); }
 
-void op_cseg_here() {Word addr=generateCodeAddress(getCodeNext()); push(addr);}
+void op_code_here() {Word addr=generateCodeAddress(getCodeNext()); push(addr);}
 void op_comp_next() {Word addr=generateCodeAddress(getCompileNext()); push(addr);}
 void op_comp_out() {Word x=pop(); compileOut(x & 0xFF);}
 
-void op_HERE() {push(addrHERE());}
+void op_HERE() {push(HERE());}
 
 void op_allot() {
   Word count=pop();
-  allot(count);
+  memAllot(count);
 }
 
 void op_constant() {
@@ -437,8 +562,8 @@ void op_constant() {
 }
 
 void op_variable() {
-  Word variableAddr=addrHERE(); 
-  allot(2); 
+  Word variableAddr=HERE(); 
+  memAllot(2); 
   writeWord(variableAddr,pop());
   push(variableAddr);
   op_constant();
@@ -606,7 +731,7 @@ const OpCode opCodes[]={
   {".c", &op_dot_c},
   {".str", &op_dot_str},
 
-  {"csegHERE", &op_cseg_here},
+  {"code.here", &op_code_here},
   {"comp.next", &op_comp_next},
   {"comp.out", &op_comp_out},
   {"HERE", &op_HERE},
@@ -818,12 +943,4 @@ void loop() {
   setHasError();
   Serial.print(F("Unknown word: "));
   Serial.println(nextWord);
-}
-
-////////
-
-const PROGMEM Byte lookupTable[] = {0,1,2,3,5};
-
-void readExample() {
-  uint16_t verdi = pgm_read_byte_near(2);
 }

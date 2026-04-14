@@ -16,9 +16,10 @@ typedef struct {
 #define CODE_SEGMENT_SIZE     200
 #define DATA_SEGMENT_SIZE     50
 
-#define DE_TYPE_NORMAL      1
-#define DE_TYPE_IMMEDIATE   2
-#define DE_TYPE_CONSTANT    3  // value stored in address field
+// value for top two bits of word address in dictionary entry
+#define DE_TYPE_NORMAL      0
+#define DE_TYPE_IMMEDIATE   1
+#define DE_TYPE_CONSTANT    2
 
 typedef struct DictEntry {
   char *name;
@@ -65,7 +66,6 @@ void sPrintByte (Byte b);
 void sPrintDouble (double d);
 void sPrintln ();
 
-void clearHasError();
 void setHasError();
 Byte hasError();
 
@@ -74,23 +74,18 @@ Byte hasError();
 // ------------------------------------------------------
 
 DictEntry *getDictionaryHead();
-void setDictionaryHead (DictEntry *de);
 DictEntry *dictLookup (char *word);
 DictEntry *dictLookupByAddr (Word addr);
+void dictCreate (char *nextWord);
 
 // ------------------------------------------------------
-// Stacks.cpp
+// Static.cpp
 // ------------------------------------------------------
 
-void stacksInit(void);
-void push (Word v);
-Word pop ();
-Word pick (Word n);
-void rpush (Word v);
-Word rpop ();
 
-void dStackShow();
-void dStackClear();
+Word staticDataSize();
+Byte staticDataRead (Word pos);
+
 
 // ------------------------------------------------------
 // Mem.cpp
@@ -106,8 +101,8 @@ Word getCompileNext();
 Word generateCodeAddress (Word ptr);
 Word generateDataAddress (Word ptr);
 Word generateCallAddress (Word ptr);
-Word addrHERE();
-void allot (Word count);
+Word HERE();
+void memAllot (Word count);
 void writeByte (Word addr, Byte b);
 Byte readByte (Word addr);
 Word readWord (Word addr);

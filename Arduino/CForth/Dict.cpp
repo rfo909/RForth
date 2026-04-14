@@ -1,13 +1,18 @@
 #include "Constants.h"
+#include <stdlib.h>
 
 static DictEntry *dictionaryHead=NULL; 
+
+
+static DictEntry currDE;
+
 
 
 DictEntry *getDictionaryHead() {
   return dictionaryHead;
 }
 
-void setDictionaryHead (DictEntry *de) {
+static void setDictionaryHead (DictEntry *de) {
   dictionaryHead=de;
 }
 
@@ -32,6 +37,19 @@ DictEntry *dictLookupByAddr (Word addr) {
     ptr=ptr->next;
   }
   return NULL;
+}
+
+
+void dictCreate (char *nextWord) {
+  char *ptr=(char *) malloc(strlen(nextWord)+1);
+  strcpy(ptr,nextWord);
+
+  DictEntry *de=(DictEntry *) malloc(sizeof(DictEntry));
+  de->name=ptr;
+  de->type=DE_TYPE_CONSTANT;
+  de->address=0;
+  de->next=getDictionaryHead();
+  setDictionaryHead(de);
 }
 
 
