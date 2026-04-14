@@ -18,15 +18,7 @@ char nextWord[MAX_WORD_LENGTH+1];  // input buffer
 Word programCounter=0;
 unsigned long instructionCount=0;
 
-
-
-
-boolean errorFlag = false;
-
-char temp[8];
-
-
-
+Boolean errorFlag = false;
 
 void sPrint (char *msg) {
   Serial.print(msg);
@@ -76,8 +68,8 @@ void clearInputBuffer() {
   while (Serial.available()) Serial.read();
 }
 
-boolean keyPressed() {
-  return (boolean) Serial.available();
+Boolean keyPressed() {
+  return (Boolean) Serial.available();
 }
 
 Word readSerialChar () {
@@ -94,17 +86,6 @@ Word readSerialChar () {
   }
 }
 
-void printChar (Word ch) {
-  sprintf(temp,"%c", ch);
-  Serial.print(temp);
-}
-
-void printStr (Word ptr) {
-  Word len=readByte(ptr);
-  for (int i=0; i<len; i++) {
-    printChar(readByte(ptr+i+1));
-  }
-}
 
 int commentLevel=0;  // nested parantheses count
 void readNextWord () {
@@ -174,73 +155,6 @@ void compileNumber (Word w) {
   }
 }
 
-/*
-Enhanced atoi, recognizes decimal, hex (0x...) and binary (b....) and negative, returns boolean to 
-indicate success or failure. Writes result int *target
-*/
-boolean myAtoi (int *target) {
-  int readPos=0;
-  
-  boolean negative=false;
-  if (nextWord[readPos]=='-') {
-    negative=true;
-    readPos++;
-    if(nextWord[readPos] == '\0') return false;
-  }
-
-  long value=0; 
-
-  if (!strncmp(nextWord+readPos,"0x",2)) {
-    // parsing hex
-    readPos+=2;
-
-    while(nextWord[readPos] != '\0') {
-      char c=nextWord[readPos++];
-      if (c=='\0') return false; // no digits
-
-      if (c>='0' && c <= '9') {
-        value=value*16 + (c-'0');
-      } else if (c>='A' && c<='F') {
-        value=value*16 + (c-'A') + 10;
-      } else if (c>='a' && c<='f') {
-        value=value*16 + (c-'a') + 10;
-      } else {
-        return false;  // fail
-      }
-    }
-    // ok
-  } else if (nextWord[readPos]=='b') {
-    // possibly binary
-    readPos++;
-    if (nextWord[readPos]=='\0') return false; // no digits
-
-    while(nextWord[readPos] != '\0') {
-      char c=(char) nextWord[readPos++];
-      if (c>='0' && c <= '1') {
-        value=value*2 + (c-'0');
-      } else {
-        return false;  // fail
-      }
-    }
-    // ok
-  } else {
-    // decimal?
-    while(nextWord[readPos] != '\0') {
-      char c=(char) nextWord[readPos++];
-      if (c>='0' && c <= '9') {
-        value=value*10 + (c-'0');
-      } else {
-        return false;  // fail
-      }
-    }
-    // ok
-  } 
-
-  if (negative) value=-value;
-  *target=value;
-  return true; // success
-}
-
 
 void callForth (Word addr) {
   rpush(programCounter);
@@ -263,7 +177,7 @@ void compileNextWord () {
   */
   // check for number
   int i=0;
-  if (myAtoi(&i)) {
+  if (myAtoi(nextWord,&i)) {
     Word w=(Word) i;
     compileNumber(i);
     return;
@@ -318,7 +232,7 @@ void create () {
 #define NUM_TAGS_REFS     5
   // 0-4
 
-boolean getTagNumber (char *ptr, int *tag) {
+Boolean getTagNumber (char *ptr, int *tag) {
   if (*ptr == '\0') return false;
   if (*(ptr+1) != '\0') return false; // single digit only
   if (*ptr >= '0' && *ptr <= '4') {
@@ -881,7 +795,7 @@ void loop() {
   readNextWord();
 
   int i=0;
-  if (myAtoi(&i)) {
+  if (myAtoi(nextWord,&i)) {
     push ((Word) i);
     return;
   }

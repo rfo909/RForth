@@ -29,6 +29,8 @@ typedef struct DictEntry {
 } DictEntry;
 
 
+typedef Byte Boolean;
+
 #define OP_BVAL  2
 #define OP_CVAL  3
 #define OP_RET   4
@@ -67,14 +69,18 @@ void clearHasError();
 void setHasError();
 Byte hasError();
 
+// ------------------------------------------------------
 // Dict.cpp
+// ------------------------------------------------------
 
 DictEntry *getDictionaryHead();
 void setDictionaryHead (DictEntry *de);
 DictEntry *dictLookup (char *word);
 DictEntry *dictLookupByAddr (Word addr);
 
-// Stacks.c
+// ------------------------------------------------------
+// Stacks.cpp
+// ------------------------------------------------------
 
 void stacksInit(void);
 void push (Word v);
@@ -86,7 +92,10 @@ Word rpop ();
 void dStackShow();
 void dStackClear();
 
-// Mem.c
+// ------------------------------------------------------
+// Mem.cpp
+// ------------------------------------------------------
+
 void memInit(void);
 void compileOut (Byte b);
 Word getCodeNext();
@@ -106,3 +115,11 @@ void writeWord (Word addr, Word value);
 
 Byte codeSegmentGet (Word pos);
 void codeSegmentSet (Word pos, Byte val);
+
+// ------------------------------------------------------
+// Util.cpp
+// ------------------------------------------------------
+
+void printChar (Word ch);
+void printStr (Word ptr);
+Byte myAtoi (char *nextWord, int *target);
