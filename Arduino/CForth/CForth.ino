@@ -26,7 +26,7 @@ void setup() {
   // copy Dictionary Header pointer from static data segment lower two bytes to RAM
   // (note address 0 in code segment is reserved, so data are in location 1 and 2)
 
-  memAllot(2);
+  dataAllot(2);
   Word srcAddr=generateCodeAddress(1);
   Word dataAddr=generateDataAddress(0); // points into the static part
   Serial.print(F("Dictionary head: 0x"));
@@ -316,18 +316,19 @@ void compileNextWord () {
     return;
   } 
 
-  DictEntry *de=dictLookup(nextWord);
-  if (de != NULL) {
-    if (de->type==DE_TYPE_NORMAL) {
+  Boolean dictFound=dictLookup(nextWord);
+  if (dictFound) {
+    byte type=getDeType();
+    if (type==DE_TYPE_NORMAL) {
       // ensure 14 bit address, then set high bit=1
-      Word addr=generateCallAddress(de->address);
+      Word addr=generateCallAddress(getDeAddress());
       compileOut((addr>>8) & 0xFF); 
       compileOut(addr & 0xFF);
-    } else if (de->type==DE_TYPE_IMMEDIATE) {
-      callForth(de->address);
+    } else if (type==DE_TYPE_IMMEDIATE) {
+      callForth(getDeAddress());
       executeCode();
-    } else if (de->type==DE_TYPE_CONSTANT) {
-      compileNumber(de->address);
+    } else if (type==DE_TYPE_CONSTANT) {
+      compileNumber(getDeAddress());
     }
     return;
   }
@@ -385,9 +386,6 @@ void op_reserved() {
 
 
 void op_colon() {  
-  initCompileNext();
-  Word startPos=getCodeNext();
-
   Word tags[NUM_TAGS_REFS]; 
   struct Ref refs[NUM_TAGS_REFS];
 
@@ -400,9 +398,15 @@ void op_colon() {
   // create dictionary entry (CONSTANT address=0)
   create();
 
+  startCompile();
+  Word startPos=getCodeNext();
+
+  /*Serial.print("After create codeHERE ");
+  Serial.println(codeHERE());*/
+
   // write dummy length Byte (patched at semicolon)
   // (this enables disassembling)
-  compileOut(99);
+  compileOut(96);
 
   for (;;) {
     if (hasError()) return;
@@ -452,6 +456,7 @@ void op_colon() {
 
     if (!strcmp(nextWord,";")) {
       compileOut(OP_RET);
+      confirmCompile();
 
       // patch tag references
       for (int i=0; i<nextRef; i++) {
@@ -474,27 +479,33 @@ void op_colon() {
         Serial.println(tagAddr);
         */
 
-        codeSegmentSet(patchAddr, (tagAddr >> 8) & 0xFF);
-        codeSegmentSet(patchAddr+1, tagAddr & 0xFF);
+        writeByte(patchAddr, (tagAddr >> 8) & 0xFF);
+        writeByte(patchAddr+1, tagAddr & 0xFF);
       }
 
-      Byte ByteCount=(Byte) (getCompileNext()-startPos-1);  // length Byte not included
-      DictEntry *de=getDictionaryHead();  // from call to create() 
 
-      Serial.println();
-      Serial.print(de->name);
+
+      Byte byteCount=(Byte) (getCodeNext()-startPos-1);  // length Byte not included
+
+      dictEntryFetch(getDictionaryHead());  // from call to create() 
+
+      /*Serial.println();
+      Serial.print("getDeNamePtr: ");
+      Serial.println(getDeNamePtr());*/
+      printStr(getDeNamePtr());
       Serial.print(" ");
-      Serial.print(ByteCount);
+      Serial.print(byteCount);
       Serial.println(F(" Bytes"));
 
       // patch length Byte
       
-      codeSegmentSet(startPos, ByteCount);
+      writeByte(startPos, byteCount);
 
-      de->address=generateCodeAddress(startPos+1);  // past length Byte
-      de->type=DE_TYPE_NORMAL;
+      setDeAddress(generateCodeAddress(startPos+1));  // past length Byte
+      setDeType(DE_TYPE_NORMAL);
 
-      setCodeNext(getCompileNext());
+      // save changes to dict entry
+      dictEntrySave();
 
       return;
     }
@@ -550,20 +561,23 @@ void op_HERE() {push(HERE());}
 
 void op_allot() {
   Word count=pop();
-  memAllot(count);
+  dataAllot(count);
 }
 
 void op_constant() {
   Word value=pop();
   create();
-  DictEntry *dh = getDictionaryHead();
-  dh->type=DE_TYPE_CONSTANT;
-  dh->address=value;
+  dictEntryFetch(getDictionaryHead());
+
+  setDeType(DE_TYPE_CONSTANT);
+  setDeAddress(value);
+
+  dictEntrySave();
 }
 
 void op_variable() {
   Word variableAddr=HERE(); 
-  memAllot(2); 
+  dataAllot(2); 
   writeWord(variableAddr,pop());
   push(variableAddr);
   op_constant();
@@ -581,10 +595,11 @@ void op_create() {
   create();
 }
 void op_immediate() {
-  DictEntry *dh=getDictionaryHead();
-  if (dh != NULL && dh->type==DE_TYPE_NORMAL) {
-    dh->type=DE_TYPE_IMMEDIATE;
-  }
+  Word head=getDictionaryHead();
+  if (head==0) return;
+  dictEntryFetch(head);
+  setDeType(DE_TYPE_IMMEDIATE);
+  dictEntrySave();
 }
 
 void op_dup() {push(pick(0));}
@@ -625,17 +640,19 @@ void op_end_test () {
 
 
 void op_words() {
-  DictEntry *ptr=getDictionaryHead();
+  Word ptr=getDictionaryHead();
   Serial.println();
-  while (ptr != NULL) {
-    Serial.print(ptr->name);
+  while (ptr != 0) {
+    dictEntryFetch(ptr);
+    printStr(getDeNamePtr());
     Serial.print(" ");
-    Serial.print(ptr->address);
+    Serial.print(getDeAddress(),16);
     Serial.print(" ");
-    if (ptr->type==DE_TYPE_IMMEDIATE) Serial.print(F("immediate"));
-    if (ptr->type==DE_TYPE_CONSTANT) Serial.print(F("constant"));
+    byte type=getDeType();
+    if (type==DE_TYPE_IMMEDIATE) Serial.print(F("immediate"));
+    if (type==DE_TYPE_CONSTANT) Serial.print(F("constant"));
     Serial.println();
-    ptr=ptr->next;
+    ptr=getDeNextPtr();
   }
 }
 void op_to_r() {
@@ -674,11 +691,10 @@ void op_readc() {
 
 void op_word_addr() {
   readNextWord();
-  DictEntry *de=dictLookup(nextWord);
-  if (de==NULL) {
-    push(0);
+  if (dictLookup(nextWord)) {
+    push(generateCodeAddress(getDeAddress()));
   } else {
-    push(generateCodeAddress(de->address));
+    push(0);
   }
 }
 
@@ -731,7 +747,7 @@ const OpCode opCodes[]={
   {".c", &op_dot_c},
   {".str", &op_dot_str},
 
-  {"code.here", &op_code_here},
+  {"code.HERE", &op_code_here},
   {"comp.next", &op_comp_next},
   {"comp.out", &op_comp_out},
   {"HERE", &op_HERE},
@@ -766,12 +782,18 @@ const OpCode opCodes[]={
 
 
   {"'", &op_word_addr},
+  {"dump", &op_dump},
   {"step", &op_step},
   {"dis", &op_dis},
 
   // end-marker
   {"",0}
 };
+
+
+void op_dump() {
+  memDump();
+}
 
 
 void op_step() {
@@ -828,18 +850,20 @@ void op_dis() {
       Serial.print(F(" forthAddr="));
       Serial.print(forthAddr);
 
-      DictEntry *de=dictLookupByAddr(forthAddr);
-      if (de==NULL) {
+      Boolean found=dictLookupByAddr(forthAddr);
+      if (!found) {
         setHasError();
-        Serial.println(F("unknown forth code address"));
+        Serial.print(F("unknown forth code address "));
+        Serial.println(getDeAddress(),16);
         return;
       } 
       Serial.print(" ");
       Serial.print(F("=>"));
       Serial.print(" ");
-      Serial.println(de->name);
+      printStr(getDeNamePtr());
 
-      if (de->type != DE_TYPE_NORMAL && de->type != DE_TYPE_IMMEDIATE) {
+      Byte type=getDeType();
+      if (type != DE_TYPE_NORMAL && type != DE_TYPE_IMMEDIATE) {
         setHasError();
         Serial.println(" constant - not callable!");
         return;
@@ -908,13 +932,15 @@ void executeCode() {
   }
 }
 
+
 // interpreting main loop
 void loop() {
   clearHasError();
 
   executeCode();
   if (hasError()) {
-    return;
+    memDump();
+    for(;;);
   }
   
   readNextWord();
@@ -925,12 +951,11 @@ void loop() {
     return;
   }
 
-  DictEntry *de=dictLookup(nextWord);
-  if (de != NULL) {
-    if (de->type==DE_TYPE_CONSTANT) {
-      push(de->address);
+  if (dictLookup(nextWord)) {
+    if (getDeType()==DE_TYPE_CONSTANT) {
+      push(getDeAddress());
     } else {
-      callForth(de->address);
+      callForth(getDeAddress());
     }
     return;
   }

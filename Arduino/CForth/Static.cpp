@@ -10,7 +10,7 @@ static int size = 3;
 
 
 
-static const PROGMEM Byte dataSegmentStatic[] = {0,13, 14}; 
+static const PROGMEM Byte dataSegmentStatic[] = {255,0,0}; 
 
 Word staticDataSize() {
   return size;

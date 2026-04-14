@@ -16,6 +16,19 @@ void printStr (Word ptr) {
 }
 
 
+
+Boolean mixedStreq (Word strPtr, char *s) {
+  Word len=readByte(strPtr);
+  if (strlen(s) != len) return false;
+  for (Byte i=0; i<len; i++) {
+    Byte a=readByte(strPtr+i+1);
+    Byte b=s[i];
+    if (a != b) return false;
+  }
+  return true;
+}
+
+
 /*
 Enhanced atoi, recognizes decimal, hex (0x...) and binary (b....) and negative, returns boolean to 
 indicate success or failure. Writes result int *target

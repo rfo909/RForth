@@ -21,15 +21,6 @@ typedef struct {
 #define DE_TYPE_IMMEDIATE   1
 #define DE_TYPE_CONSTANT    2
 
-typedef struct DictEntry {
-  char *name;
-  Byte type;
-  Word address;
-
-  struct DictEntry *next;
-} DictEntry;
-
-
 typedef Byte Boolean;
 
 #define OP_BVAL  2
@@ -73,10 +64,20 @@ Byte hasError();
 // Dict.cpp
 // ------------------------------------------------------
 
-DictEntry *getDictionaryHead();
-DictEntry *dictLookup (char *word);
-DictEntry *dictLookupByAddr (Word addr);
-void dictCreate (char *nextWord);
+Word getDeNamePtr();
+Byte getDeType();
+Word getDeAddress();
+Word getDeNextPtr();
+
+void setDeType(Byte b);
+void setDeAddress(Word w);
+
+Word getDictionaryHead();
+void dictEntryFetch (Word ptr);
+void dictEntrySave();
+void dictCreate (char *newWord);
+Boolean dictLookup (char *word);
+Boolean dictLookupByAddr (Word addr);
 
 // ------------------------------------------------------
 // Static.cpp
@@ -95,26 +96,32 @@ void memInit(void);
 void compileOut (Byte b);
 Word getCodeNext();
 void setCodeNext (Word w);
-void initCompileNext();
+void startCompile();
 Word getCompileNext();
+void confirmCompile();
 
 Word generateCodeAddress (Word ptr);
 Word generateDataAddress (Word ptr);
 Word generateCallAddress (Word ptr);
 Word HERE();
-void memAllot (Word count);
+Word codeHERE();
+void dataAllot (Word count);
+void codeAllot (Word count);
+
 void writeByte (Word addr, Byte b);
 Byte readByte (Word addr);
 Word readWord (Word addr);
 void writeWord (Word addr, Word value);
 
 Byte codeSegmentGet (Word pos);
-void codeSegmentSet (Word pos, Byte val);
+//void codeSegmentSet (Word pos, Byte val);
 
+void memDump();
 // ------------------------------------------------------
 // Util.cpp
 // ------------------------------------------------------
 
 void printChar (Word ch);
 void printStr (Word ptr);
+Boolean mixedStreq (Word strPtr, char *s);
 Byte myAtoi (char *nextWord, int *target);

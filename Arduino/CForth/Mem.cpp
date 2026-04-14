@@ -14,19 +14,31 @@ void memInit(void) {
   dataNext=0;
 
   staticCodeBytes = staticDataSize();
+  sPrint("static");
+  sPrint(" ");
+  sPrint("code");
+  sPrint(" ");
+  sPrint("bytes");
+  sPrint(" ");
+  sPrintWord(staticCodeBytes);
+  sPrintln();
+
   codeNext=staticCodeBytes;
-  compileNext=staticCodeBytes;
+  compileNext=codeNext;
 }
 
 
 void compileOut (Byte b) {
-  /*
-  Serial.print(F("compileOut compileNext="));
-  Serial.print(compileNext);
-  Serial.print(F(" Byte="));
-  Serial.println(b);
-  */
-  codeSegment[compileNext++]=b;
+  /*sPrint("compile");
+  sPrint(" ");
+  sPrint("out");
+  sPrint(" ");
+  sPrintWord(compileNext);
+  sPrint("=>");
+  sPrintWord(b);
+  sPrintln();*/
+  codeSegment[compileNext-staticCodeBytes]=b;
+  compileNext++;
 }
 
 Word getCodeNext() {
@@ -37,7 +49,7 @@ void setCodeNext (Word w) {
   codeNext=w;
 }
 
-void initCompileNext() {
+void startCompile() {
   compileNext = codeNext;
 }
 
@@ -45,6 +57,9 @@ Word getCompileNext() {
   return compileNext;
 }
 
+void confirmCompile() {
+  codeNext=compileNext;
+}
 
 Word generateCodeAddress (Word ptr) {
   if (ptr & DATA_BIT) {
@@ -89,8 +104,12 @@ Word HERE() {
   return generateDataAddress(dataNext);
 }
 
-void memAllot (Word count) {
-    if (dataNext+count >= DATA_SEGMENT_SIZE) {
+Word codeHERE() {
+  return generateCodeAddress(codeNext);
+}
+
+void dataAllot (Word count) {
+  if (dataNext+count >= DATA_SEGMENT_SIZE) {
     setHasError();
     sPrint("data");
     sPrint(" ");
@@ -101,6 +120,20 @@ void memAllot (Word count) {
     return;
   }
   dataNext += count;
+  compileNext = dataNext;
+}
+
+void codeAllot (Word count) {
+  if (codeNext+count >= CODE_SEGMENT_SIZE + staticCodeBytes) {
+    setHasError();
+    sPrint("code");
+    sPrint(" ");
+    sPrint("segment");
+    sPrint(" ");
+    sPrint("overflow");
+    return;
+  }
+  codeNext += count;
 }
 
 
@@ -188,6 +221,8 @@ void writeByte (Word addr, Byte b) {
       sPrint(":");
       sPrint(" ");
       sPrint("static");
+      sPrint(" ");
+      sPrintWord(addr);
       sPrintln();
       return;
     }
@@ -219,7 +254,7 @@ Byte readByte (Word addr) {
 Word readWord (Word addr) {
   Word a=readByte(addr);
   Word b=readByte(addr+1);
-  Word value = a << 8 | b;
+  Word value = (a << 8) | b;
   return value;
 }
 
@@ -228,18 +263,50 @@ void writeWord (Word addr, Word value) {
   writeByte(addr+1, value & 0xFF);
 }
 
-
 Byte codeSegmentGet (Word pos) {
-  return codeSegment[pos];
+  return codeSegment[pos-staticCodeBytes];
 }
 
+/*
 void codeSegmentSet (Word pos, Byte val) {
-  /*
   sPrint("codeSegmentSet, pos=");
   sPrintWord(pos);
   sPrint(" val=");
   sPrintWord(val);
   sPrintln();
-  */
-  codeSegment[pos] = val;
+  codeSegment[pos-staticCodeBytes] = val;
+}
+*/
+
+void memDump() {
+  sPrintln();
+  sPrint("code");
+  sPrint(" ");
+  sPrint("segment");
+  sPrintln();
+  for (Word i=staticCodeBytes; i<codeNext; i++) {
+    sPrintWord(i);
+    sPrint("=>");
+    Byte val=codeSegment[i-staticCodeBytes];
+    sPrintWord(val);
+    if (val > 32 && val < 128) {
+      sPrint(" ");
+      printChar(val);
+    }
+    sPrintln();
+  }
+  sPrintln();
+  sPrint("data");
+  sPrint(" ");
+  sPrint("segment");
+  sPrintln();
+  for (Word i=0; i<dataNext; i++) {
+    sPrintWord(i);
+    sPrint("=>");
+    Byte val=dataSegment[i];
+    sPrintWord(val);
+    sPrint(" ");
+    printChar(val);
+    sPrintln();
+  }
 }
