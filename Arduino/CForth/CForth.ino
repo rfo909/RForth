@@ -4,8 +4,6 @@
 #include "Constants.h"
 
 
-
-
 void setup() {
   Serial.begin(9600);
   Serial.print(F_CPU / 1000000.0);
@@ -20,7 +18,7 @@ char nextWord[MAX_WORD_LENGTH+1];  // input buffer
 Word programCounter=0;
 unsigned long instructionCount=0;
 
-DictEntry *dictionaryHead=NULL; 
+
 
 
 boolean errorFlag = false;
@@ -150,29 +148,6 @@ Byte getOpcodeParameter() {
 
 
 
-DictEntry *dictLookupNextWord () {
-  DictEntry *ptr=dictionaryHead;
-  while (ptr != NULL) {
-    if (!strcmp(ptr->name, nextWord)) {
-      return ptr;
-    }
-    ptr=ptr->next;
-  }
-  return NULL;
-}
-
-
-// Used by disassembler
-DictEntry *dictLookupByAddr (Word addr) {
-  DictEntry *ptr=dictionaryHead;
-  addr=generateCodeAddress(addr);
-  while (ptr != NULL) {
-    if (ptr->address==addr) return ptr;
-    ptr=ptr->next;
-  }
-  return NULL;
-}
-
 
 void compileNumberByte (Byte b) {
     if (b==0) {
@@ -294,7 +269,7 @@ void compileNextWord () {
     return;
   } 
 
-  DictEntry *de=dictLookupNextWord();
+  DictEntry *de=dictLookup(nextWord);
   if (de != NULL) {
     if (de->type==DE_TYPE_NORMAL) {
       // ensure 14 bit address, then set high bit=1
@@ -331,8 +306,8 @@ void create () {
   de->name=ptr;
   de->type=DE_TYPE_CONSTANT;
   de->address=0;
-  de->next=dictionaryHead;
-  dictionaryHead=de;
+  de->next=getDictionaryHead();
+  setDictionaryHead(de);
 }
 
 
@@ -465,7 +440,7 @@ void op_colon() {
       }
 
       Byte ByteCount=(Byte) (getCompileNext()-startPos-1);  // length Byte not included
-      DictEntry *de=dictionaryHead;  // from call to create() 
+      DictEntry *de=getDictionaryHead();  // from call to create() 
 
       Serial.println();
       Serial.print(de->name);
@@ -542,8 +517,9 @@ void op_allot() {
 void op_constant() {
   Word value=pop();
   create();
-  dictionaryHead->type=DE_TYPE_CONSTANT;
-  dictionaryHead->address=value;
+  DictEntry *dh = getDictionaryHead();
+  dh->type=DE_TYPE_CONSTANT;
+  dh->address=value;
 }
 
 void op_variable() {
@@ -566,7 +542,10 @@ void op_create() {
   create();
 }
 void op_immediate() {
-  if (dictionaryHead != NULL && dictionaryHead->type==DE_TYPE_NORMAL) dictionaryHead->type=DE_TYPE_IMMEDIATE;
+  DictEntry *dh=getDictionaryHead();
+  if (dh != NULL && dh->type==DE_TYPE_NORMAL) {
+    dh->type=DE_TYPE_IMMEDIATE;
+  }
 }
 
 void op_dup() {push(pick(0));}
@@ -607,7 +586,7 @@ void op_end_test () {
 
 
 void op_words() {
-  DictEntry *ptr=dictionaryHead;
+  DictEntry *ptr=getDictionaryHead();
   Serial.println();
   while (ptr != NULL) {
     Serial.print(ptr->name);
@@ -656,7 +635,7 @@ void op_readc() {
 
 void op_word_addr() {
   readNextWord();
-  DictEntry *de=dictLookupNextWord();
+  DictEntry *de=dictLookup(nextWord);
   if (de==NULL) {
     push(0);
   } else {
@@ -907,7 +886,7 @@ void loop() {
     return;
   }
 
-  DictEntry *de=dictLookupNextWord();
+  DictEntry *de=dictLookup(nextWord);
   if (de != NULL) {
     if (de->type==DE_TYPE_CONSTANT) {
       push(de->address);

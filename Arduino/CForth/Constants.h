@@ -1,4 +1,4 @@
-
+#include <string.h>
 
 typedef unsigned int Word;
 typedef unsigned char Byte;
@@ -8,7 +8,7 @@ typedef struct {
   void (*f) ();
 } OpCode;
 
-
+#define  NULL ((void *) 0)
 
 #define DSTACK_SIZE     16
 #define RSTACK_SIZE     16
@@ -66,6 +66,13 @@ void sPrintln ();
 void clearHasError();
 void setHasError();
 Byte hasError();
+
+// Dict.cpp
+
+DictEntry *getDictionaryHead();
+void setDictionaryHead (DictEntry *de);
+DictEntry *dictLookup (char *word);
+DictEntry *dictLookupByAddr (Word addr);
 
 // Stacks.c
 
