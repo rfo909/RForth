@@ -380,10 +380,6 @@ struct Ref {
 };
 
 
-void op_reserved() {
-  Serial.print(F("undefined"));
-}
-
 
 void op_colon() {  
   Word tags[NUM_TAGS_REFS]; 
