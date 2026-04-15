@@ -113,8 +113,6 @@ Byte readByte (Word addr);
 Word readWord (Word addr);
 void writeWord (Word addr, Word value);
 
-Byte codeSegmentGet (Word pos);
-//void codeSegmentSet (Word pos, Byte val);
 
 void memDump();
 void memCodeExport();

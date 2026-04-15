@@ -14,8 +14,8 @@ use less RAM.
 Also, the representation of literal values is more straight forward, using
 "bval" and "cval" op-codes, followed by 1 or 2 Bytes, respectively. 
 
-v0.0.1
------- 
+2026-04-08
+----------
 Imagined it would be nice to have forth word calls as compact as possible, using
 single Bytes. Would discriminate on top bit, allowing 127 op-codes written in C,
 and 127 Forth word references. 
@@ -30,8 +30,8 @@ is a disassembler
 
 
 
-v0.0.2
-------
+2026-04-09
+----------
 Rewrote the code into a more traditional format, with the address in the
 dictionary entries being Cell sized (2 Bytes), and creating a "call" opCode
 which is followed by the address (2 Bytes).
@@ -43,8 +43,8 @@ Added up to 5 tags /0 to /4 and up to 5 references to tags on format &0 to &4,
 to use with jmp and jmp? to create loops and conditionals. Patches both
 forward and backward at base level inside the colon compiler.
 
-v0.0.3 2026-04-11
------------------
+2026-04-11
+----------
 Added proper integer parsing, supporting signed hex, binary and decimal 0xCAFE, b10010.
   
 Fixed various bugs.
@@ -75,8 +75,8 @@ It works!
 I am keeping the "dcall" opCode (d for dynamic) which takes the Forth call
 address off the stack, for function pointer support.
 
-v0.0.4 2026-04-12
------------------
+2026-04-12
+----------
 Optimized for low memory on atmega328p.
 
 Added ops for
@@ -100,10 +100,38 @@ Implemented and tested the " word (quote) in Forth. It is an immediate word, whi
 builds code (OP_BLOB) with length Byte and sequence of characters up until finding matching
 quote.
 
-v0.0.5 2026-04-13
------------------
+2026-04-13
+----------
 Refactoring code into multiple files, for easier handling.
 
+
+2026-05-15
+----------
+Got the dictionary fully represented in the codeSegment, instead of as a C
+structure. This is a prerequisite for the next step ...
+
+Created an export function that generated C code to paste into the
+Static.cpp file. It is used to store functionality in Flash. After
+compiling the CForth code, those words that were compiled to
+the RAM part of the code segment, become part of Flash.
+
+The dictionary header is pointed to by a Word in the two first bytes of
+the dataSegment. When exporting the code segment, this is copied into
+the byte 1 and 2 of the CodeSegment.
+
+As the device boots, it copies those bytes from the CodeSegment 
+to the dataSegment, allowing us to continue adding words. Both
+dictionary entries, word names (Forth strings) and the compiled code
+go into the codeSegment.
+
+The only issue is global variables, which after boot point to 
+unallocated memory in the dataSegment, which means reading or writing
+those addresses will fail with error.
+
+SOLUTIONS:
+
+	- either not create system words that depend on global variables
+	- or export the dataSegment as well
 
 
 OpCodes
@@ -225,21 +253,8 @@ be, must be written in Forth. Like the '"' word (quote).
 Todo
 ====
 
-- Move dictionary into codeSegment
-- Including static strings
-- Move dictionaryHead into codeSegment
+- Move opCodes content to text format, and generate PROGMEM arrays. Should save approx 500 Bytes of RAM.
 
-
-- Move opCodes content to text format, and generate PROGMEM arrays. Should save approx 500 Bytes of RAM
-	Currently using 1306 for global variables, including 400 Bytes for code/data-segments
-	1300 - 500 - 400 = overhead 400 Bytes
-	-> adding frame stack 10 deep = 20 Bytes => 450 Bytes overhead
-	=> That is 1600 Bytes free
-
-	Reserving 200 for C locals and C call stack
-	
-	=> data 1000 Bytes
-	=> code 400 Bytes
 	
 On boot, create variable (in RAM) that points to dictionaryHead, in first 2 Bytes of the data segment
 (code generate C constant for it)

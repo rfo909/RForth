@@ -256,7 +256,7 @@ void readNextWord () {
 
 // when an op requires additional Bytes (bval and cval - push Byte and cell value)
 Byte getOpcodeParameter() {
-  return codeSegmentGet(programCounter++);
+  return readByte(programCounter++);
 }
 
 
@@ -642,18 +642,20 @@ void op_end_test () {
 void op_words() {
   Word ptr=getDictionaryHead();
   Serial.println();
+  Byte len=0;
   while (ptr != 0) {
     dictEntryFetch(ptr);
     printStr(getDeNamePtr());
-    Serial.print(" ");
-    Serial.print(getDeAddress(),16);
-    Serial.print(" ");
-    byte type=getDeType();
-    if (type==DE_TYPE_IMMEDIATE) Serial.print(F("immediate"));
-    if (type==DE_TYPE_CONSTANT) Serial.print(F("constant"));
-    Serial.println();
+    len += readByte(ptr);
+    if (len > 60) {
+      Serial.println();
+      len=0;
+    } else {
+      Serial.print(" ");
+    }
     ptr=getDeNextPtr();
   }
+  Serial.println();
 }
 void op_to_r() {
   rpush(pop());
@@ -806,7 +808,7 @@ void op_step() {
   Serial.println(programCounter);
   dStackShow();
 
-  Byte op=codeSegmentGet(programCounter++);
+  Byte op=readByte(programCounter++);
   Serial.print(F("op="));
   Serial.println(op);
 
@@ -822,7 +824,7 @@ void op_step() {
 
 void op_dis() {
   Word codeAddr = pop();
-  Byte len=codeSegmentGet(codeAddr-1);
+  Byte len=readByte(codeAddr-1);
   Serial.println();
   Serial.print(F("codeAddr="));
   Serial.print(codeAddr);
@@ -835,11 +837,16 @@ void op_dis() {
     Serial.print(addr);
     Serial.print("  ");
 
-    Byte op=codeSegmentGet(addr);
+    Byte op=readByte(addr);
     Serial.print(op);
   
     if (dataBytes > 0) {
-      Serial.println(F(" (data)"));
+      Serial.print(F(" (data)"));
+      if (op > 32 && op < 127) {
+        Serial.print(" ");
+        printChar(op);
+      }
+      Serial.println();
       dataBytes--;
       continue;
     }
@@ -848,7 +855,7 @@ void op_dis() {
     if (op & BYTE_CALL_BIT) {
       dataBytes=1;
       Serial.print(F("(call)"));
-      Word forthAddr=(op << 8) | codeSegmentGet(addr+1);
+      Word forthAddr=(op << 8) | readByte(addr+1);
       // strip away topmost 2 bits
       forthAddr=forthAddr & ADDR_CODE_MASK;
       Serial.print(F(" forthAddr="));
@@ -878,7 +885,7 @@ void op_dis() {
     // op = opcode 
     Serial.print(opCodes[op].name);
     if (op==OP_BVAL) {
-      Word val=codeSegmentGet(addr+1);
+      Word val=readByte(addr+1);
       Serial.print(" ");
       Serial.print(val);
       Serial.print(" ");
@@ -887,14 +894,14 @@ void op_dis() {
       dataBytes=1;
     } else if (op==OP_CVAL) {
       dataBytes=2;
-      Word val=(codeSegmentGet(addr+1) << 8) | codeSegmentGet(addr+2);
+      Word val=(readByte(addr+1) << 8) | readByte(addr+2);
       Serial.print(" ");
       Serial.print(val);
       Serial.print(" ");
       Serial.print("0x");
       Serial.print(val,16);
     } else if (op==OP_BLOB) {
-      dataBytes=codeSegmentGet(addr+1)+1;
+      dataBytes=readByte(addr+1)+1;
     }
     Serial.println();
   }
@@ -932,7 +939,7 @@ void executeCode() {
       programCounter=0;
       return;     
     }
-    executeCodeByte(codeSegmentGet(programCounter++));
+    executeCodeByte(readByte(programCounter++));
   }
 }
 

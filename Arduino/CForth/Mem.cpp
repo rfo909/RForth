@@ -263,21 +263,6 @@ void writeWord (Word addr, Word value) {
   writeByte(addr+1, value & 0xFF);
 }
 
-Byte codeSegmentGet (Word pos) {
-  return codeSegment[pos-staticCodeBytes];
-}
-
-/*
-void codeSegmentSet (Word pos, Byte val) {
-  sPrint("codeSegmentSet, pos=");
-  sPrintWord(pos);
-  sPrint(" val=");
-  sPrintWord(val);
-  sPrintln();
-  codeSegment[pos-staticCodeBytes] = val;
-}
-*/
-
 void memDump() {
   sPrintln();
   sPrint("code");
