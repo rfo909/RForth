@@ -783,6 +783,7 @@ const OpCode opCodes[]={
 
   {"'", &op_word_addr},
   {"dump", &op_dump},
+  {"code.export", &op_code_export},
   {"step", &op_step},
   {"dis", &op_dis},
 
@@ -795,6 +796,9 @@ void op_dump() {
   memDump();
 }
 
+void op_code_export() {
+  memCodeExport();
+}
 
 void op_step() {
   programCounter=pop();

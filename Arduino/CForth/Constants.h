@@ -13,7 +13,7 @@ typedef struct {
 #define DSTACK_SIZE     16
 #define RSTACK_SIZE     16
 
-#define CODE_SEGMENT_SIZE     200
+#define CODE_SEGMENT_SIZE     400
 #define DATA_SEGMENT_SIZE     50
 
 // value for top two bits of word address in dictionary entry
@@ -117,6 +117,8 @@ Byte codeSegmentGet (Word pos);
 //void codeSegmentSet (Word pos, Byte val);
 
 void memDump();
+void memCodeExport();
+
 // ------------------------------------------------------
 // Util.cpp
 // ------------------------------------------------------

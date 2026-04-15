@@ -305,8 +305,45 @@ void memDump() {
     sPrint("=>");
     Byte val=dataSegment[i];
     sPrintWord(val);
-    sPrint(" ");
-    printChar(val);
+    if (val > 32 && val < 128) {
+      sPrint(" ");
+      printChar(val);
+    }
     sPrintln();
   }
+}
+
+
+void memCodeExport() {
+  sPrintln();
+  sPrint("static Word size=");
+  sPrintWord(codeNext);
+  sPrint(";");
+  sPrintln();
+  sPrintln();
+  sPrint("static const PROGMEM Byte dataSegmentStatic[]={");
+  sPrintln();
+
+  // 3 first bytes require special attention: dummy + dictionary header from RAM
+  sPrint("  ");
+  sPrintWord(255);
+  sPrint(",");
+  sPrintWord(readByte(generateDataAddress(0)));
+  sPrint(",");
+  sPrintWord(readByte(generateDataAddress(1)));
+  sPrintln();
+
+  Byte count=0;
+
+  for (Word i=3; i<codeNext; i++) {
+    if (count==0) sPrint("  ");
+    if (i>0) sPrint(",");
+    Byte b=readByte(i);  // read static and codeSegment alike
+    sPrintWord(b);
+    count=(count+1)%20;
+    if (count==0) sPrintln();
+  }
+  if (count != 0) sPrintln();
+  sPrint("};");
+  sPrintln();
 }
