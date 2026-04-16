@@ -255,7 +255,7 @@ void readNextWord () {
 
 // when an op requires additional Bytes (bval and cval - push Byte and cell value)
 Byte getOpcodeParameter() {
-  return readByte(programCounter++);
+  return readByteFast(programCounter++);
 }
 
 
@@ -954,7 +954,7 @@ void op_step() {
   Serial.println(programCounter);
   dStackShow();
 
-  Byte op=readByte(programCounter++);
+  Byte op=readByteFast(programCounter++);
   Serial.print(F("op="));
   Serial.println(op);
 
@@ -1085,7 +1085,7 @@ void executeCode() {
       programCounter=0;
       return;     
     }
-    executeCodeByte(readByte(programCounter++));
+    executeCodeByte(readByteFast(programCounter++));
   }
 }
 

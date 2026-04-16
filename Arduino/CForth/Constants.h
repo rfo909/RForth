@@ -119,6 +119,8 @@ void writeWord (Word addr, Word value);
 void memDump();
 void memCodeExport();
 
+Byte readByteFast (Word addr);
+
 // ------------------------------------------------------
 // Util.cpp
 // ------------------------------------------------------

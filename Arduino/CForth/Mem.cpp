@@ -336,3 +336,23 @@ void memCodeExport() {
   sPrint("};");
   sPrintln();
 }
+
+
+
+// For executing code, less checks
+Byte readByteFast (Word addr) {
+  if (addr & DATA_BIT) {
+    // data segment
+    addr=addr & ADDR_DATA_MASK;
+    return dataSegment[addr];
+  } else {
+    // code segment
+    addr=addr & ADDR_CODE_MASK;
+    if (addr < staticCodeBytes) {
+      return staticDataRead(addr);
+    } else {
+      return codeSegment[addr-staticCodeBytes];
+    }
+  }
+
+}
