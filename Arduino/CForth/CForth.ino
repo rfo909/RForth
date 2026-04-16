@@ -1094,14 +1094,15 @@ void executeCode() {
 void loop() {
   clearHasError();
 
-  executeCode();
-  if (hasError()) {
-    memDump();
-    for(;;);
+  if (programCounter != 0) {
+    executeCode();
+    if (hasError()) {
+      memDump();
+      for(;;);
+    }
+    Serial.println();
+    Serial.println("Ok");
   }
-
-  Serial.println();
-  Serial.println(F("Ok"));
 # ifdef MONITOR_C_STACK
   Word maxCStackSize=getCStackMaxSize();
   Serial.print(F("Max C stack: "));

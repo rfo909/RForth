@@ -132,6 +132,9 @@ SOLUTIONS:
 
 	- either not create system words that depend on global variables
 	- or export the dataSegment as well
+		+ programCounter + stacks?
+		
+=> Trying to keep lib-code independent of data!
 
 
 2025-05-15
