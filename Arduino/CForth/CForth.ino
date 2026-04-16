@@ -34,7 +34,6 @@ void setup() {
 
   writeByte(dataAddr, readByte(srcAddr));  
   writeByte(dataAddr+1, readByte(srcAddr+1));  
-  Serial.println(F("Ok"));
 
 }
 
@@ -953,7 +952,15 @@ void loop() {
     memDump();
     for(;;);
   }
-  
+
+  Serial.println();
+  Serial.println(F("Ok"));
+# ifdef MONITOR_C_STACK
+  Word maxCStackSize=getCStackMaxSize();
+  Serial.print(F("Max C stack: "));
+  Serial.println(maxCStackSize);
+# endif
+
   readNextWord();
 
   int i=0;

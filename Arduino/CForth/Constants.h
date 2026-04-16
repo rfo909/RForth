@@ -1,5 +1,7 @@
 #include <string.h>
 
+// #define MONITOR_C_STACK
+
 typedef unsigned int Word;
 typedef unsigned char Byte;
 
@@ -125,3 +127,5 @@ void printChar (Word ch);
 void printStr (Word ptr);
 Boolean mixedStreq (Word strPtr, char *s);
 Byte myAtoi (char *nextWord, int *target);
+void checkCStackSize();
+Word getCStackMaxSize();

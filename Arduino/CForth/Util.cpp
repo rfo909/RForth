@@ -95,3 +95,15 @@ Boolean myAtoi (char *nextWord, int *target) {
   *target=value;
   return true; // success
 }
+
+
+static Word maxStackSize=0;
+void checkCStackSize() {
+  Byte b=0;
+  Word val=0x08FF - (Word) &b;
+  if (val>maxStackSize) maxStackSize=val;
+}
+
+Word getCStackMaxSize() {
+  return maxStackSize;
+}

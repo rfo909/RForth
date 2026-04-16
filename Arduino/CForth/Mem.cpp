@@ -138,6 +138,10 @@ void codeAllot (Word count) {
 
 
 static void verifyReadWriteAddress (Word addr) {
+# ifdef MONITOR_C_STACK
+  checkCStackSize();
+# endif
+
   if (addr & DATA_BIT) {
     // data segment
     addr=addr & ADDR_DATA_MASK;
