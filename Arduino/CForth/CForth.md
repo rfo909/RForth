@@ -195,6 +195,11 @@ be, must be written in Forth. Like the '"' word (quote).
 Todo
 ====
 
+- Rig to use 8 MHz always, regardless of external crystal being 16Mhz (Fuse CKDIV8 + dynamic CKDIV 2).
+	(Detect on some pin in 8MHz harness)
+	
+- Eliminate use of sprintf - potential stack memory thief
+
 - Move opCodes content to text format, and generate PROGMEM arrays. Should save approx 500 Bytes of RAM.
 
 - consider Frame stack, as in RForth v3 for local variables

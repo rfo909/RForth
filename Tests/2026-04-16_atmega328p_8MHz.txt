@@ -1,0 +1,316 @@
+can an atmega328p arduino at runtime adjust internal calibration to suit different crystal speed
+
+Ja, du kan justere den interne kalibreringen på en ATmega328P under kjøretid (runtime), men det er viktig å skille mellom den interne 8 MHz oscillatoren og en ekstern krystall. 
+1. Kalibrering av den interne oscillatoren
+Du kan justere den interne 8 MHz RC-oscillatoren ved å skrive til registeret OSCCAL (Oscillator Calibration Register). 
+Arduino Forum
+Arduino Forum
+ +1
+Hva det gjør: Ved å endre verdien i OSCCAL (0–255), kan du "trimme" frekvensen opp eller ned. Dette er nyttig fordi den interne oscillatoren kan avvike med opptil 10 % fra fabrikken, noe som ofte fører til problemer med seriell kommunikasjon (UART).
+Begrensning: Dette påvirker kun den interne oscillatoren, ikke en ekstern krystall. 
+AVR Freaks
+AVR Freaks
+ +5
+2. Justering for ekstern krystall 
+En ekstern krystall kan ikke kalibreres via programvare på samme måte som den interne oscillatoren. 
+AVR Freaks
+AVR Freaks
+ +1
+Krystallens natur: En krystall svinger på en fast frekvens bestemt av dens fysiske utforming. OSCCAL-registeret har ingen effekt når en ekstern krystall er valgt som kilde.
+Alternativ (Clock Prescaler): Hvis du bytter krystall (f.eks. fra 16 MHz til 8 MHz) og ønsker at koden skal kjøre riktig, kan du bruke registeret CLKPR (Clock Prescale Register) for å endre klokkedeleren under kjøretid. Dette endrer systemhastigheten (f.eks. fra 16 MHz til 1 MHz ved å dele på 16), men det "kalibrerer" ikke selve kilden for nøyaktighet. 
+Arduino Forum
+Arduino Forum
+ +4
+Oppsummering av metoder
+Metode 	Register	Effekt	Fungerer på krystall?
+OSCCAL	OSCCAL	Fintrimmer frekvensen (±10% ish)	Nei (kun intern RC)
+Prescaler	CLKPR	Deler frekvensen med 2, 4, 8... 256	Ja
+Viktig for Arduino: Hvis du endrer klokkehastigheten under kjøretid, vil standardfunksjoner som delay(), millis() og Serial.begin() gi feil verdier fordi de er basert på en fast F_CPU-verdi definert ved kompilering. 
+Arduino Forum
+Arduino Forum
+ +1
+Vil du ha et kodeeksempel på hvordan du bruker OSCCAL for å finne riktig hastighet for seriell kommunikasjon? 
+AI-svar kan inneholde feil. Finn ut mer
+
+
+
+
+
+undefined
+undefined
+undefined
+14 nettsteder
+Running 328p&1284p with internal oscillator (8.000MHz tuning)
+17. mai 2011 — You can fill the OSCCAL with a XX value anytime, the MCU clock frequency will change immediately. ... Do it in one line as you may...
+
+Arduino Forum
+pkarsy/rcCalibrator: Calibration of the internal RC oscillator of ...
+A lot of newer MCU's have an internal oscillator wich is 1% factory calibrated. For those MCU's this page is irrelevant. Atmega328...
+
+
+GitHub
+Changing the CPU clock in real time (run-time), to save some ...
+6. mars 2014 — // Example sketch that changes the MPU clock speed in real time (at runtime) /****************************************************
+
+Arduino Forum
+Verifying clock speed of ATmega328p via code - Arduino Forum
+16. feb. 2015 — If the mcu was set to use it's internal 8mhz clock, would the blink example not yield the same result? Wouldn't I only see a misma...
+
+Arduino Forum
+ATmega328p with internal RC oscillator?
+5. feb. 2019 — Post by AHorneffer » Thu Dec 21, 2017 1:36 pm. Did you also try the 16.5 MHz version? If I look at the F vs. OSCCAL drawing on p. ...
+
+Objective Development
+Barebones atmega328p at 1MHz help please - Arduino Forum
+21. jan. 2015 — The Arduino core only work properly at 8 MHz, 16 MHz, and 20 MHz. If you use a different clock speed you will need to edit the cor...
+
+Arduino Forum
+AVR System Clock : Arduino / ATmega328p - Arnab Kumar Das
+2. mai 2021 — The ATmega328P has a system clock Prescaler, and the system clock can be divided by setting the ”CLKPR – Clock Prescale Register”.
+
+
+Arnab Kumar Das
+Vis alle
+Jeg programmerer atmega328p i en Uno R3, og vil deretter flytte brikken over i en annen holder, hvor det er koblet et 8MHz krystall. Ved å koble VCC til en pinne, eller GND, tenker jeg meg å la den detektere at den kjører på 8 MHz og tilpasse seg slik at ekstern kommunikasjon går med riktig hastighet. Er det mulig?
+Dette er teknisk mulig, men det er en stor utfordring: F_CPU.
+I Arduino-miljøet er F_CPU en konstant som forteller kompilatoren hvilken hastighet brikken kjører på. Denne brukes til å beregne timing for delay(), millis() og ikke minst baudrate for Serial. Siden denne konstanten låses ved kompilering, vil koden din "tro" den fortsatt kjører på 16 MHz når den flyttes.
+Her er de to måtene du kan løse dette på:
+1. Den "riktige" måten (Clock Prescaler)
+Siden 8 MHz er nøyaktig halvparten av 16 MHz, kan du la brikken tro den har en 16 MHz krystall, men bruke den interne klokkedeleren (Prescaler) til å justere systemklokken.
+Hvis du programmerer brikken som en vanlig Uno (16 MHz), men flytter den til et 8 MHz krystall, vil alt gå i halv hastighet. Hvis du da setter prescaleren til 1 (ingen deling), vil brikken kjøre på 8 MHz, men Serial.begin(9600) vil i realiteten kjøre i 4800 baud.
+Løsning: Du må doble baudraten i koden hvis pinnen detekterer 8 MHz:
+cpp
+const int detectPin = 7; // Koble til GND for 8MHz, VCC for 16MHz
+
+void setup() {
+  pinMode(detectPin, INPUT_PULLUP);
+  
+  if (digitalRead(detectPin) == LOW) {
+    // Vi er på 8MHz kortet. 
+    // For at Serial skal treffe 9600 baud når koden tror den er 16MHz,
+    // må vi be den doble hastigheten til 19200.
+    Serial.begin(19200); 
+  } else {
+    // Vi er på 16MHz Uno
+    Serial.begin(9600);
+  }
+}
+Vær forsiktig når du bruker koden
+2. Den avanserte måten (Justere registre manuelt)
+Hvis du vil at Serial.begin(9600) skal fungere likt uansett, må du manuelt manipulere UBRR0-registeret (Baud Rate Register) basert på målt hastighet. Dette krever at du regner ut verdiene for 8 MHz og skriver dem direkte til registeret etter at Serial.begin har kjørt.
+Hvorfor dette er vanskelig
+Bootloaderen: Når du flytter brikken til 8 MHz, vil den originale Uno-bootloaderen slutte å svare (fordi den forventer 16 MHz for å kommunisere med PC-en). Du vil ikke kunne laste opp ny kode via USB på 8 MHz-kortet uten videre.
+Millis/Delay: Selv om du fikser Serial-hastigheten, vil delay(1000) ta 2 sekunder på 8 MHz-kortet hvis koden er kompilert for 16 MHz.
+Anbefaling:
+Det enkleste er å kompilere koden for "Arduino Pro or Pro Mini (3.3V, 8 MHz)" når du skal bruke 8 MHz-krystallen.
+Vil du at jeg skal sette opp et eksempel på hvordan du manuelt overstyrer baudrate-registrene slik at kommunikasjonen blir riktig uavhengig av klokkefrekvensen?
+AI-svar kan inneholde feil. Finn ut mer
+
+
+
+
+Liker best å bare endre baud-rate på serial, men hva med SPI og I2C (TWI)?
+Dersom du velger å løse dette ved å "lure" programvaren (kompilere for 16 MHz, men kjøre på 8 MHz), må du justere klokkefrekvensen for alle busser som er avhengige av timingen til systemklokken.
+Her er hvordan du håndterer SPI og I2C:
+1. I2C (TWI)
+I2C-hastigheten styres av registeret TWBR (Bit Rate Register). Formelen for hastighet er direkte avhengig av CPU-frekvensen.
+Når du kjører på 8 MHz med kode kompilert for 16 MHz, vil I2C-bussen gå i halv fart (f.eks. 50 kHz i stedet for 100 kHz). For å fikse dette må du halvere verdien i TWBR etter at Wire.begin() er kjørt:
+cpp
+Wire.begin();
+if (is8MHz) {
+  TWBR = (TWBR > 0) ? (TWBR / 2) : 0; // Dobler hastigheten ved å halvere dele-tallet
+}
+Vær forsiktig når du bruker koden
+Merk: Hvis TWBR allerede er veldig lav (for 400kHz), kan det hende du når den fysiske grensen for hva brikken klarer på 8 MHz.
+2. SPI
+SPI er enklere fordi den styres av en divider (deler) av systemklokken (f.eks. F_CPU/4, F_CPU/16, osv.).
+Når du bruker SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0)), prøver Arduino-biblioteket å finne den nærmeste dele-faktoren basert på F_CPU. Siden brikken tror den har 16 MHz å ta av, vil den velge en dele-faktor som er dobbelt så stor som nødvendig.
+Løsning: Du må be om dobbel hastighet i koden når du er i 8 MHz-modus:
+cpp
+uint32_t spiSpeed = 4000000; // Ønsket 4MHz
+if (is8MHz) {
+  spiSpeed = 8000000; // Be om 8MHz for å faktisk få 4MHz
+}
+SPI.beginTransaction(SPISettings(spiSpeed, MSBFIRST, SPI_MODE0));
+Vær forsiktig når du bruker koden
+Oppsummering av "triksene" ved 8 MHz (når kompilert for 16 MHz):
+Serial: Bruk dobbel baudrate: Serial.begin(baud * 2).
+I2C (Wire): Halver TWBR registeret etter Wire.begin().
+SPI: Be om dobbel klokkefrekvens i SPISettings.
+millis() / delay(): Husk at alle tidsfunksjoner vil gå dobbelt så sakte. delay(500) vil i virkeligheten ta 1000ms.
+En alternativ og "renere" løsning?
+Siden du uansett må detektere pinnen ved oppstart, kan du bruke Clock Prescaler (CLKPR) til å la brikken kjøre på 8 MHz selv når den står i 16 MHz-kortet.
+Da vil brikken alltid kjøre på 8 MHz (den deler 16 med 2, og bruker 8 direkte), og du kan kompilere all kode for "Pro Mini 8MHz" én gang for alle. Da slipper du å regne om baudrater og registre i det hele tatt.
+Vil du se hvordan du setter CLKPR-registeret for å tvinge brikken til 8 MHz uansett krystall?
+AI-svar kan inneholde feil. Finn ut mer
+
+
+
+
+ja
+Dette er den mest elegante løsningen. Ved å bruke Clock Prescaler (CLKPR) kan du få brikken til å oppføre seg som en 8 MHz-enhet uavhengig av om krystallen er 16 MHz eller 8 MHz.
+Strategien:
+Kompiler koden én gang som "Arduino Pro or Pro Mini (8 MHz)". F_CPU vil da være 8 000 000.
+Når brikken starter på et 16 MHz kort: Detekter dette og sett prescaler til 2. (16 / 2 = 8 MHz).
+Når brikken starter på et 8 MHz kort: Detekter dette og sett prescaler til 1. (8 / 1 = 8 MHz).
+Nå vil delay(1000), Serial, I2C og SPI fungere perfekt på begge kortene uten ekstra matematikk!
+Kodeeksempel
+Dette må gjøres helt i starten av setup() (før Serial.begin):
+cpp
+#include <avr/power.h>
+
+const int detectPin = 7; // Høy (VCC) = 16MHz krystall, Lav (GND) = 8MHz krystall
+
+void setup() {
+  pinMode(detectPin, INPUT_PULLUP);
+
+  // Sjekk om vi står i 16MHz-kortet
+  if (digitalRead(detectPin) == HIGH) {
+    // Vi må dele 16MHz på 2 for å få 8MHz systemklokke
+    noInterrupts();
+    CLKPR = _BV(CLKPCE); // Aktiver endring av klokkedeler
+    CLKPR = _BV(CLKPS0); // Sett deler til 2 (Clock Prescaler Select 0)
+    interrupts();
+  } else {
+    // Vi er allerede på 8MHz, ingen deling trengs (deler på 1)
+    noInterrupts();
+    CLKPR = _BV(CLKPCE); 
+    CLKPR = 0;           
+    interrupts();
+  }
+
+  // Nå kjører brikken i 8MHz uansett!
+  Serial.begin(9600); 
+  Serial.println("Systemet er klart i 8MHz modus.");
+}
+
+void loop() {
+  // delay(1000) vil nå være nøyaktig 1 sekund på begge kortene
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(1000);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(1000);
+}
+Vær forsiktig når du bruker koden
+Viktig å huske:
+Sikkerhetsmekanisme: Endring av CLKPR krever en spesiell sekvens (først sette CLKPCE-biten, så endre verdien innen 4 klokkesykluser). Koden over håndterer dette korrekt.
+Bootloader: Husk at hvis du laster opp kode via en 16 MHz Uno, må du fortsatt velge "Arduino Uno" i menyen når du trykker "Upload". Men koden som kjører inne i brikken bør være skrevet/tenkt for 8 MHz.
+Spenning: Husk at ATmega328P offisielt krever litt høyere spenning for å kjøre stabilt på 16 MHz, mens 8 MHz fungerer fint helt ned til 2.7V.
+Er du komfortabel med å bruke bit-manipulasjon (_BV og CLKPR) som vist i eksempelet?
+AI-svar kan inneholde feil. Finn ut mer
+
+
+
+
+Så vidt jeg skjønner skal jeg uten videre kunne kjøre den på 3.3V når den har 8MHz krystall, uten noe mer enn det ovennenvte?
+Ja, det stemmer helt. Ved å senke klokkefrekvensen til 8 MHz (enten ved fysisk bytte av krystall eller ved å bruke prescaler som vist) er brikken innenfor de offisielle spesifikasjonene for 3.3V-drift.
+Her er de viktigste punktene for at dette skal fungere knirkefritt:
+1. Hastighet vs. Spenning
+ATmega328P har en "Safe Operating Area". På 16 MHz krever den minimum ca. 3.7V - 4.0V for å garantere stabil drift. Ved 8 MHz er den trygg helt ned til 2.7V. 3.3V er derfor helt uproblematisk.
+2. Brown-Out Detection (BOD)
+Dette er det eneste "skjulte" hinderet. Hvis ATmega-brikken din kommer fra en standard Arduino Uno, er den ofte programmert med BOD på 4.3V.
+Hva skjer: Hvis BOD er satt til 4.3V og du kobler til 3.3V, vil brikken tro det er et strømbrudd og nekte å starte (den forblir i evig Reset).
+Løsning: Du må kanskje endre "fuses" (sikringene) i brikken for å sette BOD til 2.7V eller deaktivere den helt. Dette gjøres vanligvis med en ISP-programmerer (eller en annen Arduino brukt som "Arduino as ISP").
+3. Kommunikasjon med andre enheter
+Husk at hvis du kobler ATmega-en (som nå kjører på 3.3V) til en PC via en standard USB-til-seriell-adapter (som gir 5V), kan du risikere å skade pinnene på brikken hvis adapteren sender 5V-signaler inn på 3.3V-pinnene (RX/TX). Sørg for at alt utstyr på samme buss også kjører på 3.3V eller er "5V tolerant".
+Oppsummering av oppsettet ditt:
+Brikken detekterer krystallen via pinnen din.
+CLKPR justerer systemklokken til 8 MHz.
+Brikken mates med 3.3V på VCC.
+Resultat: Stabil drift, korrekt timing på Serial/I2C/SPI, og lavt strømforbruk.
+Har du en ISP-programmerer (eller en ekstra Arduino) tilgjengelig i tilfelle du må justere BOD-sikringene for 3.3V-drift?
+AI-svar kan inneholde feil. Finn ut mer
+
+
+
+
+Kan jeg kjører stabilt på 3.3v bare ved å sette prescaler til 2 og beholde 16MHz krystall?
+Ja, det kan du! Dette er et veldig smart triks for å kjøre en "standard" 16 MHz-brikke på 3.3V uten å måtte lodde av krystallen.
+Her er hvorfor det fungerer og hva du må passe på:
+1. Hvorfor det er stabilt
+Det er ikke den fysiske krystallen som krever høy spenning, det er logikken inne i ATmega-brikken. Når brikken prøver å utføre operasjoner i 16 MHz, trenger transistorene høyere spenning (5V) for å svitsje fort nok.
+Når du setter Prescaler til 2, kjører selve prosessorkjernen i 8 MHz. Da har transistorene god tid til å svitsje selv på 3.3V, og brikken opererer trygt innenfor sine spesifikasjoner.
+2. Det kritiske punktet: Oppstarten
+Dette er den eneste "fellen": Når du setter spenningen på brikken, starter den umiddelbart å svinge med 16 MHz (fordi prescaleren alltid starter som 1 eller 8, avhengig av sikringene). Det tar noen få millisekunder før koden din når setup() og får satt prescaleren til 2.
+I praksis: Ved romtemperatur går dette som regel helt fint de få millisekundene før koden din endrer hastigheten.
+BOD (Brown-Out Detection): Som nevnt tidligere, hvis brikken din har BOD satt til 4.3V, vil den aldri engang nå setup(). Den vil bare stå i "reset" fordi 3.3V er for lavt.
+3. Slik sikrer du stabil drift
+For å gjøre dette så trygt som mulig, bør endringen av CLKPR skje så tidlig som overhode mulig. Du kan bruke OSCCAL eller CLKPR rett i starten av programmet.
+Oppsummert:
+Ja, å bruke en 16 MHz krystall med en 2x prescaler er en helt utmerket måte å kjøre stabilt på 3.3V. Du sparer strøm, brikken holder seg kjølig, og du beholder nøyaktigheten til en ekstern krystall.
+Har du sjekket om brikken din har Brown-Out Detection aktivert, eller har du mulighet til å teste om den starter i det hele tatt på 3.3V?
+AI-svar kan inneholde feil. Finn ut mer
+
+
+
+
+Er setting av prescaler en varig endring, eller må koden kjøres hver gang?
+Innstillingen av CLKPR (prescaler) er ikke varig. Den nullstilles hver gang brikken mister strømmen eller restartes.
+Her er de viktigste detaljene:
+Flyktig register: CLKPR oppfører seg som RAM. Når brikken starter (Power-on Reset), settes prescaleren automatisk til en standardverdi basert på brikkens "fuses" (sikringer).
+Standardverdi: For en standard Arduino Uno er denne verdien normalt 1 (ingen deling). Det betyr at koden din må kjøre instruksjonene for å sette prescaleren til 2 hver eneste gang brikken starter opp.
+Plassering i koden: Siden du vil ha stabilitet på 3.3V raskest mulig, bør du sette prescaleren aller først i setup().
+Finnes det en varig løsning?
+Hvis du vil at brikken alltid skal starte med en bestemt deling uten at det må gjøres i koden, må du endre brikkens Fuses (sikringer).
+Det finnes en sikring som heter CKDIV8. Hvis denne er på, starter brikken alltid med en prescaler på 8 (altså 2 MHz hvis du har 16 MHz krystall). Da er du trygg på 3.3V fra første mikrosekund, og så kan koden din heller øke farten til 8 MHz (prescaler 2) inne i setup().
+Oppsummert:
+Du må ha koden som setter CLKPR i programmet ditt, ellers vil brikken prøve å kjøre på full krystallhastighet (16 MHz) hver gang den skrus på.
+Vil du ha hjelp til å sjekke om brikken din starter opp i det hele tatt på 3.3V, eller har du en ISP-programmerer for å endre sikringene permanent?
+
+
+Har en nano jeg skal bruke som programmerer for å sette fuses
+Kjempebra! Ved å bruke en Arduino Nano som "Arduino as ISP", har du full kontroll over brikken. Dette er den sikreste måten å klargjøre en ATmega328P for 3.3V-drift.
+For å gjøre brikken din permanent klar for 3.3V og 8MHz (selv med 16MHz krystall), bør du endre to ting via fuses:
+1. Brown-Out Detection (BOD)
+Dette er det viktigste. En standard Uno har BOD på 4.3V. For 3.3V-drift må du sette denne til 2.7V (eller deaktivere den).
+BOD på 2.7V: Gir sikkerhet mot korrupt data hvis spenningen faller for lavt, men tillater 3.3V drift.
+2. CKDIV8 (Valgfritt, men trygt)
+Hvis du setter denne sikringen, starter brikken alltid på 2 MHz (16MHz / 8). Da er du 100% garantert at brikken er stabil fra første millisekund på 3.3V, før koden din i setup() så endrer prescaleren til 2 for å få 8 MHz.
+Hvordan gjøre det (Steg for steg):
+Klargjør Nano: Last opp skissen "ArduinoISP" (fra Examples) til din Nano.
+Koble sammen:
+Nano D10 -> ATmega Reset
+Nano D11 -> ATmega D11 (MOSI)
+Nano D12 -> ATmega D12 (MISO)
+Nano D13 -> ATmega D13 (SCK)
+5V og GND (Bruk 5V under selve programmeringen selv om målet er 3.3V senere).
+Husk en 10µF kondensator mellom Reset og GND på Nano-en etter at ISP-skissen er lastet opp.
+Bruk "AVR Fuse Calculator":
+For en ATmega328P med 16MHz krystall og 2.7V BOD, er typiske verdier:
+Low Fuse: 0xFF (Standard 16MHz, ingen CKDIV8) eller 0x7F (Starter med CKDIV8).
+High Fuse: 0xDA (Beholder bootloader-størrelse, men endrer BOD).
+Extended Fuse: 0x05 (Setter BOD til 2.7V).
+Den enkleste metoden i Arduino IDE:
+I stedet for å styre med kommandolinjen (avrdude), kan du lure Arduino IDE:
+Velg "Arduino Pro or Pro Mini" i Board-menyen.
+Velg "ATmega328P (3.3V, 8 MHz)" under Processor.
+Velg "Arduino as ISP" under Programmer.
+Trykk på "Burn Bootloader".
+Hva skjer da? IDE-en vil nå programmere "fuses" for 3.3V-drift (BOD 2.7V) og legge inn en bootloader som forventer 8 MHz. Etter dette vil brikken din fungere perfekt på 3.3V.
+Skal jeg hjelpe deg med den spesifikke avrdude-kommandoen hvis du vil sette fuses manuelt uten å brenne ny bootloader?
+AI-svar kan inneholde feil. Finn ut mer
+
+
+
+
+vil nok disable bod, da applikasjonen vil være batteridrevet
+Å deaktivere BOD (Brown-Out Detection) er et smart valg for batteridrift, da det fjerner en liten, men konstant strømtyv (ca. 20-30 µA) og hindrer at brikken resetter seg prematurt når batterispenningen begynner å sige.
+Siden du bruker en Nano som programmerer, kan du gjøre dette ved å endre Extended Fuse.
+Slik setter du fuses for batteridrift (uten BOD):
+Bruk følgende fuse-innstillinger for en ATmega328P som skal bruke ekstern krystall (16MHz) men være stabil på 3.3V:
+Low Fuse: 0xFF (Ekstern krystall, ingen deling ved oppstart)
+High Fuse: 0xDE (Standard verdi, bevarer EEPROM ved programmering)
+Extended Fuse: 0xFF (Dette deaktiverer BOD helt)
+Kommando for avrdude:
+Hvis du har avrdude installert (følger med Arduino IDE), kan du kjøre denne kommandoen fra terminalen/kommandolinjen for å sette brikken i "batterimodus":
+bash
+avrdude -c avrisp -p m328p -P [DIN_PORT] -b 19200 -U efuse:w:0xFF:m -U hfuse:w:0xDE:m -U lfuse:w:0xFF:m
+Vær forsiktig når du bruker koden
+(Bytt ut [DIN_PORT] med f.eks. COM3 eller /dev/ttyUSB0).
+Hvorfor 0xFF på Extended Fuse?
+På ATmega328P brukes bare de 3 nederste bitene i Extended Fuse til BOD. Ved å sette den til 0xFF (eller 0x07), setter du alle BOD-bits til 1, som i AVR-verden betyr "Disabled".
+En advarsel ved batteridrift:
+Når du deaktiverer BOD, vil brikken fortsette å kjøre selv om spenningen faller langt under 2.7V.
+Risiko: Hvis spenningen blir veldig lav (f.eks. 1.8V), kan brikken begynne å skrive feil til EEPROM eller utføre instruksjoner feil ("korrupt programkjøring").
+Tips: Siden du allerede har en spenningsdeteksjon (pinnen du bruker for å sjekke 8MHz/16MHz), kan du vurdere å bruke en ledig analog pinne til å måle batterispenningen mot den interne 1.1V-referansen. Da kan du la brikken gå i "deep sleep" styrt av programvare hvis batteriet blir kritisk lavt.
+Har du kontroll på hvilken COM-port Nano-en din bruker, slik at du er klar for å fyre av kommandoen?
