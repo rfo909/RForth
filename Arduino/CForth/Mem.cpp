@@ -14,13 +14,14 @@ void memInit(void) {
   dataNext=0;
 
   staticCodeBytes = staticDataSize();
-  sPrint("static");
+  sPrint("flash");
   sPrint(" ");
   sPrint("code");
-  sPrint(" ");
-  sPrint("bytes");
+  sPrint(":");
   sPrint(" ");
   sPrintWord(staticCodeBytes);
+  sPrint(" ");
+  sPrint("bytes");
   sPrintln();
 
   codeNext=staticCodeBytes;

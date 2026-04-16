@@ -22,6 +22,8 @@ void setup() {
   Serial.println(F(" MHz"));
 
   memInit();
+  Serial.println(F("Use '?' to show words and 'ops' to show ops (written in C)"));
+
 
   // copy Dictionary Header pointer from static data segment lower two bytes to RAM
   // (note address 0 in code segment is reserved, so data are in location 1 and 2)
