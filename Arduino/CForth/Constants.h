@@ -16,7 +16,7 @@ typedef struct {
 #define RSTACK_SIZE     16
 
 #define CODE_SEGMENT_SIZE     400
-#define DATA_SEGMENT_SIZE     50
+#define DATA_SEGMENT_SIZE     800
 
 // value for top two bits of word address in dictionary entry
 #define DE_TYPE_NORMAL      0
@@ -125,7 +125,7 @@ Byte readByteFast (Word addr);
 // Util.cpp
 // ------------------------------------------------------
 
-void printChar (Word ch);
+void printChar (Byte ch);
 void printStr (Word ptr);
 Boolean mixedStreq (Word strPtr, char *s);
 Byte myAtoi (char *nextWord, int *target);

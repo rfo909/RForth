@@ -3,8 +3,9 @@
 
 static char temp[10];
 
-void printChar (Word ch) {
-  sprintf(temp,"%c", ch);
+void printChar (Byte ch) {
+  temp[0]=ch;
+  temp[1]='\0';
   sPrint(temp);
 }
 

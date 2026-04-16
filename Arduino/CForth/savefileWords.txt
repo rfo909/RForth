@@ -70,7 +70,7 @@ cr           &op_cr
 .            &op_dot                            print TOS signed followed by a space
 .u           &op_dot_u                          unsigned
 .hex         &op_dot_hex                        
-.c           &op_dot_c                          print single character
+emit         &op_emit                           print single character
 .str         &op_dot_str                        print Forth string
              
 code.HERE    &op_code_here                      address of next byte in codeSegment
@@ -108,6 +108,7 @@ dump         &op_dump                           dump codeSegment and dataSegment
 code.export  &op_code_export                    export data for paste into Static.cpp
 step         &op_step                           step one instruction - takes addr of code first time
 dis          &op_dis                            (wordAddr --) disassemble word
+ops          &op_ops                            show op names
     
 >>>> EOF
 /Data
@@ -125,16 +126,85 @@ dis          &op_dis                            (wordAddr --) disassemble word
 /GetData
 
 
-
-# Generate string 
+# Get names as string separated by space
 # --
+	GetData->dict out(dict.name) | _.concat(" ")
+//NStr
+
+
+# Get list of function pointers
+# --
+	GetData->dict out(dict.addr) |_.concat(",")
+//FStr
+
+
+
+# Generate string data for a list of names, each terminated by 0 for strcmp
+# --
+
+	
+	println('static const PROGMEM char opNames[]="\')
 	GetData->dict
 		println(dict.name + " \")
-/names
+	|
+	println('";') # null-terminated C string
+	
+//names
 
 # Generate addresses
 # --
+	println("static const PROGMEM FUNC opFunctions[]={")
+	len=0
+	comma=false
 	GetData->dict
-		println(dict.addr + ",")
-/functions
+		if (comma) print(",")
+		comma=true
+		println(dict.addr)
+		#len=len+dict.addr.length+1
+		#if (len > 92) {
+		#	println()
+		#	len=0
+		#}
+	|
+	println("};")
+//functions
+
+
+# Generate code
+# --
+	println("//","-".times(80))
+	println
+	println("const Byte numOps=" + GetData.length + ";")
+	println
+	names
+	println
+	println("typedef void (*FUNC)();")
+	println
+	functions
+	println
+	println("//","-".times(80))
+/gen
+
+
+# Generate data on old format
+# --
+	println("const OpCode opCodes[]={")
+	GetData->dict
+		println('    {"'+dict.name+'", '+dict.addr+'},')
+	|
+	println("    // end-marker")
+  	println('    {"",0}')
+  	println("};")
+/old
+
+
+# Bytes saved
+# --
+	GetData->dict
+		out(dict.name.length+1)  # +1 for terminating 0 in C
+	| _.sum => strCount
+	GetData.length*2 => pointerCount
+	
+	strCount+pointerCount
+/BytesSaved
 

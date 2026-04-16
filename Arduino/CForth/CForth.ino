@@ -545,7 +545,7 @@ void op_cr() {Serial.println();}
 void op_dot() {int i=(int) pop(); Serial.print(i); Serial.print(" ");}
 void op_dot_u() {Word x=pop(); Serial.print(x); Serial.print(" ");}
 void op_dot_hex() {Word x=pop(); Serial.print("0x"); Serial.print(x,16); Serial.print(" ");}
-void op_dot_c() {Word x=pop(); char c=(x&0xFF); Serial.print(c);}
+void op_emit() {Word x=pop(); char c=(x&0xFF); Serial.print(c);}
 void op_dot_str() {Word addr=pop(); printStr(addr); }
 
 void op_code_here() {Word addr=generateCodeAddress(getCodeNext()); push(addr);}
@@ -634,6 +634,7 @@ void op_end_test () {
 }
 
 
+
 void op_words() {
   Word ptr=getDictionaryHead();
   Serial.println();
@@ -641,7 +642,7 @@ void op_words() {
   while (ptr != 0) {
     dictEntryFetch(ptr);
     printStr(getDeNamePtr());
-    len += readByte(ptr);
+    len += readByte(getDeNamePtr());
     if (len > 60) {
       Serial.println();
       len=0;
@@ -695,102 +696,16 @@ void op_word_addr() {
   }
 }
 
-// may represent this list fully as a string of PROGMEM Bytes
-
-const OpCode opCodes[]={
-  {"create", &op_create}, 
-  {":", &op_colon},
-
-  {"bval", &op_bval},     // 2
-  {"cval", &op_cval},     // 3
-  {"ret", &op_ret},       // 4
-  {"jmp", &op_jmp},       // 5
-  {"jmp?", &op_cond_jmp}, // 6
-  {"blob", &op_blob},     // 7
-  {"zero", &op_zero},     // 8
-  {"one", &op_one},     // 9
-  
-  {"dcall", &op_dcall},
-  {"ret?", &op_cond_ret},
-
-  {"immediate", &op_immediate}, 
-  {"+", &op_add},
-  {"-", &op_sub},
-  {"*", &op_mul},
-  {"/", &op_div},
-  {"%", &op_modulo},
-  {"1+", &op_incr},
-
-  {">", &op_gt},
-  {">=", &op_ge},
-  {"<", &op_lt},
-  {"<=", &op_le},
-  {"==", &op_eq},
-  {"!=", &op_ne},
-  {"and", &op_and},
-  {"or", &op_or},
-  {"not", &op_not},
-
-  {"&", &op_bin_and},
-  {"|", &op_bin_or},
-  {"inv", &op_bin_inv},
-
-
-  {"cr", &op_cr},
-  {".", &op_dot},
-  {".u", &op_dot_u},
-  {".hex", &op_dot_hex},
-  {".c", &op_dot_c},
-  {".str", &op_dot_str},
-
-  {"code.HERE", &op_code_here},
-  {"comp.next", &op_comp_next},
-  {"comp.out", &op_comp_out},
-  {"HERE", &op_HERE},
-  {"allot", &op_allot},
-  {"constant", &op_constant},
-  {"variable", &op_variable},
-   
-  {"!", &op_write},
-  {"@", &op_read},
-
-  {"b!", &op_writeb},
-  {"b@", &op_readb},
-
-  {"dup", &op_dup},
-  {"swap", &op_swap},
-  {"2dup", &op_2dup},
-  {"drop", &op_drop},
-  {"over", &op_over},
-  {"pick", &op_pick},
-
-  {"?", &op_words},
-  {".s", &op_show_stack},
-  {"clear", &op_clear_stack},
-
-  {"[test", &op_start_test},
-  {"test]", &op_end_test},
-  
-  {">R", &op_to_r},
-  {"R>", &op_r_from},
-  {"key", &op_key},
-  {"readc", &op_readc},
-
-
-  {"'", &op_word_addr},
-  {"dump", &op_dump},
-  {"code.export", &op_code_export},
-  {"step", &op_step},
-  {"dis", &op_dis},
-
-  // end-marker
-  {"",0}
-};
-
 
 // all ops names separated by space
-// upate Words script and run it to update
-static const PROGMEM char names[]="\
+// upate Words script and and run "gen" to get this code
+// "Global variables use 1559 bytes"
+
+// --------------------------------------------------------------------------------
+
+const Byte numOps=69;
+
+static const PROGMEM char opNames[]="\
 create \
 : \
 bval \
@@ -828,7 +743,7 @@ cr \
 . \
 .u \
 .hex \
-.c \
+emit \
 .str \
 code.HERE \
 comp.next \
@@ -859,85 +774,108 @@ dump \
 code.export \
 step \
 dis \
+ops \
 ";
-
 
 typedef void (*FUNC)();
 
-// all ops function pointers 
-// upate Words script and run it to update
-static const PROGMEM FUNC functions[]={
-
-&op_create,
-&op_colon,
-&op_bval,
-&op_cval,
-&op_ret,
-&op_jmp,
-&op_cond_jmp,
-&op_blob,
-&op_zero,
-&op_one,
-&op_constant,
-&op_variable,
-&op_immediate,
-&op_dcall,
-&op_cond_ret,
-&op_add,
-&op_sub,
-&op_mul,
-&op_div,
-&op_modulo,
-&op_incr,
-&op_gt,
-&op_ge,
-&op_lt,
-&op_le,
-&op_eq,
-&op_ne,
-&op_and,
-&op_or,
-&op_not,
-&op_bin_and,
-&op_bin_or,
-&op_bin_inv,
-&op_cr,
-&op_dot,
-&op_dot_u,
-&op_dot_hex,
-&op_dot_c,
-&op_dot_str,
-&op_code_here,
-&op_comp_next,
-&op_comp_out,
-&op_HERE,
-&op_allot,
-&op_write,
-&op_read,
-&op_writeb,
-&op_readb,
-&op_dup,
-&op_swap,
-&op_2dup,
-&op_drop,
-&op_over,
-&op_pick,
-&op_words,
-&op_show_stack,
-&op_clear_stack,
-&op_start_test,
-&op_end_test,
-&op_to_r,
-&op_r_from,
-&op_key,
-&op_readc,
-&op_word_addr,
-&op_dump,
-&op_code_export,
-&op_step,
-&op_dis,
-
+static const PROGMEM FUNC opFunctions[]={
+&op_create
+,&op_colon
+,&op_bval
+,&op_cval
+,&op_ret
+,&op_jmp
+,&op_cond_jmp
+,&op_blob
+,&op_zero
+,&op_one
+,&op_constant
+,&op_variable
+,&op_immediate
+,&op_dcall
+,&op_cond_ret
+,&op_add
+,&op_sub
+,&op_mul
+,&op_div
+,&op_modulo
+,&op_incr
+,&op_gt
+,&op_ge
+,&op_lt
+,&op_le
+,&op_eq
+,&op_ne
+,&op_and
+,&op_or
+,&op_not
+,&op_bin_and
+,&op_bin_or
+,&op_bin_inv
+,&op_cr
+,&op_dot
+,&op_dot_u
+,&op_dot_hex
+,&op_emit
+,&op_dot_str
+,&op_code_here
+,&op_comp_next
+,&op_comp_out
+,&op_HERE
+,&op_allot
+,&op_write
+,&op_read
+,&op_writeb
+,&op_readb
+,&op_dup
+,&op_swap
+,&op_2dup
+,&op_drop
+,&op_over
+,&op_pick
+,&op_words
+,&op_show_stack
+,&op_clear_stack
+,&op_start_test
+,&op_end_test
+,&op_to_r
+,&op_r_from
+,&op_key
+,&op_readc
+,&op_word_addr
+,&op_dump
+,&op_code_export
+,&op_step
+,&op_dis
+,&op_ops
 };
+
+// --------------------------------------------------------------------------------
+
+
+
+
+
+void op_ops() {
+  Byte length=0;
+  Word i=0;
+  for(;;) {
+    Byte ch=pgm_read_byte(opNames+i);
+    if (ch==0) {Serial.println(); return;}
+    printChar(ch);
+    length++;
+    i++;
+    if (length > 60 && ch==' ') {
+      Serial.println();
+      length=0;
+    }
+  }
+}
+
+
+
+
 
 
 void op_dump() {
@@ -1029,7 +967,7 @@ void op_dis() {
     }
   
     // op = opcode 
-    Serial.print(opCodes[op].name);
+    //Serial.print(opCodes[op].name);
     if (op==OP_BVAL) {
       Word val=readByte(addr+1);
       Serial.print(" ");
@@ -1053,12 +991,44 @@ void op_dis() {
   }
 }
 
-// check nextWord against the opCodes array, return index or -1 if not found
+
+// Check if string in opNames PROGMEM array starting at pos matches the given string
+static boolean opNameMatch (Word pos, char *s) {
+  Byte len=strlen(s);
+  for (Byte i=0; i<len; i++) {
+    char ch=pgm_read_byte(&(opNames[pos+i]));
+    if (ch != s[i]) return false;
+  }
+  // all characters match, ensure that next character in PROGMEM buffer is
+  // blank or 0
+  Byte ch=pgm_read_byte(&(opNames[pos+len]));
+  return (ch==32 || ch==0);
+}
+
+
+
+
+Word opSkipWord (Word pos) {
+  for(;;) {
+    Byte ch=pgm_read_byte(&(opNames[pos]));
+    if (ch==32) return pos+1;
+    if (ch==0) return pos;  // end of PROGMEM area
+    pos++;
+  }
+  return 9999;  // should not happen
+}
+
+
+// check if nextWord is the name of an op, return index or -1 if not found
 int lookupOpCode () {
-  Byte pos=0;
-  for (Byte pos=0; pos < 255 ; pos++) {
-    if (opCodes[pos].f == 0) return -1;  // end of list, not found
-    if (!strcmp(nextWord,opCodes[pos].name)) return pos;
+  Word pos=0; // in opNames PROGMEM string
+  int wordNumber=0;
+  while (wordNumber < numOps) {
+    if (opNameMatch(pos,nextWord)) {
+      return wordNumber;
+    }
+    pos=opSkipWord(pos);
+    wordNumber++;
   }
   return -1;
 }
@@ -1073,7 +1043,8 @@ void executeCodeByte (Byte b) {
     callForth(address);
   } else {
     // opcode
-    opCodes[b].f();
+    Word pointer=pgm_read_word(&(opFunctions[b]));
+    ((FUNC) pointer)();
   }
   instructionCount++;
 }
@@ -1128,7 +1099,8 @@ void loop() {
   
   int op = lookupOpCode();
   if (op>=0) {
-    opCodes[op].f();
+    Word func=pgm_read_word(&(opFunctions[op]));
+    ((FUNC) func)();
     return;
   }
   setHasError();

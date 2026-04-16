@@ -159,6 +159,29 @@ The code is very "flat", executing single op after single op, with some housekee
 
 Reserving 200 bytes for C call stack is generous!
 
+Modified the Words CFT script, generating PROGMEM code as well as old config, to ensure
+everything is in sync.
+
+The compiler uses the new structure, opNames, for looking up op codes. The index in the tables is
+the opCode byte, and the runtime executing the compiled code also uses the new PROGMEM
+table opFunctions. So it works.
+
+What remains is a single fix in the disassembler to show the name of an op from its index.
+Commenting that out removes the last reference to the opCodes, and recompiling changes
+
+"Global variables use 1567 bytes"
+to
+Global variables use 1011 bytes
+
+Which corresponds to saving 556 bytes of global variable space!!
+
+This allowed me to change from 400 code + 50 data bytes to
+
+#define CODE_SEGMENT_SIZE     400
+#define DATA_SEGMENT_SIZE     800
+
+Still leaving 287 bytes of room for stack, which should be plenty!
+
  
 OpCodes
 -------
