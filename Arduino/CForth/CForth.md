@@ -146,6 +146,17 @@ the opCodes RAM table will be deleted, saving hundreds of bytes.
 Number of opCodes = 68
 
 
+2026-05-16
+----------
+Did a crude profiling of the size of the C stack, and it never exceeded 84 bytes.
+Attached the check inside the verifyReadWriteAddress() inside Mem.cpp because any and
+all op that interacts with memory, will call this.
+
+The code is very "flat", executing single op after single op, with some housekeeping.
+
+Reserving 200 bytes for C call stack is generous!
+
+ 
 OpCodes
 -------
 See Words CFT script 
