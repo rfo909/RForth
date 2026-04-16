@@ -105,7 +105,7 @@ quote.
 Refactoring code into multiple files, for easier handling.
 
 
-2026-05-15
+2026-05-14
 ----------
 Got the dictionary fully represented in the codeSegment, instead of as a C
 structure. This is a prerequisite for the next step ...
@@ -134,94 +134,21 @@ SOLUTIONS:
 	- or export the dataSegment as well
 
 
+2025-05-15
+----------
+I've done preparations for moving the opCodes data array from RAM into two
+PROGMEM arrays called "names" and "functions". Those are added in the INO file,
+and it all compiles.
+
+I have not written code to traverse these, but once that's done, and works,
+the opCodes RAM table will be deleted, saving hundreds of bytes.
+
+Number of opCodes = 68
+
+
 OpCodes
 -------
-
-Updated 2026-04-12
-
-65 opcodes
-
-```
-bval n                    push single Byte value on stack 
-cval n n                  push cell value on stack
-ret                       return
-<addr> jmp                jump to address 
-<cond> <addr> jmp?        conditional jump to address if <cond> != 0
-blob n ...                just skips the data Bytes and returns pointer to the n Byte
-zero
-one
-
-<addr> dcall              dynamic call, taking address from stack
-<cond> ret?               conditional return
-
-create (name)             create dictionary entry as type constant, value 0
-immediate                 set newest word immediate
-
-+
--
-* 
-/
-%
-1+
-
->
->=
-<
-<=
-==
-!=
-
-and                       logical and
-or                        logical or
-not                       logical not
-
-&                         binary and
-|                         binary or
-inv                       binary not
-
-cr                        carriage return
-.                         print TOS value (signed)
-.u                        unsigned
-.hex                      hex  
-<Byte> .c                 print single character
-<addr> .str               print string (n ...)
-
-csegHERE                  address of next Byte in code segment
-comp.next                 address of next Byte - when compiling
-<Byte> comp.out           add Byte to code segment - when compiling
-HERE                      next address on data segment
-<n> allot                 increase HERE 
-<value> constant (name)
-<value> variable (name)
-
-<value> <addr> !          write cell sized value 
-<addr> @                  read cell sized value
-<Byte> <addr> b!          write Byte sized value
-<addr> b@                 read Byte
-
-dup
-swap
-2dup
-drop
-over
-pick
-
-?                         list words in dictionary
-.s                        show stack
-clear                     clear stack
-
-[test                     start timed test for opcount/second
-test]                     end timed test
-
->R                        move value from data stack to return stack
-R>                        move value from return stack to data stack
-
-key                       return boolean for if a key has been pressed (serial)
-readc                     read character from serial
-
-' (word)                  get address of word
-<addr> dis                disassemble word
-```
+See Words CFT script 
 
 
 Tags
@@ -250,42 +177,18 @@ will not be known inside nested structures, if and when such are created.
 NOTE: basic opCodes do not have the option of being IMMEDIATE (yet), so all code that needs to
 be, must be written in Forth. Like the '"' word (quote).
 
+
 Todo
 ====
 
 - Move opCodes content to text format, and generate PROGMEM arrays. Should save approx 500 Bytes of RAM.
 
-	
-On boot, create variable (in RAM) that points to dictionaryHead, in first 2 Bytes of the data segment
-(code generate C constant for it)
+- consider Frame stack, as in RForth v3 for local variables
 
-Generate symbol for it in dictionary (_dictHead)
+- create the NATIVE functions as regular opCodes, instead of the NATIVE stuff. Tag them
+  with #ifdef ATMEGA328p
+  
+- also save dataSegment content? onboard EEPROM?
 
-
-Frame stack of words keeping track of what's added to return stack -> local variables
-	Works the same as in RForth
-
-
-- Build code in C / Forth to export binary data from code segment, to paste into C code, for
-standard Forth words, and fix address resolution towards Flash vs codeSegment (simple offset).
-
-
-- Plugins form a different array of Bytes in PROGMEM. Instead of compiling to index, we
-can compile directly to C pointers (2 Bytes on atmega328p)
-
-
-
-
----
-
-To save the current state would then mean to save data from the RAM part of the code segment,
-plus the data in the data segment.
-
-
-The address space of the system must contain
-
-- the Flash code (lower code segment)
-- the RAM part of the code segment (at offset)
-- at an offset: the data segment
-
+- Autorun-mechanism with option of physical override
 

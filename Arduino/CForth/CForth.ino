@@ -379,10 +379,6 @@ struct Ref {
 };
 
 
-void op_reserved() {
-  Serial.print(F("undefined"));
-}
-
 
 void op_colon() {  
   Word tags[NUM_TAGS_REFS]; 
@@ -702,7 +698,7 @@ void op_word_addr() {
 // may represent this list fully as a string of PROGMEM Bytes
 
 const OpCode opCodes[]={
-  {"", &op_reserved}, 
+  {"create", &op_create}, 
   {":", &op_colon},
 
   {"bval", &op_bval},     // 2
@@ -717,7 +713,6 @@ const OpCode opCodes[]={
   {"dcall", &op_dcall},
   {"ret?", &op_cond_ret},
 
-  {"create", &op_create}, 
   {"immediate", &op_immediate}, 
   {"+", &op_add},
   {"-", &op_sub},
@@ -790,6 +785,158 @@ const OpCode opCodes[]={
 
   // end-marker
   {"",0}
+};
+
+
+// all ops names separated by space
+// upate Words script and run it to update
+static const PROGMEM char names[]="\
+create \
+: \
+bval \
+cval \
+ret \
+jmp \
+jmp? \
+blob \
+zero \
+one \
+constant \
+variable \
+immediate \
+dcall \
+ret? \
++ \
+- \
+* \
+/ \
+% \
+1+ \
+> \
+>= \
+< \
+<= \
+== \
+!= \
+and \
+or \
+not \
+& \
+| \
+inv \
+cr \
+. \
+.u \
+.hex \
+.c \
+.str \
+code.HERE \
+comp.next \
+comp.out \
+HERE \
+allot \
+! \
+@ \
+b! \
+b@ \
+dup \
+swap \
+2dup \
+drop \
+over \
+pick \
+? \
+.s \
+clear \
+[test \
+test] \
+>R \
+R> \
+key \
+readc \
+' \
+dump \
+code.export \
+step \
+dis \
+";
+
+
+typedef void (*FUNC)();
+
+// all ops function pointers 
+// upate Words script and run it to update
+static const PROGMEM FUNC functions[]={
+
+&op_create,
+&op_colon,
+&op_bval,
+&op_cval,
+&op_ret,
+&op_jmp,
+&op_cond_jmp,
+&op_blob,
+&op_zero,
+&op_one,
+&op_constant,
+&op_variable,
+&op_immediate,
+&op_dcall,
+&op_cond_ret,
+&op_add,
+&op_sub,
+&op_mul,
+&op_div,
+&op_modulo,
+&op_incr,
+&op_gt,
+&op_ge,
+&op_lt,
+&op_le,
+&op_eq,
+&op_ne,
+&op_and,
+&op_or,
+&op_not,
+&op_bin_and,
+&op_bin_or,
+&op_bin_inv,
+&op_cr,
+&op_dot,
+&op_dot_u,
+&op_dot_hex,
+&op_dot_c,
+&op_dot_str,
+&op_code_here,
+&op_comp_next,
+&op_comp_out,
+&op_HERE,
+&op_allot,
+&op_write,
+&op_read,
+&op_writeb,
+&op_readb,
+&op_dup,
+&op_swap,
+&op_2dup,
+&op_drop,
+&op_over,
+&op_pick,
+&op_words,
+&op_show_stack,
+&op_clear_stack,
+&op_start_test,
+&op_end_test,
+&op_to_r,
+&op_r_from,
+&op_key,
+&op_readc,
+&op_word_addr,
+&op_dump,
+&op_code_export,
+&op_step,
+&op_dis,
+
 };
 
 

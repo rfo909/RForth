@@ -1,50 +1,140 @@
-# Process file
+# Readme
 # --
-	P(1) as File => file
-	file.read(false)->line
-		if (line.trim.startsWith("sPrint(")) {
-			pre=line.before("sPrint")
-			str=line.after('"').before('"')
-			MySplit(str)->part
-				out(pre + 'sPrint("' + part.toLower + '");')
-				space=true
-		} else {
-			out(line)
-		}
-/Process
+<<< EOF
+
+This script is used to generate the two tables in CForth.ino: names and functions.
+
+NOTE: if doing changes other than appending new ops to the end of the list,
+any generated code pasted into Static.cpp is invalidated.
+
+ALSO note that ops 2-9 MUST not change location in the list, without changing
+corresponding constants in Constants.h as well as in the cstrings.txt Forth
+library code.
 
 
-# Split into parts
+>>> EOF
+/Readme
+
+# Data
 # --
-	P(1) as String => line
-	line=line.replace(":", " :")
-	line=line.replace("  :", " :")
-	line=line.replace("="," = ")
-	line=line.replace("  =", " =")
-	line=line.replace("=  ", "= ")
-	line=line.replace("^t".unEsc," ")
-	
-	println(line)
+<<<< EOF
+#
+# name       function         op-params         stack / description                          
+# ----------------------------------------------------------------------
+#
 
-	word=""
-	line.chars->c
-		if (c==" ") {
-			if (word.length > 0) {
-				out(word)
-				word=""
-			}
-			out(" ")
-		} else {
-			word=word+c
-		}
-	| => list
-	if (word.length > 0) list.add(word)
-	list
-/MySplit
+create       &op_create                         <name> create dict entry as constant value 0
+:            &op_colon        ... ;             
+             
+bval         &op_bval         b                 #2 push single byte on stack
+cval         &op_cval         b b               #3 push cell value on stack
+ret          &op_ret                            #4 return
+jmp          &op_jmp                            #5 (addr --) jump to address
+jmp?         &op_cond_jmp                       #6 (cond addr --) conditional jump if cond != 0
+blob         &op_blob         len ...           #7 just skips the data byes, returns pointer to len field
+zero         &op_zero                           #8 push a zero
+one          &op_one                            #9 push a one
+   
+         
+constant     &op_constant                       <name>
+variable     &op_variable                       <name>
+immediate    &op_immediate                      set newest word immediate
 
-# Main
+
+dcall        &op_dcall                          (addr --) dynamic call, take address from stack
+ret?         &op_cond_ret                       (cond --) conditional return
+             
+             
++            &op_add                            
+-            &op_sub                            
+*            &op_mul                            
+/            &op_div                            
+%            &op_modulo                         
+1+           &op_incr                           
+             
+>            &op_gt                             
+>=           &op_ge                             
+<            &op_lt                             
+<=           &op_le                             
+==           &op_eq                             
+!=           &op_ne                             
+and          &op_and                            logical
+or           &op_or                             logical
+not          &op_not                            logical
+             
+&            &op_bin_and                        binary and
+|            &op_bin_or                         binary or
+inv          &op_bin_inv                        binary not
+             
+cr           &op_cr                             
+.            &op_dot                            print TOS signed followed by a space
+.u           &op_dot_u                          unsigned
+.hex         &op_dot_hex                        
+.c           &op_dot_c                          print single character
+.str         &op_dot_str                        print Forth string
+             
+code.HERE    &op_code_here                      address of next byte in codeSegment
+comp.next    &op_comp_next                      address of next byte - when compiling
+comp.out     &op_comp_out                       add byte - when compiling
+HERE         &op_HERE                           address of next byte in dataSegment
+allot        &op_allot                          increase HERE
+             
+!            &op_write                          (value addr --) write cell value
+@            &op_read                           (addr -- value) read cell value
+b!           &op_writeb                         (value addr --) write byte value
+b@           &op_readb                          (addr --) read byte value
+             
+dup          &op_dup                            
+swap         &op_swap                           
+2dup         &op_2dup                           
+drop         &op_drop                           
+over         &op_over                           
+pick         &op_pick                           
+             
+?            &op_words                          show words in dictionary
+.s           &op_show_stack                     show stack
+clear        &op_clear_stack                    clear stack
+             
+[test        &op_start_test                     start timed test for opcount/second
+test]        &op_end_test                       end timed test and print report
+             
+>R           &op_to_r                           move value to return stack
+R>           &op_r_from                         get value from return stack
+key          &op_key                            return boolean for if a key has been pressed (serial)
+readc        &op_readc                          read character from serial
+             
+'            &op_word_addr                      <word> get address of word
+dump         &op_dump                           dump codeSegment and dataSegment below code.HERE and HERE
+code.export  &op_code_export                    export data for paste into Static.cpp
+step         &op_step                           step one instruction - takes addr of code first time
+dis          &op_dis                            (wordAddr --) disassemble word
+    
+>>>> EOF
+/Data
+
+
+# Get data lines only as list of Dict with .name and .addr
 # --
-	Dir.allFiles("*.cpp")->f
-		Lib:Header(f.path)
-		f.create(Process(f))
-/t
+	Data->line
+		reject(line.startsWith("#"))
+		reject(line.trim=="")
+		parts=line.split
+		name=parts.get(0).trim
+		addr=parts.get(1).trim
+		out(SymDict(name,addr))
+/GetData
+
+
+
+# Generate string 
+# --
+	GetData->dict
+		println(dict.name + " \")
+/names
+
+# Generate addresses
+# --
+	GetData->dict
+		println(dict.addr + ",")
+/functions
+
