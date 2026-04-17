@@ -88,7 +88,7 @@ Word generateCodeAddress (Word ptr) {
     sPrint("segment");
     sPrint(" ");
     sPrintln();
-    return;
+    return 0;
   }
   return (ptr & ADDR_CODE_MASK);   // 00xxxxxx xxxxxxxx
 }
@@ -98,6 +98,22 @@ Word generateDataAddress (Word ptr) {
 }
 
 Word generateCallAddress (Word ptr) {
+  if (ptr & DATA_BIT) {
+    setHasError();
+    sPrint("generate");
+    sPrint(" ");
+    sPrint("call");
+    sPrint(" ");
+    sPrint("address");
+    sPrint(":");
+    sPrint(" ");
+    sPrint("data");
+    sPrint("bit");
+    sPrint(" ");
+    sPrint("set");
+    sPrintln();
+    return 0;
+  }
   return generateCodeAddress(ptr) | CALL_BIT;  // 10xxxxxx xxxxxxxx
 }
 
@@ -343,11 +359,11 @@ void memCodeExport() {
 // For executing code, less checks
 Byte readByteFast (Word addr) {
   if (addr & DATA_BIT) {
-    // data segment
+    // data segment - remove data bit
     addr=addr & ADDR_DATA_MASK;
     return dataSegment[addr];
   } else {
-    // code segment
+    // code segment - strip call bit
     addr=addr & ADDR_CODE_MASK;
     if (addr < staticCodeBytes) {
       return staticDataRead(addr);
