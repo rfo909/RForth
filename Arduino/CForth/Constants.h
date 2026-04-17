@@ -1,6 +1,6 @@
 #include <string.h>
 
-#define MONITOR_C_STACK
+// #define MONITOR_C_STACK
 
 typedef unsigned int Word;
 typedef unsigned char Byte;
@@ -48,8 +48,10 @@ typedef Byte Boolean;
   // address that is to be auto-called
 #define DATA_BIT    0x4000
 
-#define ADDR_CODE_MASK      0x3FFF
+// use this to remove DATA_BIT
 #define ADDR_DATA_MASK      0x3FFF
+// use this to remove CALL_BIT
+#define ADDR_CODE_MASK      0x3FFF
 
 
 #define MAX_WORD_LENGTH   16

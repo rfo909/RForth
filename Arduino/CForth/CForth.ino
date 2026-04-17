@@ -292,7 +292,7 @@ void compileNumber (Word w) {
 
 void callForth (Word addr) {
   rpush(programCounter);
-  programCounter=addr & ADDR_CODE_MASK;
+  programCounter=addr & ADDR_CODE_MASK;  // strip call bit
   //Serial.print("callForth addr=");
   //Serial.println(programCounter);
 }
