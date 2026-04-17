@@ -109,6 +109,28 @@ code.export  &op_code_export                    export data for paste into Stati
 step         &op_step                           step one instruction - takes addr of code first time
 dis          &op_dis                            (wordAddr --) disassemble word
 ops          &op_ops                            show op names
+
+delay        &op_delay                          (value --) delay millis
+delay_us     &op_delay_us                       (value --) delay micros
+
+Pin.modeOut  &natPinModeOut                     (pin --)
+Pin.modeIn   &natPinModeIn                      (pin --)
+Pin.modeInPullup &natPinModeInPullup            (pin --)
+Pin.writeDigital &natPinWriteDigital            (value pin --)
+Pin.writeAnalog &natPinWriteAnalog              (value pin --)
+Pin.pulseDigitalMs &natPinPulseDigitalMs           (ms value pin --)
+Pin.pulseDigitalUs &natPinPulseDigitalUs           (us value pin --)
+Pin.readDigital &natPinReadDigital              (pin -- value)
+Pin.readAnalog &natPinReadAnalog                (pin -- value)
+
+EE.length    &natEELength                       (-- length)
+EE.write     &natEEWrite                        (byte index --)
+EE.read      &natEERead                         (index -- byte)
+
+I2C.masterWrite &natI2CmasterWrite              (sendBufPtr sendCount addr --)
+I2C.masterWWait &natI2CmasterWWait              (--) EEPROM's are sometimes slow at doing page writes
+I2C.masterRead &natI2CmasterRead                (buf addr --) available length in buffer byte 0
+
     
 >>>> EOF
 /Data
@@ -186,25 +208,14 @@ ops          &op_ops                            show op names
 /gen
 
 
-# Generate data on old format
-# --
-	println("const OpCode opCodes[]={")
-	GetData->dict
-		println('    {"'+dict.name+'", '+dict.addr+'},')
-	|
-	println("    // end-marker")
-  	println('    {"",0}')
-  	println("};")
-/old
-
 
 # Bytes saved
 # --
 	GetData->dict
 		out(dict.name.length+1)  # +1 for terminating 0 in C
 	| _.sum => strCount
-	GetData.length*2 => pointerCount
 	
+	pointerCount=GetData.length*2*2   # name pointers and function pointers
 	strCount+pointerCount
 /BytesSaved
 

@@ -15,8 +15,8 @@ typedef struct {
 #define DSTACK_SIZE     16
 #define RSTACK_SIZE     16
 
-#define CODE_SEGMENT_SIZE     400
-#define DATA_SEGMENT_SIZE     800
+#define CODE_SEGMENT_SIZE     350
+#define DATA_SEGMENT_SIZE     700
 
 // dictionary entry types
 #define DE_TYPE_NORMAL      0

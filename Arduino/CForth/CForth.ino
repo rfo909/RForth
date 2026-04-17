@@ -3,6 +3,10 @@
 #include <avr/pgmspace.h>
 #include "Constants.h"
 
+#include <Wire.h>
+#include <EEPROM.h>
+
+
 
 static char nextWord[MAX_WORD_LENGTH+1];  // input buffer
 
@@ -703,7 +707,7 @@ void op_word_addr() {
 
 // --------------------------------------------------------------------------------
 
-const Byte numOps=69;
+const Byte numOps=86;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -775,6 +779,23 @@ code.export \
 step \
 dis \
 ops \
+delay \
+delay_us \
+Pin.modeOut \
+Pin.modeIn \
+Pin.modeInPullup \
+Pin.writeDigital \
+Pin.writeAnalog \
+Pin.pulseDigitalMs \
+Pin.pulseDigitalUs \
+Pin.readDigital \
+Pin.readAnalog \
+EE.length \
+EE.write \
+EE.read \
+I2C.masterWrite \
+I2C.masterWWait \
+I2C.masterRead \
 ";
 
 typedef void (*FUNC)();
@@ -849,10 +870,26 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_step
 ,&op_dis
 ,&op_ops
+,&op_delay
+,&op_delay_us
+,&natPinModeOut
+,&natPinModeIn
+,&natPinModeInPullup
+,&natPinWriteDigital
+,&natPinWriteAnalog
+,&natPinPulseDigitalMs
+,&natPinPulseDigitalUs
+,&natPinReadDigital
+,&natPinReadAnalog
+,&natEELength
+,&natEEWrite
+,&natEERead
+,&natI2CmasterWrite
+,&natI2CmasterWWait
+,&natI2CmasterRead
 };
 
 // --------------------------------------------------------------------------------
-
 
 
 
@@ -990,6 +1027,164 @@ void op_dis() {
     Serial.println();
   }
 }
+
+// # NATIVE calls from RForth
+
+void op_delay() {
+  Word ms=pop();
+  delay(ms);
+}
+
+void op_delay_us() {
+  Word us=pop();
+  delayMicroseconds(us);
+}
+
+
+// -------------------------------
+// Pin.*
+// -------------------------------
+
+void natPinModeOut () {
+  Word pin=pop();
+  pinMode(pin, OUTPUT);
+}
+
+void natPinModeIn () {
+  Word pin=pop();
+  pinMode(pin, INPUT);
+}
+
+void natPinModeInPullup () {
+  Word pin=pop();
+  pinMode(pin, INPUT_PULLUP);
+}
+
+void natPinWriteDigital () {
+  Word pin=pop();
+  Word value=pop();
+  digitalWrite(pin,value==0 ? LOW : HIGH);
+}
+
+void natPinWriteAnalog () {
+	Word pin=pop();
+	Word value=pop();
+	analogWrite(pin,value);
+}
+
+void natPinPulseDigitalMs () {
+	Word pin=pop();
+	Word value=pop();
+	Word ms=pop();
+
+	if (value==0) {
+		digitalWrite(pin, LOW);
+		delay(ms);
+		digitalWrite(pin, HIGH);
+	} else {
+		digitalWrite(pin, HIGH);
+		delay(ms);
+		digitalWrite(pin, LOW);
+	}
+}
+
+void natPinPulseDigitalUs () {
+	Word pin=pop();
+	Word value=pop();
+	Word us=pop();
+
+	if (value==0) {
+		digitalWrite(pin, LOW);
+		delayMicroseconds(us);
+		digitalWrite(pin, HIGH);
+	} else {
+		digitalWrite(pin, HIGH);
+		delayMicroseconds(us);
+		digitalWrite(pin, LOW);
+	}
+}
+
+void natPinReadDigital () {
+	Word pin=pop();
+	push(digitalRead(pin));
+}
+
+void natPinReadAnalog () {
+	Word pin=pop();
+	push(analogRead(pin));
+}
+
+// ----------------
+// Onboard EEPROM
+// ----------------
+
+void natEELength () { // ( -- length )
+  push((Word) EEPROM.length());
+}
+
+void natEEWrite () { // ( byte index -- ) 
+  Word pos=pop();
+  Word value=pop();
+  EEPROM.write(pos,value);
+}
+
+void natEERead () { // ( index -- byte ) 
+  Word pos=pop();
+  push(EEPROM.read(pos));
+}
+
+
+
+// -------------------------------
+// I2C.*
+// -------------------------------
+
+// (sendBufPtr sendCount addr -- )
+void natI2CmasterWrite() {
+  Word addr=pop();
+  Word sendBuf=pop();
+
+  Word sendCount=readByte(sendBuf);
+
+  Wire.beginTransmission((byte) addr);
+  for (byte i=0; i<sendCount; i++) {
+    Wire.write((byte)readByte(sendBuf+i+1));
+  }
+  Wire.endTransmission();
+}
+
+// EEPROM's are sometimes slow at doing page writes etc (thank you, ChatGPT)
+void natI2CmasterWWait () {
+  Word addr=pop();  
+  while (true) {
+    Wire.beginTransmission((int) addr);
+    uint8_t err = Wire.endTransmission();
+    if (err == 0) break;  // ACK received
+    delay(1);            // Small delay to avoid hammering the bus
+  }
+}
+
+// (recvBufPtr addr -- )
+// reads length from buffer, attempts to read that many bytes
+// updates buffer length when done, with actual read count
+void natI2CmasterRead() {
+  Word addr=pop();
+  Word recvBuf=pop();
+  // desired count
+  Word count=readByte(recvBuf);
+
+  Wire.requestFrom((int) addr, (int) count);
+  Word i=0;
+  while (i<count && Wire.available()) {
+    byte b = Wire.read();
+    writeByte(recvBuf+i+1, b);
+    i++;
+  }
+  writeByte(recvBuf,count);
+}
+
+
+
 
 
 // Check if string in opNames PROGMEM array starting at pos matches the given string
