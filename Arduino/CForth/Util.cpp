@@ -7,6 +7,10 @@ void printChar (Byte ch) {
   temp[0]=ch;
   temp[1]='\0';
   sPrint(temp);
+
+# ifdef MONITOR_C_STACK
+  checkCStackSize();
+# endif
 }
 
 void printStr (Word ptr) {

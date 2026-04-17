@@ -1,6 +1,6 @@
 #include <string.h>
 
-// #define MONITOR_C_STACK
+#define MONITOR_C_STACK
 
 typedef unsigned int Word;
 typedef unsigned char Byte;
@@ -18,12 +18,20 @@ typedef struct {
 #define CODE_SEGMENT_SIZE     400
 #define DATA_SEGMENT_SIZE     800
 
-// value for top two bits of word address in dictionary entry
+// dictionary entry types
 #define DE_TYPE_NORMAL      0
 #define DE_TYPE_IMMEDIATE   1
 #define DE_TYPE_CONSTANT    2
 
 typedef Byte Boolean;
+
+#define NUM_TAGS_REFS     5
+  // Colon compiler supports tags for loops and conditionals, combined with jmp and jmp?
+  //
+  // Define tags as "/0" to "/4" and resolve them into addresses using "&0" to "&4", before jmp or jmp?
+  // This number is the total allowed tags and references within the main body of a colon word. Since we
+  // don't have immediate op-codes, IF and loops must be implemented in Forth.
+
 
 #define OP_BVAL  2
 #define OP_CVAL  3

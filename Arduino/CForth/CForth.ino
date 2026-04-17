@@ -356,8 +356,6 @@ void create () {
 // opcode implemenations
 // -------
 
-#define NUM_TAGS_REFS     5
-  // 0-4
 
 Boolean getTagNumber (char *ptr, int *tag) {
   if (*ptr == '\0') return false;
@@ -380,11 +378,11 @@ struct Ref {
   Word addr;
 };
 
+static Word tags[NUM_TAGS_REFS]; 
+static struct Ref refs[NUM_TAGS_REFS];
 
 
 void op_colon() {  
-  Word tags[NUM_TAGS_REFS]; 
-  struct Ref refs[NUM_TAGS_REFS];
 
   for (int i=0; i<NUM_TAGS_REFS; i++) {
     tags[i]=0;
