@@ -186,12 +186,14 @@ Still leaving 287 bytes of room for stack, which should be plenty!
 ----------
 Added printOpNameByPos(), calling it from op_dis(), so disassemler now works fully again.
 
+Also added native functions as ops into CForth
+
 NEXT: make the 8-second sleep into an op, then take plugin code from RForth and make into ops.
 
  
 OpCodes
 -------
-See Words CFT script 
+See ops.txt in this directory 
 
 
 Tags
@@ -227,10 +229,6 @@ Todo
 - Rig to use 8 MHz always, regardless of external crystal being 16Mhz (Fuse CKDIV8 + dynamic CKDIV 2).
 	(Detect on some pin in 8MHz harness)
 	
-- Eliminate use of sprintf - potential stack memory thief
-
-- Move opCodes content to text format, and generate PROGMEM arrays. Should save approx 500 Bytes of RAM.
-
 - consider Frame stack, as in RForth v3 for local variables
 
 - create the NATIVE functions as regular opCodes, instead of the NATIVE stuff. Tag them
