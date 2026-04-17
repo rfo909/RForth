@@ -354,6 +354,30 @@ void memCodeExport() {
   sPrintln();
 }
 
+void showFreeMem() {
+  int c=CODE_SEGMENT_SIZE-codeNext+staticCodeBytes;
+  int d=DATA_SEGMENT_SIZE-dataNext;
+  sPrintln();
+  sPrint("code");
+  sPrint(":");
+  sPrint(" ");
+  sPrintWord(c);
+  sPrint(" ");
+  sPrint("of");
+  sPrint(" ");
+  sPrintWord(CODE_SEGMENT_SIZE);
+  sPrintln();
+  sPrint("data");
+  sPrint(":");
+  sPrint(" ");
+  sPrintWord(d);
+  sPrint(" ");
+  sPrint("of");
+  sPrint(" ");
+  sPrintWord(DATA_SEGMENT_SIZE);
+  sPrintln();
+}
+
 
 
 // For executing code, less checks

@@ -230,11 +230,6 @@ Todo
 	(Detect on some pin in 8MHz harness)
 	
 - consider Frame stack, as in RForth v3 for local variables
-
-- create the NATIVE functions as regular opCodes, instead of the NATIVE stuff. Tag them
-  with #ifdef ATMEGA328p
   
-- also save dataSegment content? onboard EEPROM?
-
 - Autorun-mechanism with option of physical override
 

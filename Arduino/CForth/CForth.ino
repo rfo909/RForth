@@ -707,7 +707,7 @@ void op_word_addr() {
 
 // --------------------------------------------------------------------------------
 
-const Byte numOps=86;
+const Byte numOps=87;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -780,7 +780,8 @@ step \
 dis \
 ops \
 delay \
-delay_us \
+delay-us \
+free-mem \
 Pin.modeOut \
 Pin.modeIn \
 Pin.modeInPullup \
@@ -872,6 +873,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_ops
 ,&op_delay
 ,&op_delay_us
+,&op_free_mem
 ,&natPinModeOut
 ,&natPinModeIn
 ,&natPinModeInPullup
@@ -893,10 +895,10 @@ static const PROGMEM FUNC opFunctions[]={
 
 
 
-
 void op_ops() {
   Byte length=0;
   Word i=0;
+  sPrintln();
   for(;;) {
     Byte ch=pgm_read_byte(opNames+i);
     if (ch==0) {Serial.println(); return;}
@@ -1038,6 +1040,10 @@ void op_delay() {
 void op_delay_us() {
   Word us=pop();
   delayMicroseconds(us);
+}
+
+void op_free_mem() {
+  showFreeMem();
 }
 
 
