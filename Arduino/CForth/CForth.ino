@@ -969,7 +969,7 @@ void op_dis() {
     }
   
     // op = opcode 
-    //Serial.print(opCodes[op].name);
+    printOpNameByPos(op);
     if (op==OP_BVAL) {
       Word val=readByte(addr+1);
       Serial.print(" ");
@@ -1007,7 +1007,24 @@ static boolean opNameMatch (Word pos, char *s) {
   return (ch==32 || ch==0);
 }
 
+// used by disassembler
+void printOpNameByPos(Byte op) {
+  Word pos=0;
+  while (op>0) {
+    pos=opSkipWord(pos);
+    op--;
+  }
+  for(;;) {
+    Byte ch=pgm_read_byte(&(opNames[pos]));
+    if (ch==32 || ch==0) return;
+    printChar(ch);
+    pos++;
+  }
+}
 
+
+
+   
 
 
 Word opSkipWord (Word pos) {

@@ -182,6 +182,12 @@ This allowed me to change from 400 code + 50 data bytes to
 
 Still leaving 287 bytes of room for stack, which should be plenty!
 
+2026-05-17
+----------
+Added printOpNameByPos(), calling it from op_dis(), so disassemler now works fully again.
+
+NEXT: make the 8-second sleep into an op, then take plugin code from RForth and make into ops.
+
  
 OpCodes
 -------
