@@ -40,7 +40,7 @@ cr
 .hex                     
 emit                     print single character
 .str                     print Forth string
-code.HERE                address of next byte in codeSegment
+code.next                address of next byte in codeSegment
 comp.next                address of next byte - when compiling
 comp.out                 add byte - when compiling
 HERE                     address of next byte in dataSegment

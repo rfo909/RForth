@@ -8,7 +8,6 @@
 //
 // To reset, set size=3 and data {255, 0, 0}
 
-
 static Word size=348;
 
 static const PROGMEM Byte dataSegmentStatic[]={
@@ -32,7 +31,6 @@ static const PROGMEM Byte dataSegmentStatic[]={
   ,59,0,1,74,1,47,18,48,48,47,15,20,2,2,53,49,46,49,51,48
   ,47,20,49,46,4
 };
-
 
 
 

@@ -636,7 +636,7 @@ void op_dot_hex() {Word x=pop(); Serial.print("0x"); Serial.print(x,16); Serial.
 void op_emit() {Word x=pop(); char c=(x&0xFF); Serial.print(c);}
 void op_dot_str() {Word addr=pop(); printStr(addr); }
 
-void op_code_here() {Word addr=generateCodeAddress(getCodeNext()); push(addr);}
+void op_code_next() {Word addr=generateCodeAddress(getCodeNext()); push(addr);}
 void op_comp_next() {Word addr=generateCodeAddress(getCompileNext()); push(addr);}
 void op_comp_out() {Word x=pop(); compileOut(x & 0xFF);}
 
@@ -833,7 +833,7 @@ cr \
 .hex \
 emit \
 .str \
-code.HERE \
+code.next \
 comp.next \
 comp.out \
 HERE \
@@ -926,7 +926,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_dot_hex
 ,&op_emit
 ,&op_dot_str
-,&op_code_here
+,&op_code_next
 ,&op_comp_next
 ,&op_comp_out
 ,&op_HERE
@@ -978,6 +978,7 @@ static const PROGMEM FUNC opFunctions[]={
 };
 
 // --------------------------------------------------------------------------------
+
 
 
 

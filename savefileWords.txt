@@ -73,7 +73,7 @@ cr           &op_cr
 emit         &op_emit                           print single character
 .str         &op_dot_str                        print Forth string
              
-code.HERE    &op_code_here                      address of next byte in codeSegment
+code.next    &op_code_next                      address of next byte in codeSegment
 comp.next    &op_comp_next                      address of next byte - when compiling
 comp.out     &op_comp_out                       add byte - when compiling
 HERE         &op_HERE                           address of next byte in dataSegment
@@ -149,7 +149,7 @@ I2C.masterRead &natI2CmasterRead                (buf addr --) available length i
 		out(SymDict(name,addr,parts))
 /GetData
 
-
+here
 # Get names as string separated by space
 # --
 	GetData->dict out(dict.name) | _.concat(" ")
