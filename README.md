@@ -79,25 +79,27 @@ were quickly the standard.
 In v4, compiled code works as follows:
 
 - if a byte has high bit == 0, then it is a built-in "op", implemented in C
-- otherwise, if high bit == 1, we strip that bit, get another byte from the code, which
-  together forms a *15 bit* address, which is then called. The high bit is called the CALL_BIT.
+- the high bit is named the CALL_BIT
 - the second highest bit is used to separate between the code segment (0) and data
-  segment (1). The second highest bit is called the DATA_BIT-
+  segment (1). The second highest bit is called the DATA_BIT
+- having the databit set for a CALL is an error
+- After detecting a call, the following byte is combined with six lower bits of the first byte
+  forming a *14 bit* address into the code segment.
   
+
 This means the address range in v4 is 32Kb divided equally into 16Kb of code and 16Kb of
-data.
+data (2 x 14 bits).
 
-The call instruction is implicit, represented by the high bit. For dynamic calls picking up
-an address from the stack, there is the "DCALL" op. 
+The call instruction is therefor implicit, represented by that single high bit. For dynamic
+calls picking up an address from the stack, there is the "DCALL" op. 
 
-When we call the HERE word, it returns 16384 + n, where n is the number of bytes of data
-that have been reserved. Initially that is two, because the two first bytes contain the
-dictionary pointer.
+### HERE
 
-The code to put a word on the stack consists of three bytes, the first is the op CVAL (cell
-sized val) followed by two data bytes.
+The HERE word returns 16384 + n, where n is the number of bytes of data that have been
+reserved. On boot, the system reserves two bytes for the dictionary pointer. 
 
-# Language
+
+# Language features
 
 The language implements a data stack and a return stack. It has the >R and R> words to
 temporarily put stuff on the return stack (at your own peril).
@@ -121,8 +123,12 @@ Note that this doesn't print the string. To print a string we use the op
 ```
 
 The implementation of the '"' word illustrates tags, comments in (), code generation,
-using the return stack, and being an immediate word. It generates the op OP_BLOB,
+using the return stack, and the effect of immediate words. It generates the op OP_BLOB,
 followed by number of characters and then the characters.
+
+Since it doesn't know the number of characters in advance, it writes a zero byte, storing
+the address on the return stack, in order to patch in the real count once it is known, after
+finding the corresponding '"' character.
 
 ```
 (ops with fixed byte codes)
