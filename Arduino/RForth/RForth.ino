@@ -22,10 +22,17 @@ void setup() {
   Serial.begin(9600);
   Serial.print(F_CPU / 1000000.0);
   Serial.println(F(" MHz"));
+  Serial.print(F("RAM bytes   ; "));
+  Serial.print(RAMEND-RAMSTART+1);
+  Serial.println();
+  Serial.print(F("Code segment: "));
+  Serial.println(CODE_SEGMENT_SIZE);
+  Serial.print(F("Data segment: "));
+  Serial.println(DATA_SEGMENT_SIZE);
 
   memInit();
-  Serial.println(F("Use '?' to show words and 'ops' to show ops (written in C)"));
-
+  Serial.println();
+  Serial.println(F("Use '?' to show Forth words and 'ops' to show words written in C"));
 
   // copy Dictionary Header pointer from static data segment lower two bytes to RAM
   // (note address 0 in code segment is reserved, so data are in location 1 and 2)

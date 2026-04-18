@@ -1,4 +1,5 @@
-#include <string.h>
+#include <Arduino.h>
+
 
 // #define MONITOR_C_STACK
 
@@ -15,8 +16,10 @@ typedef struct {
 #define DSTACK_SIZE     16
 #define RSTACK_SIZE     16
 
-#define CODE_SEGMENT_SIZE     350
-#define DATA_SEGMENT_SIZE     700
+#define CODE_SEGMENT_SIZE     ((RAMEND - RAMSTART) / 6)
+#define DATA_SEGMENT_SIZE     (RAMEND - RAMSTART - CODE_SEGMENT_SIZE - 830 - 200)
+  // global variables apart from these is around 830 bytes
+  // adjust if problems
 
 // dictionary entry types
 #define DE_TYPE_NORMAL      0

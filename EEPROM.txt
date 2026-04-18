@@ -1,0 +1,217 @@
+
+Arduino Nano Every
+------------------            
+                     USB
+                     |-|
+SCK               o       o          D12/CIPO/MISO
+3V3               o       o          D11/COPI/MOSI
+AREF              o       o          ~D10
+D14/A0            o       o          ~D9 
+D15/A1            o       o          D8
+D16/A2            o       o          D7
+D17/A3            o       o          ~D6
+SDA               o       o          ~D5
+SCL               o       o          D4
+D20/A6            o       o          ~D3
+D21/A7            o       o          D2
+5V                o       o          GND
+RESET             o       o          RESET
+GND               o       o          RX
+VIN               o       o          TX
+
+
+
+ A0                o. u  o           VCC
+ A1                o     o           WP
+ A2                o     o           SCL
+ VSS               o     o           SDA
+(GND)		
+		
+24FC256-I/P EEPROM 32 KBytes
+----------------------------
+		
+Address = 1010 A2 A1 A0 (7 bits)
+WP = write protect, has internal pulldown which means no protect (so NC)
+Hooking A-lines to GND
+
+Created these NATIVE functions
+
+I2C.MasterWrite
+I2C.MasterRead
+
+
+
+
+EEPROM
+------
+Organizing EEPROM as a sequence of blocks, each being a line. Creating the entire
+storage as a long document of text, but with an end marker for how far we have added
+data, in order to pick lines from beyond that point to insert into the code when 
+needed, as well as moving lines there when deleting from the document.
+
+Initialization:
+All lines are initialized as consisting of spaces, and the first two bytes point to the NEXT
+and the third byte contains FLAGS. The remaining 29 characters are filled with spaces.
+
+The ROOT block (0) points to top of document, line 1.
+Then we modify the next-pointer of line N to 0, which marks the end of the document, and
+stores a reference to N+1 in the freelist pointer in ROOT
+
+The FLAGS is a bitmask
+  0 = normal 
+  1 = empty line above
+  2 = empty line below
+  4 = word-def
+  8 = emphasize
+ 
+
+
+The editor needs commands to change the FLAGS of each line.
+
+We edit single words at a time
+
+
+
+: Init (lines--)
+  1 => i
+  BEGIN i 1+ => next
+    next i InitLine
+    i 1+ => i
+    i lines lt AGAIN?
+;
+
+
+
+Data structure
+--------------
+Root page at location 0
+
+Linked lists of pages
+Populate all with space (0x20)
+
+Use
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Wire code from ChatGPT
+----------------------
+- Must use external pullups on SDA and SCL (2k or lower for 400 kHz)
+ 
+- Includes timing considerations external to I2C protocol
+
+#include <Wire.h>
+
+#define EEPROM_I2C_ADDR  0x50   // Base address, adjust if A0/A1/A2 pins are tied differently
+#define EEPROM_PAGE_SIZE 64     // Typical for 24LC256, check your datasheet
+
+// Waits until the EEPROM acknowledges, meaning its internal write cycle is done
+void eeprom_wait_for_write_complete() {
+  while (true) {
+    Wire.beginTransmission(EEPROM_I2C_ADDR);
+    uint8_t err = Wire.endTransmission();
+    if (err == 0) break;  // ACK received
+    delay(1);            // Small delay to avoid hammering the bus
+  }
+}
+
+// Writes a single byte to the EEPROM
+void eeprom_write_byte(uint16_t addr, uint8_t value) {
+  Wire.beginTransmission(EEPROM_I2C_ADDR);
+  Wire.write((addr >> 8) & 0xFF);   // High address byte
+  Wire.write(addr & 0xFF);          // Low address byte
+  Wire.write(value);
+  Wire.endTransmission();
+
+  eeprom_wait_for_write_complete();
+}
+
+// Reads a single byte from the EEPROM
+uint8_t eeprom_read_byte(uint16_t addr) {
+  Wire.beginTransmission(EEPROM_I2C_ADDR);
+  Wire.write((addr >> 8) & 0xFF);
+  Wire.write(addr & 0xFF);
+  Wire.endTransmission();
+
+  Wire.requestFrom(EEPROM_I2C_ADDR, 1);
+  if (Wire.available()) {
+    return Wire.read();
+  }
+  return 0xFF;  // default if nothing returned
+}
+
+// Writes up to 'length' bytes starting at 'addr'.
+// Automatically splits across page boundaries if needed.
+void eeprom_write_buffer(uint16_t addr, const uint8_t *buffer, size_t length) {
+  while (length > 0) {
+    uint16_t pageOffset = addr % EEPROM_PAGE_SIZE;
+    uint16_t spaceInPage = EEPROM_PAGE_SIZE - pageOffset;
+    uint16_t bytesThisPage = (length < spaceInPage) ? length : spaceInPage;
+
+    Wire.beginTransmission(EEPROM_I2C_ADDR);
+    Wire.write((addr >> 8) & 0xFF);
+    Wire.write(addr & 0xFF);
+    Wire.write(buffer, bytesThisPage);
+    Wire.endTransmission();
+
+    eeprom_wait_for_write_complete();
+
+    addr   += bytesThisPage;
+    buffer += bytesThisPage;
+    length -= bytesThisPage;
+  }
+}
+
+// Reads 'length' bytes starting at 'addr' into 'buffer'
+void eeprom_read_buffer(uint16_t addr, uint8_t *buffer, size_t length) {
+  Wire.beginTransmission(EEPROM_I2C_ADDR);
+  Wire.write((addr >> 8) & 0xFF);
+  Wire.write(addr & 0xFF);
+  Wire.endTransmission();
+
+  Wire.requestFrom(EEPROM_I2C_ADDR, (uint8_t)length);
+  size_t i = 0;
+  while (Wire.available() && i < length) {
+    buffer[i++] = Wire.read();
+  }
+}
+
+void setup() {
+  Wire.begin();
+  Serial.begin(115200);
+  delay(100);
+
+  // Example: write a string to EEPROM
+  const char msg[] = "Hello EEPROM!";
+  eeprom_write_buffer(0x0000, (const uint8_t*)msg, sizeof(msg));
+
+  // Read it back
+  char buf[sizeof(msg)] = {0};
+  eeprom_read_buffer(0x0000, (uint8_t*)buf, sizeof(buf));
+  Serial.print("Read back: ");
+  Serial.println(buf);
+}
+
+void loop() {
+  // nothing
+}
+
+

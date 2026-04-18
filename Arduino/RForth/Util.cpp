@@ -1,3 +1,4 @@
+
 #include "Constants.h"
 
 static char temp[10];
@@ -104,7 +105,7 @@ Boolean myAtoi (char *nextWord, int *target) {
 static Word maxStackSize=0;
 void checkCStackSize() {
   volatile Byte b=0;
-  Word val=0x08FF - (Word) &b;
+  Word val=RAMEND - (Word) &b;
   if (val>maxStackSize) maxStackSize=val;
 }
 
