@@ -38,14 +38,15 @@ I also have not (yet?) implemented local variables.
 
 While other CPU's like the 4809 (Nano Every) look good on paper, with more 
 peripherals, more RAM and more Flash, the good old atmega328p has one major
-advantage: power consumption.
+advantage: proper deep sleep.
 
-The power consumed while running is one thing, but for solar powered applications,
+The power consumed while running is one thing, but for solar/battery powered applications,
 it is vital that there is a deep sleep mode that runs on micro-amperes, not just
 milli-amps.
 
 The atmega328p running at 5V sleeps around 5-7 uA, for 8 seconds at a time, using
-the watchdog timer to wake up.
+the watchdog timer to wake up. 
+
 
 ### Code vs data segments
 
@@ -53,16 +54,21 @@ The code segment is a mix of bytes stored in Flash, and bytes in RAM, while the
 data segment only exists in RAM.
 
 The code segment contains compiled words, and constants, and the dictionary
-structure. The data segment initially contains 2 bytes pointing to
+structure. 
+
+The data segment initially contains 2 bytes pointing to
 the top dictionary element.
 
 See Dev.md for details.
 
-### Word calling / memory model
+### Calling words / Memory model
 
 To maximize functionality in a memory starved environment, plus also
-managing without local variables, points to creating short words that call each
-other frequently. 
+managing without local variables, means creating short words that call each other. This 
+means calling words should be as efficient as possible.
+
+The first design idea was using a single byte, allowing up to 127 words, but that felt
+restrictive, as the plans for putting compiled Forth words into Flash matured. 
 
 In v3, calling a word would frequently require 4 bytes of code, each a separate
 byte code, which meant doing a C call, and working the stack (more calls). Three bytes to
@@ -79,11 +85,17 @@ In v4, compiled code works as follows:
   segment (1). The second highest bit is called the DATA_BIT-
   
 This means the address range in v4 is 32Kb divided equally into 16Kb of code and 16Kb of
-data. 
+data.
+
+The call instruction is implicit, represented by the high bit. For dynamic calls picking up
+an address from the stack, there is the "DCALL" op. 
 
 When we call the HERE word, it returns 16384 + n, where n is the number of bytes of data
 that have been reserved. Initially that is two, because the two first bytes contain the
 dictionary pointer.
+
+The code to put a word on the stack consists of three bytes, the first is the op CVAL (cell
+sized val) followed by two data bytes.
 
 # Language
 
@@ -94,21 +106,23 @@ The colon compiler supports up to 5 tag defs and/or up to 5 tag references. Thes
 basic support for both loops and conditionals.
 
 There is no support for "immediate" ops, only Forth words can be immediate. So in order
-to support string literals, the word '"' (double quote) is written in Forth. It creates
-a string up to 255 characters long. It can only be used in compiled words:
+to support string literals, and without implementing special code in C, the word '"' 
+(double quote) is written in Forth. It creates a string up to 255 characters long. It
+can only be used in compiled words:
 
 ```
 : welcome " this is a welcome string" ;
 ```
 
-Note that this doesn't print the string. To print a string we use the word
+Note that this doesn't print the string. To print a string we use the op
 
 ```
 .str
 ```
 
 The implementation of the '"' word illustrates tags, comments in (), code generation,
-using the return stack, and being an immediate word.
+using the return stack, and being an immediate word. It generates the op OP_BLOB,
+followed by number of characters and then the characters.
 
 ```
 (ops with fixed byte codes)
@@ -160,19 +174,26 @@ The "comp.next" op points to the next byte in code space while compiling. The
 compiler writes to unallocated memory (past code.next), while compiling. The
 "comp.out" op adds a single byte to the output.
 
+The /0 and /2 are tags, and the &0 and &2 are the lookups. Tags are resolved both
+forward and backward, supporting forward jumps, as in this example when 
+matching quote found.
+
 
 # Code in Flash
 
-After having developed words like the one above, and ensured it works, I reset the
-mcu, and feed only that word into it. I then call the special op:
+After having developed words we like to keep, we can call the special op:
 
 ```
 code.export
 ```
 
-This generates C code to paste into the Static.cpp source file. 
+This generates C code to paste into the Static.cpp source file.
 
-Recompiling, the data exported now get stored in Flash (PROGMEM).
+Note that it will include test words, so usually after testing, we reset the mcu, 
+and re-enter the code (I use slow-send script to read from file), then make a clean export. 
+
+After pasting the code into the cpp-file, and recompiling, the words that previously
+only lived in RAM, no are stored in Flash (PROGMEM).
 
 The "code.export" op includes what was previously stored in Flash, combined with
 new content in the code segment (up to code.next), and handles storing the
@@ -180,4 +201,31 @@ dictionary pointer in the exported data as well.
 
 On boot, the dictionary pointer is read from the Flash location (bytes 1 and 2) and
 copied into the data segment, so we can create new words as expected.
+
+# NOTES / TODO
+
+## code.export
+
+In order to keep the design simple, the code.export op only exports bytes from the
+code segment, and no copy of data from RAM (data segment). 
+
+This means that Forth words to be stored in Flash can not create variables or allot
+data memory.
+
+## Autorun
+
+The way to define an autorun, as well as how to block it, hasn't been decided yet. Presumably
+a special word, such as Main may be autorun, and pulling some pin high or low may enter
+interactive mode.
+
+## Clock frequency
+
+The Arduino Uno as well as the original Nano, run at 16 MHz, but I intend to clock it down
+to 8 MHz, and at boot time, via some pin inform the CPU what crystal it is currently
+running off. Using CLKDIV bits (fuses and dynamically) means we can run at 8 MHz even
+on a 16 MHz crystal, and have all timings be correct.
+
+This is important, in order to continue using the Uno R3 for programming the chips, which has
+the 16 MHz crystal, before moving the bare atmega328p into a separate harness with a crystal
+and some power source, now with the option of running at either 5V or 3.3V.
 
