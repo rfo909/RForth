@@ -13,7 +13,7 @@ typedef struct {
 
 #define  NULL ((void *) 0)
 
-#define DSTACK_SIZE     16
+#define DSTACK_SIZE     24    // Increasing from 16 to handle double length values: float and long
 #define RSTACK_SIZE     16
 
 #define CODE_SEGMENT_SIZE     ((RAMEND - RAMSTART) / 6)

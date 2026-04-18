@@ -1,4 +1,5 @@
 #include <avr/pgmspace.h>
+#include <math.h>
 #include "Constants.h"
 
 #include <Wire.h>
@@ -816,7 +817,7 @@ void op_word_addr() {
 
 // --------------------------------------------------------------------------------
 
-const Byte numOps=88;
+const Byte numOps=94;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -907,6 +908,12 @@ EE.read \
 I2C.masterWrite \
 I2C.masterWWait \
 I2C.masterRead \
+>F \
+F> \
+F+ \
+F- \
+F* \
+F/ \
 ";
 
 typedef void (*FUNC)();
@@ -1000,10 +1007,15 @@ static const PROGMEM FUNC opFunctions[]={
 ,&natI2CmasterWrite
 ,&natI2CmasterWWait
 ,&natI2CmasterRead
+,&op_to_f
+,&op_from_f
+,&op_f_add
+,&op_f_sub
+,&op_f_mul
+,&op_f_div
 };
 
 // --------------------------------------------------------------------------------
-
 
 
 
@@ -1306,6 +1318,59 @@ void natI2CmasterRead() {
   writeByte(recvBuf,count);
 }
 
+// -----------------------------------------
+// Floats
+// -----------------------------------------
+
+void pushFloat (float f) {
+  Word *ptr=(Word *) &f;
+  push(ptr[0]);
+  push(ptr[1]);
+}
+
+float popFloat () {
+  float f=0;
+  Word *ptr=(Word *) &f;
+  ptr[1]=pop();
+  ptr[0]=pop();
+  return f;
+}
+
+void op_to_f () {
+  Word val=pop();
+  float f=(float) val;
+  pushFloat(f);
+}
+
+void op_from_f () {
+  float f=popFloat();
+  f=round(f);
+  push((Word) f);
+}
+
+void op_f_add () {
+  float b=popFloat();
+  float a=popFloat();
+  pushFloat(a+b);
+}
+
+void op_f_sub () {
+  float b=popFloat();
+  float a=popFloat();
+  pushFloat(a-b);
+}
+
+void op_f_mul () {
+  float b=popFloat();
+  float a=popFloat();
+  pushFloat(a*b);
+}
+
+void op_f_div () {
+  float b=popFloat();
+  float a=popFloat();
+  pushFloat(a/b);
+}
 
 
 

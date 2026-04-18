@@ -133,6 +133,12 @@ I2C.masterWrite &natI2CmasterWrite              (sendBufPtr sendCount addr --)
 I2C.masterWWait &natI2CmasterWWait              (--) EEPROM's are sometimes slow at doing page writes
 I2C.masterRead &natI2CmasterRead                (buf addr --) available length in buffer byte 0
 
+>F           &op_to_f                           (word -- float)
+F>           &op_from_f                         (float -- word)
+F+           &op_f_add                          (float float -- float)
+F-           &op_f_sub
+F*           &op_f_mul
+F/           &op_f_div
     
 >>>> EOF
 /Data
