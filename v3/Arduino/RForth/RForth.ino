@@ -1,0 +1,1460 @@
+#include <Wire.h>
+#include <EEPROM.h>
+
+#include "Constants.h"
+#include "Firmware.h"
+
+Word dStack[DSTACK_SIZE];
+byte dStackNext=0;
+
+Word cStack[CSTACK_SIZE];
+byte cStackNext=0;
+
+Word fStack[FSTACK_SIZE];
+byte fStackNext=0;
+
+unsigned long timers[TIMER_COUNT];
+
+// opCode array of function pointers
+void op_mod();
+void op_and();
+void op_mul();
+void op_add();
+void op_sub();
+void op_div();
+void op_PANIC();
+void op_atoi();
+void op_n2code();
+void op_rget();
+void op_rset();
+void op_rfwd_opt();
+void op_rback_opt();
+void op_lt();
+void op_eq();
+void op_gt();
+void op_crget();
+void op_streq();
+void op_dot_str();
+void op_memcpy();
+void op_ge();
+void op_le();
+void op_readb();
+void op_writeb();
+void op_read();
+void op_write();
+void op_allot();
+void op_printb();
+void op_dcall();
+void op_cpush();
+void op_PC();
+void op_call();
+void op_ret();
+void op_jmp();
+void op_jmp_optional();
+void op_printc();
+void op_print();
+void op_cr();
+void op_print_decimal_unsigned();
+void op_halt();
+void op_u2spc();
+void op_native();
+void op_print_decimal_signed();
+void op_nativec();
+void op_1_plus();
+void op_HERE();
+void op_ne();
+void op_not();
+void op_drop();
+void op_cellsize();
+void op_dup();
+void op_swap();
+void op_CELL_plus();
+void op_over();
+void op_dump();
+void op_andb();
+void op_orb();
+void op_inv();
+void op_shift_left();
+void op_shift_right();
+void op_readc();
+void op_clear();
+void op_key();
+void op_null();
+void op_or();
+
+
+const void (*ops[128]) () = {
+  0,                             /* 0 */
+  0,                             /* 1 */
+  0,                             /* 2 */
+  0,                             /* 3 */
+  0,                             /* 4 */
+  0,                             /* 5 */
+  0,                             /* 6 */
+  0,                             /* 7 */
+  0,                             /* 8 */
+  0,                             /* 9 */
+  0,                             /* 10 */
+  0,                             /* 11 */
+  0,                             /* 12 */
+  0,                             /* 13 */
+  0,                             /* 14 */
+  0,                             /* 15 */
+  0,                             /* 16 */
+  0,                             /* 17 */
+  0,                             /* 18 */
+  0,                             /* 19 */
+  0,                             /* 20 */
+  0,                             /* 21 */
+  0,                             /* 22 */
+  0,                             /* 23 */
+  0,                             /* 24 */
+  0,                             /* 25 */
+  0,                             /* 26 */
+  0,                             /* 27 */
+  0,                             /* 28 */
+  0,                             /* 29 */
+  0,                             /* 30 */
+  0,                             /* 31 */
+  0,                             /* 32 */
+  0,                             /* 33 */
+  0,                             /* 34 */
+  0,                             /* 35 */
+  0,                             /* 36 */
+  &op_mod,                       /* 37 */
+  &op_and,                       /* 38 */
+  0,                             /* 39 */
+  0,                             /* 40 */
+  0,                             /* 41 */
+  &op_mul,                       /* 42 */
+  &op_add,                       /* 43 */
+  0,                             /* 44 */
+  &op_sub,                       /* 45 */
+  0,                             /* 46 */
+  &op_div,                       /* 47 */
+  &op_PANIC,                     /* 48 */
+  &op_atoi,                      /* 49 */
+  &op_n2code,                    /* 50 */
+  &op_rget,                      /* 51 */
+  &op_rset,                      /* 52 */
+  0,                             /* 53 */
+  &op_rfwd_opt,                  /* 54 */
+  &op_rback_opt,                 /* 55 */
+  0,                             /* 56 */
+  0,                             /* 57 */
+  0,                             /* 58 */
+  0,                             /* 59 */
+  &op_lt,                        /* 60 */
+  &op_eq,                        /* 61 */
+  &op_gt,                        /* 62 */
+  0,                             /* 63 */
+  0,                             /* 64 */
+  &op_crget,                     /* 65 */
+  &op_streq,                     /* 66 */
+  &op_dot_str,                   /* 67 */
+  &op_memcpy,                    /* 68 */
+  &op_ge,                        /* 69 */
+  &op_le,                        /* 70 */
+  &op_readb,                     /* 71 */
+  &op_writeb,                    /* 72 */
+  &op_read,                      /* 73 */
+  &op_write,                     /* 74 */
+  &op_allot,                     /* 75 */
+  &op_printb,                    /* 76 */
+  &op_dcall,                     /* 77 */
+  0,                             /* 78 */
+  &op_cpush,                     /* 79 */
+  &op_PC,                        /* 80 */
+  &op_call,                      /* 81 */
+  &op_ret,                       /* 82 */
+  &op_jmp,                       /* 83 */
+  &op_jmp_optional,              /* 84 */
+  &op_printc,                    /* 85 */
+  0,                             /* 86 */
+  &op_print,                     /* 87 */
+  &op_cr,                        /* 88 */
+  &op_print_decimal_unsigned,    /* 89 */
+  &op_halt,                      /* 90 */
+  0,                             /* 91 */
+  0,                             /* 92 */
+  0,                             /* 93 */
+  0,                             /* 94 */
+  &op_u2spc,                     /* 95 */
+  0,                             /* 96 */
+  &op_native,                    /* 97 */
+  &op_print_decimal_signed,      /* 98 */
+  &op_nativec,                   /* 99 */
+  &op_1_plus,                    /* 100 */
+  0,                             /* 101 */
+  0,                             /* 102 */
+  &op_HERE,                      /* 103 */
+  &op_ne,                        /* 104 */
+  &op_not,                       /* 105 */
+  &op_drop,                      /* 106 */
+  &op_cellsize,                  /* 107 */
+  &op_dup,                       /* 108 */
+  &op_swap,                      /* 109 */
+  &op_CELL_plus,                 /* 110 */
+  &op_over,                      /* 111 */
+  &op_dump,                      /* 112 */
+  &op_andb,                      /* 113 */
+  &op_orb,                       /* 114 */
+  &op_inv,                       /* 115 */
+  &op_shift_left,                /* 116 */
+  &op_shift_right,               /* 117 */
+  &op_readc,                     /* 118 */
+  &op_clear,                     /* 119 */
+  &op_key,                       /* 120 */
+  0,                             /* 121 */
+  &op_null,                      /* 122 */
+  0,                             /* 123 */
+  &op_or,                        /* 124 */
+  0,                             /* 125 */
+  0,                             /* 126 */
+  0                              /* 127 */
+};
+
+char temp[10];
+
+// ------
+
+byte hasError=0;
+
+// ------
+// Memory handling: need to duplicate "firmware" memory from the PROTECT tag, into RAM, updating 
+// initial HERE value accordingly. For references below the PROTECT tag, we refer
+// to the "firmware" flash buffer, and for values above, we subtract the PROTECT tag value
+// and work on the "heap" array defined below.
+//
+// See readByte() function.
+
+byte heap[RAM_SIZE];   // dictionary and data
+
+Word HERE=0;
+Word programCounter=0;
+unsigned long instructionCount=0;
+
+
+void setError (char *msg) {
+  Serial.println();
+  Serial.println(msg);
+  hasError=true;
+}
+
+/* 
+ * To block autorun, connect digital pins 2 and 4
+ */
+int blockAutorun() {
+  pinMode(2,OUTPUT);
+  pinMode(4,INPUT);
+  digitalWrite(2,HIGH);
+  delay(1);
+  int high = (digitalRead(4) == HIGH);
+  digitalWrite(2,LOW);
+  delay(1);
+  int low = (digitalRead(4) == LOW);
+  return high && low;
+}
+
+
+void setup() {
+  Serial.begin(9600);
+
+  Wire.begin();
+  Serial.println();
+  Serial.println(F("RFOrth - an interactive Forth-like language"));
+  Serial.println(F("This program comes with ABSOLUTELY NO WARRANTY."));
+  Serial.println();
+
+  delay(100);
+
+  fpush(0,0);
+  populateRAM();
+  initTimers();
+
+  Serial.println(F("D2 and D4 connected?"));
+  if (blockAutorun()) {
+    Serial.println(F("  YES: blocking autorun!"));    
+    writeByte(autorunDisabled, 1);
+  } else {
+    Serial.println(F("  NO: autorun enabled."));
+  }
+
+  Serial.print(F("(Ready) HERE="));
+  Serial.println(HERE);
+}
+
+void doReset() {
+  dStackNext=0;
+  cStackNext=0;
+  fStackNext=0;
+  fpush(0,0);
+  programCounter=0;
+  hasError=false;
+  Serial.println();
+  Serial.print(F("(Ready) HERE="));
+  Serial.println(HERE);
+
+}
+
+
+
+void populateRAM() {
+  // copy Flash data from PROTECT location into "heap" (SRAM)
+  for (int i=firmwareProtectTag; i<firmwareSize; i++) {
+    heap[i-firmwareProtectTag] = firmware[i];
+  }
+  HERE=firmwareSize;  // see read/write functions calculating offset based on firmwareProtectTag
+}
+
+void loop() {
+  for(;;) {
+    if (hasError) {  
+      Serial.println();
+      showState();
+
+      // got an error situation
+      Serial.print(F("Got ERROR, press ENTER"));
+      clearSerialInputBuffer();
+      readSerialChar();
+
+      doReset();
+      return;
+    }
+    Word pc=programCounter;
+    Word op=readByte(programCounter);
+
+    if (op & 0x80) {
+      // number literal
+      if (op & 0x40) {
+        push(op & 0x3F);
+      } else {
+        Word w=(pop() << 6) | (op & 0x3F);
+        push(w);
+      }
+    } else {
+      // not number literal
+      
+      void (*funcPtr) () = ops[op];
+      
+      if (funcPtr==0) {
+        Serial.print(F("funcPtr is 0, op="));
+        Serial.println( op);
+        setError("x");
+        return;
+      }
+
+      // call op
+      funcPtr ();
+    }
+
+    if (hasError) return;
+    
+    // increase programcounter, unless this op has modified it
+    if (programCounter==pc) programCounter++;
+
+    instructionCount++;
+  }
+
+}
+
+// ------------------------------------------------------------------------------------------------
+// Memory management: the bytes of the firmware up to the PROTECT tag have addresses starting at 0
+// We copy the data from the firmware array (Flash) from the PROTECT tag to the heap
+// Need to subtract PROTECT tag value from addresses to get heap addresses
+// ------------------------------------------------------------------------------------------------
+
+void writeWord (Word addr, Word value) {
+  writeByte(addr,(value>>8) & 0xFF);
+  writeByte(addr+1,value & 0xFF);
+}
+
+void writeByte (Word addr, Word value) {
+  if (addr < firmwareProtectTag) {
+    Serial.print(F("writeByte: protected memory address 0x"));
+    Serial.println(addr,16);
+    setError("writeByte");
+    return;
+  } else if (addr >= HERE) {
+    Serial.print(F("writeByte: unallocated memory address 0x"));
+    Serial.println(addr,16);
+    setError("writeByte"); 
+    return;
+  }
+  // calculate heap address
+  heap[addr-firmwareProtectTag]=(value & 0xFF);
+}
+
+Word readWord (Word addr) {
+  Word a=readByte(addr);
+  Word b=readByte(addr+1);
+  Word value = a << 8 | b;
+  return value;
+}
+
+Word readByte (Word addr) {
+  if (addr >= HERE) {
+    Serial.print(F("readByte: invalid address 0x"));
+    Serial.println(addr,16);
+    setError("> HERE");
+    return;
+  }
+  if (addr < firmwareProtectTag) {
+    return firmware[addr];
+  } else {
+    // calculate heap address
+    Word pos=addr-firmwareProtectTag;
+    return heap[pos];
+  }
+}
+
+void allot (Word count) {
+  if (HERE-firmwareProtectTag+count >= RAM_SIZE) setError("allot: heap overflow"); else HERE += count;
+}
+
+/* initialize timers */
+void initTimers () {
+	for (Word id=0; id<TIMER_COUNT; id++) {
+		cancelTimer(id);
+	}
+}
+
+/* cancel a timer, by setting it ~25 days into the past */
+void cancelTimer (Word timerId) {
+  if (timerId >= TIMER_COUNT) {
+    Serial.print(F("Invalid timer id, must be 0-"));
+    Serial.println(TIMER_COUNT-1);
+    setError("PANIC");
+  }
+  unsigned long offset=0x7FFFFFFE;
+  unsigned long now=millis();
+  if (now > offset) now=now-offset; else now=now+offset;
+  timers[timerId]=now;
+}
+
+/* Set timer to current time in milliseconds */
+void setTimer (Word timerId) {
+  if (timerId >= TIMER_COUNT) {
+    Serial.print(F("Invalid timer id, must be 0-"));
+    Serial.println(TIMER_COUNT-1);
+    setError("PANIC");
+  }
+  timers[timerId]=millis();
+}
+
+/* Get number of milliseconds since timer was set, capped at 0xFFFF */
+Word getTimer (Word timerId) {
+  if (timerId >= TIMER_COUNT) {
+    Serial.print(F("Invalid timer id, must be 0-"));
+    Serial.println(TIMER_COUNT-1);
+    setError("PANIC");
+  }
+  unsigned long now=millis();
+  unsigned long t=timers[timerId];
+  unsigned long result;
+
+  if (t <= now) {
+    result=now-t;
+  } else {
+    // rollover
+    result=((unsigned long) 0xFFFFFFFE)-t+now;
+  }
+  if (timerId >= FIRST_SEC_TIMER) {
+    result=result/1000;  // millis to seconds
+  }
+  // result is 16 bits only
+  if (result > 0xFFFF) {
+    return 0xFFFF;
+  } else {
+    return (Word) result;
+  }
+
+}
+
+
+
+void op_and () {Word b=pop(); Word a=pop(); push(a != 0 && b != 0);}
+void op_mul () {Word b=pop(); Word a=pop(); push(a*b);}
+void op_add () {Word b=pop(); Word a=pop(); push(a+b);}
+void op_sub () {Word b=pop(); Word a=pop(); push(a-b);}
+void op_div () {Word b=pop(); Word a=pop(); push(a/b);}
+void op_mod () {Word b=pop(); Word a=pop(); push(a%b);}
+void op_PANIC () {setError("PANIC");}
+
+void op_atoi () {Word targetPtr=pop(); Word strPtr=pop(); push(myAtoi(strPtr, targetPtr));}
+void op_n2code () {Word nbytes=pop(); Word addr=pop(); Word num=pop(); push(n2code(num, addr, nbytes)); }
+
+void op_rget () {Word index=pop(); Word base=fpeekBase(); Word value=cStack[base+index]; push(value);}
+void op_rset () {Word index=pop(); Word value=pop(); Word base=fpeekBase(); cStack[base+index]=value;}
+
+void op_rfwd_opt () {Word x=pop(); Word cond=pop(); if(cond) programCounter=programCounter+x;}
+void op_rback_opt () {Word x=pop(); Word cond=pop(); if(cond) programCounter=programCounter-x;}
+void op_lt () {Word b=pop(); Word a=pop(); push(a<b);}
+void op_eq () {Word b=pop(); Word a=pop(); push(a==b);}
+void op_gt () {Word b=pop(); Word a=pop(); push(a>b);}
+void op_crget() {push(callReturnAddrGet());}
+void op_streq () {Word b=pop(); Word a=pop(); push(_streq(a,b));}
+void op_dot_str () {Word ptr=pop(); Word len=readByte(ptr); for (int i=0; i<len; i++) printChar(readByte(ptr+i+1));}
+void op_memcpy () {Word count=pop(); Word target=pop(); Word source=pop(); doMemcpy(source,target,count);}
+void op_ge () {Word b=pop(); Word a=pop(); push(a>=b);}
+void op_le () {Word b=pop(); Word a=pop(); push(a<=b);}
+
+void op_readb () {Word addr=pop(); push(readByte(addr));}
+void op_writeb () {Word addr=pop(); Word value=pop(); writeByte(addr,value);}
+void op_read () {Word addr=pop(); push(readWord(addr));}
+void op_write () {Word addr=pop(); Word value=pop(); writeWord(addr,value);}
+void op_allot () {Word count=pop(); allot(count);}
+
+void op_printb () {Word value=pop(); printBinary(value);}
+void op_printc () {Word ch=pop(); printChar(ch);}
+void op_print () {Word w=pop(); printHex(w);}
+void op_cr () { Serial.println();}
+void op_print_decimal_signed () {Word w=pop(); printSignedDecimal(w);}
+void op_print_decimal_unsigned () {Word w=pop(); printUnsignedDecimal(w);}
+
+void op_cpush () {Word value=pop(); cpush(value);}
+void op_PC () {push(programCounter);}
+void op_call () {Word targetAddr=pop(); Word returnAddr=programCounter+1; callCode(targetAddr, returnAddr);}
+void op_dcall () {Word ptr=pop(); Word targetAddr=readWord(ptr); Word returnAddr=programCounter+1; callCode(targetAddr, returnAddr);}
+
+void op_ret () {returnFromCode();}
+void op_jmp () {programCounter=pop();}
+void op_jmp_optional () {Word addr=pop(); Word cond=pop(); if (cond != 0) programCounter=addr;}
+void op_halt () { Serial.println("Halting"); for(;;) ; }
+void op_u2spc () { Word ptr=pop(); u2spc(ptr); }
+void op_native () { Word pos=pop(); callNative(pos);}
+void op_nativec () { Word strPtr=pop(); push(lookupNative(strPtr));}
+void op_1_plus () {push(pop()+1);}
+void op_HERE () {push(HERE);}
+void op_ne () {Word b=pop(); Word a=pop(); push(a!=b);}
+void op_not () {Word x=pop(); push(!x);}
+void op_drop () {pop();}
+void op_cellsize () {push(CELLSIZE);}
+void op_dup () {Word x=pop(); push(x); push(x);}
+void op_swap () {Word b=pop(); Word a=pop(); push(b); push(a);}
+void op_CELL_plus () {Word x=pop(); push(x+CELLSIZE);}
+void op_over () {Word b=pop(); Word a=pop(); push(a); push(b); push(a);}
+void op_dump () {op_cr(); for (int i=0; i<dStackNext; i++) {Serial.print(dStack[i]); Serial.print(" ");} op_cr();}
+void op_andb () {Word b=pop(); Word a=pop(); push((Word) (a & b));}
+void op_orb () {Word b=pop(); Word a=pop(); push((Word) (a | b));}
+void op_inv () {Word x=pop(); push(~x);}
+void op_shift_left () {Word b=pop(); Word a=pop(); push((Word) (a<<b));}
+void op_shift_right () {Word b=pop(); Word a=pop(); push((Word) (a>>b));}
+void op_readc () {push(readSerialChar());}
+void op_clear () {dStackNext=0;}
+void op_key () {push(keyPressed());}
+void op_null () {push((Word) 0);}
+void op_or () {Word b=pop(); Word a=pop(); push((Word) (a != 0 || b != 0));}
+
+
+
+Word pop() {
+  if (dStackNext > 0) {
+    Word value=dStack[dStackNext-1];
+    dStackNext--;
+    return value;
+  } else {
+    setError("data stack underflow");
+    return WORD_INVALID;
+  }
+}
+
+void push (Word value) {
+  if (dStackNext < DSTACK_SIZE-1) {
+    dStack[dStackNext++]=value;
+  } else {
+    setError("data stack overflow");
+  }
+}
+
+void fpush (Word base, Word size) {
+  if (fStackNext >= FSTACK_SIZE-1) {
+    setError("frame stack overflow");
+  } else {
+    fStack[fStackNext++] = base;
+    fStack[fStackNext++] = size;
+  }
+}
+
+void fpop () {
+    if (fStackNext < 2) {
+      setError("fstack underflow");
+    } else {
+        fStackNext-=2;
+    }
+}
+
+Word fpeekSize () {
+  if (fStackNext < 2) {
+    setError("fstack underflow");
+    return WORD_INVALID;
+  } else {
+    return fStack[fStackNext-1];
+  }
+}
+
+Word fpeekBase () {
+  if (fStackNext < 2) {
+    setError("fstack underflow");
+    return WORD_INVALID;
+  } else {
+    return fStack[fStackNext-2];
+  }
+}
+
+void cpush (Word value) {
+  if (cStackNext >= CSTACK_SIZE) {
+    setError("cStack overflow");
+  } else if (fStackNext < 1) {
+    setError("cpush: fStack underflow");
+  } else {
+    cStack[cStackNext++] = value;
+    // update frame size 
+    Word size=fStack[fStackNext-1];
+    fStack[fStackNext-1]=size+1;
+  }
+}
+
+
+/*
+Enhanced atoi, recognizes decimal, hex (0x...) and binary (b....) and negative, returns boolean 1 or 0 to 
+indicate success or failure. Writes Word to targetPtr (not as code, just as value)
+*/
+Word myAtoi (Word strPtr, Word targetPtr) {
+  int remaining=readByte(strPtr);
+  if (remaining==0) return 0;
+
+  int readPos=strPtr+1; // past length byte
+  int negative=0;
+  if (readByte(readPos)=='-') {
+    negative=true;
+    readPos++;
+    remaining--;
+  }
+
+  int value=0; 
+
+  if (remaining > 2 && readByte(readPos)=='0' && readByte(readPos+1)=='x') {
+    // parsing hex?
+    readPos+=2;
+    remaining -= 2;
+
+    for (int i=0; i<remaining; i++) {
+      char c=(char) readByte(readPos++);
+      if (c>='0' && c <= '9') {
+        value=value*16 + (c-'0');
+      } else if (c>='A' && c<='F') {
+        value=value*16 + (c-'A') + 10;
+      } else if (c>='a' && c<='f') {
+        value=value*16 + (c-'a') + 10;
+      } else {
+        return 0;  // fail
+      }
+    }
+    // ok
+  } else if (remaining > 1 && readByte(readPos)=='b') {
+    // possibly binary?
+    readPos++;
+    remaining--;
+
+    for (int i=0; i<remaining; i++) {
+      char c=(char) readByte(readPos++);
+      if (c>='0' && c <= '1') {
+        value=value*2 + (c-'0');
+      } else {
+        return 0;  // fail
+      }
+    }
+    // ok
+  } else if (remaining > 0) {
+    // parse decimal?
+
+    for (int i=0; i<remaining; i++) {
+      char c=(char) readByte(readPos++);
+      if (c>='0' && c <= '9') {
+        value=value*10 + (c-'0');
+      } else {
+        return 0;  // fail
+      }
+    }
+    // ok
+  } else {
+    // fail
+    return 0;
+  }
+
+  if (negative) value=-value;
+  Word w=(Word) value;  
+  writeWord(targetPtr, w);
+  return 1; // success
+}
+
+
+Word n2code (Word num, Word addr, Word nbytes) {  // returns number of bytes generated
+  Word copy=num>>6;
+  Word requiredByteCount=1;
+  for(;;) {
+    if (copy==0) break;
+    copy=copy >> 6;
+    requiredByteCount++;
+  }
+  if (nbytes != 0 && requiredByteCount > nbytes) {
+    setError("n2code overflow");
+    return WORD_INVALID;
+  }
+  Word zeroBytes=0;
+  if (nbytes != 0 && nbytes > requiredByteCount) {
+    zeroBytes=nbytes - requiredByteCount;
+  }
+
+  Word actualByteCount=requiredByteCount+zeroBytes;
+
+  // write bytes to memory
+  for (Word i=0; i<actualByteCount; i++) {
+    byte b = (i==0 ? 0xC0 : 0x80);  // 11000000 or 10000000  
+    if (i<zeroBytes) {
+      // write b at addr+i
+      writeByte(addr+i, b);
+    } else {
+      // merge in 6 data bits, write to addr+i
+      int remainingBytes=actualByteCount-i-1;
+      int shiftBits=6*remainingBytes;
+      b = b | ((num >> shiftBits) & 0x3F); 
+      writeByte(addr+i, b);
+    }
+  }
+
+  return actualByteCount;
+}
+
+void callCode (Word targetAddr, Word returnAddr) {
+  if (cStackNext >= CSTACK_SIZE-1) {
+    setError("cStack overflow");
+  } else if (fStackNext >= FSTACK_SIZE) {
+    setError("fStack overflow");
+  } else {
+    // push return address
+    cpush(returnAddr);
+    // calculate next frame base
+    Word base=fpeekBase();
+    Word size=fpeekSize();
+    Word newBase=base+size;
+    Word newSize=0;
+    // push frame data on frame stack
+    fpush(newBase, newSize);
+    // update PC
+    programCounter=targetAddr;
+  }
+}
+
+void returnFromCode () {
+  // pop top frame off frame stack
+  fpop();
+ 
+  // calculate location of return address
+
+  cStackNext=fpeekBase() + fpeekSize() - 1;  // -1 to move below the return address
+  if (cStackNext < 0) {
+    setError("cStack underflow");
+    return;
+  } else {
+    programCounter=cStack[cStackNext];  // the return address
+  }
+  Word base=fpeekBase();
+  Word size=fpeekSize()-1;
+  fpop();
+  fpush(base,size);
+}
+
+Word callReturnAddrGet () {
+  Word base=fpeekBase();
+  return cStack[base-1];    
+}
+
+void doMemcpy(Word source, Word target, Word count) {
+  for (int i=0; i<count; i++) {
+    byte b=readByte(source+i);
+    writeByte(target+i,b);
+  }
+}
+
+
+Word _streq (Word a, Word b) {
+  if (readByte(a) != readByte(b)) return 0; // different length
+  byte len=readByte(a);
+  for (Word i=0; i<len; i++) {
+    Word apos=a+1+i;
+    Word bpos=b+1+i;
+    if (readByte(apos) != readByte(bpos)) return 0;
+  }
+  return 1;
+}
+
+void u2spc (Word ptr) {
+  // convert underlines to spaces for string
+  Word len=readByte(ptr);
+  for (int i=0; i<len; i++) {
+    Word b=readByte(ptr+1+i);
+    if (b=='_') {
+      writeByte(ptr+1+i, 32); // space
+    }
+  }
+}
+
+void printSignedDecimal (Word value) {
+  sprintf(temp,"%d", value);
+  Serial.print(temp);
+}
+
+void printUnsignedDecimal (Word value) {
+  sprintf(temp,"%u", value);
+  Serial.print(temp);
+}
+
+void printHex (Word value) {
+  Serial.print("0x");
+  Serial.print(value, HEX);
+}
+
+void printBinary (Word value) {
+  Serial.print(value, BIN);
+}
+
+void printChar (Word ch) {
+  sprintf(temp,"%c", ch);
+  Serial.print(temp);
+}
+
+void printStr (Word ptr) {
+  Word len=readByte(ptr);
+  for (int i=0; i<len; i++) {
+    printChar(readByte(ptr+i+1));
+  }
+}
+
+Word readSerialChar () {
+  for(;;) {
+    int ch=Serial.read();
+    if (ch >= 0) {
+      if (ch==13 || ch==10) {
+        if (READC_ECHO) Serial.println();
+      }  else {
+        if (READC_ECHO) printChar(ch);
+      }
+      return (Word) ch;
+    }
+  }
+}
+
+Word keyPressed() {
+  if (Serial.available()>0) return (Word) Serial.read();
+  return (Word) 0;
+}
+
+void clearSerialInputBuffer() {
+  while (Serial.available()>0) Serial.read();
+}
+
+void showState() {
+  Serial.print("#instr=");
+  Serial.print(instructionCount);
+  Serial.print(" pc=0x");
+  Serial.print(programCounter,16);
+  Serial.print(" HERE=0x");
+  Serial.println(HERE,16);
+
+  Serial.print(" dStack=<");
+  for (int i=0; i<dStackNext; i++) {
+    if (i>0) Serial.print(" ");
+    Serial.print("0x");
+    Serial.print(dStack[i],16);
+  }
+  Serial.println(">");  
+  Serial.print(" fStack=<");
+  for (int i=0; i<fStackNext; i++) {
+    if (i>0) Serial.print(" ");
+    Serial.print("0x");
+    Serial.print(fStack[i],16);
+  }
+  Serial.println(">");
+
+  Serial.print(" cStack=<");
+  for (int i=0; i<cStackNext; i++) {
+    if (i>0) Serial.print(" ");
+    Serial.print("0x");
+    Serial.print(cStack[i],16);
+  }
+  Serial.println(">");
+  Serial.println();
+
+}
+
+
+typedef struct {
+  char *name;
+  void (*f) ();
+  char *info;
+} NativeFunction;
+
+
+// ----------------------------------------------------------------
+// Native functions - use NATIVE name to call
+// ----------------------------------------------------------------
+
+// Doing i2c requires buffers. Since this is a runtime operations, we may use:
+//
+// &CompileBuf - 64 bytes
+// &NextWord - 32 bytes
+//
+// These can be partitioned any way we like and double as scratch memory 
+
+const NativeFunction nativeFunctions[]={
+  {"?",           &natList,                 "( -- ) show list of native functions"},
+
+  {"Sys.Dis",     &natSysDis,               "(addr--) disassemble word"},
+
+  {"Sys.Free",    &natSysFree,              "(--) displays amount of free memory"},  
+  {"Sys.Delay",   &natSysDelay,             "(ms -- ) sleep a number of millis"},
+  {"Sys.DelayUs",   &natSysDelayUs,         "(us -- ) sleep a number of microseconds"},
+  {"Sys.TimerSet",  &natSysTimerSet,        "(timerId --) initiate timer to current time"},
+  {"Sys.TimerGet",  &natSysTimerGet,        "(timerId -- millis) return time since timer set"},
+  {"Sys.TimerCancel", &natSysTimerCancel,   "(timerId --) set timer to expired"},
+
+  {"Sys.EE.Length",   &natSysEELength,      "(-- length) return length of onchip EEPROM"},
+  {"Sys.EE.Write",    &natSysEEWrite ,      "(byte index --) write to onchip EEPROM"},
+  {"Sys.EE.Read",     &natSysEERead,        "(index -- byte) read from onchip EEPROM"},
+  {"Sys.EE.SetAutorun",  &natSysEESetAutorun,   "(codePtr -- ) copy word code to onchip EEPROM for auto run"},
+  {"Sys.EE.GetAutorun",  &natSysEEGetAutorun,   "( -- codePtr) return heap copy of onchip EEPROM autorun code"},
+  {"Sys.EE.ClearAutorun",  &natSysEEClearAutorun,   "( -- ) invalidate autorun, defaulting to single ret op"},
+
+  {"Pin.ModeOut", &natPinModeOut,           "(pin -- ) set pin mode"},
+  {"Pin.ModeIn",  &natPinModeIn,            "(pin -- ) set pin mode"},
+  {"Pin.ModeInPullup",  &natPinModeInPullup,"(pin -- ) set pin mode"},
+  {"Pin.WriteDigital", &natPinWriteDigital, "(value pin --)"},
+  {"Pin.WriteAnalog",  &natPinWriteAnalog,  "(value pin --) value is 0-255"},
+  {"Pin.PulseDigitalMs", &natPinPulseDigitalMs, "(ms value pin -- ) pulse digital pin / milliseconds"},
+  {"Pin.PulseDigitalUs", &natPinPulseDigitalUs, "(us value pin -- ) pulse digital pin / microseconds"},
+  {"Pin.ReadDigital",  &natPinReadDigital,  "(pin -- value) returns 0 or 1"},
+  {"Pin.ReadAnalog",   &natPinReadAnalog,   "(pin -- value) returns 0-1023"},
+
+  {"I2C.masterWrite",       &natI2CmasterWrite,          "(sendBufPtr addr -- ) master write"},
+  {"I2C.masterWWait",   &natI2CmasterWWait,      "(addr -- ) master wait for data write (eeprom) to complete"},
+  {"I2C.masterRead",       &natI2CmasterRead,          "(recvBufPtr addr -- ) master read"},
+  {"I2C.EE.save",       &natEEPromSave,          "(pageSize startPage i2cAddress -- ) save &PROTECT -> HEAP bytes"},
+  {"I2C.EE.verify",       &natEEPromVerify,          "(pageSize startPage i2cAddress -- ) verify after save"},
+  {"I2C.EE.load",       &natEEPromLoad,          "(pageSize startPage i2cAddress -- ) load &PROTECT -> HEAP bytes"},
+
+  {"Util.Itoa",       &natUtilItoa,              "(val base buf -- ) convert int value to string base 10/16"},
+
+  {"SpeedTest.Start",       &natSpeedTestStart,              "(--) stores instruction count"},
+  {"SpeedTest.Stop",       &natSpeedTestStop,              "(--) prints number of instructions per second"},
+  
+
+  {"",0,""} 
+};
+
+
+
+// The nativec (compile) op, looks up the index in the NativeFunctions[] array,
+// sets error flag if not found
+Word lookupNative (Word strPtr) {
+  Word pos=0;
+  for(;;) {
+    if (nativeFunctions[pos].f==0) {
+      // end of list
+      Serial.print(F("Unknown native function "));
+      printStr(strPtr);
+      setError("Native");
+      return WORD_INVALID;
+    }
+    if (mixedStreq(strPtr, nativeFunctions[pos].name)) {
+      return pos;
+    }
+    // not found
+    pos++;
+  }
+}
+
+
+// The native (call) op
+Word callNative (Word pos) {
+  nativeFunctions[pos].f();
+}
+
+
+int mixedStreq (Word strPtr, char *s) {
+  Word len=readByte(strPtr);
+  if (strlen(s) != len) return 0;
+  for (int i=0; i<len; i++) {
+    byte a=readByte(strPtr+i+1);
+    byte b=s[i];
+    if (a != b) return 0;
+  }
+  return 1;
+}
+
+// -------------------------------
+// List native functions
+// -------------------------------
+
+void natList() {
+  // list native words
+  Word pos=0;
+  for(;;) {
+    if (nativeFunctions[pos].f==0) {
+      return pos;  // count
+    }
+
+    Serial.print(nativeFunctions[pos].name);
+    Serial.print("  ");
+    Serial.println(nativeFunctions[pos].info);
+    pos++;
+  }
+
+}
+
+// -------------------------------
+// Sys.*
+// -------------------------------
+
+void natSysDis () {
+  Word addr=pop();
+  Word len=readByte(addr-1);
+  Serial.print("len=");
+  Serial.println(len);
+
+  Word currVal=0;
+
+  for (Word i=0; i<len; i++) {
+    Serial.print(i);
+    Serial.print(" - ");
+    Word byte=readByte(addr+i);
+    Serial.print(byte,16);
+    if (byte & 0x80) {
+      // numeric literal
+      if (byte & 0x40) {
+        Serial.print(" ");
+        currVal = (byte & 0x3F);
+      } else {
+        Serial.print(" -> ");
+        currVal = currVal*64 + (byte & 0x3F);
+      }
+      Serial.print(currVal);
+    } else {
+      // instruction
+      Serial.print(" ");
+
+      Serial.print(iNames[byte]);
+    }
+    Serial.println();
+  }
+}
+
+
+
+void natSysFree () {
+  Word here=HERE-firmwareProtectTag; // actual index in heap
+  Word used=here;
+  Word free=RAM_SIZE-used;
+  long usedPercent=(100*((long)used)/RAM_SIZE);
+  Serial.print(F("Heap: "));
+  Serial.print(RAM_SIZE);
+  Serial.println(F(" bytes"));
+  Serial.print(F("Used: "));
+  Serial.println(used);
+  Serial.print(F("      "));
+  Serial.print(usedPercent);
+  Serial.println(" %");
+  
+  Serial.print(F("Free: "));
+  Serial.println(free);
+}
+
+void natSysDelay() {
+  Word ms=pop();
+  delay(ms);
+}
+
+void natSysDelayUs() {
+  Word us=pop();
+  delayMicroseconds(us);
+}
+
+void natSysTimerSet() { // (timerId --)
+  Word timerId=pop();
+  setTimer(timerId);
+}
+
+void natSysTimerGet() { // (timerId --)
+  Word timerId=pop();
+  push(getTimer(timerId));
+}
+
+void natSysTimerCancel() { // (timerId --)
+  Word timerId=pop();
+  cancelTimer(timerId);
+}
+
+// ----------------
+// Onboard EEPROM
+// ----------------
+
+void natSysEELength () { // ( -- length )
+  push((Word) EEPROM.length());
+}
+
+void natSysEEWrite () { // ( byte index -- ) 
+  Word pos=pop();
+  Word value=pop();
+  EEPROM.write(pos,value);
+}
+
+void natSysEERead () { // ( index -- byte ) 
+  Word pos=pop();
+  push(EEPROM.read(pos));
+}
+
+
+void configEEInit() {
+  if (EEPROM.read(0)==0xCA && EEPROM.read(1)==0xFE && EEPROM.read(2)==0xBA && EEPROM.read(3)==0xBE) {
+    // valid magic, config is ok
+    return;
+  }
+  Serial.println(F("Initializing onchip EEPROM"));
+  EEPROM.write(0,0xCA);
+  EEPROM.write(1,0xFE);
+  EEPROM.write(2,0xBA);
+  EEPROM.write(3,0xBE);
+
+  EEPROM.write(4,2); // 2 bytes of code
+  EEPROM.write(5,0xC0); // literal 0 = address of Main word (0=no address)
+  EEPROM.write(6,0x52); // "ret" 
+}
+
+// System function called on load, should return 0 if nothing found
+// Get the autorun code bytes from onboard EEPROM, and write them to
+// the CompileBuf, then return pointer to copy of code in CompileBuf,
+// which should then get executed. It can not safely load a heap image,
+// because it should write from the SAVESTART tag only.
+Word configEEGetAutorun () {
+  configEEInit();
+  Word count=EEPROM.read(4);
+  Serial.println();
+  Serial.print(F("configEEGetAutorun: Code length = "));
+  Serial.println(count);
+
+  if (count==0) return 0;
+  // got code, now save it to CompileBuf, which is not overwritten at load, so
+  // it's a safe place to run the autorun code
+  Word ptr=compileBuf;
+  writeByte(ptr,count);
+  for (int i=0; i<count; i++) {
+    writeByte(ptr+i+1, EEPROM.read(5+i));
+  }
+
+  return (ptr+1);  // past length byte
+}
+
+Word natSysEEGetAutorun () { // ( -- codePointer )
+  push(configEEGetAutorun());
+}
+
+void natSysEESetAutorun () { // (codePointer -- )
+  configEEInit();
+  Word codePointer=pop();
+  Word len=readByte(codePointer-1);
+  Serial.print(F("Code length = "));
+  Serial.println(len);
+  EEPROM.write(4,len);
+  for (int i=0; i<len; i++) {
+    EEPROM.write(5+i,readByte(codePointer+i));
+  }
+}
+
+void natSysEEClearAutorun () { // (--) clears autorun by corrupting the magic bytes
+  EEPROM.write(0,0);
+}
+
+
+// -------------------------------
+// Pin.*
+// -------------------------------
+
+void natPinModeOut () {
+  Word pin=pop();
+  pinMode(pin, OUTPUT);
+}
+
+void natPinModeIn () {
+  Word pin=pop();
+  pinMode(pin, INPUT);
+}
+
+void natPinModeInPullup () {
+  Word pin=pop();
+  pinMode(pin, INPUT_PULLUP);
+}
+
+void natPinWriteDigital () {
+  Word pin=pop();
+  Word value=pop();
+  digitalWrite(pin,value==0 ? LOW : HIGH);
+}
+
+void natPinWriteAnalog () {
+	Word pin=pop();
+	Word value=pop();
+	analogWrite(pin,value);
+}
+
+void natPinPulseDigitalMs () {
+	Word pin=pop();
+	Word value=pop();
+	Word ms=pop();
+
+	if (value==0) {
+		digitalWrite(pin, LOW);
+		delay(ms);
+		digitalWrite(pin, HIGH);
+	} else {
+		digitalWrite(pin, HIGH);
+		delay(ms);
+		digitalWrite(pin, LOW);
+	}
+}
+
+void natPinPulseDigitalUs () {
+	Word pin=pop();
+	Word value=pop();
+	Word us=pop();
+
+	if (value==0) {
+		digitalWrite(pin, LOW);
+		delayMicroseconds(us);
+		digitalWrite(pin, HIGH);
+	} else {
+		digitalWrite(pin, HIGH);
+		delayMicroseconds(us);
+		digitalWrite(pin, LOW);
+	}
+}
+
+void natPinReadDigital () {
+	Word pin=pop();
+	push(digitalRead(pin));
+}
+
+void natPinReadAnalog () {
+	Word pin=pop();
+	push(analogRead(pin));
+}
+
+// -------------------------------
+// I2C.*
+// -------------------------------
+
+// (sendBufPtr sendCount addr -- )
+void natI2CmasterWrite() {
+  Word addr=pop();
+  Word sendBuf=pop();
+
+  Word sendCount=readByte(sendBuf);
+
+  Wire.beginTransmission((byte) addr);
+  for (byte i=0; i<sendCount; i++) {
+    Wire.write((byte)readByte(sendBuf+i+1));
+  }
+  Wire.endTransmission();
+}
+
+// EEPROM's are sometimes slow at doing page writes etc (thank you, ChatGPT)
+void natI2CmasterWWait () {
+  Word addr=pop();  
+  while (true) {
+    Wire.beginTransmission((int) addr);
+    uint8_t err = Wire.endTransmission();
+    if (err == 0) break;  // ACK received
+    delay(1);            // Small delay to avoid hammering the bus
+  }
+}
+
+// (recvBufPtr addr -- )
+// reads length from buffer, attempts to read that many bytes
+// updates buffer length when done, with actual read count
+void natI2CmasterRead() {
+  Word addr=pop();
+  Word recvBuf=pop();
+  // desired count
+  Word count=readByte(recvBuf);
+
+  Wire.requestFrom((int) addr, (int) count);
+  Word i=0;
+  while (i<count && Wire.available()) {
+    byte b = Wire.read();
+    writeByte(recvBuf+i+1, b);
+    i++;
+  }
+  writeByte(recvBuf,count);
+}
+
+
+void i2c_sendWord (Word w) {
+  byte hi=(byte) ((w >> 8) & 0xFF);
+  byte lo=(byte) (w & 0xFF);
+  Wire.write(hi);
+  Wire.write(lo);
+}
+
+void natEEPromSave () {  // (pageSize startPage i2cAddress -- )
+  Word addr=pop();
+  Word currPage=pop();
+  Word pageSize=pop();
+
+  // first page contains length and the protect tag
+  Serial.print(F("Saving status page at 0x"));
+  Serial.println(pageSize*currPage,16);
+  Wire.beginTransmission((byte) addr);
+  i2c_sendWord(pageSize * currPage);
+  Word length=HERE-heapSaveStart;
+  i2c_sendWord(heapSaveStart);
+  i2c_sendWord(length);
+  Wire.endTransmission();  
+
+  push(addr);
+  natI2CmasterWWait();
+
+  currPage++;
+  for (Word pagePos=heapSaveStart; pagePos<HERE; pagePos+=pageSize) {
+    Serial.print(F("Saving heap to EEPROM page at 0x"));
+    Serial.println(pageSize*currPage,16);
+
+    Wire.beginTransmission((byte) addr);
+    i2c_sendWord(pageSize * currPage); 
+    for (Word i=0; i<pageSize; i++) {
+      Word readPos=pagePos+i;
+      if (readPos < HERE) Wire.write(readByte(readPos));
+    }
+    Wire.endTransmission(); 
+
+    push(addr);
+    natI2CmasterWWait();
+    currPage++;
+  }
+}
+
+Word i2c_readWord () {
+  return (Word) (Wire.read() << 8 | Wire.read());
+}
+
+void natEEPromVerify () {  // (pageSize startPage i2cAddress -- )
+  doNatEEPromLoad(true);
+}
+
+void natEEPromLoad () {  // (pageSize startPage i2cAddress -- )
+  doNatEEPromLoad(false);
+}
+
+void doNatEEPromLoad (bool verifyOnly) {
+  Word addr=pop();
+  Word currPage=pop();
+  Word pageSize=pop();
+
+  // first page contains length and the protect tag
+  //Serial.print(F("Reading status page at 0x"));
+  Serial.println(pageSize*currPage,16);
+  Wire.beginTransmission((byte) addr);
+  i2c_sendWord(pageSize * currPage); 
+  Wire.endTransmission();  
+
+  Wire.requestFrom((int) addr, 4);
+  Word saveStart=i2c_readWord();
+  Word length=i2c_readWord();
+
+  Serial.print(F("Got length="));
+  Serial.println(length);
+
+  if (saveStart != heapSaveStart) {
+    Serial.println(F("Incompatible version (&SAVESTART tag)"));
+    return;
+  }
+
+  // Update HERE
+  HERE = heapSaveStart + length;
+
+  // read pages
+  currPage++;
+  for (Word pagePos=heapSaveStart; pagePos<HERE; pagePos+=pageSize) {
+    //Serial.print(F("Loading heap to EEPROM page at 0x"));
+    //Serial.println(pageSize*currPage,16);
+
+    Wire.beginTransmission((byte) addr);
+    i2c_sendWord(pageSize * currPage);
+    Wire.endTransmission();
+
+    Wire.requestFrom((int) addr, (int) pageSize);
+    for (Word i=0; i<pageSize; i++) {
+      Word writePos=pagePos+i;
+      if (writePos < HERE) {
+        byte b=Wire.read();
+        if (verifyOnly) {
+          if (b != readByte(writePos)) {
+            Serial.print(F("Verify: differing at pos "));
+            Serial.println(writePos, 16);
+          }
+        }
+        writeByte(writePos,b);
+      }
+    }
+    currPage++;
+  }
+}
+
+// -------------------------------
+// Util.*
+// -------------------------------
+
+
+void natUtilItoa () {  // (value base buf -- )
+  Word buf=pop();
+  Word base=pop();
+  Word value=pop();
+  
+  if (base==16) {
+    sprintf(temp, "0x%X", value);
+  } else {
+    sprintf(temp,"%d",value);
+  }
+  Word currLength=readByte(buf);
+
+  Word len=strlen(temp);
+  writeByte(buf,currLength+len);
+  for (int i=0; i<len; i++) {
+    Word addr=buf+1+currLength+i;
+    Word value=temp[i];
+    writeByte(addr, value);
+  }
+}
+
+
+unsigned long testStartCount=0L;
+unsigned long testStartTime=0L;
+
+void natSpeedTestStart () {
+  testStartCount=instructionCount;
+  testStartTime=millis();
+}
+
+void natSpeedTestStop () {
+  unsigned long count=instructionCount-testStartCount;
+  unsigned long time=millis()-testStartTime;
+  Serial.print("Time: ");
+  Serial.print(time);
+  Serial.println(" ms");
+  Serial.print("Instructions: ");
+  Serial.println(count);
+  double instrPerMs=((double) count) / ((double) time);
+  
+  Serial.print("Per second: ");
+  Serial.println(instrPerMs*1000.0);
+}
+

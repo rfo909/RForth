@@ -1,149 +1,144 @@
-#define DSTACK_SIZE       12    // data stack
-#define CSTACK_SIZE       30    // call stack
-#define FSTACK_SIZE       16    // call stack frames: each frame is 2 values in one Word
+#include <string.h>
 
-#define CELLSIZE    2
-
-#define WORD_INVALID      0xFFFF
-#define WORD_NULL         0
-
-#define RAM_SIZE          5120
-
-#define TIMER_COUNT       4   // timers 0-4
-#define FIRST_SEC_TIMER   3   // timers that count seconds (#3) the others count millis
-
-const bool READC_ECHO = true;
+// #define MONITOR_C_STACK
 
 typedef unsigned int Word;
+typedef unsigned char Byte;
+
+typedef struct {
+  char *name;
+  void (*f) ();
+} OpCode;
+
+#define  NULL ((void *) 0)
+
+#define DSTACK_SIZE     16
+#define RSTACK_SIZE     16
+
+#define CODE_SEGMENT_SIZE     350
+#define DATA_SEGMENT_SIZE     700
+
+// dictionary entry types
+#define DE_TYPE_NORMAL      0
+#define DE_TYPE_IMMEDIATE   1
+#define DE_TYPE_CONSTANT    2
+
+typedef Byte Boolean;
+
+#define NUM_TAGS_REFS     5
+  // Colon compiler supports tags for loops and conditionals, combined with jmp and jmp?
+  //
+  // Define tags as "/0" to "/4" and resolve them into addresses using "&0" to "&4", before jmp or jmp?
+  // This number is the total allowed tags and references within the main body of a colon word. Since we
+  // don't have immediate op-codes, IF and loops must be implemented in Forth.
 
 
-const char *iNames[] = {
-  /* 0 0x0 */ "<undefined>",
-  /* 1 0x1 */ "<undefined>",
-  /* 2 0x2 */ "<undefined>",
-  /* 3 0x3 */ "<undefined>",
-  /* 4 0x4 */ "<undefined>",
-  /* 5 0x5 */ "<undefined>",
-  /* 6 0x6 */ "<undefined>",
-  /* 7 0x7 */ "<undefined>",
-  /* 8 0x8 */ "<undefined>",
-  /* 9 0x9 */ "<undefined>",
-  /* 10 0xa */ "<undefined>",
-  /* 11 0xb */ "<undefined>",
-  /* 12 0xc */ "<undefined>",
-  /* 13 0xd */ "<undefined>",
-  /* 14 0xe */ "<undefined>",
-  /* 15 0xf */ "<undefined>",
-  /* 16 0x10 */ "<undefined>",
-  /* 17 0x11 */ "<undefined>",
-  /* 18 0x12 */ "<undefined>",
-  /* 19 0x13 */ "<undefined>",
-  /* 20 0x14 */ "<undefined>",
-  /* 21 0x15 */ "<undefined>",
-  /* 22 0x16 */ "<undefined>",
-  /* 23 0x17 */ "<undefined>",
-  /* 24 0x18 */ "<undefined>",
-  /* 25 0x19 */ "<undefined>",
-  /* 26 0x1a */ "<undefined>",
-  /* 27 0x1b */ "<undefined>",
-  /* 28 0x1c */ "<undefined>",
-  /* 29 0x1d */ "<undefined>",
-  /* 30 0x1e */ "<undefined>",
-  /* 31 0x1f */ "<undefined>",
-  /* 32 0x20 */ "<undefined>",
-  /* 33 0x21 */ "<undefined>",
-  /* 34 0x22 */ "<undefined>",
-  /* 35 0x23 */ "<undefined>",
-  /* 36 0x24 */ "<undefined>",
-  /* 37 0x25 */ "<undefined>",
-  /* 38 0x26 */ "&&",
-  /* 39 0x27 */ "<undefined>",
-  /* 40 0x28 */ "<undefined>",
-  /* 41 0x29 */ "<undefined>",
-  /* 42 0x2a */ "*",
-  /* 43 0x2b */ "+",
-  /* 44 0x2c */ "<undefined>",
-  /* 45 0x2d */ "-",
-  /* 46 0x2e */ "<undefined>",
-  /* 47 0x2f */ "/",
-  /* 48 0x30 */ "PANIC",
-  /* 49 0x31 */ "atoi",
-  /* 50 0x32 */ "n2code",
-  /* 51 0x33 */ "cget",
-  /* 52 0x34 */ "cset",
-  /* 53 0x35 */ "<undefined>",
-  /* 54 0x36 */ "rfwd?",
-  /* 55 0x37 */ "rback?",
-  /* 56 0x38 */ "<undefined>",
-  /* 57 0x39 */ "<undefined>",
-  /* 58 0x3a */ "<undefined>",
-  /* 59 0x3b */ "<undefined>",
-  /* 60 0x3c */ "<",
-  /* 61 0x3d */ "==",
-  /* 62 0x3e */ ">",
-  /* 63 0x3f */ "<undefined>",
-  /* 64 0x40 */ "<undefined>",
-  /* 65 0x41 */ "crget",
-  /* 66 0x42 */ "streq",
-  /* 67 0x43 */ ".str",
-  /* 68 0x44 */ "memcpy",
-  /* 69 0x45 */ ">=",
-  /* 70 0x46 */ "<=>",
-  /* 71 0x47 */ "readb",
-  /* 72 0x48 */ "writeb",
-  /* 73 0x49 */ "@",
-  /* 74 0x4a */ "!",
-  /* 75 0x4b */ "allot",
-  /* 76 0x4c */ "printb",
-  /* 77 0x4d */ "dcall",
-  /* 78 0x4e */ "<undefined>",
-  /* 79 0x4f */ "cpush",
-  /* 80 0x50 */ "PC",
-  /* 81 0x51 */ "call",
-  /* 82 0x52 */ "ret",
-  /* 83 0x53 */ "jmp",
-  /* 84 0x54 */ "jmp?",
-  /* 85 0x55 */ "printc",
-  /* 86 0x56 */ "<undefined>",
-  /* 87 0x57 */ "print",
-  /* 88 0x58 */ "cr",
-  /* 89 0x59 */ "print#",
-  /* 90 0x5a */ "halt",
-  /* 91 0x5b */ "<undefined>",
-  /* 92 0x5c */ "<undefined>",
-  /* 93 0x5d */ "<undefined>",
-  /* 94 0x5e */ "<undefined>",
-  /* 95 0x5f */ "u2spc",
-  /* 96 0x60 */ "<undefined>",
-  /* 97 0x61 */ "native",
-  /* 98 0x62 */ "print#s",
-  /* 99 0x63 */ "nativec",
-  /* 100 0x64 */ "1+",
-  /* 101 0x65 */ "<undefined>",
-  /* 102 0x66 */ "<undefined>",
-  /* 103 0x67 */ "HERE",
-  /* 104 0x68 */ "!=",
-  /* 105 0x69 */ "not",
-  /* 106 0x6a */ "drop",
-  /* 107 0x6b */ "cellsize",
-  /* 108 0x6c */ "dup",
-  /* 109 0x6d */ "swap",
-  /* 110 0x6e */ "CELL+",
-  /* 111 0x6f */ "over",
-  /* 112 0x70 */ "dump",
-  /* 113 0x71 */ "andb",
-  /* 114 0x72 */ "orb",
-  /* 115 0x73 */ "inv",
-  /* 116 0x74 */ "<<",
-  /* 117 0x75 */ ">>",
-  /* 118 0x76 */ "readc",
-  /* 119 0x77 */ "clear",
-  /* 120 0x78 */ "key",
-  /* 121 0x79 */ "<undefined>",
-  /* 122 0x7a */ "null",
-  /* 123 0x7b */ "<undefined>",
-  /* 124 0x7c */ "||",
-  /* 125 0x7d */ "<undefined>",
-  /* 126 0x7e */ "<undefined>",
-  /* 127 0x7f */ "<undefined>",
-};
+#define OP_BVAL  2
+#define OP_CVAL  3
+#define OP_RET   4
+#define OP_JMP   5
+#define OP_COND_JMP 6
+#define OP_BLOB  7
+#define OP_ZERO  8
+#define OP_ONE   9
+
+#define BYTE_CALL_BIT   0x80
+#define CALL_BIT    0x8000      
+  // high bit of 2 Byte word, indicates the remaining 15 bits is an 
+  // address that is to be auto-called
+#define DATA_BIT    0x4000
+
+// use this to remove DATA_BIT
+#define ADDR_DATA_MASK      0x3FFF
+// use this to remove CALL_BIT
+#define ADDR_CODE_MASK      0x3FFF
+
+
+#define MAX_WORD_LENGTH   16
+
+#define READC_ECHO  true
+
+#define WORD_INVALID      0xFFFF
+
+
+// CForth.ino
+
+void sPrint (char *msg);
+void sPrintWord (Word word);
+void sPrintByte (Byte b);
+void sPrintDouble (double d);
+void sPrintln ();
+
+void setHasError();
+Byte hasError();
+
+// ------------------------------------------------------
+// Dict.cpp
+// ------------------------------------------------------
+
+Word getDeNamePtr();
+Byte getDeType();
+Word getDeAddress();
+Word getDeNextPtr();
+
+void setDeType(Byte b);
+void setDeAddress(Word w);
+
+Word getDictionaryHead();
+void dictEntryFetch (Word ptr);
+void dictEntrySave();
+void dictCreate (char *newWord);
+Boolean dictLookup (char *word);
+Boolean dictLookupByAddr (Word addr);
+
+// ------------------------------------------------------
+// Static.cpp
+// ------------------------------------------------------
+
+
+Word staticDataSize();
+Byte staticDataRead (Word pos);
+
+
+// ------------------------------------------------------
+// Mem.cpp
+// ------------------------------------------------------
+
+void memInit(void);
+void compileOut (Byte b);
+Word getCodeNext();
+void setCodeNext (Word w);
+void startCompile();
+Word getCompileNext();
+void confirmCompile();
+
+Word generateCodeAddress (Word ptr);
+Word generateDataAddress (Word ptr);
+Word generateCallAddress (Word ptr);
+Word HERE();
+Word codeHERE();
+void dataAllot (Word count);
+void codeAllot (Word count);
+
+void writeByte (Word addr, Byte b);
+Byte readByte (Word addr);
+Word readWord (Word addr);
+void writeWord (Word addr, Word value);
+
+
+void memDump();
+void memCodeExport();
+void showFreeMem();
+
+Byte readByteFast (Word addr);
+
+// ------------------------------------------------------
+// Util.cpp
+// ------------------------------------------------------
+
+void printChar (Byte ch);
+void printStr (Word ptr);
+Boolean mixedStreq (Word strPtr, char *s);
+Byte myAtoi (char *nextWord, int *target);
+void checkCStackSize();
+Word getCStackMaxSize();
