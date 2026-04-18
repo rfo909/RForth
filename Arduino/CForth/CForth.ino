@@ -70,7 +70,14 @@ void doDeepSleep() {
   Byte ddrc=DDRC;
   Byte ddrd=DDRD;
 
-  for (int i=0; i<20; i++) pinMode(i,OUTPUT);  // saves milliamps
+  Byte portb=PORTB;
+  Byte portc=PORTC;
+  Byte portd=PORTD;
+
+  for (int i=0; i<20; i++) {
+    pinMode(i,OUTPUT);  // saves milliamps
+    digitalWrite(i,0);
+  }
 
   //blip(2);
   // https://www.youtube.com/watch?v=urLSDi7SD8M
@@ -115,6 +122,9 @@ void doDeepSleep() {
   DDRB=ddrb;
   DDRC=ddrc;
   DDRD=ddrd;
+  PORTB=portb;
+  PORTC=portc;
+  PORTD=portd;
   disableWatchdogInterrupt();
   enableADC();
 
