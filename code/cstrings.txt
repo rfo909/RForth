@@ -1,3 +1,5 @@
+(ops with fixed byte codes)
+
 2 constant OP_BVAL
 3 constant OP_CVAL
 4 constant OP_RET
@@ -9,10 +11,13 @@
 
 34 constant CH_QUOT		(The " character)
 
-
-(Creates blob (string) of bytes up to the end quote)
-(Only works for compile, as it generates code      )
-
+(
+Create blob (string) of bytes up to the end quote. Only works 
+for compile, as it generates code into (net yet allocated) memory
+in the code segment. The OP_BLOB executes by reading the length, 
+advancing the program pointer past the length byte and the following
+bytes, then pushing the address of the length byte on the stack
+)
 : " ( -- )
 	OP_BLOB comp.out
 	

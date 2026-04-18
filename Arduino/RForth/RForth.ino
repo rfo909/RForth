@@ -1,5 +1,3 @@
-#define ATMEGA328p
-
 #include <avr/pgmspace.h>
 #include "Constants.h"
 
