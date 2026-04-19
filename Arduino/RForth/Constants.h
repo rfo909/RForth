@@ -5,7 +5,7 @@
 
 typedef unsigned int Word;
 typedef unsigned char Byte;
-typedef unsigned long Double;
+typedef unsigned long Long;
 typedef float Float;
 
 typedef struct {
@@ -17,7 +17,7 @@ typedef struct {
 
 #define DSTACK_SIZE     16
 #define RSTACK_SIZE     16
-#define DOUBLE_STACK_SIZE    8
+#define XSTACK_SIZE    8
 
 #define CODE_SEGMENT_SIZE     ((RAMEND - RAMSTART) / 6)
 #define DATA_SEGMENT_SIZE     (RAMEND - RAMSTART - CODE_SEGMENT_SIZE - 880 - 200)
@@ -72,7 +72,6 @@ typedef Byte Boolean;
 void sPrint (char *msg);
 void sPrintWord (Word word);
 void sPrintByte (Byte b);
-void sPrintDouble (double d);
 void sPrintln ();
 
 void setHasError();

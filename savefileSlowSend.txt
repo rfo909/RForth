@@ -11,7 +11,7 @@
 
 # Serial device
 # --
-	RawFile("/dev/ttyACM0")
+	RawFile("/dev/ttyACM1")
 /Device
 
 # Send line

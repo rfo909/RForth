@@ -101,7 +101,8 @@ F+                       (float float -- float)
 F-                       
 F*                       
 F/                       
->L                       (word -- long)
+>>L                      (WordHigh WordLow -- long)
+>L                       (word -- long
 L>                       (long -- word)
 L+                       (long long -- long)
 L-                       

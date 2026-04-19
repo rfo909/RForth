@@ -149,7 +149,8 @@ F-           &op_f_sub
 F*           &op_f_mul
 F/           &op_f_div
 
->L           &op_to_l                           (word word -- long)
+>>L          &op_2to_l                           (WordHigh WordLow -- long)
+>L           &op_to_l                           (word -- long
 L>           &op_from_l                         (long -- word)
 L+           &op_l_add                          (long long -- long)
 L-           &op_l_sub

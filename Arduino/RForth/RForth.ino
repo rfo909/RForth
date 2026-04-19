@@ -18,7 +18,7 @@ static Word dStack[DSTACK_SIZE];
 static Byte dStackNext = 0;
 static Word rStack[RSTACK_SIZE];
 static Byte rStackNext = 0;
-static Double doubleStack[DOUBLE_STACK_SIZE];
+static Long doubleStack[XSTACK_SIZE];
 static Byte doubleStackNext;
 
 void setup() {
@@ -184,8 +184,8 @@ void sPrintln () {
 
 
 
-static Double floatToDouble (Float f) {
-  Double val=0;
+static Long floatToLong (Float f) {
+  Long val=0;
   Word *src = (Word *) &f;
   Word *target = (Word *) &val;
   
@@ -194,7 +194,7 @@ static Double floatToDouble (Float f) {
   return val;
 }
 
-static Float doubleToFloat (Double val) {
+static Float longToFloat (Long val) {
   Float f=0.0;
   Word *src = (Word *) &val;
   Word *target = (Word *) &f;
@@ -223,8 +223,8 @@ static Word inline pop () {
   return dStack[--dStackNext];
 }
 
-static void inline pushDouble (Double val) {
-  if (doubleStackNext >= DOUBLE_STACK_SIZE-1) {
+static void inline pushLong (Long val) {
+  if (doubleStackNext >= XSTACK_SIZE-1) {
     setHasError();
     Serial.println(F("doubleStack overflow"));
     return;
@@ -232,7 +232,7 @@ static void inline pushDouble (Double val) {
   doubleStack[doubleStackNext++]=val;
 }
 
-static Double inline popDouble () {
+static Long inline popLong () {
   if (doubleStackNext==0) {
     setHasError();
     Serial.println(F("doubleStack underflow"));
@@ -243,11 +243,11 @@ static Double inline popDouble () {
 
 
 static void inline pushFloat (Float f) {
-  pushDouble(floatToDouble(f));
+  pushLong(floatToLong(f));
 }
 
 static Float popFloat () {
-  return doubleToFloat(popDouble());
+  return longToFloat(popLong());
 }
 
 
@@ -261,17 +261,17 @@ static Word pick (Word n) {
   return dStack[dStackNext-1-n];
 }
 
-static Double pickDouble (Word n) {
+static Long pickLong (Word n) {
   if (doubleStackNext-1-n < 0) {
     setHasError();
-    Serial.println(F("doubleStack underflow (pickDouble)"));
+    Serial.println(F("doubleStack underflow (pickLong)"));
     return 0;
   }
   return doubleStack[doubleStackNext-1-n];
 }
 
 static Float pickFloat (Word n) {
-  return doubleToFloat(pickDouble(n));
+  return longToFloat(pickLong(n));
 }
 
 
@@ -317,7 +317,7 @@ static void showStacks() {
   Serial.print("Long  [");
   for (i=0; i<doubleStackNext; i++) {
     if (i>0) Serial.print(" ");
-    Double f=doubleStack[i];
+    Long f=doubleStack[i];
     Serial.print(f);
   }
   Serial.println("]");
@@ -325,7 +325,7 @@ static void showStacks() {
   Serial.print("Float [");
   for (i=0; i<doubleStackNext; i++) {
     if (i>0) Serial.print(" ");
-    Float f=doubleToFloat(doubleStack[i]);
+    Float f=longToFloat(doubleStack[i]);
     Serial.print(f);
   }
   Serial.println("]");
@@ -333,24 +333,24 @@ static void showStacks() {
 
 
 void op_ddup() {
-  pushDouble(pickDouble(0));
+  pushLong(pickLong(0));
 }
 
 void op_ddrop() {
-  popDouble();
+  popLong();
 }
 
 void op_dswap() {
-  Double b=popDouble();
-  Double a=popDouble();
-  pushDouble(b);
-  pushDouble(a);
+  Long b=popLong();
+  Long a=popLong();
+  pushLong(b);
+  pushLong(a);
 }
 
 void op_dpick() {
   Word n=pop();
-  pushDouble(pickDouble(n));
-  pushDouble(pickDouble(n));
+  pushLong(pickLong(n));
+  pushLong(pickLong(n));
 }
 
 static void dStackClear() {
@@ -737,7 +737,7 @@ void op_cr() {Serial.println();}
 void op_dot() {int i=(int) pop(); Serial.print(i); Serial.print(" ");}
 void op_dot_u() {Word x=pop(); Serial.print(x); Serial.print(" ");}
 void op_dot_hex() {Word x=pop(); Serial.print("0x"); Serial.print(x,16); Serial.print(" ");}
-void op_dot_l() {Serial.print(popDouble()); Serial.print(" ");}
+void op_dot_l() {Serial.print(popLong()); Serial.print(" ");}
 void op_dot_f() {Serial.print(popFloat()); Serial.print(" ");}
 void op_emit() {Word x=pop(); char c=(x&0xFF); Serial.print(c);}
 void op_dot_str() {Word addr=pop(); printStr(addr); }
@@ -898,7 +898,7 @@ void op_word_addr() {
 
 // --------------------------------------------------------------------------------
 
-const Byte numOps=109;
+const Byte numOps=110;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -1001,6 +1001,7 @@ F+ \
 F- \
 F* \
 F/ \
+>>L \
 >L \
 L> \
 L+ \
@@ -1115,6 +1116,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_f_sub
 ,&op_f_mul
 ,&op_f_div
+,&op_2to_l
 ,&op_to_l
 ,&op_from_l
 ,&op_l_add
@@ -1471,57 +1473,63 @@ void op_f_div () {
 }
 
 void op_to_l () {
+  int x=(int) pop();
+  pushLong((Long) x);
+}
+
+
+void op_2to_l () {
   Word b=pop();
   Word a=pop();
-  Double d=(Double) a;
+  Long d=(Long) a;
   d=d<<16;
-  d=d | ((Double) b);
-  pushDouble(d);
+  d=d | ((Long) b);
+  pushLong(d);
 }
 
 void op_from_l () {
-  push((Word) popDouble());
+  push((Word) popLong());
 }
 
 void op_l_add () {
-  Double b=popDouble();
-  Double a=popDouble();
-  pushDouble(a+b);
+  Long b=popLong();
+  Long a=popLong();
+  pushLong(a+b);
 }
 
 void op_l_sub () {
-  Double b=popDouble();
-  Double a=popDouble();
-  pushDouble(a-b);
+  Long b=popLong();
+  Long a=popLong();
+  pushLong(a-b);
 }
 
 void op_l_mul () {
-  Double b=popDouble();
-  Double a=popDouble();
-  pushDouble(a*b);
+  Long b=popLong();
+  Long a=popLong();
+  pushLong(a*b);
 }
 
 void op_l_div () {
-  Double b=popDouble();
-  Double a=popDouble();
-  pushDouble(a/b);
+  Long b=popLong();
+  Long a=popLong();
+  pushLong(a/b);
 }
 
 void op_l_mod () {
-  Double b=popDouble();
-  Double a=popDouble();
-  pushDouble(a%b);
+  Long b=popLong();
+  Long a=popLong();
+  pushLong(a%b);
 }
 
 void op_l_high () {
-  Double d=popDouble();
+  Long d=popLong();
   d=d>>16;
   d=d & 0xFFFFL;
   push((Word) d);
 }
 
 void op_l_low () {
-  push((Word) (popDouble() & 0xFFFFL));
+  push((Word) (popLong() & 0xFFFFL));
 }
 
 
