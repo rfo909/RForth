@@ -70,6 +70,8 @@ cr           &op_cr
 .            &op_dot                            print TOS signed followed by a space
 .u           &op_dot_u                          unsigned
 .hex         &op_dot_hex                        
+.l           &op_dot_l                          print long
+.f           &op_dot_f                          print float
 emit         &op_emit                           print single character
 .str         &op_dot_str                        print Forth string
              
@@ -133,13 +135,27 @@ I2C.masterWrite &natI2CmasterWrite              (sendBufPtr sendCount addr --)
 I2C.masterWWait &natI2CmasterWWait              (--) EEPROM's are sometimes slow at doing page writes
 I2C.masterRead &natI2CmasterRead                (buf addr --) available length in buffer byte 0
 
+    
+Ddup         &op_ddup                           (d -- d d) Double value dup (double stack = float and long)
+Dswap        &op_dswap                          (da db -- db da) Double value swap
+Dpick        &op_dpick                          (... n -- ... dx) Double value pick
+
+
 >F           &op_to_f                           (word -- float)
 F>           &op_from_f                         (float -- word)
 F+           &op_f_add                          (float float -- float)
 F-           &op_f_sub
 F*           &op_f_mul
 F/           &op_f_div
-    
+
+>L           &op_to_l                           (word -- long)
+L>           &op_from_l                         (long -- word)
+L+           &op_l_add                          (long long -- long)
+L-           &op_l_sub
+L*           &op_l_mul
+L/           &op_l_div
+L%           &op_l_mod
+
 >>>> EOF
 /Data
 

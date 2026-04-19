@@ -5,6 +5,8 @@
 
 typedef unsigned int Word;
 typedef unsigned char Byte;
+typedef unsigned long Double;
+typedef float Float;
 
 typedef struct {
   char *name;
@@ -13,8 +15,9 @@ typedef struct {
 
 #define  NULL ((void *) 0)
 
-#define DSTACK_SIZE     24    // Increasing from 16 to handle double length values: float and long
+#define DSTACK_SIZE     16
 #define RSTACK_SIZE     16
+#define DOUBLE_STACK_SIZE    8
 
 #define CODE_SEGMENT_SIZE     ((RAMEND - RAMSTART) / 6)
 #define DATA_SEGMENT_SIZE     (RAMEND - RAMSTART - CODE_SEGMENT_SIZE - 830 - 200)

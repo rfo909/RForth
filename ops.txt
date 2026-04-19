@@ -38,6 +38,8 @@ cr
 .                        print TOS signed followed by a space
 .u                       unsigned
 .hex                     
+.d                       print double
+.f                       print float
 emit                     print single character
 .str                     print Forth string
 code.next                address of next byte in codeSegment
@@ -95,3 +97,13 @@ F+                       (float float -- float)
 F-                       
 F*                       
 F/                       
+Ddup                     (d -- d d) Double value dup (float and long)
+Dswap                    (da db -- db da) Double value swap
+Dpick                    (... n -- ... dx) Double value pick
+>L                       (word -- long)
+L>                       (long -- word)
+L+                       (long long -- long)
+L-                       
+L*                       
+L/                       
+L%                       
