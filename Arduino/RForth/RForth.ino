@@ -336,6 +336,10 @@ void op_ddup() {
   pushDouble(pickDouble(0));
 }
 
+void op_ddrop() {
+  popDouble();
+}
+
 void op_dswap() {
   Double b=popDouble();
   Double a=popDouble();
@@ -894,7 +898,7 @@ void op_word_addr() {
 
 // --------------------------------------------------------------------------------
 
-const Byte numOps=106;
+const Byte numOps=109;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -987,9 +991,10 @@ EE.read \
 I2C.masterWrite \
 I2C.masterWWait \
 I2C.masterRead \
-Ddup \
-Dswap \
-Dpick \
+ddup \
+ddrop \
+dswap \
+dpick \
 >F \
 F> \
 F+ \
@@ -1003,6 +1008,8 @@ L- \
 L* \
 L/ \
 L% \
+Lhigh \
+Llow \
 ";
 
 typedef void (*FUNC)();
@@ -1099,6 +1106,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&natI2CmasterWWait
 ,&natI2CmasterRead
 ,&op_ddup
+,&op_ddrop
 ,&op_dswap
 ,&op_dpick
 ,&op_to_f
@@ -1114,9 +1122,12 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_l_mul
 ,&op_l_div
 ,&op_l_mod
+,&op_l_high
+,&op_l_low
 };
 
 // --------------------------------------------------------------------------------
+
 
 
 
@@ -1460,7 +1471,12 @@ void op_f_div () {
 }
 
 void op_to_l () {
-  pushDouble((Double) pop());
+  Word b=pop();
+  Word a=pop();
+  Double d=(Double) a;
+  d=d<<16;
+  d=d | ((Double) b);
+  pushDouble(d);
 }
 
 void op_from_l () {
@@ -1497,6 +1513,16 @@ void op_l_mod () {
   pushDouble(a%b);
 }
 
+void op_l_high () {
+  Double d=popDouble();
+  d=d>>16;
+  d=d & 0xFFFFL;
+  push((Word) d);
+}
+
+void op_l_low () {
+  push((Word) (popDouble() & 0xFFFFL));
+}
 
 
 

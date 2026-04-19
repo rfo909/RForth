@@ -136,9 +136,10 @@ I2C.masterWWait &natI2CmasterWWait              (--) EEPROM's are sometimes slow
 I2C.masterRead &natI2CmasterRead                (buf addr --) available length in buffer byte 0
 
     
-Ddup         &op_ddup                           (d -- d d) Double value dup (double stack = float and long)
-Dswap        &op_dswap                          (da db -- db da) Double value swap
-Dpick        &op_dpick                          (... n -- ... dx) Double value pick
+ddup         &op_ddup                           (d -- d d) Double value dup (double stack = float and long)
+ddrop        &op_ddrop                          (a b -- a)
+dswap        &op_dswap                          (da db -- db da) Double value swap
+dpick        &op_dpick                          (... n -- ... dx) Double value pick
 
 
 >F           &op_to_f                           (word -- float)
@@ -148,14 +149,15 @@ F-           &op_f_sub
 F*           &op_f_mul
 F/           &op_f_div
 
->L           &op_to_l                           (word -- long)
+>L           &op_to_l                           (word word -- long)
 L>           &op_from_l                         (long -- word)
 L+           &op_l_add                          (long long -- long)
 L-           &op_l_sub
 L*           &op_l_mul
 L/           &op_l_div
 L%           &op_l_mod
-
+Lhigh        &op_l_high
+Llow         &op_l_low
 >>>> EOF
 /Data
 

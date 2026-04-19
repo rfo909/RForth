@@ -20,7 +20,7 @@ typedef struct {
 #define DOUBLE_STACK_SIZE    8
 
 #define CODE_SEGMENT_SIZE     ((RAMEND - RAMSTART) / 6)
-#define DATA_SEGMENT_SIZE     (RAMEND - RAMSTART - CODE_SEGMENT_SIZE - 830 - 200)
+#define DATA_SEGMENT_SIZE     (RAMEND - RAMSTART - CODE_SEGMENT_SIZE - 880 - 200)
   // global variables apart from these is around 830 bytes
   // adjust if problems
 
