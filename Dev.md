@@ -196,6 +196,21 @@ Also added native functions as ops into RForth
 Added op deep-sleep8, and reorganized the project so that the RForth v3 is tucked away
 in a separate directory, and this is the main version!
 
+Added dynamic size for code and data segments, calculated from amount of RAM (Constants.h)
+
+2026-04-19
+----------
+Added an extra stack, called xStack, which is 4 bytes wide, and containing both
+Long and Float data, as well as a number of ops for that purpose. The stack
+operations are named xdup, xdrop, xswap and xpick, as they are common to 
+Long and Float content.
+
+Example:
+
+```
+: pi 314 >F 100 >F F/ ;
+```
+
  
 OpCodes
 -------

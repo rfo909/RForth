@@ -3,9 +3,16 @@
 
 // #define MONITOR_C_STACK
 
+// signed types
+typedef int SWord;
+typedef char SByte;
+typedef long SLong;
+
+// unsigned types
 typedef unsigned int Word;
 typedef unsigned char Byte;
 typedef unsigned long Long;
+
 typedef float Float;
 
 typedef struct {

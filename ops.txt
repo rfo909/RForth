@@ -34,12 +34,16 @@ not                      logical
 &                        binary and
 |                        binary or
 inv                      binary not
+<<                       (value n1 -- value<<n2)
+>>                       (value n1 -- value>>n2)
 cr                       
 .                        print TOS signed followed by a space
 .u                       unsigned
-.hex                     
-.l                       print long
-.f                       print float
+.hex                     print word on hex format
+L.                       print long on decimal - unsigned
+L.s                      print long on decimal - signed
+L.hex                    print long on hex format
+F.                       print float
 emit                     print single character
 .str                     print Forth string
 code.next                address of next byte in codeSegment
@@ -91,23 +95,24 @@ EE.read                  (index -- byte)
 I2C.masterWrite          (sendBufPtr sendCount addr --)
 I2C.masterWWait          (--) EEPROM's are sometimes slow at doing page writes
 I2C.masterRead           (buf addr --) available length in buffer byte 0
-ddup                     (d -- d d) Double value dup (double stack = float and long)
-ddrop                    (a b -- a)
-dswap                    (da db -- db da) Double value swap
-dpick                    (... n -- ... dx) Double value pick
->F                       (word -- float)
-F>                       (float -- word)
+xdup                     (d -- d d) Double value dup (double stack = float and long)
+xdrop                    (a b -- a)
+xswap                    (da db -- db da) Double value swap
+xpick                    (... n -- ... dx) Double value pick
+>F                       (sWord -- float) signed word to float
+F>                       (float -- sWord) float to signed word
+F>L                      (float -- SLong) float to signed long
 F+                       (float float -- float)
 F-                       
 F*                       
 F/                       
->>L                      (WordHigh WordLow -- long)
->L                       (word -- long
-L>                       (long -- word)
+>L                       (sWord -- sLong) signed Word to signed Long
+L>F                      (sWord -- Float) signed word to Float
+L>                       (sLong -- sWord)
 L+                       (long long -- long)
 L-                       
 L*                       
 L/                       
 L%                       
-Lhigh                    
-Llow                     
+L<<                      (long word -- long<<word)
+L>>                      (long word -- long>>word)

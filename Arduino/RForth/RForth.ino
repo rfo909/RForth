@@ -308,7 +308,8 @@ static void showStacks() {
   Byte i;
   for (i=0; i<dStackNext; i++) {
     if (i>0) Serial.print(" ");
-    Serial.print(dStack[i]);
+    SWord w=(SWord) dStack[i];
+    Serial.print(w);
   }
   Serial.println("]");
   
@@ -317,8 +318,8 @@ static void showStacks() {
   Serial.print("Long  [");
   for (i=0; i<doubleStackNext; i++) {
     if (i>0) Serial.print(" ");
-    Long f=doubleStack[i];
-    Serial.print(f);
+    SLong val=(SLong) doubleStack[i];
+    Serial.print(val);
   }
   Serial.println("]");
 
@@ -332,22 +333,22 @@ static void showStacks() {
 }
 
 
-void op_ddup() {
+void op_xdup() {
   pushLong(pickLong(0));
 }
 
-void op_ddrop() {
+void op_xdrop() {
   popLong();
 }
 
-void op_dswap() {
+void op_xswap() {
   Long b=popLong();
   Long a=popLong();
   pushLong(b);
   pushLong(a);
 }
 
-void op_dpick() {
+void op_xpick() {
   Word n=pop();
   pushLong(pickLong(n));
   pushLong(pickLong(n));
@@ -731,13 +732,17 @@ void op_not() {Word x=pop(); push(x==0 ? 1 : 0);}
 void op_bin_and() {Word b=pop(); Word a=pop(); push(a&b);}
 void op_bin_or() {Word b=pop(); Word a=pop(); push(a|b);}
 void op_bin_inv() {Word x=pop(); push(~x);}
+void op_lshift() {Word b=pop(); Word a=pop(); push(a<<b);}
+void op_rshift() {Word b=pop(); Word a=pop(); push(a<<b);}
 
 
 void op_cr() {Serial.println();}
 void op_dot() {int i=(int) pop(); Serial.print(i); Serial.print(" ");}
 void op_dot_u() {Word x=pop(); Serial.print(x); Serial.print(" ");}
 void op_dot_hex() {Word x=pop(); Serial.print("0x"); Serial.print(x,16); Serial.print(" ");}
-void op_dot_l() {Serial.print(popLong()); Serial.print(" ");}
+void op_l_dot_u() {Long val=popLong(); Serial.print(val); Serial.print(" ");}
+void op_l_dot_s() {SLong val=(SLong) popLong(); Serial.print(val); Serial.print(" ");}
+void op_l_dot_hex() {Long x=popLong(); Serial.print("0x"); Serial.print(x,16); Serial.print(" ");}
 void op_dot_f() {Serial.print(popFloat()); Serial.print(" ");}
 void op_emit() {Word x=pop(); char c=(x&0xFF); Serial.print(c);}
 void op_dot_str() {Word addr=pop(); printStr(addr); }
@@ -803,7 +808,7 @@ void op_show_stack() {
   showStacks();
 }
 
-void op_clear_stack() {
+void op_clear_stacks() {
   dStackClear();
   doubleStackClear();
 }
@@ -898,7 +903,7 @@ void op_word_addr() {
 
 // --------------------------------------------------------------------------------
 
-const Byte numOps=110;
+const Byte numOps=115;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -934,12 +939,16 @@ not \
 & \
 | \
 inv \
+<< \
+>> \
 cr \
 . \
 .u \
 .hex \
-.l \
-.f \
+L. \
+L.s \
+L.hex \
+F. \
 emit \
 .str \
 code.next \
@@ -991,26 +1000,27 @@ EE.read \
 I2C.masterWrite \
 I2C.masterWWait \
 I2C.masterRead \
-ddup \
-ddrop \
-dswap \
-dpick \
+xdup \
+xdrop \
+xswap \
+xpick \
 >F \
 F> \
+F>L \
 F+ \
 F- \
 F* \
 F/ \
->>L \
 >L \
+L>F \
 L> \
 L+ \
 L- \
 L* \
 L/ \
 L% \
-Lhigh \
-Llow \
+L<< \
+L>> \
 ";
 
 typedef void (*FUNC)();
@@ -1049,11 +1059,15 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_bin_and
 ,&op_bin_or
 ,&op_bin_inv
+,&op_lshift
+,&op_rshift
 ,&op_cr
 ,&op_dot
 ,&op_dot_u
 ,&op_dot_hex
-,&op_dot_l
+,&op_l_dot_u
+,&op_l_dot_s
+,&op_l_dot_hex
 ,&op_dot_f
 ,&op_emit
 ,&op_dot_str
@@ -1074,7 +1088,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_pick
 ,&op_words
 ,&op_show_stack
-,&op_clear_stack
+,&op_clear_stacks
 ,&op_start_test
 ,&op_end_test
 ,&op_to_r
@@ -1106,26 +1120,27 @@ static const PROGMEM FUNC opFunctions[]={
 ,&natI2CmasterWrite
 ,&natI2CmasterWWait
 ,&natI2CmasterRead
-,&op_ddup
-,&op_ddrop
-,&op_dswap
-,&op_dpick
-,&op_to_f
-,&op_from_f
+,&op_xdup
+,&op_xdrop
+,&op_xswap
+,&op_xpick
+,&op_sw_to_f
+,&op_f_to_sw
+,&op_f_to_sl
 ,&op_f_add
 ,&op_f_sub
 ,&op_f_mul
 ,&op_f_div
-,&op_2to_l
-,&op_to_l
-,&op_from_l
+,&op_sw_to_wl
+,&op_sl_to_f
+,&op_sl_to_sw
 ,&op_l_add
 ,&op_l_sub
 ,&op_l_mul
 ,&op_l_div
 ,&op_l_mod
-,&op_l_high
-,&op_l_low
+,&op_l_lshift
+,&op_l_rshift
 };
 
 // --------------------------------------------------------------------------------
@@ -1436,16 +1451,23 @@ void natI2CmasterRead() {
 // Floats
 // -----------------------------------------
 
-void op_to_f () {
-  Word val=pop();
+void op_sw_to_f () {
+  SWord val=(SWord) pop();
   Float f=(Float) val;
   pushFloat(f);
 }
 
-void op_from_f () {
+void op_f_to_sw () {
   Float f=popFloat();
-  f=round(f);
-  push((Word) f);
+  SWord val=(SWord) f;
+  push(val);
+}
+
+
+void op_f_to_sl () {
+  Float f=popFloat();
+  SLong x=(SLong) f;
+  pushLong(x);
 }
 
 void op_f_add () {
@@ -1472,23 +1494,28 @@ void op_f_div () {
   pushFloat(a/b);
 }
 
-void op_to_l () {
-  int x=(int) pop();
-  pushLong((Long) x);
+void op_sw_to_wl () {
+  // signed
+  SWord x=(SWord) pop();
+  pushLong((SLong) x);
 }
 
-
-void op_2to_l () {
-  Word b=pop();
-  Word a=pop();
-  Long d=(Long) a;
-  d=d<<16;
-  d=d | ((Long) b);
-  pushLong(d);
+void op_sl_to_f () {
+  SLong x=(SLong) popLong();
+  Float f=(Float) x;
+  pushFloat(f);
 }
 
-void op_from_l () {
-  push((Word) popLong());
+void op_sl_to_sw () {
+  SLong val=(SLong) popLong();
+  Boolean negative=false;
+  if (val<0) {
+    negative=true;
+    val=-val;
+  }
+  SWord w=(SWord) val;
+  if (negative) w=-w;
+  push(w);
 }
 
 void op_l_add () {
@@ -1521,18 +1548,17 @@ void op_l_mod () {
   pushLong(a%b);
 }
 
-void op_l_high () {
-  Long d=popLong();
-  d=d>>16;
-  d=d & 0xFFFFL;
-  push((Word) d);
+void op_l_lshift () {
+  Word n=pop();
+  Long val=popLong();
+  pushLong(val<<n);
 }
 
-void op_l_low () {
-  push((Word) (popLong() & 0xFFFFL));
+void op_l_rshift () {
+  Word n=pop();
+  Long val=popLong();
+  pushLong(val>>n);
 }
-
-
 
 
 

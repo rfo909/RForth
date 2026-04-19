@@ -65,13 +65,17 @@ not          &op_not                            logical
 &            &op_bin_and                        binary and
 |            &op_bin_or                         binary or
 inv          &op_bin_inv                        binary not
+<<           &op_lshift                         (value n1 -- value<<n2)
+>>           &op_rshift                         (value n1 -- value>>n2)
              
 cr           &op_cr                             
 .            &op_dot                            print TOS signed followed by a space
 .u           &op_dot_u                          unsigned
-.hex         &op_dot_hex                        
-.l           &op_dot_l                          print long
-.f           &op_dot_f                          print float
+.hex         &op_dot_hex                        print word on hex format
+L.           &op_l_dot_u                        print long on decimal - unsigned
+L.s          &op_l_dot_s                        print long on decimal - signed
+L.hex        &op_l_dot_hex                      print long on hex format
+F.           &op_dot_f                          print float
 emit         &op_emit                           print single character
 .str         &op_dot_str                        print Forth string
              
@@ -95,7 +99,7 @@ pick         &op_pick
              
 ?            &op_words                          show words in dictionary
 .s           &op_show_stack                     show stack
-clear        &op_clear_stack                    clear stack
+clear        &op_clear_stacks                   clear stack
              
 [test        &op_start_test                     start timed test for opcount/second
 test]        &op_end_test                       end timed test and print report
@@ -136,29 +140,32 @@ I2C.masterWWait &natI2CmasterWWait              (--) EEPROM's are sometimes slow
 I2C.masterRead &natI2CmasterRead                (buf addr --) available length in buffer byte 0
 
     
-ddup         &op_ddup                           (d -- d d) Double value dup (double stack = float and long)
-ddrop        &op_ddrop                          (a b -- a)
-dswap        &op_dswap                          (da db -- db da) Double value swap
-dpick        &op_dpick                          (... n -- ... dx) Double value pick
+xdup         &op_xdup                           (d -- d d) Double value dup (double stack = float and long)
+xdrop        &op_xdrop                          (a b -- a)
+xswap        &op_xswap                          (da db -- db da) Double value swap
+xpick        &op_xpick                          (... n -- ... dx) Double value pick
 
 
->F           &op_to_f                           (word -- float)
-F>           &op_from_f                         (float -- word)
+>F           &op_sw_to_f                        (sWord -- float) signed word to float
+F>           &op_f_to_sw                        (float -- sWord) float to signed word
+F>L          &op_f_to_sl                        (float -- SLong) float to signed long
 F+           &op_f_add                          (float float -- float)
 F-           &op_f_sub
 F*           &op_f_mul
 F/           &op_f_div
 
->>L          &op_2to_l                           (WordHigh WordLow -- long)
->L           &op_to_l                           (word -- long
-L>           &op_from_l                         (long -- word)
+>L           &op_sw_to_wl                       (sWord -- sLong) signed Word to signed Long
+L>F          &op_sl_to_f                        (sWord -- Float) signed word to Float
+
+L>           &op_sl_to_sw                       (sLong -- sWord)
 L+           &op_l_add                          (long long -- long)
 L-           &op_l_sub
 L*           &op_l_mul
 L/           &op_l_div
 L%           &op_l_mod
-Lhigh        &op_l_high
-Llow         &op_l_low
+L<<          &op_l_lshift                       (long word -- long<<word)
+L>>          &op_l_rshift                       (long word -- long>>word)
+
 >>>> EOF
 /Data
 
