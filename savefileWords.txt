@@ -32,8 +32,6 @@ ret          &op_ret                            #4 return
 jmp          &op_jmp                            #5 (addr --) jump to address
 jmp?         &op_cond_jmp                       #6 (cond addr --) conditional jump if cond != 0
 blob         &op_blob         [len ...]         #7 just skips the data byes, returns pointer to len field
-zero         &op_zero                           #8 push a zero
-one          &op_one                            #9 push a one
           
 *dictHead    &op_star_dictHead                  return pointer to top dictionary entry
 

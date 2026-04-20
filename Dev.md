@@ -223,6 +223,33 @@ into that area are valid.
 
 I added initializing the data segment to all zeroes, so that even alloted buffers are clear.
 
+---
+
+In order to reduce the number of ops, which touched 115, I reimplemented the following in
+Forth, in the "basics" file under code. 
+
+- constant
+- variable
+- immediate
+- over
+- 2dup
+
+
+Added a new word *dictHead which points to the top dictionary entry. Keeping the create word
+in C, as the colon compiler depends on it. 
+
+Also removed the zero and one ops.
+
+Net result, now "just" 109 ops ...
+
+
+TODO:
+-----
+To implement IF and LOOP, we need access to 
+
+getNextWord
+" ..." nextWordEq (mixedStreq)
+compileNextWord
 
  
 OpCodes

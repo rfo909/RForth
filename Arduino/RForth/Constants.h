@@ -52,8 +52,6 @@ typedef Byte Boolean;
 #define OP_JMP   5
 #define OP_COND_JMP 6
 #define OP_BLOB  7
-#define OP_ZERO  8
-#define OP_ONE   9
 
 #define BYTE_CALL_BIT   0x80
 #define CALL_BIT    0x8000      

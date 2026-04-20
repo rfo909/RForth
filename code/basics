@@ -46,4 +46,8 @@
 	DE_IMMEDIATE *dictHead DE->type b!
 ;
 
-
+(Ex. 145 >L 123 kL  --- results in 145123 as Long value on xStack)
+: kL (val -- )
+	1000 >L L* >L L+ ;
+	
+	

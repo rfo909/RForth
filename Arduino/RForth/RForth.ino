@@ -472,14 +472,8 @@ Byte getOpcodeParameter() {
 
 
 void compileNumberByte (Byte b) {
-    if (b==0) {
-      compileOut(OP_ZERO);
-    } else if (b==1) {
-      compileOut(OP_ONE);
-    } else {
-      compileOut(OP_BVAL);
-      compileOut(b);
-    }
+    compileOut(OP_BVAL);
+    compileOut(b);
 }
 
 void compileNumberCell (Word w) {
@@ -693,8 +687,6 @@ void op_dcall() {     // dynamic call
   Word addr=pop();
   callForth(addr);
 }
-void op_zero() {push(0);}
-void op_one() {push(1);}
 void op_add() {Word b=pop(); Word a=pop(); push(a+b);}
 void op_sub() {Word b=pop(); Word a=pop(); push(a-b);}
 void op_mul() {Word b=pop(); Word a=pop(); push(a*b);}
@@ -865,7 +857,7 @@ void op_word_addr() {
 
 // --------------------------------------------------------------------------------
 
-const Byte numOps=111;
+const Byte numOps=109;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -876,8 +868,6 @@ ret \
 jmp \
 jmp? \
 blob \
-zero \
-one \
 *dictHead \
 dcall \
 ret? \
@@ -992,8 +982,6 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_jmp
 ,&op_cond_jmp
 ,&op_blob
-,&op_zero
-,&op_one
 ,&op_star_dictHead
 ,&op_dcall
 ,&op_cond_ret
@@ -1098,6 +1086,7 @@ static const PROGMEM FUNC opFunctions[]={
 };
 
 // --------------------------------------------------------------------------------
+
 
 
 
