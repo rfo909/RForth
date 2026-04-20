@@ -1,0 +1,14 @@
+
+: LOOP
+	comp.next >R
+	/0
+		getNextWord
+		*nextWord " AGAIN" streq &1 jmp?  (exit loop)
+		*nextWord compile
+		&0 jmp
+	/1
+		OP_CVAL comp.out
+		RPeek 8 >> 0xFF & comp.out
+		R> 0xFF & comp.out
+		OP_JMP comp.out
+; immediate

@@ -26,7 +26,7 @@ typedef struct {
 #define RSTACK_SIZE     16
 #define XSTACK_SIZE    8
 
-#define CODE_SEGMENT_SIZE     ((RAMEND - RAMSTART) / 6)
+#define CODE_SEGMENT_SIZE     ((RAMEND - RAMSTART) / 5)
 #define DATA_SEGMENT_SIZE     (RAMEND - RAMSTART - CODE_SEGMENT_SIZE - 880 - 200)
   // global variables apart from these is around 830 bytes
   // adjust if problems

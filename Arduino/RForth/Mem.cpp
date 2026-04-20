@@ -369,26 +369,31 @@ void memCodeExport() {
 }
 
 void showFreeMem() {
-  int c=CODE_SEGMENT_SIZE-codeNext+staticCodeBytes;
-  int d=DATA_SEGMENT_SIZE-dataNext;
+  int x;
   sPrintln();
   sPrint("code");
+  sPrint(" ");
+  sPrint("used");
   sPrint(":");
+  x=codeNext-staticCodeBytes;
+  sPrintWord(x);
   sPrint(" ");
-  sPrintWord(c);
-  sPrint(" ");
-  sPrint("of");
-  sPrint(" ");
-  sPrintWord(CODE_SEGMENT_SIZE);
+  sPrint("free");
+  sPrint(":");
+  x=CODE_SEGMENT_SIZE-codeNext+staticCodeBytes;
+  sPrintWord(x);
   sPrintln();
+
   sPrint("data");
+  sPrint(" ");
+  sPrint("used");
   sPrint(":");
+  sPrintWord(dataNext);
   sPrint(" ");
-  sPrintWord(d);
-  sPrint(" ");
-  sPrint("of");
-  sPrint(" ");
-  sPrintWord(DATA_SEGMENT_SIZE);
+  sPrint("free");
+  sPrint(":");
+  x=DATA_SEGMENT_SIZE-dataNext;
+  sPrintWord(x);
   sPrintln();
 }
 

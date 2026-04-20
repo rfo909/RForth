@@ -1,0 +1,35 @@
+
+34 constant CH_QUOT		(The " character)
+
+(
+Create blob (string) of bytes up to the end quote. Only works 
+for compile, as it generates code into (net yet allocated) memory
+in the code segment. The OP_BLOB executes by reading the length, 
+advancing the program pointer past the length byte and the following
+bytes, then pushing the address of the length byte on the stack
+)
+: " ( -- )
+	OP_BLOB comp.out
+	
+	comp.next >R   (store address of length field)
+	0 comp.out    (length field dummy value)
+	
+	0	(count)
+	/0
+		readc 
+		dup 			(count char char)
+			CH_QUOT == &2 jmp?   (--- matching quote found)
+		(char) comp.out           (count)
+		1 +
+		&0 jmp
+	/2
+		drop
+		R> 
+			b!  (patch the length field)
+; immediate
+
+
+
+
+
+

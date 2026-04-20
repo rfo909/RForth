@@ -266,6 +266,15 @@ static Word pick (Word n) {
   return dStack[dStackNext-1-n];
 }
 
+static Word rpick (Word n) {
+  if (rStackNext-1-n < 0) {
+    setHasError();
+    Serial.println(F("rStack underflow (rpick)"));
+    return 0;
+  }
+  return rStack[rStackNext-1-n];
+}
+
 static Long pickLong (Word n) {
   if (doubleStackNext-1-n < 0) {
     setHasError();
@@ -500,13 +509,7 @@ void callForth (Word addr) {
 * Compile nextWord, true if ok, false if error
 */
 void compileNextWord () {
-  /*
-  Serial.println();
-  Serial.print("compileNextWord ");
-  Serial.print(nextWord);
-  Serial.print(" compileNext=");
-  Serial.println(compileNext);
-  */
+
   // check for number
   int i=0;
   if (myAtoi(nextWord,&i)) {
@@ -610,13 +613,6 @@ void op_colon() {
     if (*nextWord=='/') {
       int tag=0;
       if (getTagNumber(nextWord+1, &tag)) {
-        /*
-        Serial.println();
-        Serial.print("*** tag ");
-        Serial.print(tag);
-        Serial.print("=");
-        Serial.println(compileNext);
-        */
         tags[tag] = getCompileNext();
         continue;
       }
@@ -631,13 +627,6 @@ void op_colon() {
 
         refs[nextRef].tag=tag;
         refs[nextRef].addr=getCompileNext();
-        /*
-        Serial.println();
-        Serial.print("*** ref ");
-        Serial.print(tag);
-        Serial.print(" at ");
-        Serial.println(compileNext);
-        */
         // place holder to be patched
         compileOut(0);
         compileOut(0);
@@ -662,15 +651,6 @@ void op_colon() {
           return;
         }
         Word patchAddr=refs[i].addr;
-        /*
-        Serial.println();
-        Serial.print("*** PATCHING ref ");
-        Serial.print(tag);
-        Serial.print(" at ");
-        Serial.print(patchAddr);
-        Serial.print(" -> ");
-        Serial.println(tagAddr);
-        */
 
         writeByte(patchAddr, (tagAddr >> 8) & 0xFF);
         writeByte(patchAddr+1, tagAddr & 0xFF);
@@ -682,9 +662,6 @@ void op_colon() {
 
       dictEntryFetch(getDictionaryHead());  // from call to create() 
 
-      /*Serial.println();
-      Serial.print("getDeNamePtr: ");
-      Serial.println(getDeNamePtr());*/
       printStr(getDeNamePtr());
       Serial.print(" ");
       Serial.print(byteCount);
@@ -723,7 +700,6 @@ void op_sub() {Word b=pop(); Word a=pop(); push(a-b);}
 void op_mul() {Word b=pop(); Word a=pop(); push(a*b);}
 void op_div() {Word b=pop(); Word a=pop(); push(a/b);}
 void op_modulo() {Word b=pop(); Word a=pop(); push(a%b);}
-void op_incr() {Word x=pop(); push(x+1);}
 
 void op_gt() {Word b=pop(); Word a=pop(); push(a>b ? 1 : 0);}
 void op_ge() {Word b=pop(); Word a=pop(); push(a>=b ? 1 : 0);}
@@ -865,6 +841,11 @@ void op_r_from() {
   push(rpop());
 }
 
+void op_r_pick() {
+  Word n=pop();
+  rpush(rpick(n));
+}
+
 void op_jmp() {
   programCounter=pop();
 }
@@ -906,7 +887,7 @@ void op_word_addr() {
 // upate Words script and and run "gen" to get this code
 // "Global variables use 1559 bytes"
 
-// --------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------+
 
 const Byte numOps=115;
 
@@ -931,7 +912,6 @@ ret? \
 * \
 / \
 % \
-1+ \
 > \
 >= \
 < \
@@ -967,10 +947,10 @@ b! \
 b@ \
 dup \
 swap \
-2dup \
 drop \
-over \
 pick \
+2dup \
+over \
 ? \
 .s \
 clear \
@@ -978,6 +958,7 @@ clear \
 test] \
 >R \
 R> \
+rpick \
 key \
 readc \
 ' \
@@ -1051,7 +1032,6 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_mul
 ,&op_div
 ,&op_modulo
-,&op_incr
 ,&op_gt
 ,&op_ge
 ,&op_lt
@@ -1087,10 +1067,10 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_readb
 ,&op_dup
 ,&op_swap
-,&op_2dup
 ,&op_drop
-,&op_over
 ,&op_pick
+,&op_2dup
+,&op_over
 ,&op_words
 ,&op_show_stack
 ,&op_clear_stacks
@@ -1098,6 +1078,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_end_test
 ,&op_to_r
 ,&op_r_from
+,&op_r_pick
 ,&op_key
 ,&op_readc
 ,&op_word_addr
@@ -1148,8 +1129,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_l_rshift
 };
 
-// --------------------------------------------------------------------------------
-
+// ---------------------------------------------------------------------------+
 
 
 

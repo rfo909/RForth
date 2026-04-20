@@ -50,7 +50,6 @@ ret?         &op_cond_ret                       (cond --) conditional return
 *            &op_mul                            
 /            &op_div                            
 %            &op_modulo                         
-1+           &op_incr                           
              
 >            &op_gt                             
 >=           &op_ge                             
@@ -92,10 +91,11 @@ b@           &op_readb                          (addr --) read byte value
              
 dup          &op_dup                            
 swap         &op_swap                           
-2dup         &op_2dup                           
 drop         &op_drop                           
-over         &op_over                           
 pick         &op_pick                           
+#
+2dup         &op_2dup                           
+over         &op_over                           
              
 ?            &op_words                          show words in dictionary
 .s           &op_show_stack                     show stack
@@ -106,6 +106,8 @@ test]        &op_end_test                       end timed test and print report
              
 >R           &op_to_r                           move value to return stack
 R>           &op_r_from                         get value from return stack
+rpick        &op_r_pick                         (n -- value) copy value on rStack
+
 key          &op_key                            return boolean for if a key has been pressed (serial)
 readc        &op_readc                          read character from serial
              
@@ -140,10 +142,10 @@ I2C.masterWWait &natI2CmasterWWait              (--) EEPROM's are sometimes slow
 I2C.masterRead &natI2CmasterRead                (buf addr --) available length in buffer byte 0
 
     
-xdup         &op_xdup                           (d -- d d) Double value dup (double stack = float and long)
+xdup         &op_xdup                           (d -- d d) xStack value dup (double stack = float and long)
 xdrop        &op_xdrop                          (a b -- a)
-xswap        &op_xswap                          (da db -- db da) Double value swap
-xpick        &op_xpick                          (... n -- ... dx) Double value pick
+xswap        &op_xswap                          (da db -- db da) xStack value swap
+xpick        &op_xpick                          (... n -- ... dx) xStack value pick
 
 
 >F           &op_sw_to_f                        (sWord -- float) signed word to float

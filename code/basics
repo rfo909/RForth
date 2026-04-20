@@ -1,0 +1,34 @@
+(ops with fixed byte codes)
+
+2 constant OP_BVAL
+3 constant OP_CVAL
+4 constant OP_RET
+5 constant OP_JMP
+6 constant OP_COND_JMP
+7 constant OP_BLOB
+8 constant OP_ZERO
+9 constant OP_ONE
+
+: over 1 pick ;
+: 2dup over over ;
+: 1+ 1 + ;
+: cell 2 ;
+: cells cell * ;
+
+
+: RDup 0 rpick ;
+: RPeek RDup R> ;
+: RSwap R> R> swap >R >R ;
+: RDrop R> drop ;
+
+: DE (-- dePtr)
+	HERE 7 allot
+;
+
+: DE->name (dePtr -- fieldPtr) ;
+: DE->type (dePtr -- fieldPtr) 2 + ;
+: DE->address (dePtr -- fieldPtr) 3 + ;
+: DE->next (dePtr -- fieldPtr) 5 + ;
+
+
+
