@@ -40,14 +40,19 @@ void setup() {
   // copy Dictionary Header pointer from static data segment lower two bytes to RAM
   // (note address 0 in code segment is reserved, so data are in location 1 and 2)
 
-  dataAllot(2);
-  Word srcAddr=generateCodeAddress(1);
-  Word dataAddr=generateDataAddress(0); // points into the static part
-  Serial.print(F("Dictionary head: 0x"));
-  Serial.println(dataAddr,16);
+  Word dictPointer=readWord(generateCodeAddress(1));
+  Word dataNext=readWord(generateCodeAddress(3));
+  Serial.print(F("dictPointer: "));
+  Serial.println(dictPointer);
 
-  writeByte(dataAddr, readByte(srcAddr));  
-  writeByte(dataAddr+1, readByte(srcAddr+1));  
+  if (dataNext==0) dataNext=2; // for storing the dict pointer
+
+  Serial.print(F("dataNext: "));
+  Serial.println(dataNext);
+  // update dataNext, enabling all variable defs and allots done by code (Flash)
+  dataAllot(dataNext);
+  // write dictionary pointer to RAM
+  writeWord(generateDataAddress(0), dictPointer);
 
   disableWatchdogInterrupt();
 
@@ -772,7 +777,7 @@ void op_constant() {
 void op_variable() {
   Word variableAddr=HERE(); 
   dataAllot(2); 
-  writeWord(variableAddr,pop());
+  writeWord(variableAddr,0);  // -- no stack value, must be initialized in code
   push(variableAddr);
   op_constant();
 }

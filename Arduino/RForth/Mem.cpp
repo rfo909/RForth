@@ -13,6 +13,11 @@ static Word dataNext;   // "HERE"
 void memInit(void) {
   dataNext=0;
 
+  // null all bytes in data segment
+  for (int i=0; i<DATA_SEGMENT_SIZE; i++) {
+    dataSegment[i]=0;
+  }
+
   staticCodeBytes = staticDataSize();
   sPrint("Flash");
   sPrint(" ");
@@ -29,6 +34,7 @@ void memInit(void) {
   codeNext=staticCodeBytes;
   compileNext=codeNext;
 }
+
 
 
 void compileOut (Byte b) {
@@ -332,18 +338,24 @@ void memCodeExport() {
   sPrint("static const PROGMEM Byte dataSegmentStatic[]={");
   sPrintln();
 
-  // 3 first bytes require special attention: dummy + dictionary header from RAM
+  // 5 first bytes require special attention: dummy + dictionary header from RAM + dataNext
   sPrint("  ");
   sPrintWord(255);
   sPrint(",");
   sPrintWord(readByte(generateDataAddress(0)));
   sPrint(",");
   sPrintWord(readByte(generateDataAddress(1)));
+  Word a=(dataNext>>8) & 0xFF;
+  Word b=dataNext & 0xFF;
+  sPrint(",");
+  sPrintWord(a);
+  sPrint(",");
+  sPrintWord(b);
   sPrintln();
 
   Byte count=0;
 
-  for (Word i=3; i<codeNext; i++) {
+  for (Word i=5; i<codeNext; i++) {
     if (count==0) sPrint("  ");
     if (i>0) sPrint(",");
     Byte b=readByte(i);  // read static and codeSegment alike

@@ -211,6 +211,19 @@ Example:
 : pi 314 >F 100 >F F/ ;
 ```
 
+2026-04-20
+----------
+I changed the "variable" op to always initializing variable to 0, and not taking value from the 
+stack. This means variables are just declared, and have to be initialized by code. 
+
+This means code persisted to flash can have variables, as long as it initializes them. The
+only thing needed for this, was to persist the dataNext ("HERE") value when doing code.export,
+to bytes 3 and 4, and when booting, in setup() allot this number of bytes, so that references
+into that area are valid.
+
+I added initializing the data segment to all zeroes, so that even alloted buffers are clear.
+
+
  
 OpCodes
 -------
