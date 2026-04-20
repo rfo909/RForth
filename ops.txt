@@ -11,9 +11,8 @@ jmp?                     #6 (cond addr --) conditional jump if cond != 0
 blob                     [len ...] #7 just skips the data byes, returns pointer to len field
 zero                     #8 push a zero
 one                      #9 push a one
-constant                 +<name>
-variable                 +<name>
 immediate                set newest word immediate
+*dictHead                return pointer to top dictionary entry
 dcall                    (addr --) dynamic call, take address from stack
 ret?                     (cond --) conditional return
 +                        
@@ -58,8 +57,6 @@ dup
 swap                     
 drop                     
 pick                     
-2dup                     
-over                     
 ?                        show words in dictionary
 .s                       show stack
 clear                    clear stack

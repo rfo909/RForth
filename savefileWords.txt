@@ -34,12 +34,8 @@ jmp?         &op_cond_jmp                       #6 (cond addr --) conditional ju
 blob         &op_blob         [len ...]         #7 just skips the data byes, returns pointer to len field
 zero         &op_zero                           #8 push a zero
 one          &op_one                            #9 push a one
-   
-         
-constant     &op_constant                       +<name>
-variable     &op_variable                       +<name>
-immediate    &op_immediate                      set newest word immediate
-
+          
+*dictHead    &op_star_dictHead                  return pointer to top dictionary entry
 
 dcall        &op_dcall                          (addr --) dynamic call, take address from stack
 ret?         &op_cond_ret                       (cond --) conditional return
@@ -93,9 +89,6 @@ dup          &op_dup
 swap         &op_swap                           
 drop         &op_drop                           
 pick         &op_pick                           
-#
-2dup         &op_2dup                           
-over         &op_over                           
              
 ?            &op_words                          show words in dictionary
 .s           &op_show_stack                     show stack

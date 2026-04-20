@@ -1,5 +1,10 @@
 (ops with fixed byte codes)
 
+: constant (value -- )
+	create                             (makes a constant with value 0 - dont need to set DE->type)
+	(value) *dictHead 3 + !            (3+ = DE->address)
+;
+
 2 constant OP_BVAL
 3 constant OP_CVAL
 4 constant OP_RET
@@ -9,26 +14,36 @@
 8 constant OP_ZERO
 9 constant OP_ONE
 
-: over 1 pick ;
-: 2dup over over ;
+0 constant DE_NORMAL
+1 constant DE_IMMEDIATE
+2 constant DE_CONSTANT
+
+2 constant cell
 : 1+ 1 + ;
-: cell 2 ;
 : cells cell * ;
 
+: over 1 pick ;
+: 2dup over over ;
 
 : RDup 0 rpick ;
 : RPeek RDup R> ;
 : RSwap R> R> swap >R >R ;
 : RDrop R> drop ;
 
-: DE (-- dePtr)
-	HERE 7 allot
-;
+(dictionary entry field offsets)
 
 : DE->name (dePtr -- fieldPtr) ;
-: DE->type (dePtr -- fieldPtr) 2 + ;
+: DE->type (dePtr -- fieldPtr) 2 + ;	(1 byte)
 : DE->address (dePtr -- fieldPtr) 3 + ;
 : DE->next (dePtr -- fieldPtr) 5 + ;
 
+: variable (--)
+	HERE cell allot constant
+;
+
+
+: immediate
+	DE_IMMEDIATE *dictHead DE->type b!
+;
 
 

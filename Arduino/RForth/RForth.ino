@@ -739,25 +739,6 @@ void op_allot() {
   dataAllot(count);
 }
 
-void op_constant() {
-  Word value=pop();
-  create();
-  dictEntryFetch(getDictionaryHead());
-
-  setDeType(DE_TYPE_CONSTANT);
-  setDeAddress(value);
-
-  dictEntrySave();
-}
-
-void op_variable() {
-  Word variableAddr=HERE(); 
-  dataAllot(2); 
-  writeWord(variableAddr,0);  // -- no stack value, must be initialized in code
-  push(variableAddr);
-  op_constant();
-}
-
 void op_write() {Word addr=pop(); Word value=pop(); writeWord(addr,value);}
 void op_read() {Word addr=pop(); push(readWord(addr));}
 void op_writeb() {Word addr=pop(); Word x=pop(); writeByte(addr,x);}
@@ -769,19 +750,14 @@ void op_cond_ret() {Word cond=pop(); if (cond != 0) programCounter=rpop();}
 void op_create() {
   create();
 }
-void op_immediate() {
-  Word head=getDictionaryHead();
-  if (head==0) return;
-  dictEntryFetch(head);
-  setDeType(DE_TYPE_IMMEDIATE);
-  dictEntrySave();
+
+void op_star_dictHead() {
+  push(getDictionaryHead());
 }
 
 void op_dup() {push(pick(0));}
 void op_swap() {Word b=pop(); Word a=pop(); push(b); push(a);}
-void op_2dup() {push(pick(1)); push(pick(1));}
 void op_drop() {pop();}
-void op_over() {push(pick(1));}
 void op_pick() {Word n=pop(); push(pick(n));}
 
 
@@ -887,9 +863,9 @@ void op_word_addr() {
 // upate Words script and and run "gen" to get this code
 // "Global variables use 1559 bytes"
 
-// ---------------------------------------------------------------------------+
+// --------------------------------------------------------------------------------
 
-const Byte numOps=115;
+const Byte numOps=111;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -902,9 +878,7 @@ jmp? \
 blob \
 zero \
 one \
-constant \
-variable \
-immediate \
+*dictHead \
 dcall \
 ret? \
 + \
@@ -949,8 +923,6 @@ dup \
 swap \
 drop \
 pick \
-2dup \
-over \
 ? \
 .s \
 clear \
@@ -1022,9 +994,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_blob
 ,&op_zero
 ,&op_one
-,&op_constant
-,&op_variable
-,&op_immediate
+,&op_star_dictHead
 ,&op_dcall
 ,&op_cond_ret
 ,&op_add
@@ -1069,8 +1039,6 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_swap
 ,&op_drop
 ,&op_pick
-,&op_2dup
-,&op_over
 ,&op_words
 ,&op_show_stack
 ,&op_clear_stacks
@@ -1129,7 +1097,10 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_l_rshift
 };
 
-// ---------------------------------------------------------------------------+
+// --------------------------------------------------------------------------------
+
+
+
 
 
 
