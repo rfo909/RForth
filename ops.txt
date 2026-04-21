@@ -110,3 +110,7 @@ L<<                      (long word -- long<<word)
 L>>                      (long word -- long>>word)
 hw@                      (Addr -- Byte)
 hw!                      (Byte Addr --)
+readNextWord             read into the nextWord C string buffer
+nextWordEq               (str -- bool)
+compile                  (--) compile nextWord
+nextWord!                (str --) insert string as nextWord

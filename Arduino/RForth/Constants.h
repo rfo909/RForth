@@ -65,7 +65,7 @@ typedef Byte Boolean;
 #define ADDR_CODE_MASK      0x3FFF
 
 
-#define MAX_WORD_LENGTH   16
+#define MAX_WORD_LENGTH   20
 
 #define READC_ECHO  true
 

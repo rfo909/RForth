@@ -460,6 +460,33 @@ void readNextWord () {
   }
 }
 
+void op_readNextWord () {
+  readNextWord();
+}
+void op_nextWordEq () {
+  Word strRef=pop();
+  if (mixedStreq (strRef, nextWord)) push(1); else push(0);
+}
+
+void op_compile () {
+  compileNextWord();
+}
+
+void op_nextWord_write() {
+  Word ptr=pop();
+  Word len=readByte(ptr);
+  if (len>=MAX_WORD_LENGTH) {
+    setHasError();
+    Serial.print(F("op_nextWord_write: too long "));
+    Serial.println(len);
+    return;
+  }
+  for (Word i=0; i<len; i++) {
+    nextWord[i]=(char) readByte(ptr+1+i);
+  }
+  nextWord[len]='\0';
+}
+
 
 
 // when an op requires additional Bytes (bval and cval - push Byte and cell value)
@@ -853,9 +880,9 @@ void op_word_addr() {
 // upate Words script and and run "gen" to get this code
 // "Global variables use 1559 bytes"
 
-// --------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------+
 
-const Byte numOps=109;
+const Byte numOps=113;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -967,6 +994,10 @@ L<< \
 L>> \
 hw@ \
 hw! \
+readNextWord \
+nextWordEq \
+compile \
+nextWord! \
 ";
 
 typedef void (*FUNC)();
@@ -1081,16 +1112,13 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_l_rshift
 ,&op_hw_read
 ,&op_hw_write
+,&op_readNextWord
+,&op_nextWordEq
+,&op_compile
+,&op_nextWord_write
 };
 
-// --------------------------------------------------------------------------------
-
-
-
-
-
-
-
+// --------------------------------------------------------------------------
 
 void op_ops() {
   Byte length=0;

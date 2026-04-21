@@ -73,6 +73,7 @@ emit         &op_emit                           print single character
 code.next    &op_code_next                      address of next byte in codeSegment
 comp.next    &op_comp_next                      address of next byte - when compiling
 comp.out     &op_comp_out                       add byte - when compiling
+
 HERE         &op_HERE                           address of next byte in dataSegment
 allot        &op_allot                          increase HERE
              
@@ -159,6 +160,11 @@ L>>          &op_l_rshift                       (long word -- long>>word)
 
 hw@          &op_hw_read                        (Addr -- Byte)
 hw!          &op_hw_write                       (Byte Addr --)
+
+readNextWord &op_readNextWord                   read into the nextWord C string buffer
+nextWordEq   &op_nextWordEq                     (str -- bool)
+compile      &op_compile                        (--) compile nextWord
+nextWord!    &op_nextWord_write                 (str --) insert string as nextWord
 
 >>>> EOF
 /Data
