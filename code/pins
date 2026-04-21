@@ -12,26 +12,7 @@
 0x03 constant PINB
 )
 
-48 constant CH_ZERO
-49 constant CH_ONE
 
-: .bit (bool --)
-	&1 jmp?  
-	CH_ZERO emit ret
-	/1 CH_ONE emit
-;
-
-: .bits (byte --)
-	0x80    (byte bit)
-	/0
-		dup 0 == &1 jmp?    (exit)
-		dup (byte bit bit)
-		2 pick & .bit (byte bit)
-		1 >>
-		&0 jmp
-	/1
-		drop drop
-;		
 
 : B
 	cr
@@ -47,7 +28,13 @@
 	PINB hw@ .bits
 ;
 
+(atmega2560)
+
 b10000000 constant Mask
+
+((atmega328p)
+b00100000 constant Mask
+)
 
 : setLedOut
 	DDRB hw@ 

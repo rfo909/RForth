@@ -54,4 +54,31 @@
 
 : cr 0x0A emit ;
 
+: , HERE cell allot ! ;
+
+: c, HERE 1 allot ! ;
+
+48 constant CH_ZERO
+49 constant CH_ONE
+
+
+: .bit (bool --)
+	&1 jmp?  
+	CH_ZERO emit ret
+	/1 CH_ONE emit
+;
+
+: .bits (byte --)
+	0x80    (byte bit)
+	/0
+		dup 0 == &1 jmp?    (exit)
+		dup (byte bit bit)
+		2 pick & .bit (byte bit)
+		1 >>
+		&0 jmp
+	/1
+		drop drop
+;
+
+
 
