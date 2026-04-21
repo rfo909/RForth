@@ -26,7 +26,7 @@ bytes, then pushing the address of the length byte on the stack
 	/2
 		drop
 		R> 
-			b!  (patch the length field)
+			c!  (patch the length field)
 ; immediate
 
 

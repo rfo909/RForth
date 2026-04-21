@@ -45,12 +45,13 @@
 
 
 : immediate
-	DE_IMMEDIATE *dictHead DE->type b!
+	DE_IMMEDIATE *dictHead DE->type c!
 ;
 
-: count (str -- ) 
-	dup c@ swap 1+ swap ;
+: count (str -- ) dup 1+ swap c@ ;
 	
+: str (str -- ) count type ;
+
 (Ex. 145 123 kL  --- results in 145123 as Long value on xStack)
 : kL (kval val -- Lval)
 	swap >L 1000>L L* 
