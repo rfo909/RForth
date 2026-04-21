@@ -11,17 +11,15 @@
 5 constant OP_JMP
 6 constant OP_COND_JMP
 7 constant OP_BLOB
-8 constant OP_ZERO
-9 constant OP_ONE
 
 0 constant DE_NORMAL
 1 constant DE_IMMEDIATE
 2 constant DE_CONSTANT
 
-2 constant CELL
+2 constant cell
 
 : 1+ 1 + ;
-: cells CELL * ;
+: cells cell * ;
 
 : over 1 pick ;
 : 2dup over over ;
@@ -48,13 +46,10 @@
 	DE_IMMEDIATE *dictHead DE->type c!
 ;
 
-: count (str -- ) dup 1+ swap c@ ;
-	
-: str (str -- ) count type ;
-
 (Ex. 145 123 kL  --- results in 145123 as Long value on xStack)
 : kL (kval val -- Lval)
-	swap >L 1000>L L* 
+	swap >L 1000 >L L* 
 	>L L+
 ;
-	
+
+: cr 0x0A emit ;

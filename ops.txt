@@ -31,7 +31,6 @@ not                      logical
 inv                      binary not
 <<                       (value n1 -- value<<n2)
 >>                       (value n1 -- value>>n2)
-cr                       
 .                        print TOS signed followed by a space
 .u                       unsigned
 .hex                     print word on hex format
@@ -40,7 +39,6 @@ L.s                      print long on decimal - signed
 L.hex                    print long on hex format
 F.                       print float
 emit                     print single character
-type                     (ptr count --) print Forth string
 code.next                address of next byte in codeSegment
 comp.next                address of next byte - when compiling
 comp.out                 add byte - when compiling

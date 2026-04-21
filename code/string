@@ -30,7 +30,23 @@ bytes, then pushing the address of the length byte on the stack
 ; immediate
 
 
+: type (ptr count -- )
+	swap			(n ptr)
+	0			(n ptr count)
+	/0
+		dup 3 pick == &1 jmp? (count == n ?)
+		dup  (n ptr count count)
+			2 pick + c@ emit
+		1+
+		&0 jmp
+	/1
+		drop drop drop
+;
+			
+		
+
+: .str (str -- ) dup 1+ swap c@ type ;
 
 
-
+: hello cr s" World Hello swap" .str ;
 

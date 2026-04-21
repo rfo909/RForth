@@ -61,7 +61,6 @@ inv          &op_bin_inv                        binary not
 <<           &op_lshift                         (value n1 -- value<<n2)
 >>           &op_rshift                         (value n1 -- value>>n2)
              
-cr           &op_cr                             
 .            &op_dot                            print TOS signed followed by a space
 .u           &op_dot_u                          unsigned
 .hex         &op_dot_hex                        print word on hex format
@@ -70,7 +69,6 @@ L.s          &op_l_dot_s                        print long on decimal - signed
 L.hex        &op_l_dot_hex                      print long on hex format
 F.           &op_dot_f                          print float
 emit         &op_emit                           print single character
-type         &op_type                           (ptr count --) print Forth string
              
 code.next    &op_code_next                      address of next byte in codeSegment
 comp.next    &op_comp_next                      address of next byte - when compiling

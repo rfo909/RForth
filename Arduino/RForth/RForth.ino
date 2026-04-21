@@ -709,7 +709,6 @@ void op_lshift() {Word b=pop(); Word a=pop(); push(a<<b);}
 void op_rshift() {Word b=pop(); Word a=pop(); push(a<<b);}
 
 
-void op_cr() {Serial.println();}
 void op_dot() {int i=(int) pop(); Serial.print(i); Serial.print(" ");}
 void op_dot_u() {Word x=pop(); Serial.print(x); Serial.print(" ");}
 void op_dot_hex() {Word x=pop(); Serial.print("0x"); Serial.print(x,16); Serial.print(" ");}
@@ -718,14 +717,6 @@ void op_l_dot_s() {SLong val=(SLong) popLong(); Serial.print(val); Serial.print(
 void op_l_dot_hex() {Long x=popLong(); Serial.print("0x"); Serial.print(x,16); Serial.print(" ");}
 void op_dot_f() {Serial.print(popFloat()); Serial.print(" ");}
 void op_emit() {Word x=pop(); char c=(x&0xFF); Serial.print(c);}
-void op_type() {
-  Word n=pop(); 
-  Word addr=pop();
-  for (Word i=0; i<n; i++) {
-    Byte ch=readByte(addr+n);
-    printChar(ch);
-  }
-}
 
 void op_code_next() {Word addr=generateCodeAddress(getCodeNext()); push(addr);}
 void op_comp_next() {Word addr=generateCodeAddress(getCompileNext()); push(addr);}
@@ -864,7 +855,7 @@ void op_word_addr() {
 
 // --------------------------------------------------------------------------------
 
-const Byte numOps=109;
+const Byte numOps=107;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -897,7 +888,6 @@ not \
 inv \
 << \
 >> \
-cr \
 . \
 .u \
 .hex \
@@ -906,7 +896,6 @@ L.s \
 L.hex \
 F. \
 emit \
-type \
 code.next \
 comp.next \
 comp.out \
@@ -1011,7 +1000,6 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_bin_inv
 ,&op_lshift
 ,&op_rshift
-,&op_cr
 ,&op_dot
 ,&op_dot_u
 ,&op_dot_hex
@@ -1020,7 +1008,6 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_l_dot_hex
 ,&op_dot_f
 ,&op_emit
-,&op_type
 ,&op_code_next
 ,&op_comp_next
 ,&op_comp_out
@@ -1093,6 +1080,7 @@ static const PROGMEM FUNC opFunctions[]={
 };
 
 // --------------------------------------------------------------------------------
+
 
 
 
@@ -1198,6 +1186,7 @@ void op_dis() {
       Serial.print(F("=>"));
       Serial.print(" ");
       printStr(getDeNamePtr());
+      Serial.println();
 
       Byte type=getDeType();
       if (type != DE_TYPE_NORMAL && type != DE_TYPE_IMMEDIATE) {
