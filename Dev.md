@@ -242,6 +242,7 @@ Also removed the zero and one ops.
 
 Net result, now "just" 109 ops ...
 
+
 2026-04-21
 ----------
 Standardizing a bit, plus moving content from C to Forth. 
@@ -258,10 +259,23 @@ Renamed in C
 - key? (was "key" - return character from serial or 0, nonblocking)
 
 
-Two new ops
+Some new ops
 
 - hw@ - read hardware RAM address (register) byte
 - hw! - write harware RAM byte
+- readNextWord
+- s" ..." nextWordEq
+- s" ..." nextWord! -- write string to nextWord
+- compile -- compile nextWord
+
+Note that we can not successfully write to nextWord in the REPL, because
+everything we enter gets stashed into nextWord before being processed.
+
+Also note that nextWord is a buffer in C, with a null-terminated string.
+
+113 ops
+
+
 
 TODO:
 -----
