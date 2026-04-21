@@ -242,6 +242,22 @@ Also removed the zero and one ops.
 
 Net result, now "just" 109 ops ...
 
+2026-04-21
+----------
+Standardizing a bit, plus moving content from C to Forth. 
+
+Implementing the following in Forth now
+
+- type (previous but not quite .str in C - is explicitly taking pointer and count params)
+- .str 
+- cr
+
+Renamed in C
+
+- key (was "readc" - read character from serial, blocking)
+- key? (was "key" - return character from serial or 0, nonblocking)
+
+
 
 TODO:
 -----

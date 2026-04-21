@@ -18,8 +18,8 @@ static Word dStack[DSTACK_SIZE];
 static Byte dStackNext = 0;
 static Word rStack[RSTACK_SIZE];
 static Byte rStackNext = 0;
-static Long doubleStack[XSTACK_SIZE];
-static Byte doubleStackNext;
+static Long xStack[XSTACK_SIZE];
+static Byte xStackNext;
 
 void setup() {
   Serial.begin(9600);
@@ -229,21 +229,21 @@ static Word inline pop () {
 }
 
 static void inline pushLong (Long val) {
-  if (doubleStackNext >= XSTACK_SIZE-1) {
+  if (xStackNext >= XSTACK_SIZE-1) {
     setHasError();
-    Serial.println(F("doubleStack overflow"));
+    Serial.println(F("xStack overflow"));
     return;
   }
-  doubleStack[doubleStackNext++]=val;
+  xStack[xStackNext++]=val;
 }
 
 static Long inline popLong () {
-  if (doubleStackNext==0) {
+  if (xStackNext==0) {
     setHasError();
-    Serial.println(F("doubleStack underflow"));
+    Serial.println(F("xStack underflow"));
     return 0;
   }
-  return doubleStack[--doubleStackNext];
+  return xStack[--xStackNext];
 }
 
 
@@ -276,12 +276,12 @@ static Word rpick (Word n) {
 }
 
 static Long pickLong (Word n) {
-  if (doubleStackNext-1-n < 0) {
+  if (xStackNext-1-n < 0) {
     setHasError();
-    Serial.println(F("doubleStack underflow (pickLong)"));
+    Serial.println(F("xStack underflow (pickLong)"));
     return 0;
   }
-  return doubleStack[doubleStackNext-1-n];
+  return xStack[xStackNext-1-n];
 }
 
 static Float pickFloat (Word n) {
@@ -327,20 +327,20 @@ static void showStacks() {
   }
   Serial.println("]");
   
-  if (doubleStackNext == 0) return;
+  if (xStackNext == 0) return;
 
   Serial.print("Long  [");
-  for (i=0; i<doubleStackNext; i++) {
+  for (i=0; i<xStackNext; i++) {
     if (i>0) Serial.print(" ");
-    SLong val=(SLong) doubleStack[i];
+    SLong val=(SLong) xStack[i];
     Serial.print(val);
   }
   Serial.println("]");
 
   Serial.print("Float [");
-  for (i=0; i<doubleStackNext; i++) {
+  for (i=0; i<xStackNext; i++) {
     if (i>0) Serial.print(" ");
-    Float f=longToFloat(doubleStack[i]);
+    Float f=longToFloat(xStack[i]);
     Serial.print(f);
   }
   Serial.println("]");
@@ -372,8 +372,8 @@ static void dStackClear() {
   dStackNext=0;
 }
 
-static void doubleStackClear() {
-  doubleStackNext=0;
+static void xStackClear() {
+  xStackNext=0;
 }
 
 // -------------------------------------------
@@ -757,7 +757,7 @@ void op_show_stack() {
 
 void op_clear_stacks() {
   dStackClear();
-  doubleStackClear();
+  xStackClear();
 }
 
 // Speed testing
