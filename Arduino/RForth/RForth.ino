@@ -718,7 +718,14 @@ void op_l_dot_s() {SLong val=(SLong) popLong(); Serial.print(val); Serial.print(
 void op_l_dot_hex() {Long x=popLong(); Serial.print("0x"); Serial.print(x,16); Serial.print(" ");}
 void op_dot_f() {Serial.print(popFloat()); Serial.print(" ");}
 void op_emit() {Word x=pop(); char c=(x&0xFF); Serial.print(c);}
-void op_dot_str() {Word addr=pop(); printStr(addr); }
+void op_type() {
+  Word n=pop(); 
+  Word addr=pop();
+  for (Word i=0; i<n; i++) {
+    Byte ch=readByte(addr+n);
+    printChar(ch);
+  }
+}
 
 void op_code_next() {Word addr=generateCodeAddress(getCodeNext()); push(addr);}
 void op_comp_next() {Word addr=generateCodeAddress(getCompileNext()); push(addr);}
@@ -733,8 +740,8 @@ void op_allot() {
 
 void op_write() {Word addr=pop(); Word value=pop(); writeWord(addr,value);}
 void op_read() {Word addr=pop(); push(readWord(addr));}
-void op_writeb() {Word addr=pop(); Word x=pop(); writeByte(addr,x);}
-void op_readb() {Word addr=pop(); push(readByte(addr));}
+void op_writec() {Word addr=pop(); Word x=pop(); writeByte(addr,x);}
+void op_readc() {Word addr=pop(); push(readByte(addr));}
 
 void op_ret() {programCounter=rpop();}
 void op_cond_ret() {Word cond=pop(); if (cond != 0) programCounter=rpop();}
@@ -833,11 +840,11 @@ void op_blob() {
   push(generateCodeAddress(lengthPointer));
 }
 
-void op_key() {
+void op_key_check() {
   push(keyPressed() ? 1 : 0);
 }
 
-void op_readc() {
+void op_key() {
   push(readSerialChar());
 }
 
@@ -899,7 +906,7 @@ L.s \
 L.hex \
 F. \
 emit \
-.str \
+type \
 code.next \
 comp.next \
 comp.out \
@@ -907,8 +914,8 @@ HERE \
 allot \
 ! \
 @ \
-b! \
-b@ \
+c! \
+c@ \
 dup \
 swap \
 drop \
@@ -921,8 +928,8 @@ test] \
 >R \
 R> \
 rpick \
+key? \
 key \
-readc \
 ' \
 dump \
 code.export \
@@ -1013,7 +1020,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_l_dot_hex
 ,&op_dot_f
 ,&op_emit
-,&op_dot_str
+,&op_type
 ,&op_code_next
 ,&op_comp_next
 ,&op_comp_out
@@ -1021,8 +1028,8 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_allot
 ,&op_write
 ,&op_read
-,&op_writeb
-,&op_readb
+,&op_writec
+,&op_readc
 ,&op_dup
 ,&op_swap
 ,&op_drop
@@ -1035,8 +1042,8 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_to_r
 ,&op_r_from
 ,&op_r_pick
+,&op_key_check
 ,&op_key
-,&op_readc
 ,&op_word_addr
 ,&op_dump
 ,&op_code_export
@@ -1086,8 +1093,6 @@ static const PROGMEM FUNC opFunctions[]={
 };
 
 // --------------------------------------------------------------------------------
-
-
 
 
 

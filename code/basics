@@ -18,9 +18,10 @@
 1 constant DE_IMMEDIATE
 2 constant DE_CONSTANT
 
-2 constant cell
+2 constant CELL
+
 : 1+ 1 + ;
-: cells cell * ;
+: cells CELL * ;
 
 : over 1 pick ;
 : 2dup over over ;
@@ -29,6 +30,7 @@
 : RPeek RDup R> ;
 : RSwap R> R> swap >R >R ;
 : RDrop R> drop ;
+
 
 (dictionary entry field offsets)
 
@@ -46,8 +48,12 @@
 	DE_IMMEDIATE *dictHead DE->type b!
 ;
 
-(Ex. 145 >L 123 kL  --- results in 145123 as Long value on xStack)
-: kL (val -- )
-	1000 >L L* >L L+ ;
+: count (str -- ) 
+	dup c@ swap 1+ swap ;
 	
+(Ex. 145 123 kL  --- results in 145123 as Long value on xStack)
+: kL (kval val -- Lval)
+	swap >L 1000>L L* 
+	>L L+
+;
 	

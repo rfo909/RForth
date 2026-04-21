@@ -9,9 +9,17 @@
 	10
 /Newline
 
+# Change serial device
+# --
+	println("Current: ", Db2:Get(Sys.scriptId,"Device","/dev/ttyACM0"))
+	readLine("Enter device, blank to keep existing") => dev
+	if (dev != "") Db2:Set(Sys.scriptId,"Device",dev)
+/SetDevice
+
 # Serial device
 # --
-	RawFile("/dev/ttyACM0")
+	dev=Db2:Get(Sys.scriptId,"Device","/dev/ttyACM0")
+	RawFile(dev)
 /Device
 
 # Send line

@@ -38,10 +38,10 @@ typedef struct {
 
 typedef Byte Boolean;
 
-#define NUM_TAGS_REFS     5
+#define NUM_TAGS_REFS     4
   // Colon compiler supports tags for loops and conditionals, combined with jmp and jmp?
   //
-  // Define tags as "/0" to "/4" and resolve them into addresses using "&0" to "&4", before jmp or jmp?
+  // Define tags as "/0" to "/3" and resolve them into addresses using "&0" to "&3", before jmp or jmp?
   // This number is the total allowed tags and references within the main body of a colon word. Since we
   // don't have immediate op-codes, IF and loops must be implemented in Forth.
 

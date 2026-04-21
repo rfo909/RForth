@@ -1,3 +1,4 @@
+(depends on basics)
 
 34 constant CH_QUOT		(The " character)
 
@@ -8,7 +9,7 @@ in the code segment. The OP_BLOB executes by reading the length,
 advancing the program pointer past the length byte and the following
 bytes, then pushing the address of the length byte on the stack
 )
-: " ( -- )
+: s" ( -- )
 	OP_BLOB comp.out
 	
 	comp.next >R   (store address of length field)
@@ -16,7 +17,7 @@ bytes, then pushing the address of the length byte on the stack
 	
 	0	(count)
 	/0
-		readc 
+		key 
 		dup 			(count char char)
 			CH_QUOT == &2 jmp?   (--- matching quote found)
 		(char) comp.out           (count)

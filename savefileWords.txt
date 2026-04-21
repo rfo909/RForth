@@ -70,7 +70,7 @@ L.s          &op_l_dot_s                        print long on decimal - signed
 L.hex        &op_l_dot_hex                      print long on hex format
 F.           &op_dot_f                          print float
 emit         &op_emit                           print single character
-.str         &op_dot_str                        print Forth string
+type         &op_type                           (ptr count --) print Forth string
              
 code.next    &op_code_next                      address of next byte in codeSegment
 comp.next    &op_comp_next                      address of next byte - when compiling
@@ -80,8 +80,8 @@ allot        &op_allot                          increase HERE
              
 !            &op_write                          (value addr --) write cell value
 @            &op_read                           (addr -- value) read cell value
-b!           &op_writeb                         (value addr --) write byte value
-b@           &op_readb                          (addr --) read byte value
+c!           &op_writec                         (value addr --) write byte value
+c@           &op_readc                          (addr --) read byte value
              
 dup          &op_dup                            
 swap         &op_swap                           
@@ -99,8 +99,8 @@ test]        &op_end_test                       end timed test and print report
 R>           &op_r_from                         get value from return stack
 rpick        &op_r_pick                         (n -- value) copy value on rStack
 
-key          &op_key                            return boolean for if a key has been pressed (serial)
-readc        &op_readc                          read character from serial
+key?         &op_key_check                      return boolean for if a key has been pressed (serial)
+key          &op_key                            read character from serial
              
 '            &op_word_addr                      <word> get address of word
 dump         &op_dump                           dump codeSegment and dataSegment below code.HERE and HERE
