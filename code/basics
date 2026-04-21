@@ -1,4 +1,10 @@
-(ops with fixed byte codes)
+(
+This code requires ~800 bytes of code segment space to
+compile. Must use Nano Every or the 2560.
+
+Once in static (Flash) space, all the code is available
+to the atmega328p 
+)
 
 : constant (value -- )
 	create                             (makes a constant with value 0 - dont need to set DE->type)
@@ -79,6 +85,58 @@
 	/1
 		drop drop
 ;
+
+
+
+34 constant CH_QUOT		(The " character)
+
+(
+Create blob (string) of bytes up to the end quote. Only works 
+for compile, as it generates code into (net yet allocated) memory
+in the code segment. The OP_BLOB executes by reading the length, 
+advancing the program pointer past the length byte and the following
+bytes, then pushing the address of the length byte on the stack
+)
+: s" ( -- )
+	OP_BLOB comp.out
+	
+	comp.next >R   (store address of length field)
+	0 comp.out    (length field dummy value)
+	
+	0	(count)
+	/0
+		key 
+		dup 			(count char char)
+			CH_QUOT == &2 jmp?   (--- matching quote found)
+		(char) comp.out           (count)
+		1 +
+		&0 jmp
+	/2
+		drop
+		R> 
+			c!  (patch the length field)
+; immediate
+
+
+: type (ptr count -- )
+	swap			(n ptr)
+	0			(n ptr count)
+	/0
+		dup 3 pick == &1 jmp? (count == n ?)
+		dup  (n ptr count count)
+			2 pick + c@ emit
+		1+
+		&0 jmp
+	/1
+		drop drop drop
+;
+			
+		
+
+: .str (str -- ) dup 1+ swap c@ type ;
+
+
+: hello cr s" World Hello swap" .str ;
 
 
 
