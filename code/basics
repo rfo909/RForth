@@ -30,10 +30,29 @@ to the atmega328p
 : over 1 pick ;
 : 2dup over over ;
 
-: RDup 0 rpick ;
-: RPeek RDup R> ;
-: RSwap R> R> swap >R >R ;
-: RDrop R> drop ;
+
+(for these, we must temp-store the top value on the data stack, since these words have return addresses)
+
+: RDup 
+	R> 
+	0 rpick 
+	>R 
+;
+: RPeek 
+	R> 
+	RDup R> 
+	>R 
+;
+: RSwap
+	R> 
+	R> R> swap >R >R 
+	R> 
+;
+: RDrop 
+	R> 
+	R> drop 
+	>R 
+;
 
 
 (dictionary entry field offsets)
