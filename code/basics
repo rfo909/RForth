@@ -155,21 +155,20 @@ bytes, then pushing the address of the length byte on the stack
 
 : LOOP
 	comp.next >R
-	RDup R> .
 	/0
 		readNextWord
-		s" AGAIN" nextWordEq &1 jmp?  (exit loop)
+		s" AGAIN?" nextWordEq &1 jmp?  (exit loop)
 		compile
 		&0 jmp
 	/1
 		OP_CVAL comp.out
 		RDup R> 8 >> 0xFF & comp.out
 		R> 0xFF & comp.out
-		OP_JMP comp.out
+		OP_COND_JMP comp.out
 ; immediate
 
 
-: testLoop 1 LOOP dup . 1+ dup 100 > ret? AGAIN ;
+: testLoop 1 LOOP dup . cr 1+ key? not AGAIN? ; 
 
 
 
