@@ -1,5 +1,5 @@
 (
-This code requires ~800 bytes of code segment space to
+This code requires ~900 bytes of code segment space to
 compile. Must use Nano Every or the 2560.
 
 Once in static (Flash) space, all the code is available
@@ -38,15 +38,10 @@ to the atmega328p
 	0 rpick 
 	>R 
 ;
-: RPeek 
-	R> 
-	RDup R> 
-	>R 
-;
 : RSwap
 	R> 
 	R> R> swap >R >R 
-	R> 
+	>R 
 ;
 : RDrop 
 	R> 
@@ -156,6 +151,26 @@ bytes, then pushing the address of the length byte on the stack
 
 
 : hello cr s" World Hello swap" .str ;
+
+
+: LOOP
+	comp.next >R
+	RDup R> .
+	/0
+		readNextWord
+		s" AGAIN" nextWordEq &1 jmp?  (exit loop)
+		compile
+		&0 jmp
+	/1
+		OP_CVAL comp.out
+		RDup R> 8 >> 0xFF & comp.out
+		R> 0xFF & comp.out
+		OP_JMP comp.out
+; immediate
+
+
+: testLoop 1 LOOP dup . 1+ dup 100 > ret? AGAIN ;
+
 
 
 

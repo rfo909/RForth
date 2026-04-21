@@ -1,19 +1,2 @@
 
-: LOOP
-	comp.next >R
-	RPeek .
-	/0
-		readNextWord
-		s" AGAIN" nextWordEq &1 jmp?  (exit loop)
-		compile
-		&0 jmp
-	/1
-		OP_CVAL comp.out
-		RPeek 8 >> 0xFF & comp.out
-		R> 0xFF & comp.out
-		OP_JMP comp.out
-; immediate
-
-
-: test 1 LOOP dup . 1+ AGAIN ;
-
+: IF 

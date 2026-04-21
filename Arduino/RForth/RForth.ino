@@ -327,6 +327,14 @@ static void showStacks() {
   }
   Serial.println("]");
   
+  Serial.print(F("ret   ["));
+  for (i=0; i<rStackNext; i++) {
+    if (i>0) Serial.print(" ");
+    SWord w=(SWord) rStack[i];
+    Serial.print(w);
+  }
+  Serial.println("]");
+
   if (xStackNext == 0) return;
 
   Serial.print("Long  [");
