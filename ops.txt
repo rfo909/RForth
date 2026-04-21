@@ -108,3 +108,5 @@ L/
 L%                       
 L<<                      (long word -- long<<word)
 L>>                      (long word -- long>>word)
+hw@                      (Addr -- Byte)
+hw!                      (Byte Addr --)

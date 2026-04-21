@@ -258,6 +258,10 @@ Renamed in C
 - key? (was "key" - return character from serial or 0, nonblocking)
 
 
+Two new ops
+
+- hw@ - read hardware RAM address (register) byte
+- hw! - write harware RAM byte
 
 TODO:
 -----

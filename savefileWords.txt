@@ -157,6 +157,9 @@ L%           &op_l_mod
 L<<          &op_l_lshift                       (long word -- long<<word)
 L>>          &op_l_rshift                       (long word -- long>>word)
 
+hw@          &op_hw_read                        (Addr -- Byte)
+hw!          &op_hw_write                       (Byte Addr --)
+
 >>>> EOF
 /Data
 

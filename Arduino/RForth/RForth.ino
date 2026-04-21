@@ -855,7 +855,7 @@ void op_word_addr() {
 
 // --------------------------------------------------------------------------------
 
-const Byte numOps=107;
+const Byte numOps=109;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -965,6 +965,8 @@ L/ \
 L% \
 L<< \
 L>> \
+hw@ \
+hw! \
 ";
 
 typedef void (*FUNC)();
@@ -1077,9 +1079,13 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_l_mod
 ,&op_l_lshift
 ,&op_l_rshift
+,&op_hw_read
+,&op_hw_write
 };
 
 // --------------------------------------------------------------------------------
+
+
 
 
 
@@ -1387,7 +1393,7 @@ void natI2CmasterRead() {
 
 
 // -----------------------------------------
-// Floats
+// Float and Long
 // -----------------------------------------
 
 void op_sw_to_f () {
@@ -1499,6 +1505,23 @@ void op_l_rshift () {
   pushLong(val>>n);
 }
 
+
+// -----------------------------------------
+// C memory access (registers)
+// -----------------------------------------
+
+void op_hw_read () {
+  Word addr=pop();
+  Byte *loc=(Byte *) addr;
+  push(*loc);
+}
+
+void op_hw_write () {
+  Word addr=pop();
+  Byte value=(Byte) (pop() & 0xFF);
+  Byte *loc=(Byte *) addr;
+  *loc=value;
+}
 
 
 // Check if string in opNames PROGMEM array starting at pos matches the given string
