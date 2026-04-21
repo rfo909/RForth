@@ -1,0 +1,69 @@
+(atmega2560)
+
+0x24 constant DDRB
+0x25 constant PORTB
+0x23 constant PINB
+
+(
+(atmega329p)
+
+0x04 constant DDRB
+0x05 constant PORTB
+0x03 constant PINB
+)
+
+48 constant CH_ZERO
+49 constant CH_ONE
+
+: .bit (bool --)
+	&1 jmp?  
+	CH_ZERO emit ret
+	/1 CH_ONE emit
+;
+
+: .bits (byte --)
+	0x80    (byte bit)
+	/0
+		dup 0 == &1 jmp?    (exit)
+		dup (byte bit bit)
+		2 pick & .bit (byte bit)
+		1 >>
+		&0 jmp
+	/1
+		drop drop
+;		
+
+: B
+	cr
+	s" DDRB  " .str
+	DDRB hw@ .bits
+
+	cr
+	s" PORTB " .str
+	PORTB hw@ .bits
+
+	cr
+	s" PINB  " .str
+	PINB hw@ .bits
+;
+
+b10000000 constant Mask
+
+: setLedOut
+	DDRB hw@ 
+	Mask inv & 
+	Mask | DDRB hw!
+;
+
+(switch led on pin 13 on and off)
+: led (val)
+	&1 jmp?  (if on)
+		(turn off)
+		PORTB hw@ 
+		Mask inv & PORTB hw! 
+		ret  
+	/1
+		(turn on)
+		PORTB hw@ Mask | PORTB hw!
+;
+

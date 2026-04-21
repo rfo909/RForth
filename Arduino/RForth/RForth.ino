@@ -706,7 +706,7 @@ void op_bin_and() {Word b=pop(); Word a=pop(); push(a&b);}
 void op_bin_or() {Word b=pop(); Word a=pop(); push(a|b);}
 void op_bin_inv() {Word x=pop(); push(~x);}
 void op_lshift() {Word b=pop(); Word a=pop(); push(a<<b);}
-void op_rshift() {Word b=pop(); Word a=pop(); push(a<<b);}
+void op_rshift() {Word b=pop(); Word a=pop(); push(a>>b);}
 
 
 void op_dot() {int i=(int) pop(); Serial.print(i); Serial.print(" ");}
