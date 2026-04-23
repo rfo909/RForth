@@ -1,2 +1,15 @@
+: blob[
+	OP_BLOB comp.out
+	comp.next >R          (store length pos)
+	0 comp.out  (length)
+	/0
+		readNextWord
+		s" ]" nextWordEq &1 jmp?
+		compile
+		&0 jmp
+	/1
+		comp.next RDup R> -   (number of bytes)
+		R> c! (write into length byte)
+; immediate
 
-: IF 
+
