@@ -496,6 +496,10 @@ void op_nextWord_write() {
 }
 
 
+void op_dStack_next () {
+  push(dStackNext);
+}
+
 
 // when an op requires additional Bytes (bval and cval - push Byte and cell value)
 Byte getOpcodeParameter() {
@@ -888,9 +892,9 @@ void op_word_addr() {
 // upate Words script and and run "gen" to get this code
 // "Global variables use 1559 bytes"
 
-// ---------------------------------------------------------------------------+
+// --------------------------------------------------------------------------------
 
-const Byte numOps=113;
+const Byte numOps=114;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -1006,6 +1010,7 @@ readNextWord \
 nextWordEq \
 compile \
 nextWord! \
+dStackNext \
 ";
 
 typedef void (*FUNC)();
@@ -1124,9 +1129,11 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_nextWordEq
 ,&op_compile
 ,&op_nextWord_write
+,&op_dStack_next
 };
 
-// --------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+
 
 void op_ops() {
   Byte length=0;

@@ -165,6 +165,7 @@ readNextWord &op_readNextWord                   read into the nextWord C string 
 nextWordEq   &op_nextWordEq                     (str -- bool)
 compile      &op_compile                        (--) compile nextWord
 nextWord!    &op_nextWord_write                 (str --) insert string as nextWord
+dStackNext   &op_dStack_next                    (get current size of dStack)
 
 >>>> EOF
 /Data
