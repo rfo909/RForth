@@ -33,8 +33,6 @@ jmp          &op_jmp                            #5 (addr --) jump to address
 jmp?         &op_cond_jmp                       #6 (cond addr --) conditional jump if cond != 0
 blob         &op_blob         [len ...]         #7 just skips the data byes, returns pointer to len field
           
-*dictHead    &op_star_dictHead                  return pointer to top dictionary entry
-
 dcall        &op_dcall                          (addr --) dynamic call, take address from stack
 ret?         &op_cond_ret                       (cond --) conditional return
              
@@ -165,7 +163,9 @@ readNextWord &op_readNextWord                   read into the nextWord C string 
 nextWordEq   &op_nextWordEq                     (str -- bool)
 compile      &op_compile                        (--) compile nextWord
 nextWord!    &op_nextWord_write                 (str --) insert string as nextWord
-dStackNext   &op_dStack_next                    (get current size of dStack)
+dStackNext   &op_dStack_next                    get current size of dStack
+comp:init    &op_comp_init                      set compileNext=dataNext
+comp:done    &op_comp_done                      set dataNext=compileNext, committing compiled output
 
 >>>> EOF
 /Data

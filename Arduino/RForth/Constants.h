@@ -36,6 +36,7 @@ typedef struct {
 #define DE_TYPE_IMMEDIATE   1
 #define DE_TYPE_CONSTANT    2
 
+
 typedef Byte Boolean;
 
 #define NUM_TAGS_REFS     4

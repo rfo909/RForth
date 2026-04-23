@@ -1,3 +1,23 @@
+: data (value)
+	*dictHead DE->type c@ DE_CONSTANT != &3 jmp?  (not a constant - ignore)
+		
+	comp:init (set comp.next to data.next)
+	*dictHead DE->address @ 0 != &1 jmp?   (skip DE initialization) 
+	
+		(address is 0, set to comp.next)
+		comp.next *dictHead DE->address !
+	
+	/1
+		(value) dup 8 >> comp.out
+		comp.out
+		comp:done
+	
+	/3
+		drop
+;
+
+
+
 : blob[
 	OP_BLOB comp.out
 	comp.next >R          (store length pos)

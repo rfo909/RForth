@@ -6,6 +6,10 @@ Once in static (Flash) space, all the code is available
 to the atmega328p 
 )
 
+: DATA_SEGMENT 0x4000 ;
+: *Dict DATA_SEGMENT ;
+: *dictHead 0x4000 @ ;
+
 : constant (value -- )
 	create                             (makes a constant with value 0 - dont need to set DE->type)
 	(value) *dictHead 3 + !            (3+ = DE->address)
@@ -23,6 +27,7 @@ to the atmega328p
 2 constant DE_CONSTANT
 
 2 constant cell
+
 
 : 1+ 1 + ;
 : cells cell * ;

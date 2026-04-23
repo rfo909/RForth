@@ -114,4 +114,6 @@ readNextWord             read into the nextWord C string buffer
 nextWordEq               (str -- bool)
 compile                  (--) compile nextWord
 nextWord!                (str --) insert string as nextWord
-dStackNext               (get current size of dStack)
+dStackNext               get current size of dStack
+comp:init                set compileNext=dataNext
+comp:done                set dataNext=compileNext, committing compiled output

@@ -500,6 +500,14 @@ void op_dStack_next () {
   push(dStackNext);
 }
 
+void op_comp_init() {
+  startCompile();
+}
+
+void op_comp_done () {
+  confirmCompile();
+}
+
 
 // when an op requires additional Bytes (bval and cval - push Byte and cell value)
 Byte getOpcodeParameter() {
@@ -780,10 +788,6 @@ void op_create() {
   create();
 }
 
-void op_star_dictHead() {
-  push(getDictionaryHead());
-}
-
 void op_dup() {push(pick(0));}
 void op_swap() {Word b=pop(); Word a=pop(); push(b); push(a);}
 void op_drop() {pop();}
@@ -892,9 +896,9 @@ void op_word_addr() {
 // upate Words script and and run "gen" to get this code
 // "Global variables use 1559 bytes"
 
-// --------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------+
 
-const Byte numOps=114;
+const Byte numOps=115;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -905,7 +909,6 @@ ret \
 jmp \
 jmp? \
 blob \
-*dictHead \
 dcall \
 ret? \
 + \
@@ -1011,6 +1014,8 @@ nextWordEq \
 compile \
 nextWord! \
 dStackNext \
+comp:init \
+comp:done \
 ";
 
 typedef void (*FUNC)();
@@ -1024,7 +1029,6 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_jmp
 ,&op_cond_jmp
 ,&op_blob
-,&op_star_dictHead
 ,&op_dcall
 ,&op_cond_ret
 ,&op_add
@@ -1130,9 +1134,11 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_compile
 ,&op_nextWord_write
 ,&op_dStack_next
+,&op_comp_init
+,&op_comp_done
 };
 
-// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------
 
 
 void op_ops() {
