@@ -11,11 +11,12 @@ typedef unsigned char Byte;
 
 typedef void (*XT) (Word);
 
+#define CELLSIZE	2
+
 #define  NULL ((void *) 0)
 
 #define DSTACK_SIZE     16
 #define RSTACK_SIZE     16
-#define XSTACK_SIZE     8
 
 #define DATA_SEGMENT_SIZE     200
 #define CODE_SEGMENT_SIZE     200

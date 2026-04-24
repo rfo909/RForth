@@ -4,15 +4,21 @@
 Byte codeSegment[CODE_SEGMENT_SIZE];
 Byte dataSegment[DATA_SEGMENT_SIZE];
 
+// PROGMEM data later
 Byte flashCode[]={1,2,3};
 const Word flashCodeLength=3;
 
-#define DATA_ADDRESS(x) (x | DATA_BIT)
+#define DATA_ADDRESS(x) ((x) | DATA_BIT)
 
 #define REG_DICT_PTR      DATA_ADDRESS(0)
 #define REG_STATIC_COUNT  DATA_ADDRESS(2)
 #define REG_CODE_NEXT     DATA_ADDRESS(4)
-#define REG_DATA_NEXT     DATA_ADDRESS(6)
+#define REG_HERE      DATA_ADDRESS(6)
+
+#define REG_DSTACK        DATA_ADDRESS(8)
+#define REG_RSTACK        DATA_ADDRESS(10)
+
+#define REGISTER_COUNT    6
 
 #define INVALID_BYTE 0xFF
 #define INVALID_WORD 0xFFFF
@@ -110,15 +116,94 @@ void writeWord (Word addr, Word val) {
   writeByte(addr+1,b);
 }
 
+// -----------------------------
+// Some very basic functions
+
+Word HERE() {
+  return readWord(REG_HERE);
+}
+
+Word codeNext() {
+  return readWord(REG_CODE_NEXT);
+}
+
+void allot (Word count) {
+  Word here=HERE()+count;
+  if (here >= DATA_SEGMENT_SIZE) {
+    setHasError();
+    Serial.println(F("allot: out of data space"));
+    return;
+  }
+  writeWord(REG_HERE, here+count);
+}
+
+void codeOut (Byte b) {
+  Word w=codeNext();
+  if (w-flashCodeLength + 1 >= CODE_SEGMENT_SIZE) {
+    setHasError();
+    Serial.println(F("codeOut: out of code space"));
+    return;
+  }
+}
+
+void codeOutWord (Word w) {
+  codeOut((w>>8) & 0xFF);
+  if (hasError()) return;
+  codeOut(w & 0xFF);
+}
+
+// -----------------------------
+// Memory initialization (data segment) 
+
 void memInit() {
+  Word i;
+  for (i=0; i<DATA_SEGMENT_SIZE; i++) {
+    dataSegment[i]=0;
+  }
+  for (i=0; i<CODE_SEGMENT_SIZE; i++) {
+    codeSegment[i]=0;
+  }
+
+  // all registers are initialized to 0 when setting all bytes to 0
+  allot(REGISTER_COUNT * CELLSIZE);
+
+  writeWord(REG_STATIC_COUNT, flashCodeLength);
+  writeWord(REG_CODE_NEXT, flashCodeLength);
+
+  // create dStack
+  Word dStack=HERE();
+  allot(DSTACK_SIZE * CELLSIZE);
+  Word rStack=HERE();
+  allot(RSTACK_SIZE * CELLSIZE);
+
+  writeWord(REG_DSTACK, dStack);
+  writeWord(REG_RSTACK, rStack);
+}
+
+// -----------------------------
+// Dictionary initalialization
+
+/*
+The dictionary entry consists of 
+  - previousPointer (Word)
+  - nameReference (Word)
+  - flags (Byte)
+  - codePointer 
+*/
+
+void dictionaryInit() {
 
 }
+
 
 void setup() {
   Serial.begin(9600);
   Serial.println(F("XForth"));
   
   memInit();
+  Serial.println(F("Memory init ok"));
+  dictionaryInit();
+  Serial.println(F("Dictionary ready"));
 }
 
 void loop() {
