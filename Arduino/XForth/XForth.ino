@@ -61,6 +61,15 @@ void clearInputBuffer() {
   while (Serial.available()) Serial.read();
 }
 
+// Must not point to flash code!
+Byte *refToPointer (Word addr) {
+  if (addr & DATA_BIT) {
+    return &(dataSegment[addr & DATA_MASK]);
+  } else {
+    return &(codeSegment[addr-flashCodeLength]);
+  }
+}
+
 Byte readFlashCodeByte (Word addr) {
   if (addr >= flashCodeLength) {
     setHasError();
@@ -172,6 +181,11 @@ void codeAllot (Word count) {
     Serial.println(F("codeAllot: out of code space"));
     return;
   }
+  Serial.print("codeAllot: codeHERE=");
+  Serial.print(here);
+  Serial.print(" count=");
+  Serial.println(count);
+
   writeWord(REG_CODE_NEXT, here+count);
 }
 
@@ -191,6 +205,79 @@ void codeOutWord (Word w) {
 }
 
 
+// -------------------------
+// Util
+
+/*
+Enhanced atoi, recognizes decimal, hex (0x...) and binary (b....) and negative, returns boolean to 
+indicate success or failure. Writes result int *target
+*/
+Boolean myAtoi (char *nextWord, int *target) {
+  int readPos=0;
+  
+  Boolean negative=false;
+  if (nextWord[readPos]=='-') {
+    negative=true;
+    readPos++;
+    if(nextWord[readPos] == '\0') return false;
+  }
+
+  long value=0; 
+
+  if (!strncmp(nextWord+readPos,"0x",2)) {
+    // parsing hex
+    readPos+=2;
+
+    while(nextWord[readPos] != '\0') {
+      char c=nextWord[readPos++];
+      if (c=='\0') return false; // no digits
+
+      if (c>='0' && c <= '9') {
+        value=value*16 + (c-'0');
+      } else if (c>='A' && c<='F') {
+        value=value*16 + (c-'A') + 10;
+      } else if (c>='a' && c<='f') {
+        value=value*16 + (c-'a') + 10;
+      } else {
+        return false;  // fail
+      }
+    }
+    // ok
+  } else if (nextWord[readPos]=='b') {
+    // possibly binary
+    readPos++;
+    if (nextWord[readPos]=='\0') return false; // no digits
+
+    while(nextWord[readPos] != '\0') {
+      char c=(char) nextWord[readPos++];
+      if (c>='0' && c <= '1') {
+        value=value*2 + (c-'0');
+      } else {
+        return false;  // fail
+      }
+    }
+    // ok
+  } else {
+    // decimal?
+    while(nextWord[readPos] != '\0') {
+      char c=(char) nextWord[readPos++];
+      if (c>='0' && c <= '9') {
+        value=value*10 + (c-'0');
+      } else {
+        return false;  // fail
+      }
+    }
+    // ok
+  } 
+
+  if (negative) value=-value;
+  *target=value;
+  return true; // success
+}
+
+
+// -------------------------
+// Stack operations
 
 void push (Word baseAddr, Word sizeAddr, Word nextAddr, Word value) {
   Word addr=readWord(baseAddr);
@@ -292,11 +379,11 @@ void memInit() {
 
   // allocate nextWord buffer
   writeWord(ROREG_NEXTWORD_BASE, HERE());
-  writeWord(ROREG_NEXTWORD_LENGTH, MAX_WORD_LENGTH);
+  writeWord(ROREG_NEXTWORD_LENGTH, MAX_WORD_LENGTH); 
   
-  allot(MAX_WORD_LENGTH+1);
+  allot(MAX_WORD_LENGTH+2);   // both counted and null-terminated!
   writeByte(readWord(ROREG_NEXTWORD_BASE), 0); // set length field to 0
-
+  writeByte(readWord(ROREG_NEXTWORD_BASE+1), 0); // and terminate it C style
   
   // set next pointers for stacks to base
   writeWord(REG_DSTACK_NEXT, readWord(ROREG_DSTACK_BASE));
@@ -349,6 +436,7 @@ void op_dot () {
 
 
 
+
 // ---------------------------
 // Execution token functions
 
@@ -358,13 +446,6 @@ void XT_C_Call (Word paramField) {
   f();
 }
 
-void XT_Cell_Literal (Word paramField) {
-  dPush(readWord(paramField));
-}
-
-void XT_Byte_Literal (Word paramField) {
-  dPush(readByte(paramField));
-}
 
 
 // -----------------------------
@@ -448,12 +529,62 @@ void callXT (Word dictEntry) {
 }
 
 
+void printWord (Word ref) {
+  Word length=readByte(ref);
+  for (int i=0; i<length; i++) {
+    char c=readByte(ref+1+i);
+    Serial.print(c);
+  }
+}
+
+void cr () {
+  Serial.println();
+}
+
+void printNextWord() {
+  Word nextWord=readWord(ROREG_NEXTWORD_BASE);
+  printWord(nextWord);
+}
+
+void words() {
+  Word ref=readWord(REG_DICT_PTR);
+  while (ref != 0) {
+    if (hasError()) return;
+    Word deName=ref+2;
+    printWord(deName);
+    Serial.print(" ");
+    ref=readWord(ref); // prev-pointer
+  }
+}
+
+void dump () {
+  Word addr=dPop();
+  for (Word i=0; i<20; i++) {
+    Serial.print(addr+i);
+    Serial.print(" ");
+    Serial.println(readByte(addr+i));
+  }
+}
+
+
 // Look up in dictionary, return ref to XT
 void executeNextWord () {
+  Serial.println(F("executeNextWord"));
+
   Word nextWord=readWord(ROREG_NEXTWORD_BASE);
+  char *cstring=refToPointer(nextWord+1);
+  int intValue=0;
+  if (myAtoi(cstring, &intValue)) {
+    dPush((Word) intValue);
+    return;
+  }
+
   Word ref=readWord(REG_DICT_PTR);
   while (ref != 0) {
     Word deName=ref+2;
+    Serial.print("Checking: ");
+    printWord(deName);
+    cr();
     dPush(nextWord);
     dPush(ref+2); // name field
     op_seq();
@@ -470,10 +601,13 @@ void executeNextWord () {
 
 void dictionaryInit() {
   dictAddOp1('+', &op_add);
+  dictAddOp4('d','u','m','p', &dump);
+/*
   dictAddOp1('-', &op_sub);
   dictAddOp1('*', &op_mul);
   dictAddOp1('/', &op_div);
   dictAddOp1('.', &op_dot);
+  dictAddOp1('?', &words);
 
   dictAddOp2('<','<', &op_lshift);
   dictAddOp2('>','>', &op_rshift);
@@ -481,6 +615,8 @@ void dictionaryInit() {
   dictAddOp3('s','e','q', &op_seq);
 
   dictAddOp4('k','e','y','?', &op_key_pressed);
+  dictAddOp4('d','u','m','p', &dump);
+*/
   Serial.println(F("Dictionary ready"));
 }
 
@@ -491,18 +627,16 @@ void setup() {
   
   memInit();
   dictionaryInit();
-  
-  /*
+
   dPush(15);
   dPush(3);
+  Word ref=readWord(REG_DICT_PTR); 
+  Word xt=ref+6;
+  Word params=ref+8;
 
-  Word de=readWord(REG_DICT_PTR);
-  Serial.print("de=");
-  Serial.println(de);
-
-  callXT(readWord(REG_DICT_PTR));
-  Serial.println(dPop());  // 18?
-  */
+  Word w=(Word) &op_add;
+  ((OP) w)();
+  words();
 }
 
 
@@ -524,16 +658,18 @@ void loop() {
   clearHasError();
   
   Word nextWordBase=readWord(ROREG_NEXTWORD_BASE);
+  Serial.print("nextWord at ");
+  Serial.println(nextWordBase);
   Byte length=readByte(nextWordBase);
 
   // show nextWord
-  Serial.print(F("nextWord: "));
-  for (int i=0; i<length; i++) {
-    char c=readByte(nextWordBase+1+i);
-    Serial.print(c);
-  }
+  printNextWord();
   Serial.println();
   // show data stack
+  Serial.print("nextWord=");
+  printNextWord();
+  Serial.println();
+  
   Serial.print(F("dStack: [ "));
   Word dStackBase=readWord(ROREG_DSTACK_BASE);
   Word dStackNext=readWord(REG_DSTACK_NEXT);
@@ -544,6 +680,16 @@ void loop() {
   Serial.println("]");
 
   Word ch=readSerialChar();
+  if (ch=='M') {
+    dump();
+    return;
+  } else if (ch=='0') {
+    dPush(0);
+    return;
+  } else if (ch=='D') {
+    dPush(readWord(REG_DICT_PTR));
+    return;
+  }
 
 
   if (ch == '\r' || ch=='\n' || ch==' ' || ch=='\t') {
@@ -563,8 +709,10 @@ void loop() {
       Serial.println(F("Word too long"));
       return;
     }
-    writeByte(nextWordBase +1 + length, ch);
+    writeByte(nextWordBase + 1 + length, ch);
+    writeByte(nextWordBase + 1 + length +1, 0); // c-string terminator
     writeByte(nextWordBase, length+1);
+
   }
 
 }
