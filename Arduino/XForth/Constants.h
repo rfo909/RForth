@@ -24,7 +24,7 @@ typedef Byte Boolean;
 #define XSTACK_SIZE     10
 
 #define DATA_SEGMENT_SIZE     800
-#define CODE_SEGMENT_SIZE     300
+#define CODE_SEGMENT_SIZE     600
 
 // #define DATA_SEGMENT_SIZE     (256 + ((RAMEND - RAMSTART) / 8))   // min 512 bytes on 2K SRAM
 // #define CODE_SEGMENT_SIZE     (RAMEND - RAMSTART - DATA_SEGMENT_SIZE - 880 - 200)
