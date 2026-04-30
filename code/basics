@@ -178,4 +178,47 @@ bytes, then pushing the address of the length byte on the stack
 
 
 
+(
+Create static data tables in the code segment
+----------------------------------------------
+
+Ex.
+	Code[ 3 c>C 4 c>C 5 c>C ]Code constant a
+	Code[ 6000 >C 7000 >C 8000 >C ]Code constant b
+
+	(should print 8000)
+	b 2 cells + @ .  
+
+	(should print 4)
+	a 1 + c@ .
+
+)
+
+(put next address of code segment on stack)
+: Code[ 
+	comp:init 
+	code.next 
+;
+
+(write byte to code segment)
+: c>C (byte)   
+	comp.out 
+;
+
+(write cell to code segment)
+: >C (cell) 
+	dup 8 >> 0xFF & c>C
+	0xFF & c>C
+;
+
+(commit the "compiled" code)
+: ]Code 
+	comp:done 
+;
+
+
+
+
+
+
 

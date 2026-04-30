@@ -1,17 +1,89 @@
-(atmega2560)
-
-0x24 constant DDRB
-0x25 constant PORTB
-0x23 constant PINB
-
 (
-(atmega329p)
+--- atmega328p ---
 
-0x04 constant DDRB
-0x05 constant PORTB
-0x03 constant PINB
+Datasheet operates with two address; the lower is for access
+via special instructions, the higher (below) represent
+memory mapping
+
 )
 
+0x56 constant MCUCR    (MCU Control Register)
+
+0x23 constant PINB
+0x24 constant DDRB
+0x25 constant PORTB
+
+0x26 constant PINC
+0x27 constant DDRC
+0x28 constant PORTC
+
+0x29 constant PIND
+0x2A constant DDRD
+0x2B constant PORTD
+
+Code[
+	DDRB c>C PORTB c>C PINB c>C b00100000 c>C
+]Code constant Pin13
+
+: Pin.ddr (pin) c@ ;
+: Pin.port (pin) c 1 + c@ ;
+: Pin.pin  (pin) c 2 + c@ ;
+: Pin.mask (pin) c 3 + c@ ;
+
+
+: RegOr (mask addr) 
+	dup hw@      (mask addr value)
+	over |       (mask addr newValue)
+	swap hw!
+	drop
+;
+
+: RegAnd (mask addr) 
+	dup hw@      (mask addr value)
+	over &       (mask addr newValue)
+	swap hw!
+	drop
+;
+	
+
+
+: Pin:output (pin)
+	dup Pin.ddr		(pin reg)
+	swap Pin.mask inv      (reg mask)
+	swap RegOr
+;
+
+: Pin:input (pin)
+	dup Pin.ddr
+	swap Pin.mask 
+	swap RegAnd
+;
+
+: Pin:write (value pin) 
+	swap &1 jmp?  (high)
+	Pin:low ret
+	/1
+	Pin.high
+;
+
+
+: Pin:low (pin) {
+	dup Pin.port swap    (reg pin)
+	Pin.mask inv swap PortAnd 
+;
+
+: Pin:high (pin) {
+	dup Pin.port swap    (reg pin)
+	Pin.mask swap PortAnd 
+;
+
+
+
+
+
+: setLedOut Pin13 Pin:output ;
+: ledOn Pin13 Pin.high ;
+: ledOff Pin13 Pin.low ;
 
 
 : B
@@ -28,13 +100,6 @@
 	PINB hw@ .bits
 ;
 
-(atmega2560)
-
-b10000000 constant Mask
-
-((atmega328p)
-b00100000 constant Mask
-)
 
 : setLedOut
 	DDRB hw@ 
