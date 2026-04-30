@@ -81,7 +81,8 @@ to the atmega328p
 
 : , HERE cell allot ! ;
 
-: c, HERE 1 allot ! ;
+: c, HERE 1 allot c! ;
+
 
 48 constant CH_ZERO
 49 constant CH_ONE
