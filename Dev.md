@@ -276,6 +276,26 @@ Also note that nextWord is a buffer in C, with a null-terminated string.
 113 ops
 
 
+2026-04-30
+----------
+Fixed four words for storing structured data in the code space. It is
+very much like COMMA and C-COMMA:
+
+```
+Code[ 23 c>C 24 c>C ]Code constant Data
+```
+
+The "c>C" word writes a char to the Code segment, while ">C" writes a cell.
+
+Created a complete "pins" source file for atmega328p pinout, tested
+with blinking the LED.
+
+Removed some of the Pin.* words from C, as they are now implemented
+in Forth.
+
+108 ops
+
+
 
 TODO:
 -----

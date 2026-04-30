@@ -1,5 +1,5 @@
 (
-This code requires ~900 bytes of code segment space to
+This code requires ~1000 bytes of code segment space to
 compile. Must use Nano Every or the 2560.
 
 Once in static (Flash) space, all the code is available

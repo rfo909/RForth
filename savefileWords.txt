@@ -111,14 +111,7 @@ delay-us     &op_delay_us                       (value --) delay micros
 deep-sleep8  &op_deep_sleep_8s                  (--) deep sleep 8 seconds
 free-mem     &op_free_mem                       (--) prints memory use and sizes
 
-Pin.modeOut  &natPinModeOut                     (pin --)
-Pin.modeIn   &natPinModeIn                      (pin --)
-Pin.modeInPullup &natPinModeInPullup            (pin --)
-Pin.writeDigital &natPinWriteDigital            (value pin --)
 Pin.writeAnalog &natPinWriteAnalog              (value pin --)
-Pin.pulseDigitalMs &natPinPulseDigitalMs           (ms value pin --)
-Pin.pulseDigitalUs &natPinPulseDigitalUs           (us value pin --)
-Pin.readDigital &natPinReadDigital              (pin -- value)
 Pin.readAnalog &natPinReadAnalog                (pin -- value)
 
 EE.length    &natEELength                       (-- length)

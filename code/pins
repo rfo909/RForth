@@ -7,8 +7,6 @@ memory mapping
 
 )
 
-0x56 constant MCUCR    (MCU Control Register)
-
 0x23 constant PINB
 0x24 constant DDRB
 0x25 constant PORTB
@@ -21,101 +19,122 @@ memory mapping
 0x2A constant DDRD
 0x2B constant PORTD
 
-Code[
-	DDRB c>C PORTB c>C PINB c>C b00100000 c>C
-]Code constant Pin13
+Code[ DDRB c>C PORTB c>C PINB c>C b00000001 c>C ]Code constant PB0
+Code[ DDRB c>C PORTB c>C PINB c>C b00000010 c>C ]Code constant PB1
+Code[ DDRB c>C PORTB c>C PINB c>C b00000100 c>C ]Code constant PB2
+Code[ DDRB c>C PORTB c>C PINB c>C b00001000 c>C ]Code constant PB3
+Code[ DDRB c>C PORTB c>C PINB c>C b00010000 c>C ]Code constant PB4
+Code[ DDRB c>C PORTB c>C PINB c>C b00100000 c>C ]Code constant PB5
+Code[ DDRB c>C PORTB c>C PINB c>C b01000000 c>C ]Code constant PB6
+Code[ DDRB c>C PORTB c>C PINB c>C b10000000 c>C ]Code constant PB7
 
-: Pin.ddr (pin) c@ ;
-: Pin.port (pin) c 1 + c@ ;
-: Pin.pin  (pin) c 2 + c@ ;
-: Pin.mask (pin) c 3 + c@ ;
+Code[ DDRC c>C PORTC c>C PINC c>C b00000001 c>C ]Code constant PC0
+Code[ DDRC c>C PORTC c>C PINC c>C b00000010 c>C ]Code constant PC1
+Code[ DDRC c>C PORTC c>C PINC c>C b00000100 c>C ]Code constant PC2
+Code[ DDRC c>C PORTC c>C PINC c>C b00001000 c>C ]Code constant PC3
+Code[ DDRC c>C PORTC c>C PINC c>C b00010000 c>C ]Code constant PC4
+Code[ DDRC c>C PORTC c>C PINC c>C b00100000 c>C ]Code constant PC5
+Code[ DDRC c>C PORTC c>C PINC c>C b01000000 c>C ]Code constant PC6
+
+Code[ DDRD c>C PORTD c>C PIND c>C b00000001 c>C ]Code constant PD0
+Code[ DDRD c>C PORTD c>C PIND c>C b00000010 c>C ]Code constant PD1
+Code[ DDRD c>C PORTD c>C PIND c>C b00000100 c>C ]Code constant PD2
+Code[ DDRD c>C PORTD c>C PIND c>C b00001000 c>C ]Code constant PD3
+Code[ DDRD c>C PORTD c>C PIND c>C b00010000 c>C ]Code constant PD4
+Code[ DDRD c>C PORTD c>C PIND c>C b00100000 c>C ]Code constant PD5
+Code[ DDRD c>C PORTD c>C PIND c>C b01000000 c>C ]Code constant PD6
+Code[ DDRD c>C PORTD c>C PIND c>C b10000000 c>C ]Code constant PD7
+
+(--- arduino names ---)
+
+PD0 constant D0
+PD1 constant D1
+PD2 constant D2
+PD3 constant D3
+PD4 constant D4
+PD5 constant D5
+PD6 constant D6
+PD7 constant D7
+PB0 constant D8
+PB1 constant D9
+PB2 constant D10
+PB3 constant D11
+PB4 constant D12
+PB5 constant D13
+
+PC0 constant A0
+PC1 constant A1
+PC2 constant A2
+PC3 constant A3
+PC4 constant A4
+PC5 constant A5
+
+D13 constant LED
+
+
+: Pin.ddr  (pin) c@ ;
+: Pin.port (pin) 1 + c@ ;
+: Pin.pin  (pin) 2 + c@ ;
+: Pin.mask (pin) 3 + c@ ;
 
 
 : RegOr (mask addr) 
-	dup hw@      (mask addr value)
-	over |       (mask addr newValue)
+	swap over  (addr mask addr)
+	hw@        (addr mask value)
+	|          (addr newValue)
 	swap hw!
-	drop
 ;
 
 : RegAnd (mask addr) 
-	dup hw@      (mask addr value)
-	over &       (mask addr newValue)
+	swap over  (addr mask addr)
+	hw@        (addr mask value)
+	&          (addr newValue)
 	swap hw!
-	drop
 ;
-	
 
-
-: Pin:output (pin)
+: Pin:out (pin)
 	dup Pin.ddr		(pin reg)
-	swap Pin.mask inv      (reg mask)
+	swap Pin.mask           (reg mask)
 	swap RegOr
 ;
 
-: Pin:input (pin)
+: Pin:in (pin)
 	dup Pin.ddr
-	swap Pin.mask 
+	swap Pin.mask inv
 	swap RegAnd
 ;
 
-: Pin:write (value pin) 
-	swap &1 jmp?  (high)
-	Pin:low ret
-	/1
-	Pin.high
-;
 
-
-: Pin:low (pin) {
+: Pin:0 (pin)
 	dup Pin.port swap    (reg pin)
-	Pin.mask inv swap PortAnd 
+	Pin.mask inv swap RegAnd 
 ;
 
-: Pin:high (pin) {
+: Pin:1 (pin)
 	dup Pin.port swap    (reg pin)
-	Pin.mask swap PortAnd 
+	Pin.mask swap RegOr 
 ;
 
-
-
-
-
-: setLedOut Pin13 Pin:output ;
-: ledOn Pin13 Pin.high ;
-: ledOff Pin13 Pin.low ;
-
-
-: B
-	cr
-	s" DDRB  " .str
-	DDRB hw@ .bits
-
-	cr
-	s" PORTB " .str
-	PORTB hw@ .bits
-
-	cr
-	s" PINB  " .str
-	PINB hw@ .bits
+: Pin:pullup (pin) 
+	Pin:1
 ;
 
-
-: setLedOut
-	DDRB hw@ 
-	Mask inv & 
-	Mask | DDRB hw!
+: Pin:pulldown (pin)
+	Pin:0
 ;
 
-(switch led on pin 13 on and off)
-: led (val)
-	&1 jmp?  (if on)
-		(turn off)
-		PORTB hw@ 
-		Mask inv & PORTB hw! 
-		ret  
+(digital write to pin)
+: Pin.writeDigital (value pin) 
+	swap &1 jmp?
+		(low)
+		Pin:0 ret
 	/1
-		(turn on)
-		PORTB hw@ Mask | PORTB hw!
+		(high)
+		Pin:1
+;
+
+: Pin.readDigital (pin)
+	dup Pin.pin hw@   (pin value)
+	swap Pin.mask     (value mask)
 ;
 

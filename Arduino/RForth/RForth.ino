@@ -898,7 +898,7 @@ void op_word_addr() {
 
 // ---------------------------------------------------------------------------+
 
-const Byte numOps=115;
+const Byte numOps=108;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -971,14 +971,7 @@ delay \
 delay-us \
 deep-sleep8 \
 free-mem \
-Pin.modeOut \
-Pin.modeIn \
-Pin.modeInPullup \
-Pin.writeDigital \
 Pin.writeAnalog \
-Pin.pulseDigitalMs \
-Pin.pulseDigitalUs \
-Pin.readDigital \
 Pin.readAnalog \
 EE.length \
 EE.write \
@@ -1091,14 +1084,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_delay_us
 ,&op_deep_sleep_8s
 ,&op_free_mem
-,&natPinModeOut
-,&natPinModeIn
-,&natPinModeInPullup
-,&natPinWriteDigital
 ,&natPinWriteAnalog
-,&natPinPulseDigitalMs
-,&natPinPulseDigitalUs
-,&natPinReadDigital
 ,&natPinReadAnalog
 ,&natEELength
 ,&natEEWrite
@@ -1137,6 +1123,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_comp_init
 ,&op_comp_done
 };
+
 
 // --------------------------------------------------------------------------
 
@@ -1299,71 +1286,13 @@ void op_free_mem() {
 
 
 // -------------------------------
-// Pin.*
+// Pin.* -- mostly implemented in Forth
 // -------------------------------
-
-void natPinModeOut () {
-  Word pin=pop();
-  pinMode(pin, OUTPUT);
-}
-
-void natPinModeIn () {
-  Word pin=pop();
-  pinMode(pin, INPUT);
-}
-
-void natPinModeInPullup () {
-  Word pin=pop();
-  pinMode(pin, INPUT_PULLUP);
-}
-
-void natPinWriteDigital () {
-  Word pin=pop();
-  Word value=pop();
-  digitalWrite(pin,value==0 ? LOW : HIGH);
-}
 
 void natPinWriteAnalog () {
 	Word pin=pop();
 	Word value=pop();
 	analogWrite(pin,value);
-}
-
-void natPinPulseDigitalMs () {
-	Word pin=pop();
-	Word value=pop();
-	Word ms=pop();
-
-	if (value==0) {
-		digitalWrite(pin, LOW);
-		delay(ms);
-		digitalWrite(pin, HIGH);
-	} else {
-		digitalWrite(pin, HIGH);
-		delay(ms);
-		digitalWrite(pin, LOW);
-	}
-}
-
-void natPinPulseDigitalUs () {
-	Word pin=pop();
-	Word value=pop();
-	Word us=pop();
-
-	if (value==0) {
-		digitalWrite(pin, LOW);
-		delayMicroseconds(us);
-		digitalWrite(pin, HIGH);
-	} else {
-		digitalWrite(pin, HIGH);
-		delayMicroseconds(us);
-		digitalWrite(pin, LOW);
-	}
-}
-
-void natPinReadDigital () {
-	Word pin=pop();
-	push(digitalRead(pin));
 }
 
 void natPinReadAnalog () {
