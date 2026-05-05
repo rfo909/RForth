@@ -1,12 +1,21 @@
+(should really be a system flag, set by the colon compiler)
+
+: IsCompiling
+	*Dict @ DE->address @ 0 ==
+;
 
 
-: Dict
+(custom dictionary start)
+
+: CDict
 	create
 	*Dict @ >R RSwap
 		(store current dictionary pointer - includes the newly created word)
 ; 
 
-: DictEnd
+(custom dictionary end)
+
+: CDictEnd
 	RSwap
 	
 	(set address of the new Dict entry)
@@ -17,43 +26,46 @@
 	R> *Dict !
 ;
 
-(
-Verify by
----------
+(lookup nextWord in a dictionary)
 
-Dict Test
-: inner ... ;
-DictEnd
-
-This leaves the constant Test in the global dictionary.
-
-Test *Dict !
-
-Now the word "inner" is magically available
-)
-
-
-
-
-(UNDER CONSTRUCTION)
-
-: => (dictPointer [name] -- ...) (compile call to word inside dictionary)
-	readNextWord              (name of word we look for - stays in system buffer nextWord)
+: DictLookupNW (dictPointer -- word-address) 
 	/0
 		dup 0 == &1 jmp?  (end of dictionary linked list)
 		dup DE->name @ nextWordEq &2 jmp?  (found it)
-		
-		cr dup DE->name @ .str
 		
 		DE->next @                       (follow next pointer)
 		&0 jmp
 	/1
 		cr s" not found" .str
-		(drop)
-		ret
+		drop
+		0 ret
 	/2
-		cr s" found it" .str
-		DE->address @        	
-; immediate 
+		DE->address @
+; 
+
+(
+For testing, use dcall to call returned address
+)
+
+: DictLookup (dictPointer [name])
+	readNextWord DictLookupNW
+;
 	
+: => ([dict] [name] -- ...) (compile call to word inside dictionary)
+	readNextWord *Dict @ DictLookupNW  (dictionary reference)
+	readNextWord DictLookupNW (word in dictionary reference)
+	
+	dup 0 == &1 jmp?         (not found)
+
+	(generate call syntax)
+	dup 8 >> 0xFF & 0x80 | comp.out
+	0xFF & comp.out
+	ret	
+	
+	/1
+	s" Dictionary word not found" .str
+	OP_RET comp.out
+	drop
+	ret
+; immediate
 
