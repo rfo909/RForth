@@ -291,17 +291,23 @@ Created a complete "pins" source file for atmega328p pinout, tested
 with blinking the LED.
 
 Removed some of the Pin.* words from C, as they are now implemented
-in Forth.
+in Forth (via register access!)
 
 108 ops
 
 
 2026-05-05
 ----------
-Adding constants for the Timer/Counter1 for atmega328p, the need for custom
-dictionaries arose. 
+As I was adding constants for the Timer/Counter1 for atmega328p, in order to
+control PWM, the need for custom dictionaries arose, as there are way too
+much pollution of the global dictionary. Even the pins code should be in
+its own dictionary.
 
-Created this in the dict file under code, and it works as follows:
+The custom dictionary implementation (in Forth of course) mostly works, but
+it is still impractical, having to refer explicitly every word that comes
+from another dictionary.
+
+Current use:
 
 ```
 CDict Data
@@ -321,7 +327,7 @@ IN Data sum
 (list words in cdict)
 Data DictWords
 
-(get address of word in cdict)
+(get address of word in cdict --- FAILS?)
 'IN Data sum
 ```
 
@@ -332,6 +338,9 @@ Data DictUse
 DictClear
 ```
 
+... or something like that, which means I get access to words from a dictionary while compiling
+to another.
+
 
  
 OpCodes
@@ -341,8 +350,8 @@ See the ops.txt file
 
 Tags
 ----
-The colon compiler supports up to 5 tags, and up to 5 lookups of tags. The tags
-have the names /0 to /4 and the lookups are on the format &0 to &4. 
+The colon compiler supports up to 4 tags, and up to 4 lookups of tags. The tags
+have the names /0 to /3 and the lookups are on the format &0 to &3. 
 
 Patching of tag references is done when hitting the semicolon, so the following
 works as expected, with both forward and back jumps.
@@ -369,10 +378,16 @@ be, must be written in Forth. Like the '"' word (quote).
 Todo
 ====
 
+- Implement op IsCompiling - controlled via op_colon
+
+- Implement .nextWord - printing nextWord
+
+- Fix dictionary usability, so that stuff like the Timer1 code can be present in Flash without
+  polluting global dictionary namespace
+
 - Rig to use 8 MHz always, regardless of external crystal being 16Mhz (Fuse CKDIV8 + dynamic CKDIV 2).
 	(Detect on some pin in 8MHz harness)
 	
-- consider Frame stack, as in RForth v3 for local variables
-  
 - Autorun-mechanism with option of physical override
+
 
