@@ -8,7 +8,7 @@ to the atmega328p
 
 : DATA_SEGMENT 0x4000 ;
 : *Dict DATA_SEGMENT ;
-: *dictHead 0x4000 @ ;
+: *dictHead *Dict @ ;
 
 : constant (value -- )
 	create                             (makes a constant with value 0 - dont need to set DE->type)
@@ -216,7 +216,68 @@ Ex.
 	comp:done 
 ;
 
+: .c? (byte --)  (show printable char, otherwise space)
+	dup 33 <
+	over 126 >
+	or &1 jmp?
+		emit ret
+	/1 drop
+;
 
+
+: mem-dump (count address --)
+	/0
+		cr 
+		dup .hex (s" - " .str
+		dup c@ .u
+		s"  " .str
+		dup .c?
+		)
+		1 +  (address update)
+		swap 
+		1 -  (count update)
+		
+		dup 0 == &1 jmp?  (count is 0)
+		swap
+		&0 jmp
+	/1
+		drop drop
+;	
+		
+
+
+: .c? (byte --)  (show printable char, or ignore)
+	dup 33 <
+	over 126 >
+	or &1 jmp?
+		emit ret
+	/1 drop
+;
+
+
+: mem-dump (address count --)
+	swap
+	/0
+		cr 
+		dup .hex s" - " .str
+		dup c@ .hex  (print as hex)
+		s"  " .str
+		dup c@ .u    (print unsigned decimal)
+		s"  " .str
+		dup c@ .c?   (print char if printable)
+		
+		1 +  (address update)
+		swap 
+		1 -  (count update)
+		
+		(32 emit dup .)
+		
+		dup 0 == &1 jmp?  (count is 0)
+		swap
+		&0 jmp
+	/1
+		drop drop
+;
 
 
 

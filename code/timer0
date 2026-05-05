@@ -1,0 +1,72 @@
+
+(
+Dict timer0
+timer0
+)
+
+
+(Chapter 15: 16-bit Timer/Counter1 with PWM)
+(------------------------------------------)
+
+0x80 constant TCCR1A (timer/counter1 Control Register A - 15.11.1)
+(--)
+b10000000 constant COM1A1  (compare output mode for channel A - 2 bytes)
+b01000000 constant COM1A0
+b00100000 constant COM1B1  (compare output mode for channel B - 2 bytes)
+b00010000 constant COM1B0
+b00000010 constant WGM11   (waveform generation mode - 2 bytes)
+b00000001 constant WGM10
+
+0x81 constant TCCR1B (timer/counter1 Control Register B - 15.11.2)
+(--)
+b10000000 constant ICNC1  (input capture noise canceler)
+b01000000 constant ICES1  (input capture edge select)
+b00010000 constant WGM13  (waveform generation mode - 2 bytes)
+b00001000 constant WGM12
+b00000100 constant CS12   (clock select - 3 bytes)
+b00000010 constant CS11
+b00000001 constant CS10
+
+0x82 constant TCCR1C (timer/counter1 Control Register C - 15.11.3)
+(--)
+b10000000 constant FOC1A   (force output compare channel A)
+b01000000 constant FOC1B   (force output compare channel B)
+
+0x85 constant TCNT1H  (timer/counter1 - high low)
+0x84 constant TCNT1L
+
+0x89 constant OCR1AH  (output compare register 1A - high low)
+0x88 constant OCR1AL
+
+0x8B constant OCR1BH  (output compare register 1B - high low)
+0x8A constant OCR1BL
+
+0x87 constant ICR1H  (input capture register 1 - high low)
+0x86 constant ICR1L
+
+
+0x6F constant TIMSK1  (timer/counter1 interrupt Mask Register)
+(--)
+b00100000 constant ICIE1  (timer/countee1 input capture interrupt enable)
+b00000100 constant OCIE1B (timer/counter1 output compare B match interrupt enable)
+b00000010 constant OCIE1A (timer/counter1 output compare A match interrupt enable)
+b00000001 constant TOIE1  (timer/counter1 overflow interrupt enable)
+
+0x36 constant TIFR1  (timer/counter1 interrupt flag register)
+(--)
+b00100000 constant ICF1   (timer/counter1 input capture flag)
+b00000100 constant OCF1B  (timer/counter1 output compare B match flag)
+b00000010 constant OCF1A  (timer/counter1 output compare A match flag)
+b00000001 constant TOV1   (timer/counter1 overflow flag)
+
+
+(Chapter 16 - Timer/Counter0 and Timer/Counter1 Prescalers)
+(---------------------------------------------------------)
+
+0x43 constant GTCCR  (general timer/counter control register - 16.4.1)
+(--)
+b10000000 constant TSM  (timer/counter synchronization mode)
+b00000010 constant PSRASY
+b00000001 constant PSRSYNC (prescaler reset)
+
+

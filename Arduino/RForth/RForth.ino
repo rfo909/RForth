@@ -1182,18 +1182,22 @@ void op_dis() {
   Word codeAddr = pop();
   Byte len=readByte(codeAddr-1);
   Serial.println();
-  Serial.print(F("codeAddr="));
-  Serial.print(codeAddr);
+  Serial.print(F("codeAddr=0x"));
+  Serial.print(codeAddr,17);
   Serial.print(F(" length="));
   Serial.println(len);
 
   Byte dataBytes=0;
   for (Byte i=0; i<len; i++) {
     Word addr=codeAddr + i;
-    Serial.print(addr);
+    Serial.print("0x");
+    Serial.print(addr,16);
     Serial.print("  ");
 
     Byte op=readByte(addr);
+    Serial.print("0x");
+    Serial.print(op,16);
+    Serial.print(" ");
     Serial.print(op);
   
     if (dataBytes > 0) {

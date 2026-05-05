@@ -1,0 +1,62 @@
+(
+depends on timer0
+)
+
+
+320 constant PWM_TOP   (16,000,000 / (2 * 25,000))
+
+: Init
+	D9 Pin:out
+	D10 Pin:out
+	
+	0 TCCR1A hw!
+	0 TCCR1B hw!
+	0 TCNT1 hw!
+
+	COM1A1 COM1B1 | WGM11 | TCCR1A RegOr
+	WGM13 CS10 | TCCR1B RegOr
+
+	PWM_TOP ICR1 hw!
+;
+
+: SetDuty (duty -- ) (0-100)
+	PWM_TOP * 100 /
+	dup OCR1A hw!
+	OCR1B hw!
+;
+	
+#END	
+	
+// 25 kHz PWM on Pin 9 and 10
+const byte OC1A_PIN = 9;
+const byte OC1B_PIN = 10;
+const word PWM_TOP = 320; // 16,000,000 / (2 * 25,000)
+
+void setup() {
+  pinMode(OC1A_PIN, OUTPUT);
+  pinMode(OC1B_PIN, OUTPUT);
+  
+  // Clear Timer1 Control Registers
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCNT1 = 0;
+
+  // Set Mode 10: Phase Correct PWM, TOP = ICR1
+  // TCCR1A: COM1A1, COM1B1 (clear on up-count, set on down-count), WGM11
+  TCCR1A |= _BV(COM1A1) | _BV(COM1B1) | _BV(WGM11);
+  // TCCR1B: WGM13, Prescaler = 1 (CS10)
+  TCCR1B |= _BV(WGM13) | _BV(CS10);
+  
+  ICR1 = PWM_TOP; // Set frequency
+}
+
+void loop() {
+  // Set duty cycle (0-100%)
+  setPwmDuty(50); // 50% duty cycle
+}
+
+void setPwmDuty(byte duty) {
+  // Duty cycle 0-100
+  OCR1A = (word)(duty * PWM_TOP) / 100;
+  OCR1B = (word)(duty * PWM_TOP) / 100;
+}
