@@ -308,31 +308,30 @@ CDict Data
 11 constant A
 22 constant B
 : sum A B + ;
-: test s" this is a test" .str cr ;
 CDictEnd
 
 (interactive)
 IN Data A .
-IN Data test
+IN Data sum
 
 (in words)
 : a IN Data A . ;
-: t IN Data test ;
+: s IN Data sum ;
 
-(List words in cdict)
+(list words in cdict)
 Data DictWords
+
+(get address of word in cdict)
+'IN Data sum
 ```
 
+Still missing, in order to be useful: 
 
+```
+Data DictUse
+DictClear
+```
 
-
-TODO:
------
-To implement IF and LOOP, we need access to 
-
-getNextWord
-" ..." nextWordEq (mixedStreq)
-compileNextWord
 
  
 OpCodes
