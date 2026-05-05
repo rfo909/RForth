@@ -1,9 +1,4 @@
 
-(
-Dict timer0
-timer0
-)
-
 
 (Chapter 15: 16-bit Timer/Counter1 with PWM)
 (------------------------------------------)
@@ -19,7 +14,7 @@ b00000001 constant WGM10
 
 0x81 constant TCCR1B (timer/counter1 Control Register B - 15.11.2)
 (--)
-b10000000 constant ICNC1  (input capture noise canceler)
+b10000000 constant ICNC1  (input capture noise canceler) 
 b01000000 constant ICES1  (input capture edge select)
 b00010000 constant WGM13  (waveform generation mode - 2 bytes)
 b00001000 constant WGM12

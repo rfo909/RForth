@@ -296,6 +296,35 @@ in Forth.
 108 ops
 
 
+2026-05-05
+----------
+Adding constants for the Timer/Counter1 for atmega328p, the need for custom
+dictionaries arose. 
+
+Created this in the dict file under code, and it works as follows:
+
+```
+CDict Data
+11 constant A
+22 constant B
+: sum A B + ;
+: test s" this is a test" .str cr ;
+CDictEnd
+
+(interactive)
+IN Data A .
+IN Data test
+
+(in words)
+: a IN Data A . ;
+: t IN Data test ;
+
+(List words in cdict)
+Data DictWords
+```
+
+
+
 
 TODO:
 -----

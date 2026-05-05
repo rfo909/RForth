@@ -10,28 +10,76 @@
 : CDict
 	create
 	*Dict @ >R RSwap
-		(store current dictionary pointer - includes the newly created word)
+		(store current dictionary pointer - includes the newly created cdict word)
+		(hide it under this word return address :-)
 ; 
+
+
+(helper for CDictEnd)
+
+: _TerminateCDict (pointer head -- )
+	/0
+		dup 0 == &2 jmp?     (end of list)
+		dup DE->name @ .str cr (initially debug, but ok showing words when closing dict)
+		dup DE->next @       (pointer head next)
+		2 pick               (pointer head next pointer)
+			== &1 jmp?   (pointer head)
+		DE->next @           (pointer head.next)
+		&0 jmp
+	/1
+		0 swap               (pointer 0 head)
+		DE->next !
+		drop
+		ret
+	/2	
+		cr s" not found" .str
+		drop drop
+;
+			
 
 (custom dictionary end)
 
 : CDictEnd
-	RSwap
+	RSwap   (value saved in CDict)
 	
-	(set address of the new Dict entry)
+	(*Dict points to last word added, store it in the cdict entry)
 	*Dict @ 
 		RDup R> DE->address !
+		
+	(the words that were added to the directory are on top of the reference
+	to the cdict entry, now we need to traverse the new dictionary content
+	from *Dict down to the word where the next refers to the cdict entry, and
+	overwrite that with zero. That way we terminate the cdict list)
+	
+	
+	RDup R> 
+		*Dict @ 
+		_TerminateCDict
 	
 	(change global dictionary to point to omit content added since Dict)
 	R> *Dict !
 ;
 
+(list words in dictionary)
+
+: DictWords (head -- )
+	/0
+		cr
+		dup 0 == &1 jmp?
+		dup DE->name @ .str
+		DE->next @
+		&0 jmp
+	/1
+		drop
+;
+
+
 (lookup nextWord in a dictionary)
 
-: DictLookupNW (dictPointer -- word-address) 
+: DictLookupNW (dictPointer -- dictEntry/0) 
 	/0
 		dup 0 == &1 jmp?  (end of dictionary linked list)
-		dup DE->name @ nextWordEq &2 jmp?  (found it)
+		dup DE->name @ nextWordEq ret?  (found it, returning DE pointer)
 		
 		DE->next @                       (follow next pointer)
 		&0 jmp
@@ -39,33 +87,51 @@
 		cr s" not found" .str
 		drop
 		0 ret
-	/2
-		DE->address @
-; 
-
-(
-For testing, use dcall to call returned address
-)
-
-: DictLookup (dictPointer [name])
-	readNextWord DictLookupNW
-;
 	
-: => ([dict] [name] -- ...) (compile call to word inside dictionary)
-	readNextWord *Dict @ DictLookupNW  (dictionary reference)
-	readNextWord DictLookupNW (word in dictionary reference)
+; 
+	
+
+(get address of word in dictionary)
+
+: 'IN (dictPointer [word] --)
+	readNextWord
+	DictLookupNW DE->address @
+;
+
+
+((
+Call word in custom dictionary.
+Generates code in compile mode, but also works interactively, 
+typically like 
+
+IN <dict> <name> 
+))
+
+
+: IN ([dict] [name] -- ...) (compile call to word inside dictionary)
+	readNextWord *Dict @ DictLookupNW 
+		DE->address @  (dictionary reference)
+			readNextWord DictLookupNW (word in dictionary reference)
 	
 	dup 0 == &1 jmp?         (not found)
 
-	(generate call syntax)
-	dup 8 >> 0xFF & 0x80 | comp.out
-	0xFF & comp.out
-	ret	
+	(got DE pointer)
 	
+	IsCompiling not &2 jmp?   (found but not compile mode)
+
+		DE_compile
+		ret	
+	
+	/2 (not compiling, found it)
+		DE_execute
+		ret
+
 	/1
 	s" Dictionary word not found" .str
 	OP_RET comp.out
 	drop
-	ret
+
+	
+
 ; immediate
 

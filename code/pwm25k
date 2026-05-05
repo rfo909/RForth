@@ -1,7 +1,8 @@
 (
-depends on timer0
+depends on timer1 constants
 )
 
+@@ timer1
 
 320 constant PWM_TOP   (16,000,000 / (2 * 25,000))
 

@@ -1,5 +1,5 @@
 (
-This code requires ~1000 bytes of code segment space to
+This file requires >1000 bytes of code segment space to
 compile. Must use Nano Every or the 2560.
 
 Once in static (Flash) space, all the code is available
@@ -70,6 +70,43 @@ to the atmega328p
 : immediate
 	DE_IMMEDIATE *dictHead DE->type c!
 ;
+
+
+
+
+(execute a dictionary entry)
+
+: DE_execute (DE -- ...)
+	dup DE->type c@ DE_CONSTANT == &1 jmp?
+	DE->address @ dcall
+	ret
+	/1
+	DE->address @
+;
+
+(compile a dictionary entry)
+
+: DE_compile (DE -- )
+	dup DE->type c@ DE_CONSTANT == &1 jmp?
+
+		(compile call as two bytes with high bit set)
+		DE->address @
+
+		dup 8 >> 0xFF & 0x80 | comp.out
+		0xFF & comp.out
+		ret
+	
+	/1 (constant)
+		(compile static value)
+		OP_CVAL comp.out
+		
+		DE->address @
+		dup 8 >> 0xFF & comp.out
+		0xFF & comp.out 
+;
+	
+	
+	
 
 (Ex. 145 123 kL  --- results in 145123 as Long value on xStack)
 : kL (kval val -- Lval)
@@ -158,26 +195,6 @@ bytes, then pushing the address of the length byte on the stack
 
 : hello cr s" World Hello swap" .str ;
 
-
-: LOOP
-	comp.next >R
-	/0
-		readNextWord
-		s" AGAIN?" nextWordEq &1 jmp?  (exit loop)
-		compile
-		&0 jmp
-	/1
-		OP_CVAL comp.out
-		RDup R> 8 >> 0xFF & comp.out
-		R> 0xFF & comp.out
-		OP_COND_JMP comp.out
-; immediate
-
-
-: testLoop 1 LOOP dup . cr 1+ key? not AGAIN? ; 
-
-
-
 (
 Create static data tables in the code segment
 ----------------------------------------------
@@ -214,36 +231,7 @@ Ex.
 (commit the "compiled" code)
 : ]Code 
 	comp:done 
-;
-
-: .c? (byte --)  (show printable char, otherwise space)
-	dup 33 <
-	over 126 >
-	or &1 jmp?
-		emit ret
-	/1 drop
-;
-
-
-: mem-dump (count address --)
-	/0
-		cr 
-		dup .hex (s" - " .str
-		dup c@ .u
-		s"  " .str
-		dup .c?
-		)
-		1 +  (address update)
-		swap 
-		1 -  (count update)
-		
-		dup 0 == &1 jmp?  (count is 0)
-		swap
-		&0 jmp
-	/1
-		drop drop
 ;	
-		
 
 
 : .c? (byte --)  (show printable char, or ignore)
@@ -280,6 +268,19 @@ Ex.
 ;
 
 
+: RegOr (mask addr) 
+	swap over  (addr mask addr)
+	hw@        (addr mask value)
+	|          (addr newValue)
+	swap hw!
+;
+
+: RegAnd (mask addr) 
+	swap over  (addr mask addr)
+	hw@        (addr mask value)
+	&          (addr newValue)
+	swap hw!
+;
 
 
 

@@ -1222,11 +1222,11 @@ void op_dis() {
       Serial.print(forthAddr);
 
       Boolean found=dictLookupByAddr(forthAddr);
+      // 2026-05-05 RFO: this fails when disassembling code in custom
       if (!found) {
-        setHasError();
         Serial.print(F("unknown forth code address "));
         Serial.println(getDeAddress(),16);
-        return;
+        continue;
       } 
       Serial.print(" ");
       Serial.print(F("=>"));

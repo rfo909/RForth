@@ -1,3 +1,4 @@
+
 (
 --- atmega328p ---
 
@@ -69,8 +70,6 @@ PC3 constant A3
 PC4 constant A4
 PC5 constant A5
 
-D13 constant LED
-
 
 : Pin.ddr  (pin) c@ ;
 : Pin.port (pin) 1 + c@ ;
@@ -78,19 +77,6 @@ D13 constant LED
 : Pin.mask (pin) 3 + c@ ;
 
 
-: RegOr (mask addr) 
-	swap over  (addr mask addr)
-	hw@        (addr mask value)
-	|          (addr newValue)
-	swap hw!
-;
-
-: RegAnd (mask addr) 
-	swap over  (addr mask addr)
-	hw@        (addr mask value)
-	&          (addr newValue)
-	swap hw!
-;
 
 : Pin:out (pin)
 	dup Pin.ddr		(pin reg)
@@ -126,7 +112,6 @@ D13 constant LED
 (digital write to pin)
 : Pin.writeDigital (value pin) 
 	swap &1 jmp?
-		(low)
 		Pin:0 ret
 	/1
 		(high)
@@ -137,4 +122,7 @@ D13 constant LED
 	dup Pin.pin hw@   (pin value)
 	swap Pin.mask     (value mask)
 ;
+
+
+
 
