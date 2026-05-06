@@ -99,3 +99,24 @@
 	device.close
 		
 /Main
+
+
+# Constants
+# --
+	CodeDir.files->f
+		f.read->line
+			assert(line.contains(" constant "))
+			reject(line.startsWith(":"))   # the 'constant' word def
+			pre=line.before("constant").trim
+			post=line.after("constant").trim
+			report(f.name, line.lineNumber, post)
+/Constants
+
+
+# Count words and constants
+# --
+	CodeDir.files->f
+		f.read->line
+			assert(line.startsWith(":"))
+			report(f.name, line.lineNumber, line)
+/Words

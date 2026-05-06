@@ -11,7 +11,7 @@ to the atmega328p
 : *dictHead *Dict @ ;
 
 : constant (value -- )
-	create                             (makes a constant with value 0 - dont need to set DE->type)
+	create                             (makes a DE_CONSTANT with value 0 - dont need to set DE->type)
 	(value) *dictHead 3 + !            (3+ = DE->address)
 ;
 
@@ -198,17 +198,7 @@ bytes, then pushing the address of the length byte on the stack
 (
 Create static data tables in the code segment
 ----------------------------------------------
-
-Ex.
-	Code[ 3 c>C 4 c>C 5 c>C ]Code constant a
-	Code[ 6000 >C 7000 >C 8000 >C ]Code constant b
-
-	(should print 8000)
-	b 2 cells + @ .  
-
-	(should print 4)
-	a 1 + c@ .
-
+See pins code file
 )
 
 (put next address of code segment on stack)
