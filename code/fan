@@ -39,7 +39,7 @@ Reading temperature, controlling fan with PWM
 ;
 
 
-: t Avg Calc . ;
+: t Avg Calc dup . 10 Pin.writeAnalog ;
 
 
 : show
