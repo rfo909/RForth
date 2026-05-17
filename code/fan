@@ -18,13 +18,13 @@ Reading temperature, controlling fan with PWM
 
 
 : RA
-	14 Pin.readAnalog 150 
+	14 Pin.readAnalog 
 ;
 
 : CalcPWM 
 	RA 
-	190 min 150 max - (0-40) 
-	6 * (0-240)
+	190 min 160 max 160 - (0-30) 
+	8 * (0-240)
 	15 + (15-255)
 ;
 
