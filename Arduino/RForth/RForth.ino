@@ -1592,10 +1592,35 @@ void executeCode() {
   }
 }
 
+Boolean autorunTopWord() {
+  pinMode(2,OUTPUT);
+  pinMode(4,INPUT);
+  for (int i=0; i<10; i++) {
+    digitalWrite(2,HIGH);
+    delay(1);
+    if (digitalRead(4) != 1) return false;
+    digitalWrite(2,LOW);
+    delay(1);
+    if (digitalRead(4) != 0) return false;
+  }
+  return true;
+}
+
+Boolean firstTime=true;
 
 // interpreting main loop
 void loop() {
   clearHasError();
+  if (firstTime && autorunTopWord()) {
+    dictEntryFetch(getDictionaryHead());
+    callForth(getDeAddress());
+  } else {
+    if (firstTime) {
+      Serial.println();
+      Serial.println(F("** To autorun top word, connect D2 and D4 on boot"));
+    }
+  }
+  firstTime=false;
 
   if (programCounter != 0) {
     executeCode();

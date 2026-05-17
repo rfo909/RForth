@@ -6,26 +6,52 @@ depends on timer1 constants
 
 320 constant PWM_TOP   (16,000,000 / (2 * 25,000))
 
-: Init
+: 2Reg (val regLow regHigh -- )
+	2 pick 8 >> 0xFF & swap hw!
+	swap 0xFF & swap hw!
+;
+
+
+: Pwm25kInit
 	D9 Pin:out
 	D10 Pin:out
 	
 	0 TCCR1A hw!
 	0 TCCR1B hw!
-	0 TCNT1 hw!
+	0 TCNT1H hw!
+	0 TCNT1L hw!
 
 	COM1A1 COM1B1 | WGM11 | TCCR1A RegOr
 	WGM13 CS10 | TCCR1B RegOr
 
-	PWM_TOP ICR1 hw!
+	
+	PWM_TOP 
+		ICR1L ICR1H 2Reg
 ;
 
-: SetDuty (duty -- ) (0-100)
-	PWM_TOP * 100 /
-	dup OCR1A hw!
-	OCR1B hw!
+( write high-low bytes )
+
+: Pwm25kSetDuty (duty -- ) (0-100)
+	(convert 0-100 into 0-PWM_TOP range)
+	>F 100 F> F/ 
+	PWM_TOP >F F* 
+	F>
+	
+	dup OCR1AL OCR1AH 2Reg
+	OCR1BL OCR1BH 2Reg
 ;
 	
+	
+( test )
+
+: Pwm25kTest 
+	D9 Pin:out
+	D10 Pin:out
+	Pwm25kInit
+	50 Pwm25kSetDuty
+;
+
+
 #END	
 	
 // 25 kHz PWM on Pin 9 and 10

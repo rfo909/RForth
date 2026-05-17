@@ -257,6 +257,7 @@ See pins code file
 		drop drop
 ;
 
+(bit manipulation in hardware registers)
 
 : RegOr (mask addr) 
 	swap over  (addr mask addr)
@@ -271,6 +272,10 @@ See pins code file
 	&          (addr newValue)
 	swap hw!
 ;
+
+
+
+
 
 
 

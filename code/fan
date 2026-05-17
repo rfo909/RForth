@@ -1,0 +1,31 @@
+(
+Reading temperature, controlling fan with PWM
+)
+
+
+: fanInit 
+	A0 Pin:in
+;
+
+154 constant LOW   (20 deg C)
+183 constant MEDIUM (skin temp)
+
+variable sum
+
+: show
+	0 sum !
+	/0
+	sum @ 
+		dup 10 / -   (sum-sum/10)
+	14 Pin.readAnalog + (+ reading)
+	dup sum !
+	cr 10 / .
+	500 delay
+	key? &1 jmp?
+	&0 jmp
+	/1
+;
+
+
+
+

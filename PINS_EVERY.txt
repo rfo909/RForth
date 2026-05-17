@@ -1,0 +1,29 @@
+
+Arduino Nano Every
+------------------            
+                     USB
+                     |-|
+SCK               o       o          D12/CIPO/MISO
+3V3               o       o          D11/COPI/MOSI
+AREF              o       o          ~D10
+D14/A0            o       o          ~D9 
+D15/A1            o       o          D8
+D16/A2            o       o          D7
+D17/A3            o       o          ~D6
+D18/SDA           o       o          ~D5
+D19/SCL           o       o          D4
+D20/A6            o       o          ~D3
+D21/A7            o       o          D2
+5V                o       o          GND
+RESET             o       o          RESET
+GND               o       o          D1/RX
+VIN               o       o          D0/TX
+
+https://emalliab.wordpress.com/2021/12/16/arduino-nano-every-serial-ports/
+https://forum.arduino.cc/t/atmega4809-support-4-serial-ports/677758/2
+
+Serial => UART3 => USB
+Serial1 => UART1 => D0/D1
+
+
++ got two more UART's of which one surely drives I2C 
