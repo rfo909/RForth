@@ -274,6 +274,13 @@ See pins code file
 ;
 
 
+( timers )
+
+: timer:set (id -- )             0 sys.timer ;     (store "now" for timer)
+: timer:get (id -- millis)       1 sys.timer ;     (get millis 0-64k or 0xFFFF is overflow)
+: timer:getLong (id -- millis>L) 2 sys.timer ;     (get millis as long value)
+: timer:getSec (id -- seconds)   3 sys.timer ;     (get seconds 0-64k, 0xFFFF if overflow)
+
 
 
 

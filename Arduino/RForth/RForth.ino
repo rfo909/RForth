@@ -6,6 +6,8 @@
 #include <EEPROM.h>
 
 
+unsigned long timers[TIMER_COUNT];
+
 
 static char nextWord[MAX_WORD_LENGTH+1];  // input buffer
 
@@ -55,6 +57,11 @@ void setup() {
   writeWord(generateDataAddress(0), dictPointer);
 
   disableWatchdogInterrupt();
+
+  // init timers
+  for (Word id=0; id<TIMER_COUNT; id++) {
+		timers[id]=0L;
+	}  
 
 }
 
@@ -182,6 +189,7 @@ void sPrintByte (Byte b) {
 void sPrintln () {
   Serial.println();
 }
+
 
 // -------------------------------------------
 // Stacks
@@ -898,7 +906,8 @@ void op_word_addr() {
 
 // ---------------------------------------------------------------------------+
 
-const Byte numOps=108;
+
+const Byte numOps=109;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -1009,6 +1018,7 @@ nextWord! \
 dStackNext \
 comp:init \
 comp:done \
+sys.timer \
 ";
 
 typedef void (*FUNC)();
@@ -1122,10 +1132,10 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_dStack_next
 ,&op_comp_init
 ,&op_comp_done
+,&sys_timer
 };
 
-
-// --------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 
 
 void op_ops() {
@@ -1371,6 +1381,57 @@ void natI2CmasterRead() {
     i++;
   }
   writeByte(recvBuf,count);
+}
+
+// -----------------------------------------
+// Timers
+// -----------------------------------------
+
+void sys_timer () {
+  Word function=pop();
+
+  Word timerId=pop();
+  if (timerId >= TIMER_COUNT) {
+    setHasError();
+    Serial.print(F("Invalid timer id, must be 0-"));
+    Serial.println(TIMER_COUNT-1);
+    return;
+  }  
+
+  if (function==OP_TIMER_SET) {
+    // store current time 
+    timers[timerId]=millis();
+    return;
+  } else if (function==OP_TIMER_GET || function==OP_TIMER_GET_LONG || function==OP_TIMER_GET_SEC) {
+    unsigned long now=millis();
+    unsigned long t=timers[timerId];
+    unsigned long result;
+
+    if (t <= now) {
+      result=now-t;
+    } else {
+      // rollover
+      result=((unsigned long) 0xFFFFFFFE)-t+now;
+    }
+    if (function==OP_TIMER_GET_SEC) {
+      result=result/1000;  // millis to seconds
+    }
+    if (function==OP_TIMER_GET_LONG) {
+      pushLong(result);
+    } else {
+      // result is 16 bits only
+      if (result > 0xFFFF) {
+        push(0xFFFF);
+      } else {
+        push((Word) result);
+      }
+    }
+    return;
+  } else {
+    Serial.println(F("Invalid timer function"));
+    setHasError();
+    return;
+  }
 }
 
 

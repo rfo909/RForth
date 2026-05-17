@@ -342,6 +342,13 @@ DictClear
 to another.
 
 
+2026-05-17
+----------
+Added timers, in the form a single opcode "sys.timer", which takes to parameters, the
+timer id (0 or 1) and an "op" value. 
+
+See the code/basic file.
+
  
 OpCodes
 -------

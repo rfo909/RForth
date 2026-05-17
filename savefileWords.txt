@@ -160,6 +160,8 @@ dStackNext   &op_dStack_next                    get current size of dStack
 comp:init    &op_comp_init                      set compileNext=dataNext
 comp:done    &op_comp_done                      set dataNext=compileNext, committing compiled output
 
+sys.timer    &sys_timer                         (id op -- ?)  -- see code/basics
+
 >>>> EOF
 /Data
 

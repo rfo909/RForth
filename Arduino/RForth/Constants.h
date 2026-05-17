@@ -36,6 +36,12 @@ typedef struct {
 #define DE_TYPE_IMMEDIATE   1
 #define DE_TYPE_CONSTANT    2
 
+#define TIMER_COUNT         2
+
+#define OP_TIMER_SET         0
+#define OP_TIMER_GET         1
+#define OP_TIMER_GET_LONG    2
+#define OP_TIMER_GET_SEC     3
 
 typedef Byte Boolean;
 
