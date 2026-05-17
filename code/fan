@@ -3,29 +3,50 @@ Reading temperature, controlling fan with PWM
 )
 
 
+10 constant pwmPin
+
+(
+154 = ~20 deg C
+183 = skin temp
+)
+
 : fanInit 
-	A0 Pin:in
+	A0 Pin:in  (also known as D14)
+	D10 Pin:out
+	0 >F
 ;
 
-154 constant LOW   (20 deg C)
-183 constant MEDIUM (skin temp)
 
-variable sum
+: RA
+	14 Pin.readAnalog 150 
+;
+
+: CalcPWM 
+	RA 
+	190 min 150 max - (0-40) 
+	6 * (0-240)
+	15 + (15-255)
+;
+
+: Avg
+	xdup 10 >F F/ F-  (subtracted 1/10 from float value)
+	CalcPWM	
+	>F F+
+;
+
+: Calc
+	xdup 10 >F F/ F> 15 max
+;
+
+
+: t Avg Calc . ;
+
 
 : show
-	0 sum !
+	fanInit
 	/0
-	sum @ 
-		dup 10 / -   (sum-sum/10)
-	14 Pin.readAnalog + (+ reading)
-	dup sum !
-	cr 10 / .
-	500 delay
-	key? &1 jmp?
-	&0 jmp
-	/1
+		t
+		key? ret?
+		1000 delay
+		&0 jmp
 ;
-
-
-
-

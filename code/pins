@@ -63,12 +63,12 @@ PB3 constant D11
 PB4 constant D12
 PB5 constant D13
 
-PC0 constant A0
-PC1 constant A1
-PC2 constant A2
-PC3 constant A3
-PC4 constant A4
-PC5 constant A5
+PC0 constant A0   (arduino pin D14)
+PC1 constant A1   (D15)
+PC2 constant A2   (D16)
+PC3 constant A3   (D17)
+PC4 constant A4   (D18)
+PC5 constant A5   (D19)
 
 
 : Pin.ddr  (pin) c@ ;

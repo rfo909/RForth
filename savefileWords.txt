@@ -161,7 +161,8 @@ comp:init    &op_comp_init                      set compileNext=dataNext
 comp:done    &op_comp_done                      set dataNext=compileNext, committing compiled output
 
 sys.timer    &sys_timer                         (id op -- ?)  -- see code/basics
-
+max          &op_max                            (a b -- max)  -- signed
+min          &op_min                            (a b -- min)  -- signed
 >>>> EOF
 /Data
 

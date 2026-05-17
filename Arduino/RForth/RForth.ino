@@ -906,8 +906,7 @@ void op_word_addr() {
 
 // ---------------------------------------------------------------------------+
 
-
-const Byte numOps=109;
+const Byte numOps=111;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -1019,6 +1018,8 @@ dStackNext \
 comp:init \
 comp:done \
 sys.timer \
+max \
+min \
 ";
 
 typedef void (*FUNC)();
@@ -1133,9 +1134,11 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_comp_init
 ,&op_comp_done
 ,&sys_timer
+,&op_max
+,&op_min
 };
 
-// ------------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 
 void op_ops() {
@@ -1564,6 +1567,18 @@ void op_hw_write () {
   Byte value=(Byte) (pop() & 0xFF);
   Byte *loc=(Byte *) addr;
   *loc=value;
+}
+
+void op_max() {
+  SWord b=pop();
+  SWord a=pop();
+  if (a>b) push(a); else push(b);
+}
+
+void op_min() {
+  SWord b=pop();
+  SWord a=pop();
+  if (a<b) push(a); else push(b);
 }
 
 

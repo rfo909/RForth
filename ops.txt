@@ -110,3 +110,5 @@ dStackNext               get current size of dStack
 comp:init                set compileNext=dataNext
 comp:done                set dataNext=compileNext, committing compiled output
 sys.timer                (id op -- ?) -- see code/basics
+max                      (a b -- max) -- signed
+min                      (a b -- min) -- signed
