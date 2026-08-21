@@ -71,58 +71,75 @@ PC4 constant A4   (D18)
 PC5 constant A5   (D19)
 
 
-: Pin.ddr  (pin) c@ ;
-: Pin.port (pin) 1 + c@ ;
-: Pin.pin  (pin) 2 + c@ ;
-: Pin.mask (pin) 3 + c@ ;
+(
+Creating a dictionary with the Pin operations, in order to 
+assign meaningful names without prefix Pin.xxx or similar
+
+Example:
+
+D13 IN Pin SetOut
+1 D13 IN Pin WriteDigital
+
+To list words in Pin dictionary:
+
+Pin DictWords
+)
+
+CDict Pin
+
+: .ddr  (pin) c@ ;
+: .port (pin) 1 + c@ ;
+: .pin  (pin) 2 + c@ ;
+: .mask (pin) 3 + c@ ;
 
 
-
-: Pin:out (pin)
-	dup Pin.ddr		(pin reg)
-	swap Pin.mask           (reg mask)
+: SetOut (pin)
+	dup .ddr		(pin reg)
+	swap .mask              (reg mask)
 	swap RegOr
 ;
 
-: Pin:in (pin)
-	dup Pin.ddr
-	swap Pin.mask inv
+: SetIn (pin)
+	dup .ddr
+	swap .mask inv
 	swap RegAnd
 ;
 
 
-: Pin:0 (pin)
-	dup Pin.port swap    (reg pin)
-	Pin.mask inv swap RegAnd 
+: w0 (pin)
+	dup .port swap       (reg pin)
+	.mask inv swap RegAnd 
 ;
 
-: Pin:1 (pin)
-	dup Pin.port swap    (reg pin)
-	Pin.mask swap RegOr 
+: w1 (pin)
+	dup .port swap    (reg pin)
+	.mask swap RegOr 
 ;
 
-: Pin:pullup (pin) 
-	Pin:1
+: PullUp (pin) 
+	w1
 ;
 
-: Pin:pulldown (pin)
-	Pin:0
+
+: PullDown (pin)
+	w0
 ;
 
-(digital write to pin)
-: Pin.writeDigital (value pin) 
+
+: WriteDigital (value pin) 
 	swap &1 jmp?
-		Pin:0 ret
+		w0 ret
 	/1
 		(high)
-		Pin:1
+		w1
 ;
 
-: Pin.readDigital (pin)
-	dup Pin.pin hw@   (pin value)
-	swap Pin.mask     (value mask)
+: ReadDigital (pin)
+	dup .pin hw@   (pin value)
+	swap .mask     (value mask)
+	&
 ;
 
-
+CDictEnd
 
 
