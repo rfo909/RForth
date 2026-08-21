@@ -382,6 +382,12 @@ NOTE: basic opCodes do not have the option of being IMMEDIATE (yet), so all code
 be, must be written in Forth. Like the '"' word (quote).
 
 
+2026-08-21
+----------
+Found a bug in the xpick op, and then decided to save one op-slot by implementing xdup in
+the basics code file using the now correct xpick. 
+
+
 Todo
 ====
 
