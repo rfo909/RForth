@@ -35,6 +35,8 @@ to the atmega328p
 : over 1 pick ;
 : 2dup over over ;
 
+: xdup 0 xpick ;
+
 
 (for these, we must temp-store the top value on the data stack, since these words have return addresses)
 

@@ -122,8 +122,7 @@ I2C.masterWrite &natI2CmasterWrite              (sendBufPtr sendCount addr --)
 I2C.masterWWait &natI2CmasterWWait              (--) EEPROM's are sometimes slow at doing page writes
 I2C.masterRead &natI2CmasterRead                (buf addr --) available length in buffer byte 0
 
-    
-xdup         &op_xdup                           (d -- d d) xStack value dup (double stack = float and long)
+
 xdrop        &op_xdrop                          (a b -- a)
 xswap        &op_xswap                          (da db -- db da) xStack value swap
 xpick        &op_xpick                          (... n -- ... dx) xStack value pick

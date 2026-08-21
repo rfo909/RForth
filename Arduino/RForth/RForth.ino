@@ -362,11 +362,6 @@ static void showStacks() {
   Serial.println("]");
 }
 
-
-void op_xdup() {
-  pushLong(pickLong(0));
-}
-
 void op_xdrop() {
   popLong();
 }
@@ -380,7 +375,6 @@ void op_xswap() {
 
 void op_xpick() {
   Word n=pop();
-  pushLong(pickLong(n));
   pushLong(pickLong(n));
 }
 
@@ -906,7 +900,7 @@ void op_word_addr() {
 
 // ---------------------------------------------------------------------------+
 
-const Byte numOps=111;
+const Byte numOps=110;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -987,7 +981,6 @@ EE.read \
 I2C.masterWrite \
 I2C.masterWWait \
 I2C.masterRead \
-xdup \
 xdrop \
 xswap \
 xpick \
@@ -1103,7 +1096,6 @@ static const PROGMEM FUNC opFunctions[]={
 ,&natI2CmasterWrite
 ,&natI2CmasterWWait
 ,&natI2CmasterRead
-,&op_xdup
 ,&op_xdrop
 ,&op_xswap
 ,&op_xpick
@@ -1138,8 +1130,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_min
 };
 
-// ---------------------------------------------------------------------
-
+// ---------------------------------------------------------------------------+
 
 void op_ops() {
   Byte length=0;
