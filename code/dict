@@ -91,9 +91,17 @@
 ; 
 	
 
-(get address of word in dictionary)
+(Get address of word in custom dictionary
 
-: 'IN (dictPointer [word] --)
+ex: 
+
+Pin DictWordAddr SetOutput
+
+This stores the address of the code for that word, and can be disassembled
+with the "dis" word. 
+)
+
+: DictWordAddr (dictPointer [word] --)
 	readNextWord
 	DictLookupNW DE->address @
 ;
@@ -134,4 +142,5 @@ IN <dict> <name>
 	
 
 ; immediate
+
 

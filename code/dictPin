@@ -1,0 +1,25 @@
+
+(
+-----------------------------------------------------------
+Creating a dictionary with the Pin operations, in order to 
+assign meaningful names without prefix Pin.xxx or similar
+-----------------------------------------------------------
+)
+
+CDict Pin
+
+(
+Using the "pin" single op for all things
+single pin related
+)
+
+: SetOut (pin) 1 pin ;
+: SetIn  (pin) 2 pin ;
+: ReadDigital (pin -- value) 3 pin ;
+: ReadAnalog (pin -- value) 4 pin ;
+: WriteDigital (value pin -- ) 5 pin ;
+: WriteAnalog  (value pin -- ) 6 pin ;
+
+CDictEnd
+
+

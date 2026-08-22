@@ -276,7 +276,7 @@ See pins code file
 ;
 
 
-( timers )
+( timers implemented in C, not physical )
 
 : timer:set (id -- )             0 sys.timer ;     (store "now" for timer)
 : timer:get (id -- millis)       1 sys.timer ;     (get millis 0-64k or 0xFFFF is overflow)

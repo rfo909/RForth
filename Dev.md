@@ -387,6 +387,14 @@ be, must be written in Forth. Like the '"' word (quote).
 Found a bug in the xpick op, and then decided to save one op-slot by implementing xdup in
 the basics code file using the now correct xpick. 
 
+2026-08-22
+----------
+Rewriting handling of pins. Successfully did register manipulations for digital pins,
+but analog pins are much harder, so instead scrapping the register manipulations and
+implementing a single op_pin() function in C.
+
+It starts popping an op, then a pin, and if the op involves write, it also pops the
+value. If the op involves read, it returns a value.
 
 Todo
 ====

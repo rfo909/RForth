@@ -900,7 +900,7 @@ void op_word_addr() {
 
 // ---------------------------------------------------------------------------+
 
-const Byte numOps=110;
+const Byte numOps=109;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -973,8 +973,7 @@ delay \
 delay-us \
 deep-sleep8 \
 free-mem \
-Pin.writeAnalog \
-Pin.readAnalog \
+pin \
 EE.length \
 EE.write \
 EE.read \
@@ -1088,8 +1087,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_delay_us
 ,&op_deep_sleep_8s
 ,&op_free_mem
-,&natPinWriteAnalog
-,&natPinReadAnalog
+,&op_pin
 ,&natEELength
 ,&natEEWrite
 ,&natEERead
@@ -1130,7 +1128,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_min
 };
 
-// ---------------------------------------------------------------------------+
+// --------------------------------------------------------------------------
 
 void op_ops() {
   Byte length=0;
@@ -1294,20 +1292,46 @@ void op_free_mem() {
 
 
 // -------------------------------
-// Pin.* -- mostly implemented in Forth
+// the op_pin() handles all pin stuff
+// 
+// (
+// Given how complex analog read and writes are, it is better 
+// putting all this in a single op, instead of in Forth, that
+// even makes it more portable, using standard Arduino
+// functionality. Forth easily manipulates registers for
+// atmega328p with regard to digital pins, but managing
+// analog pins is too much of a hassle. 
+// )
 // -------------------------------
 
-void natPinWriteAnalog () {
-	Word pin=pop();
-	Word value=pop();
-	analogWrite(pin,value);
-}
+#define PIN_OP_SET_OUT        1
+#define PIN_OP_SET_IN         2
+#define PIN_OP_READ_DIGITAL   3
+#define PIN_OP_READ_ANALOG    4
+#define PIN_OP_WRITE_DIGITAL  5
+#define PIN_OP_WRITE_ANALOG   6
 
-void natPinReadAnalog () {
-	Word pin=pop();
-	push(analogRead(pin));
-}
+void op_pin() {
+  Word op=pop();
+  Word pin=pop();
 
+  if (op==PIN_OP_SET_OUT) {
+    pinMode(pin, OUTPUT);
+  } else if (op==PIN_OP_SET_IN) {
+    pinMode(pin, INPUT);
+  } else if (op==PIN_OP_READ_DIGITAL) {
+    push(digitalRead(pin));
+  } else if (op==PIN_OP_READ_ANALOG) {
+    push(analogRead(pin));
+  } else if (op==PIN_OP_WRITE_DIGITAL) {
+    digitalWrite(pin,pop());
+  } else if (op==PIN_OP_WRITE_ANALOG) {
+    analogWrite(pin,pop());
+  } else {
+    push(0xFFFF);
+  }
+
+}
 // ----------------
 // Onboard EEPROM
 // ----------------

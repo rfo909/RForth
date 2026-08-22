@@ -1,0 +1,85 @@
+(=== replaced by the dictPin class and the "pin" op ===)
+(2026-08-22 RFO)
+
+(
+--- atmega328p ---
+
+Datasheet operates with two address; the lower is for access
+via special instructions, the higher (below) represent
+memory mapping
+
+)
+
+0x23 constant PINB
+0x24 constant DDRB
+0x25 constant PORTB
+
+0x26 constant PINC
+0x27 constant DDRC
+0x28 constant PORTC
+
+0x29 constant PIND
+0x2A constant DDRD
+0x2B constant PORTD
+
+Code[ DDRB c>C PORTB c>C PINB c>C b00000001 c>C 99 c>C ]Code constant PB0
+Code[ DDRB c>C PORTB c>C PINB c>C b00000010 c>C 99 c>C ]Code constant PB1
+Code[ DDRB c>C PORTB c>C PINB c>C b00000100 c>C 99 c>C ]Code constant PB2
+Code[ DDRB c>C PORTB c>C PINB c>C b00001000 c>C 99 c>C ]Code constant PB3
+Code[ DDRB c>C PORTB c>C PINB c>C b00010000 c>C 99 c>C ]Code constant PB4
+Code[ DDRB c>C PORTB c>C PINB c>C b00100000 c>C 99 c>C ]Code constant PB5
+Code[ DDRB c>C PORTB c>C PINB c>C b01000000 c>C 99 c>C ]Code constant PB6
+Code[ DDRB c>C PORTB c>C PINB c>C b10000000 c>C 99 c>C ]Code constant PB7
+
+Code[ DDRC c>C PORTC c>C PINC c>C b00000001 c>C 0 c>C  ]Code constant PC0
+Code[ DDRC c>C PORTC c>C PINC c>C b00000010 c>C 1 c>C  ]Code constant PC1
+Code[ DDRC c>C PORTC c>C PINC c>C b00000100 c>C 2 c>C  ]Code constant PC2
+Code[ DDRC c>C PORTC c>C PINC c>C b00001000 c>C 3 c>C  ]Code constant PC3
+Code[ DDRC c>C PORTC c>C PINC c>C b00010000 c>C 4 c>C  ]Code constant PC4
+Code[ DDRC c>C PORTC c>C PINC c>C b00100000 c>C 5 c>C  ]Code constant PC5
+Code[ DDRC c>C PORTC c>C PINC c>C b01000000 c>C 99 c>C ]Code constant PC6
+
+Code[ DDRD c>C PORTD c>C PIND c>C b00000001 c>C 99 c>C ]Code constant PD0
+Code[ DDRD c>C PORTD c>C PIND c>C b00000010 c>C 99 c>C ]Code constant PD1
+Code[ DDRD c>C PORTD c>C PIND c>C b00000100 c>C 99 c>C ]Code constant PD2
+Code[ DDRD c>C PORTD c>C PIND c>C b00001000 c>C 99 c>C ]Code constant PD3
+Code[ DDRD c>C PORTD c>C PIND c>C b00010000 c>C 99 c>C ]Code constant PD4
+Code[ DDRD c>C PORTD c>C PIND c>C b00100000 c>C 99 c>C ]Code constant PD5
+Code[ DDRD c>C PORTD c>C PIND c>C b01000000 c>C 99 c>C ]Code constant PD6
+Code[ DDRD c>C PORTD c>C PIND c>C b10000000 c>C 99 c>C ]Code constant PD7
+
+(--- arduino names ---)
+
+PD0 constant D0
+PD1 constant D1
+PD2 constant D2
+PD3 constant D3
+PD4 constant D4
+PD5 constant D5
+PD6 constant D6
+PD7 constant D7
+
+PB0 constant D8
+PB1 constant D9
+PB2 constant D10
+PB3 constant D11
+PB4 constant D12
+PB5 constant D13
+
+PC0 constant D14
+PC1 constant D15
+PC2 constant D16
+PC3 constant D17
+PC4 constant D18
+PC5 constant D19
+
+(--- analog pins ---)
+
+PC0 constant A0   (arduino pin D14)
+PC1 constant A1   (D15)
+PC2 constant A2   (D16)
+PC3 constant A3   (D17)
+PC4 constant A4   (D18)
+PC5 constant A5   (D19)
+
+
