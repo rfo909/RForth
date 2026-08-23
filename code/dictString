@@ -1,0 +1,72 @@
+(
+Simple string library, works with buffers on format N... where N is single byte length field
+)
+
+CDict String
+
+(
+--- Initialize String object
+)
+
+: Create ( length -- buf )
+	HERE swap 1 + allot
+	dup 0 swap c!     (set N=0)
+;
+
+
+(
+--- Clear string object by setting length to 0
+)
+
+: Clear (buf) 
+	0 swap c! 
+
+;
+
+(
+--- Get length of string
+)
+
+: .len (buf)
+	c@
+;
+
+
+
+( 
+--- Add character
+)
+
+: +c (val buf -- )
+	dup                 ( val buf buf )
+	dup c@ + 1 +        ( val buf writePos)
+	2 pick swap c!      ( val buf )
+	swap drop           ( buf )
+	dup c@ 1+ swap c!
+;
+
+
+
+(
+--- Add Forth string to target string
+)
+
+: +str (str target)
+	swap dup .len        (target str len)
+	swap 1 + swap        (target startAddr len)
+	0                    (target startAddr len n)
+	/0
+		2dup == &1 jmp?   (target startAddr len n)
+		2 pick over       (target StartAddr len n startAddr n)
+		+ c@              (target startAddr len n char)
+		4 pick            (target startAddr len n char target)
+		+c                (target startAddr len n)
+		1 +
+		&0 jmp
+	/1
+		drop drop drop drop
+;
+
+CDictEnd
+
+

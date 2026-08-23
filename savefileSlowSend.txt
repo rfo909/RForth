@@ -12,7 +12,7 @@
 # Change serial device
 # --
 	println("Current: ", Db2:Get(Sys.scriptId,"Device","/dev/ttyACM0"))
-	readLine("Enter device, blank to keep existing") => dev
+	Input("Enter device").get => dev
 	if (dev != "") Db2:Set(Sys.scriptId,"Device",dev)
 /SetDevice
 
@@ -83,6 +83,7 @@
 
 # Main loop
 # --
+	SetDevice
 	device=Device
 	
 	Lib:Header("Enter line, q to stop, f to send file")

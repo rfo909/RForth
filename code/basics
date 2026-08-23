@@ -56,6 +56,16 @@ to the atmega328p
 	>R 
 ;
 
+(
+--- Push copy of R TOS
+)
+
+: R>copy
+	R>
+	0 rpick
+	R> swap >R
+;
+
 
 (dictionary entry field offsets)
 
@@ -178,11 +188,11 @@ bytes, then pushing the address of the length byte on the stack
 
 
 : type (ptr count -- )
-	swap			(n ptr)
-	0			(n ptr count)
+	swap			(count ptr)
+	0			(count ptr n)
 	/0
-		dup 3 pick == &1 jmp? (count == n ?)
-		dup  (n ptr count count)
+		dup 3 pick == &1 jmp?       (count == n ?)
+		dup                         (count ptr n n)
 			2 pick + c@ emit
 		1+
 		&0 jmp
@@ -197,11 +207,6 @@ bytes, then pushing the address of the length byte on the stack
 
 : hello cr s" World Hello swap" .str ;
 
-(
-Create static data tables in the code segment
-----------------------------------------------
-See pins code file
-)
 
 (put next address of code segment on stack)
 : Code[ 
@@ -258,6 +263,9 @@ See pins code file
 	/1
 		drop drop
 ;
+
+
+
 
 (bit manipulation in hardware registers)
 

@@ -860,6 +860,7 @@ void op_r_pick() {
 void op_jmp() {
   programCounter=pop();
 }
+
 void op_cond_jmp() {
   Word addr=pop();
   Word cond=pop();
@@ -1146,8 +1147,6 @@ void op_ops() {
     }
   }
 }
-
-
 
 
 
