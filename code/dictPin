@@ -9,16 +9,16 @@ assign meaningful names without prefix Pin.xxx or similar
 CDict Pin
 
 (
-Using the "pin" single op for all things
+Using the "sys.pin" single op for all things
 single pin related
 )
 
-: SetOut (pin) 1 pin ;
-: SetIn  (pin) 2 pin ;
-: ReadDigital (pin -- value) 3 pin ;
-: ReadAnalog (pin -- value) 4 pin ;
-: WriteDigital (value pin -- ) 5 pin ;
-: WriteAnalog  (value pin -- ) 6 pin ;
+: .setOut (pin) 1 sys.pin ;
+: .setIn  (pin) 2 sys.pin ;
+: .readDigital (pin -- value) 3 sys.pin ;
+: .readAnalog (pin -- value) 4 sys.pin ;
+: .writeDigital (value pin -- ) 5 sys.pin ;
+: .writeAnalog  (value pin -- ) 6 sys.pin ;
 
 CDictEnd
 

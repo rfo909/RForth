@@ -111,7 +111,7 @@ delay-us     &op_delay_us                       (value --) delay micros
 deep-sleep8  &op_deep_sleep_8s                  (--) deep sleep 8 seconds
 free-mem     &op_free_mem                       (--) prints memory use and sizes
 
-pin          &op_pin                            (value? pin op--) 
+sys.pin      &op_sysPin                         (value? pin op--) 
 
 EE.length    &natEELength                       (-- length)
 EE.write     &natEEWrite                        (byte index --)

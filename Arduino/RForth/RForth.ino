@@ -899,7 +899,7 @@ void op_word_addr() {
 // upate Words script and and run "gen" to get this code
 // "Global variables use 1559 bytes"
 
-// ---------------------------------------------------------------------------+
+// --------------------------------------------------------------------------------
 
 const Byte numOps=109;
 
@@ -974,7 +974,7 @@ delay \
 delay-us \
 deep-sleep8 \
 free-mem \
-pin \
+sys.pin \
 EE.length \
 EE.write \
 EE.read \
@@ -1088,7 +1088,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_delay_us
 ,&op_deep_sleep_8s
 ,&op_free_mem
-,&op_pin
+,&op_sysPin
 ,&natEELength
 ,&natEEWrite
 ,&natEERead
@@ -1129,7 +1129,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_min
 };
 
-// --------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 void op_ops() {
   Byte length=0;
@@ -1291,7 +1291,7 @@ void op_free_mem() {
 
 
 // -------------------------------
-// the op_pin() handles all pin stuff
+// the op_sysPin() handles all pin stuff
 // 
 // (
 // Given how complex analog read and writes are, it is better 
@@ -1310,7 +1310,7 @@ void op_free_mem() {
 #define PIN_OP_WRITE_DIGITAL  5
 #define PIN_OP_WRITE_ANALOG   6
 
-void op_pin() {
+void op_sysPin() {
   Word op=pop();
   Word pin=pop();
 

@@ -8,7 +8,7 @@ CDict String
 --- Initialize String object
 )
 
-: Create ( length -- buf )
+: .create ( length -- buf )
 	HERE swap 1 + allot
 	dup 0 swap c!     (set N=0)
 ;
@@ -18,7 +18,7 @@ CDict String
 --- Clear string object by setting length to 0
 )
 
-: Clear (buf) 
+: .clear (buf) 
 	0 swap c! 
 
 ;
@@ -66,6 +66,98 @@ CDict String
 	/1
 		drop drop drop drop
 ;
+
+: .charAt (index str -- byte)
+	1 + + c@ 
+;
+
+(
+--- Find char in string, return -1 (FFFF) if not found
+)
+: .indexOf (char startPos str)
+	dup .len >R
+	swap                      (char str i)
+	/0
+		dup R>copy == &1 jmp?   (char str i)
+		3dup swap .charAt == &2 jmp?
+		1 +
+		.s cr 
+		&0 jmp 
+		                    
+	/1      (not found, return -1)  (char str i) (R:len)
+		RDrop
+		drop drop drop
+		0xFFFF 
+		ret
+		
+	/2      (found, return offset)  (char str matchPos) (R:len)
+		RDrop
+		>R            (store matchPos)
+		drop drop     (pop char str)
+		R>            (push matchPos as return value)
+;		
+
+
+
+(
+--- Get substring [from, to>
+)
+
+: .sub (from to str target --)
+	>R >L                  (from to str)   (R:target)  (L:str)
+	swap                   (to from) 
+	
+	(limit index)
+	/0
+		2dup == &1 jmp? (done?)
+		dup .
+		(-copy char-)
+		dup L>copy     (limit index index str)
+		.charAt R>copy (limit index char target)
+		+c             (limit index)
+		
+		
+		(-advance index, repeat-)
+		1 +
+		&0 jmp
+		
+	/1      (done)
+		RDrop xdrop
+		drop drop
+		ret
+	
+;	
+
+
+: .equals (str1 str2 -- bool)
+	2dup .len swap .len != &1 jmp?
+	
+	dup .len 0                      (str1 str2 len i)
+	/0
+		2dup == &3 jmp?
+		
+		dup 4 pick              (str1 str2 len i i str1)
+		.charAt                 (str1 str2 len i c1)
+		over 4 pick             (str1 str2 len i c1 i str2)
+		.charAt                 (str1 str2 len i c1 c2)
+		!= &2 jmp?              (str1 str2 len i)
+		
+		1 +
+		&0 jmp
+	
+	/1 (different length)
+		drop drop
+		0 ret
+		
+	/2 (mismatch)
+		drop drop drop drop
+		0 ret
+
+	/3 (ok)
+		drop drop drop drop
+		1 ret
+;
+
 
 CDictEnd
 

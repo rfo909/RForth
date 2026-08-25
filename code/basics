@@ -33,7 +33,16 @@ to the atmega328p
 : cells cell * ;
 
 : over 1 pick ;
-: 2dup over over ;
+
+: 2dup (a b -- a b a b)
+	over over 
+;
+
+: 3dup (a b c -- a b c a b c)
+	2 pick
+	2 pick
+	2 pick
+;
 
 : xdup 0 xpick ;
 
@@ -57,7 +66,7 @@ to the atmega328p
 ;
 
 (
---- Push copy of R TOS
+--- Push copy of TOS different stacks (L and F share x-stack)
 )
 
 : R>copy
@@ -65,6 +74,15 @@ to the atmega328p
 	0 rpick
 	R> swap >R
 ;
+
+: L>copy
+	xdup L>
+;
+
+: F>copy
+	xdup F>
+;
+
 
 
 (dictionary entry field offsets)
