@@ -145,10 +145,20 @@ must be initialized by code.
 	
 
 (Ex. 145 123 kL  --- results in 145123 as Long value on xStack)
+
 : kL (kval val -- Lval)
-	swap >L 1000 >L L* 
-	>L L+
+	>L
+	>L 1000 >L L* L+
 ;
+
+
+(Ex. 123 456 789 mL --- results in 123456789 as Long on xStack)
+
+: mL
+	>R kL 
+	1000 >L L* R> >L L+
+;
+
 
 : cr 0x0A emit ;
 
