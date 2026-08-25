@@ -92,6 +92,12 @@ to the atmega328p
 : DE->address (dePtr -- fieldPtr) 3 + ;
 : DE->next (dePtr -- fieldPtr) 5 + ;
 
+(
+NOTE: variables are not given any default value as in regular Forth; they are just 
+pointers to a cell in the data segment, and are preserved as such, but value
+must be initialized by code.
+)
+
 : variable (--)
 	HERE cell allot constant
 ;
