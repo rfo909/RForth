@@ -127,8 +127,8 @@ IN <dict> <name>
 	
 	IsCompiling not &2 jmp?   (found but not compile mode)
 
-		DE_compile
-		ret	
+	DE_compile
+	ret	
 	
 	/2 (not compiling, found it)
 		DE_execute

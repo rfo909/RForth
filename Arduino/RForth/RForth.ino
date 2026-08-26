@@ -1464,7 +1464,8 @@ void op_sw_to_f () {
 
 void op_f_to_sw () {
   Float f=popFloat();
-  SWord val=(SWord) f;
+
+  SWord val=(SWord) (round(f));
   push(val);
 }
 

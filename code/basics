@@ -46,6 +46,14 @@ to the atmega328p
 
 : xdup 0 xpick ;
 
+: nip (a b -- b)
+	swap drop ;
+
+: tuck (a b -- b a b)
+	swap over ;
+
+: rot (a b c -- b c a)
+	>R swap R> swap ;
 
 (for these, we must temp-store the top value on the data stack, since these words have return addresses)
 
@@ -69,19 +77,11 @@ to the atmega328p
 --- Push copy of TOS different stacks (L and F share x-stack)
 )
 
-: R>copy
-	R>
-	0 rpick
-	R> swap >R
-;
+: R>copy RDup >R ;
 
-: L>copy
-	xdup L>
-;
+: L>copy xdup L> ;
 
-: F>copy
-	xdup F>
-;
+: F>copy xdup F> ;
 
 
 
