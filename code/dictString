@@ -78,7 +78,7 @@ CDict String
 	dup .len >R
 	swap                      (char str i)
 	/0
-		dup R>copy == &1 jmp?   (char str i)
+		dup R@ == &1 jmp?   (char str i)
 		3dup swap .charAt == &2 jmp?
 		1 +
 		.s cr 
@@ -112,8 +112,8 @@ CDict String
 		2dup == &1 jmp? (done?)
 		dup .
 		(-copy char-)
-		dup L>copy     (limit index index str)
-		.charAt R>copy (limit index char target)
+		dup L@         (limit index index str)
+		.charAt R@    (limit index char target)
 		+c             (limit index)
 		
 		

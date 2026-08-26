@@ -70,11 +70,11 @@
 --- Push copy of TOS different stacks (L and F share x-stack)
 )
 
-: R>copy RDup >R ;
+: R@ RDup >R ;
 
-: L>copy xdup L> ;
+: L@ xdup L> ;
 
-: F>copy xdup F> ;
+: F@ xdup F> ;
 
 
 
