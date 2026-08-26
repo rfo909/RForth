@@ -2,9 +2,11 @@
 
 *2026-04-18 RFO*
 
+Updated: 2026-08-26 RFO
+
 ## Introduction
 
-The v3 version was quite successful at compiling my Forth into a bytecode format,
+The v3 version of RFOrth was quite successful at compiling my Forth into a bytecode format,
 which is then executed. But there were issues, and in hindsight, it was overly
 complicated.
 
@@ -77,22 +79,47 @@ represent addresses over 12 bits, and one byte to do the call. With REPL and com
 in bytecode, which rested at the start of the memory space, 12+ bits of references
 were quickly the standard.
 
+The CALL_BIT
+------------
+
 In v4, compiled code works as follows:
 
-- if a byte has high bit == 0, then it is a built-in "op", implemented in C
-- the high bit is named the CALL_BIT
-- the second highest bit is used to separate between the code segment (0) and data
-  segment (1). The second highest bit is called the DATA_BIT
-- having the databit set for a CALL is an error
-- After detecting a call, the following byte is combined with six lower bits of the first byte
-  forming a *14 bit* address into the code segment.
-  
+- When processing a code byte, we look at its highest bit, which is the CALL_BIT
+- If it is 0, then the remaining 7 bits identify an "op" implemented in C
+- This means there can be at most 127 op-codes
+- If CALL_BIT is 1, then the current byte plus the following byte (in compiled code)
+  point to a Forth word. However, the second highest bit, called DATA_BIT, limits the
+  code space for Forth words from 15 to 14 bits. 
+- The DATA_BIT is not strictly relevant for generated code, because there we
+  only differ between doing an "op" or calling a Forth word. 
+- Generating code for a Forth call with the DATA_BIT set to 1 makes no sense, and is
+  an error.
 
-This means the address range in v4 is 32Kb divided equally into 16Kb of code and 16Kb of
-data (2 x 14 bits).
+The DATA_BIT
+------------
 
-The call instruction is therefor implicit, represented by that single high bit. For dynamic
-calls picking up an address from the stack, there is the "DCALL" op. 
+Apart from generated code, ops will also push addresses on to the data stack as unsigned
+int values, and here the DATA_BIT matters, as it differentiates between the two
+segments (code and data).
+
+Even as we could have reused the high CALL_BIT for this purpose, making it mean something
+different depending on where a two-byte value comes from was deemed overly complex, 
+hence limiting the size of each segment to 14 bits, or 16k.
+
+With the CALL_BIT set to zero, the remaining 15 bits of an address come out as
+0 being the start of the code segment, and 16384 the start of the data segment.
+
+Data segment access is guarded by the value of HERE, which is the next available byte. Read
+and write of addresses larger than or equal to HERE, is an error.
+
+The code segment on the other hand, lives partly in Flash and partly in RAM. While all
+valid addresses can be read, with no regard for the "code.next" pointer, which defines where
+the compiler will write output, trying to write to Flash addresses is clearly an error.
+
+Also, the actual amount of SRAM allocated to the segments will be (much) smaller than 16k, so
+we check read/write addresses against those limits as well. This means that if the microcontroller
+has allocated 500 bytes of code segment in SRAM, and there exists 1000 bytes of the code
+segment in Flash, the code segment addresses are in the range 0-1499.
 
 ### HERE
 
@@ -103,7 +130,7 @@ reserved. On boot, the system reserves two bytes for the dictionary pointer.
 # Language features
 
 The language implements a data stack and a return stack. It has the >R and R> words to
-temporarily put stuff on the return stack (at your own peril).
+temporarily put stuff on the return stack.
 
 The colon compiler supports up to 4 tag defs and/or up to 4 tag references. These form
 basic support for both loops and conditionals, and are named /0-/3 and &0-&3.
@@ -174,8 +201,22 @@ copied into the data segment, so we can create new words as expected.
 In order to keep the design simple, the code.export op only exports bytes from the
 code segment, and no copy of data from RAM (data segment). 
 
-This means that Forth words to be stored in Flash can not create variables or allot
-data memory.
+This means that Forth words to be stored in Flash can not create variables.
+
+## Variables
+
+In traditional Forth, variables are given an initial value on being declared. In RForth
+declaring a variable creates a CELL of data on the data segment, which a name in the 
+dictionary refers to (it is really a constant). 
+
+When doing code.export, the number of bytes allot'ed from the data segment is 
+persisted, but the data content is not. This means that even if we allot a number of bytes
+to create a table referred by a variable before persisting with code.export, when booting
+the system after compiling the code into Flash, the data are allot'ed but without
+original values.
+
+This is the reason variable definitions don't come with a default value, because in RForth
+variables and data structures must be initialized with code anyways.
 
 ## Autorun
 
