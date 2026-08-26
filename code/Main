@@ -1,7 +1,10 @@
-
+(
+Compiling this file requires 2300 bytes of free code space in RAM - 2026-08
+)
 
 @@ basics
 @@ dict
+@@ dictTimers
 @@ dictPin
 @@ dictString
 

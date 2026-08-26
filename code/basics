@@ -1,10 +1,3 @@
-(
-This file requires >1000 bytes of code segment space to
-compile. Must use Nano Every or the 2560.
-
-Once in static (Flash) space, all the code is available
-to the atmega328p 
-)
 
 : DATA_SEGMENT 0x4000 ;
 : *Dict DATA_SEGMENT ;
@@ -239,9 +232,6 @@ bytes, then pushing the address of the length byte on the stack
 : .str (str -- ) dup 1+ swap c@ type ;
 
 
-: hello cr s" World Hello swap" .str ;
-
-
 (put next address of code segment on stack)
 : Code[ 
 	comp:init 
@@ -316,14 +306,6 @@ bytes, then pushing the address of the length byte on the stack
 	&          (addr newValue)
 	swap hw!
 ;
-
-
-( timers implemented in C, not physical )
-
-: timer:set (id -- )             0 sys.timer ;     (store "now" for timer)
-: timer:get (id -- millis)       1 sys.timer ;     (get millis 0-64k or 0xFFFF is overflow)
-: timer:getLong (id -- millis>L) 2 sys.timer ;     (get millis as long value)
-: timer:getSec (id -- seconds)   3 sys.timer ;     (get seconds 0-64k, 0xFFFF if overflow)
 
 
 

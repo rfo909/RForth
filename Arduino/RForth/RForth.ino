@@ -736,16 +736,20 @@ void op_dcall() {     // dynamic call
   Word addr=pop();
   callForth(addr);
 }
-void op_add() {Word b=pop(); Word a=pop(); push(a+b);}
-void op_sub() {Word b=pop(); Word a=pop(); push(a-b);}
-void op_mul() {Word b=pop(); Word a=pop(); push(a*b);}
-void op_div() {Word b=pop(); Word a=pop(); push(a/b);}
-void op_modulo() {Word b=pop(); Word a=pop(); push(a%b);}
 
-void op_gt() {Word b=pop(); Word a=pop(); push(a>b ? 1 : 0);}
-void op_ge() {Word b=pop(); Word a=pop(); push(a>=b ? 1 : 0);}
-void op_lt() {Word b=pop(); Word a=pop(); push(a<b ? 1 : 0);}
-void op_le() {Word b=pop(); Word a=pop(); push(a<=b ? 1 : 0);}
+// integer math and comparisons are signed
+void op_add() {SWord b=pop(); SWord a=pop(); push(a+b);}
+void op_sub() {SWord b=pop(); SWord a=pop(); push(a-b);}
+void op_mul() {SWord b=pop(); SWord a=pop(); push(a*b);}
+void op_div() {SWord b=pop(); SWord a=pop(); push(a/b);}
+void op_modulo() {SWord b=pop(); SWord a=pop(); push(a%b);}
+
+// compares are signed!
+void op_gt() {SWord b=pop(); SWord a=pop(); push(a>b ? 1 : 0);}
+void op_ge() {SWord b=pop(); SWord a=pop(); push(a>=b ? 1 : 0);}
+void op_lt() {SWord b=pop(); SWord a=pop(); push(a<b ? 1 : 0);}
+void op_le() {SWord b=pop(); SWord a=pop(); push(a<=b ? 1 : 0);}
+
 void op_eq() {Word b=pop(); Word a=pop(); push(a==b ? 1 : 0);}
 void op_ne() {Word b=pop(); Word a=pop(); push(a!=b ? 1 : 0);}
 void op_and() {Word b=pop(); Word a=pop(); push(a != 0 && b != 0 ? 1 : 0);}
@@ -758,7 +762,7 @@ void op_lshift() {Word b=pop(); Word a=pop(); push(a<<b);}
 void op_rshift() {Word b=pop(); Word a=pop(); push(a>>b);}
 
 
-void op_dot() {int i=(int) pop(); Serial.print(i); Serial.print(" ");}
+void op_dot() {SWord i=pop(); Serial.print(i); Serial.print(" ");}
 void op_dot_u() {Word x=pop(); Serial.print(x); Serial.print(" ");}
 void op_dot_hex() {Word x=pop(); Serial.print("0x"); Serial.print(x,16); Serial.print(" ");}
 void op_l_dot_u() {Long val=popLong(); Serial.print(val); Serial.print(" ");}

@@ -1,0 +1,11 @@
+
+CDict Timers
+
+( timers implemented in C, not physical )
+
+: .set (id -- )             0 sys.timer ;     (store "now" for timer)
+: .get (id -- millis)       1 sys.timer ;     (get millis 0-64k or 0xFFFF is overflow)
+: .getLong (id -- millis>L) 2 sys.timer ;     (get millis as long value)
+: .getSec (id -- seconds)   3 sys.timer ;     (get seconds 0-64k, 0xFFFF if overflow)
+
+CDictEnd

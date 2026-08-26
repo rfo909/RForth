@@ -185,7 +185,7 @@ Note that it will include test words, so usually after testing, we reset the mcu
 and re-enter the code (I use slow-send script to read from file), then make a clean export. 
 
 After pasting the code into the cpp-file, and recompiling, the words that previously
-only lived in RAM, no are stored in Flash (PROGMEM).
+only lived in RAM, now are stored in Flash (PROGMEM).
 
 The "code.export" op includes what was previously stored in Flash, combined with
 new content in the code segment (up to code.next), and handles storing the
