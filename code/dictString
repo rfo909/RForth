@@ -2,14 +2,14 @@
 Simple string library, works with buffers on format N... where N is single byte length field
 )
 
-CDict String
+((CDict String))
 
 (
 --- Initialize String object
 )
 
 : .create ( length -- buf )
-	HERE swap 1 + allot
+	HERE swap 1+ allot
 	dup 0 swap c!     (set N=0)
 ;
 
@@ -39,12 +39,11 @@ CDict String
 
 : +c (val buf -- )
 	dup                 ( val buf buf )
-	dup c@ + 1 +        ( val buf writePos)
+	dup c@ + 1+         ( val buf writePos)
 	2 pick swap c!      ( val buf )
 	swap drop           ( buf )
 	dup c@ 1+ swap c!
 ;
-
 
 
 (
@@ -52,27 +51,24 @@ CDict String
 )
 
 : +str (str target)
-	swap dup .len        (target str len)
-	swap 1 + swap        (target startAddr len)
-	0                    (target startAddr len n)
-	/0
-		2dup == &1 jmp?   (target startAddr len n)
-		2 pick over       (target StartAddr len n startAddr n)
-		+ c@              (target startAddr len n char)
-		4 pick            (target startAddr len n char target)
-		+c                (target startAddr len n)
-		1 +
-		&0 jmp
-	/1
-		drop drop drop drop
+	dup .len >R                (str target) (R:origLength)
+	(--- copy data ---)
+	swap dup .len >R           (target str) (R:origLength strlen)
+	RSwap                                   (R:strlen origLength)
+	1+                         (target readPos(str+1))
+	over R@ + 1+ RSwap R@      (target readPos writepos(target+origLength+1) strlen) 
+	copy                       (target)
+	(--- update length byte ---)
+	R> R> + swap c!
 ;
 
+
 : .charAt (index str -- byte)
-	1 + + c@ 
+	1+ + c@ 
 ;
 
 (
---- Find char in string, return -1 (FFFF) if not found
+--- Find char in string, return -1 if not found
 )
 : .indexOf (char startPos str)
 	dup .len >R
@@ -80,15 +76,14 @@ CDict String
 	/0
 		dup R@ == &1 jmp?   (char str i)
 		3dup swap .charAt == &2 jmp?
-		1 +
+		1+
 		.s cr 
 		&0 jmp 
 		                    
 	/1      (not found, return -1)  (char str i) (R:len)
 		RDrop
 		drop drop drop
-		0xFFFF 
-		ret
+		-1 ret 
 		
 	/2      (found, return offset)  (char str matchPos) (R:len)
 		RDrop
@@ -118,7 +113,7 @@ CDict String
 		
 		
 		(-advance index, repeat-)
-		1 +
+		1+
 		&0 jmp
 		
 	/1      (done)
@@ -142,7 +137,7 @@ CDict String
 		.charAt                 (str1 str2 len i c1 c2)
 		!= &2 jmp?              (str1 str2 len i)
 		
-		1 +
+		1+
 		&0 jmp
 	
 	/1 (different length)
@@ -159,6 +154,6 @@ CDict String
 ;
 
 
-CDictEnd
+((CDictEnd))
 
 

@@ -23,6 +23,7 @@
 
 
 : 1+ 1 + ;
+: 1- 1 - ;
 : cells cell * ;
 
 : over 1 pick ;
@@ -55,26 +56,63 @@
 	0 rpick 
 	>R 
 ;
+
+
 : RSwap
 	R> 
 	R> R> swap >R >R 
 	>R 
 ;
+
+: LSwap xswap ;
+
+: FSwap xswap ;
+
+: LDup xdup ;
+
+: FDup xdup ;
+
+
 : RDrop 
 	R> 
 	R> drop 
 	>R 
 ;
 
+: LDrop xdrop ;
+
+: FDrop xdrop ;
+
 (
 --- Push copy of TOS different stacks (L and F share x-stack)
 )
 
-: R@ RDup >R ;
+: R@ 
+	(must save this word returnAddr on data stack)
+	R>      (returnAddr)
+	RDup R> (returnAddr result)
+	swap >R (result)
+;
 
 : L@ xdup L> ;
 
 : F@ xdup F> ;
+
+
+: copy (src target n)
+	>R                         (R:n)
+	swap                       (target src)
+	/0
+		R@ 0 == &1 jmp?
+		dup c@             (target src char)
+		2 pick c!          (target src [char target])
+		1+ swap 1+ swap    (target+1 src+1)
+		R> 1- >R
+		&0 jmp 
+	/1
+		RDrop 
+		drop drop
+;
 
 
 
@@ -205,7 +243,7 @@ bytes, then pushing the address of the length byte on the stack
 		dup 			(count char char)
 			CH_QUOT == &2 jmp?   (--- matching quote found)
 		(char) comp.out           (count)
-		1 +
+		1+
 		&0 jmp
 	/2
 		drop
@@ -252,7 +290,11 @@ bytes, then pushing the address of the length byte on the stack
 (commit the "compiled" code)
 : ]Code 
 	comp:done 
-;	
+;
+
+
+
+
 
 
 : .c? (byte --)  (show printable char, or ignore)
@@ -275,9 +317,9 @@ bytes, then pushing the address of the length byte on the stack
 		s"  " .str
 		dup c@ .c?   (print char if printable)
 		
-		1 +  (address update)
+		1+  (address update)
 		swap 
-		1 -  (count update)
+		1-  (count update)
 		
 		(32 emit dup .)
 		
