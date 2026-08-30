@@ -122,8 +122,7 @@ CDict String
 		2drop
 		ret
 	
-;	
-
+;
 
 : .equals (str1 str2 -- bool)
 	2dup .len swap .len != &1 jmp?

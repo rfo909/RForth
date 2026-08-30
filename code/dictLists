@@ -1,0 +1,91 @@
+(
+This dictionary implements dynamic lists using CONS cells from Lisp, which
+are a pair of values, car and cdr, which I read as address and data, but
+they can of course be used freely.
+
+We are maintaining a free list of CONS cells
+
+STATUS: compiles, but not tested!
+
+)
+
+((CDict Lists))
+
+variable _free   (freelist of cons)
+
+: _car (cons -- carPtr) ;
+: _cdr (cons -- cdrPtr) cell + ;
+	
+(put cons cell onto free list)
+: _addFree (cons --)
+	dup _car _free @ swap !  (free -> cons.car)
+	_free !                  (cons -> free)
+;
+
+(get free cons from freelist of create new)
+: _getCons (-- cons)
+	_free @ not &1 jmp? 
+		(-remove from free list-)	
+		_free @              (cons) 
+		dup _car @ _free !   (free=consPtr.car)
+	
+	/1
+		(-free list empty: create new-)
+		HERE 2 cells allot
+;
+
+(create list header, a single cell)		
+: .list (-- list) 
+	HERE cell create
+	dup 0 swap !
+;
+
+(get a cons and populate it)
+: .cons (car cdr -- cons)
+	_getCons >R
+	R@ _cdr !
+	R@ _car !
+	R>
+;
+
+(check if list is empty)
+: .empty (list -- bool)
+	@ not
+;
+
+(locate last element in list, must not be empty)
+: .last (list --)
+	(-pretending the list ref points to a cons, although it only is a single pointer = car-)
+	/1
+		dup _car @       (element element.next)
+		not ret?         (-return when element.next==0-)
+		_car @           (convert element to element.next)
+		&1 jmp
+;
+
+
+(add value to list)
+: .add (value list --)
+	swap                (list value)
+	0 swap .cons        (list cons[0,value])
+	swap                (cons list)
+	.last _car !        (-cons -> list.last.car-)
+;
+
+(pop first element from non-empty list)
+: .pop (list -- cons)
+	dup @               (list cons)
+	swap                (cons list)
+	over _car @         (cons list cons.car)
+	swap !              (cons) (-cons.car -> list-)
+	(return cons)
+;
+
+
+(get and remove first element from non-empty list)
+: .consume (list -- value)
+	.pop dup _addFree     (cons)
+	_cdr @
+;
+
+((CDictEnd))

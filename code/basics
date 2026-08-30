@@ -116,11 +116,13 @@
 (
 NOTE: variables are not given any default value as in regular Forth; they are just 
 pointers to a cell in the data segment, and are preserved as such, but value
-must be initialized by code.
+must be initialized by code. Always initialized to 0.
 )
 
 : variable (--)
-	HERE cell allot constant
+	HERE 
+		dup cell allot constant
+	0 swap !
 ;
 
 
@@ -256,69 +258,9 @@ bytes, then pushing the address of the length byte on the stack
 ;
 			
 		
-
+(print forth string starting with length byte)
 : .str (str -- ) dup 1+ swap c@ type ;
 
-
-(put next address of code segment on stack)
-: Code[ 
-	comp:init 
-	code.next 
-;
-
-(write byte to code segment)
-: c>C (byte)   
-	comp.out 
-;
-
-(write cell to code segment)
-: >C (cell) 
-	dup 8 >> 0xFF & c>C
-	0xFF & c>C
-;
-
-(commit the "compiled" code)
-: ]Code 
-	comp:done 
-;
-
-
-
-
-
-
-: .c? (byte --)  (show printable char, or ignore)
-	dup 33 <
-	over 126 >
-	or &1 jmp?
-		emit ret
-	/1 drop
-;
-
-
-: mem-dump (address count --)
-	swap
-	/0
-		cr 
-		dup .hex s" - " .str
-		dup c@ .hex  (print as hex)
-		s"  " .str
-		dup c@ .u    (print unsigned decimal)
-		s"  " .str
-		dup c@ .c?   (print char if printable)
-		
-		1+  (address update)
-		swap 
-		1-  (count update)
-		
-		(32 emit dup .)
-		
-		dup 0 == &1 jmp?  (count is 0)
-		swap
-		&0 jmp
-	/1
-		2drop
-;
 
 
 
