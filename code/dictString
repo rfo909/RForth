@@ -2,7 +2,8 @@
 Simple string library, works with buffers on format N... where N is single byte length field
 )
 
-((CDict String))
+
+CDict String
 
 (
 --- Initialize String object
@@ -82,13 +83,13 @@ Simple string library, works with buffers on format N... where N is single byte 
 		                    
 	/1      (not found, return -1)  (char str i) (R:len)
 		RDrop
-		drop drop drop
+		3drop
 		-1 ret 
 		
 	/2      (found, return offset)  (char str matchPos) (R:len)
 		RDrop
 		>R            (store matchPos)
-		drop drop     (pop char str)
+		2drop         (pop char str)
 		R>            (push matchPos as return value)
 ;		
 
@@ -117,8 +118,8 @@ Simple string library, works with buffers on format N... where N is single byte 
 		&0 jmp
 		
 	/1      (done)
-		RDrop xdrop
-		drop drop
+		RDrop LDrop
+		2drop
 		ret
 	
 ;	
@@ -141,19 +142,31 @@ Simple string library, works with buffers on format N... where N is single byte 
 		&0 jmp
 	
 	/1 (different length)
-		drop drop
+		2drop
 		0 ret
 		
 	/2 (mismatch)
-		drop drop drop drop
+		4drop
 		0 ret
 
 	/3 (ok)
-		drop drop drop drop
+		4drop
 		1 ret
 ;
 
 
-((CDictEnd))
+: _s s" Abcd" ;
+: _ss s" AbcdAbcd" ;
+
+: _test
+	20 .create >R           (R:string)
+	_s R@ +str
+	_s R@ +str
+	R@ .str cr
+	R> _ss .equals .
+;
+	
+
+CDictEnd
 
 

@@ -1,6 +1,6 @@
+(Updated 2026-08-30)
 
-(compiles to 38 bytes of code)
-
+(compiles to 37 bytes of code)
 
 : prime (n -- bool)
 	dup
@@ -8,21 +8,19 @@
 	/1
 		2dup % 
 			0 == &2 jmp?
-		(n count) 1 -
+		(n count) 1-
 			dup 1 == &3 jmp?
 		&1 jmp
-	/2 drop drop 0 ret  (divisor found)
-	/3 drop drop 1  (count reach zero - diviser not found => prime)
+	/2 2drop 0 ret  (divisor found)
+	/3 2drop 1  (count reach zero - diviser not found => prime)
 ;
 		
-(speed test: 105.8 K ops/second Arduino Uno (atmega328p) 16 MHz)
+
 
 : speedTest1
 	[test 31013 prime drop test]
 ;
 
-
-(speed test2: 107.8 K ops/second Arduino Uno (atmega328p) 16 MHz)
 
 : speedTest2 [test 
 	1
@@ -33,5 +31,11 @@
 	/2 drop
 	test]
 ;
+
+(speedTest1: 85.7 K ops/second Arduino Uno (atmega328p) 16 MHz - from Flash)
+(speedTest1: 83.3 K ops/second Arduino Uno (atmega328p) 16 MHz - from RAM)
+
+(speedTest2: 86.1 K ops/second Arduino Uno (atmega328p) 16 MHz - from Flash)
+(speedTest2: 83.6 K ops/second Arduino Uno (atmega328p) 16 MHz - from RAM)
 
 

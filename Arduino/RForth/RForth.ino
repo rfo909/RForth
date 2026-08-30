@@ -743,6 +743,8 @@ void op_sub() {SWord b=pop(); SWord a=pop(); push(a-b);}
 void op_mul() {SWord b=pop(); SWord a=pop(); push(a*b);}
 void op_div() {SWord b=pop(); SWord a=pop(); push(a/b);}
 void op_modulo() {SWord b=pop(); SWord a=pop(); push(a%b);}
+void op_incr() {SWord x=pop(); push(x+1);}
+void op_decr() {SWord x=pop(); push(x-1);}
 
 // compares are signed!
 void op_gt() {SWord b=pop(); SWord a=pop(); push(a>b ? 1 : 0);}
@@ -796,7 +798,46 @@ void op_create() {
 
 void op_dup() {push(pick(0));}
 void op_swap() {Word b=pop(); Word a=pop(); push(b); push(a);}
-void op_drop() {pop();}
+void op_drop() {
+  if (dStackNext<1) {
+    setHasError();
+    Serial.println(F("dStack underflow (drop)"));
+    return;
+  }
+  dStackNext--;
+}
+void op_2drop() {
+  if (dStackNext<2) {
+    setHasError();
+    Serial.println(F("dStack underflow (2drop)"));
+    return;
+  }
+  dStackNext -= 2;
+}
+void op_3drop() {
+  if (dStackNext<3) {
+    setHasError();
+    Serial.println(F("dStack underflow (3drop)"));
+    return;
+  }
+  dStackNext -= 3;
+}
+void op_4drop() {
+  if (dStackNext<4) {
+    setHasError();
+    Serial.println(F("dStack underflow (4drop)"));
+    return;
+  }
+  dStackNext -= 4;
+}
+void op_over() {
+  if (dStackNext < 2) {
+    setHasError();
+    Serial.println(F("dStack underflow (over)"));
+    return;
+  }
+  push(dStack[dStackNext-2]);
+}
 void op_pick() {Word n=pop(); push(pick(n));}
 
 
@@ -861,6 +902,12 @@ void op_r_pick() {
   rpush(rpick(n));
 }
 
+void op_r_read() {
+  if (rStackNext>0) {
+    push(rStack[rStackNext-1]);
+  }
+}
+
 void op_jmp() {
   programCounter=pop();
 }
@@ -903,9 +950,9 @@ void op_word_addr() {
 // upate Words script and and run "gen" to get this code
 // "Global variables use 1559 bytes"
 
-// --------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------+
 
-const Byte numOps=109;
+const Byte numOps=116;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -923,6 +970,8 @@ ret? \
 * \
 / \
 % \
+1+ \
+1- \
 > \
 >= \
 < \
@@ -957,6 +1006,10 @@ c@ \
 dup \
 swap \
 drop \
+2drop \
+3drop \
+4drop \
+over \
 pick \
 ? \
 .s \
@@ -966,6 +1019,7 @@ test] \
 >R \
 R> \
 rpick \
+R@ \
 key? \
 key \
 ' \
@@ -1037,6 +1091,8 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_mul
 ,&op_div
 ,&op_modulo
+,&op_incr
+,&op_decr
 ,&op_gt
 ,&op_ge
 ,&op_lt
@@ -1071,6 +1127,10 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_dup
 ,&op_swap
 ,&op_drop
+,&op_2drop
+,&op_3drop
+,&op_4drop
+,&op_over
 ,&op_pick
 ,&op_words
 ,&op_show_stack
@@ -1080,6 +1140,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_to_r
 ,&op_r_from
 ,&op_r_pick
+,&op_r_read
 ,&op_key_check
 ,&op_key
 ,&op_word_addr
@@ -1133,7 +1194,8 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_min
 };
 
-// --------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------+
+
 
 void op_ops() {
   Byte length=0;

@@ -21,12 +21,7 @@
 
 2 constant cell
 
-
-: 1+ 1 + ;
-: 1- 1 - ;
 : cells cell * ;
-
-: over 1 pick ;
 
 : 2dup (a b -- a b a b)
 	over over 
@@ -87,12 +82,7 @@
 --- Push copy of TOS different stacks (L and F share x-stack)
 )
 
-: R@ 
-	(must save this word returnAddr on data stack)
-	R>      (returnAddr)
-	RDup R> (returnAddr result)
-	swap >R (result)
-;
+(R@ moved to C)
 
 : L@ xdup L> ;
 
@@ -111,7 +101,7 @@
 		&0 jmp 
 	/1
 		RDrop 
-		drop drop
+		2drop
 ;
 
 
@@ -185,7 +175,7 @@ must be initialized by code.
 
 (Ex. 123 456 789 mL --- results in 123456789 as Long on xStack)
 
-: mL
+: mL (mval kval val -- Lval)
 	>R kL 
 	1000 >L L* R> >L L+
 ;
@@ -217,7 +207,7 @@ must be initialized by code.
 		1 >>
 		&0 jmp
 	/1
-		drop drop
+		2drop
 ;
 
 
@@ -262,7 +252,7 @@ bytes, then pushing the address of the length byte on the stack
 		1+
 		&0 jmp
 	/1
-		drop drop drop
+		3drop
 ;
 			
 		
@@ -327,7 +317,7 @@ bytes, then pushing the address of the length byte on the stack
 		swap
 		&0 jmp
 	/1
-		drop drop
+		2drop
 ;
 
 

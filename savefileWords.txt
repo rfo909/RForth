@@ -41,7 +41,10 @@ ret?         &op_cond_ret                       (cond --) conditional return
 -            &op_sub                            
 *            &op_mul                            
 /            &op_div                            
-%            &op_modulo                         
+%            &op_modulo    
+
+1+           &op_incr
+1-           &op_decr                     
              
 >            &op_gt                             
 >=           &op_ge                             
@@ -82,7 +85,11 @@ c@           &op_readc                          (addr --) read byte value
              
 dup          &op_dup                            
 swap         &op_swap                           
-drop         &op_drop                           
+drop         &op_drop
+2drop        &op_2drop
+3drop        &op_3drop
+4drop        &op_4drop
+over         &op_over                           
 pick         &op_pick                           
              
 ?            &op_words                          show words in dictionary
@@ -95,6 +102,7 @@ test]        &op_end_test                       end timed test and print report
 >R           &op_to_r                           move value to return stack
 R>           &op_r_from                         get value from return stack
 rpick        &op_r_pick                         (n -- value) copy value on rStack
+R@           &op_r_read                         copy TOS from R-stack to data stack
 
 key?         &op_key_check                      return boolean for if a key has been pressed (serial)
 key          &op_key                            read character from serial
