@@ -1,0 +1,169 @@
+(
+https://github.com/avishorp/TM1637/blob/master/TM1637Display.cpp
+
+//
+//      A
+//     ---
+//  F |   | B
+//     -G-
+//  E |   | C
+//     ---
+//      D
+
+)
+
+((CDict TM1637))
+
+(
+b00000001 constant SEG_A
+b00000010 constant SEG_B
+b00000100 constant SEG_C
+b00001000 constant SEG_D
+b00010000 constant SEG_E
+b00100000 constant SEG_F
+b01000000 constant SEG_G
+
+b10000000 constant SEG_DB
+)
+
+
+(-set to value 0-7-)
+variable Brightness
+
+
+variable Digits
+
+: initDigits
+	HERE Digits !
+	(XGFEDCBA)
+	b00111111 c,    ( 0 )
+	b00000110 c,    ( 1 )
+	b01011011 c,    ( 2 )
+	b01001111 c,    ( 3 )
+	b01100110 c,    ( 4 )
+	b01101101 c,    ( 5 )
+	b01111101 c,    ( 6 )
+	b00000111 c,    ( 7 )
+	b01111111 c,    ( 8 )
+	b01101111 c,    ( 9 )
+	b01110111 c,    ( A )
+	b01111100 c,    ( b )
+	b00111001 c,    ( C )
+	b01011110 c,    ( d )
+	b01111001 c,    ( E )
+	b01110001 c,    ( F )
+;
+
+
+
+: bitDelay 100 delay-us ;
+
+7 constant pinClk
+8 constant pinData
+
+: initPins
+	(// Set the pin direction and default value.)
+	(// Both pins are set as inputs, allowing the pull-up resistors to pull them up)
+	pinClk IN Pin .setIn
+	pinData IN Pin .setIn
+	
+	0 pinClk IN Pin .writeDigital
+	0 pinData IN Pin .writeDigital
+;
+
+: clkLow pinClk IN Pin .setOut ;
+
+: clkHigh pinClk IN Pin .setIn ;
+
+: dataLow pinData IN Pin .setIn ;
+
+: dataHigh pinData IN Pin .setOut ;
+
+: start dataHigh bitDelay ;
+
+: stop
+	dataHigh bitDelay
+	clkHigh bitDelay
+	dataLow bitDelay
+;
+
+: _wbit (bit --)
+	1 and &2 jmp?
+		(-0-)
+		dataLow
+		&3 jmp
+	/2
+		(-1-)
+		dataHigh
+	/3
+	bitDelay
+	clkHigh
+	bitDelay
+;	
+	
+: writeByte (byte -- )
+	dup b00000001 & _wbit
+	dup b00000010 & _wbit
+	dup b00000100 & _wbit
+	dup b00001000 & _wbit
+	dup b00010000 & _wbit
+	dup b00100000 & _wbit
+	dup b01000000 & _wbit
+	b10000000 & _wbit
+	
+	(-wait for ack-)
+	clkLow dataLow bitDelay
+	clkHigh bitDelay
+	 
+	pinData IN Pin .readDigital   (ack)
+	
+	dup 1 == &1 jmp?
+		(-ack 0-)
+		dataLow
+	/1
+	
+	bitDelay clkLow bitDelay
+	
+	(ack)
+;
+
+(-commands-)
+0x40 constant COMM1
+0xC0 constant COMM2
+0x80 constant COMM3
+
+
+: _show (d1 d2 d3 d4 brightness -- )
+	R>
+	
+	start
+	COMM1 writeByte drop
+	stop
+	
+	start
+	COMM2 writeByte drop
+	3 pick writeByte drop
+	2 pick writeByte drop
+	over writeByte drop
+	writeByte drop
+	stop
+	
+	(brightness)
+	start
+	COMM3 R> 0x0f & writeByte drop
+	stop
+
+	3drop
+;
+
+: display (d1 d2 d3 d4 --)
+	Brightness @ _show
+;
+	
+
+: clear
+	0 0 0 0 0 _show 
+;
+
+
+((CDictEnd))
