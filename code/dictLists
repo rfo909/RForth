@@ -11,23 +11,23 @@ STATUS: compiles, but not tested!
 
 ((CDict Lists))
 
-variable _free   (freelist of cons)
+variable _freeList   (freelist of cons, defaults to 0)
 
 : _car (cons -- carPtr) ;
 : _cdr (cons -- cdrPtr) cell + ;
 	
 (put cons cell onto free list)
-: _addFree (cons --)
-	dup _car _free @ swap !  (free -> cons.car)
-	_free !                  (cons -> free)
+: .free (cons --)
+	dup _car _freeList @ swap !  (free -> cons.car)
+	_freeList !                  (cons -> free)
 ;
 
 (get free cons from freelist of create new)
 : _getCons (-- cons)
-	_free @ not &1 jmp? 
+	_freeList @ not &1 jmp? 
 		(-remove from free list-)	
-		_free @              (cons) 
-		dup _car @ _free !   (free=consPtr.car)
+		_freeList @              (cons) 
+		dup _car @ _freeList !   (free=consPtr.car)
 	
 	/1
 		(-free list empty: create new-)
@@ -36,7 +36,7 @@ variable _free   (freelist of cons)
 
 (create list header, a single cell)		
 : .list (-- list) 
-	HERE cell create
+	HERE cell allot
 	dup 0 swap !
 ;
 
@@ -84,7 +84,7 @@ variable _free   (freelist of cons)
 
 (get and remove first element from non-empty list)
 : .consume (list -- value)
-	.pop dup _addFree     (cons)
+	.pop dup .free     (cons)
 	_cdr @
 ;
 
