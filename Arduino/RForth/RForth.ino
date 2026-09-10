@@ -776,7 +776,7 @@ void op_emit() {Word x=pop(); char c=(x&0xFF); Serial.print(c);}
 void op_code_next() {Word addr=generateCodeAddress(getCodeNext()); push(addr);}
 void op_comp_next() {Word addr=generateCodeAddress(getCompileNext()); push(addr);}
 void op_comp_out() {Word x=pop(); compileOut(x & 0xFF);}
-
+void op_comp_undo() {}
 void op_HERE() {push(HERE());}
 
 void op_allot() {

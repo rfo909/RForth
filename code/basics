@@ -19,6 +19,10 @@
 1 constant DE_IMMEDIATE
 2 constant DE_CONSTANT
 
+(when generating code for addresses)
+0x8000 constant ADDR_CALL_BIT
+0x4000 constant ADDR_DATA_BIT
+
 2 constant cell
 
 : cells cell * ;
@@ -200,7 +204,7 @@ must be initialized by code. Always initialized to 0.
 	/1 CH_ONE emit
 ;
 
-: .bits (byte --)
+: .cbits (byte --)
 	0x80    (byte bit)
 	/0
 		dup 0 == &1 jmp?    (exit)
@@ -212,6 +216,13 @@ must be initialized by code. Always initialized to 0.
 		2drop
 ;
 
+
+(show 16-bit value)
+: .bits (value --)
+	dup 8 >> 0xFF & .cbits
+	32 emit (space)
+	0xFF & .cbits
+;		
 
 
 34 constant CH_QUOT		(The " character)

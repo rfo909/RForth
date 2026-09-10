@@ -1,0 +1,16 @@
+(
+Morse trainer
+)
+
+: lookup (pattern -- char)
+	(pattern is a string of dots and dashes)
+	
+	(smallest=2 biggest=115)
+	(% means undefined)
+
+	
+	
+	s"ETIANMSURWDKGOHVF%L%PJBXCYZQ%%54%3%%%2%%+%%%%16=/%%%(%7%%%8%90%%%%%%%%%%%%?%%%%%%%%.%%%%@%%%%%%-%%%%%%%%%%%)%%%%%,"
+;
+
+

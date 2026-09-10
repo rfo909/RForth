@@ -10,6 +10,10 @@ https://github.com/avishorp/TM1637/blob/master/TM1637Display.cpp
 //     ---
 //      D
 
+It is basically I2C without the address ...
+
+Status: UNTESTED
+
 )
 
 ((CDict TM1637))
