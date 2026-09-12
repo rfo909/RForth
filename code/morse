@@ -1,5 +1,14 @@
 (
 Morse trainer
+--------------
+
+When starting input for a new character, set a value to 1. For every 
+dit or dah belonging to the character, shift the value left by 1, and
+if a dah, add 1. 
+
+When end of character is detected, call ShowChar with the value
+from these calculations, to show the character
+--------------
 )
 
 60 constant Tick   (length of dit in millis at 20 wpm)
@@ -12,10 +21,8 @@ Morse trainer
 
 95 constant UNDERLINE ( _ )
 
-
-(fast access to _data string, storing pointer past length byte)
 _data 1+ constant CHARS
-	(CHARS 5 + c@ --> A)
+
 	
 : ShowChar (value --)
 	dup #ch > &1 jmp?

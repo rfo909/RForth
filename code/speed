@@ -32,10 +32,17 @@
 	test]
 ;
 
+(initial speed tests)
+
 (speedTest1: 85.7 K ops/second Arduino Uno (atmega328p) 16 MHz - from Flash)
 (speedTest1: 83.3 K ops/second Arduino Uno (atmega328p) 16 MHz - from RAM)
 
 (speedTest2: 86.1 K ops/second Arduino Uno (atmega328p) 16 MHz - from Flash)
 (speedTest2: 83.6 K ops/second Arduino Uno (atmega328p) 16 MHz - from RAM)
 
+(From these, we see that running from Flash is about 3% faster)
 
+(2026-09 optimized OP_CVAL (cell sized value))
+(--------------------------------------------)
+(speedTest1 from RAM: 87.5 K ops/second + 5%)
+(speedTest2 from RAM: 87.8 K ops/second + 5%)
