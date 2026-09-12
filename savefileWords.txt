@@ -107,9 +107,9 @@ R@           &op_r_read                         copy TOS from R-stack to data st
 key?         &op_key_check                      return boolean for if a key has been pressed (serial)
 key          &op_key                            read character from serial
              
-'            &op_word_addr                      <word> get address of word
 dump         &op_dump                           dump codeSegment and dataSegment below code.HERE and HERE
 code.export  &op_code_export                    export data for paste into Static.cpp
+&word        &op_word_code_addr_NW              look up code address for word in nextWord
 step         &op_step                           step one instruction - takes addr of code first time
 dis          &op_dis                            (wordAddr --) disassemble word
 ops          &op_ops                            show op names

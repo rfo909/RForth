@@ -386,6 +386,16 @@ static void xStackClear() {
   xStackNext=0;
 }
 
+static void rStackClear() {
+  rStackNext=0;
+}
+
+static void clearStacks() {
+  dStackClear();
+  xStackClear();
+  rStackClear();
+}
+
 // -------------------------------------------
 // Error handling
 // -------------------------------------------
@@ -397,17 +407,17 @@ static void clearHasError() {
 }
 
 void setHasError () {
-  if (!errorFlag) {
-    errorFlag=true;
-    Serial.println();
-    for (Byte i=0; i<20; i++) Serial.print("-");
-    Serial.println();
-    Serial.println(F("Error"));
-    for (Byte i=0; i<20; i++) Serial.print("-");
-    Serial.println();
-    delay(1000);
-    clearInputBuffer();
-  }
+  errorFlag=true;
+  Serial.println();
+  for (Byte i=0; i<20; i++) Serial.print("-");
+  Serial.println();
+  Serial.println(F("Error"));
+  for (Byte i=0; i<20; i++) Serial.print("-");
+  Serial.println();
+  delay(1000);
+
+  clearInputBuffer();
+  clearStacks();
 }
 
 Boolean hasError() {
@@ -936,15 +946,6 @@ void op_key() {
   push(readSerialChar());
 }
 
-void op_word_addr() {
-  readNextWord();
-  if (dictLookup(nextWord)) {
-    push(generateCodeAddress(getDeAddress()));
-  } else {
-    push(0);
-  }
-}
-
 
 // all ops names separated by space
 // upate Words script and and run "gen" to get this code
@@ -1022,9 +1023,9 @@ rpick \
 R@ \
 key? \
 key \
-' \
 dump \
 code.export \
+&word \
 step \
 dis \
 ops \
@@ -1143,9 +1144,9 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_r_read
 ,&op_key_check
 ,&op_key
-,&op_word_addr
 ,&op_dump
 ,&op_code_export
+,&op_word_code_addr_NW
 ,&op_step
 ,&op_dis
 ,&op_ops
@@ -1194,7 +1195,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_min
 };
 
-// ---------------------------------------------------------------------------+
+// --------------------------------------------------------------------------
 
 
 void op_ops() {
@@ -1245,6 +1246,16 @@ void op_step() {
   programCounter=0;
 }
 
+
+void op_word_code_addr_NW() {
+  if (dictLookup(nextWord)) {
+    push(generateCodeAddress(getDeAddress()));
+  } else {
+    push(-1);
+  }
+}
+
+
 void op_dis() {
   Word codeAddr = pop();
   Byte len=readByte(codeAddr-1);
@@ -1256,6 +1267,10 @@ void op_dis() {
 
   Byte dataBytes=0;
   for (Byte i=0; i<len; i++) {
+    if (hasError()) {
+      Serial.println(F("dis aborting"));
+      return;
+    }
     Word addr=codeAddr + i;
     Serial.print("0x");
     Serial.print(addr,16);
@@ -1768,6 +1783,7 @@ Boolean firstTime=true;
 // interpreting main loop
 void loop() {
   clearHasError();
+
   if (firstTime && autorunTopWord()) {
     dictEntryFetch(getDictionaryHead());
     callForth(getDeAddress());
@@ -1782,8 +1798,7 @@ void loop() {
   if (programCounter != 0) {
     executeCode();
     if (hasError()) {
-      memDump();
-      for(;;);
+      return;   // re-initalizing on next invocation
     }
     Serial.println();
     Serial.println("Ok");

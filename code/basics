@@ -120,7 +120,7 @@
 (
 NOTE: variables are not given any default value as in regular Forth; they are just 
 pointers to a cell in the data segment, and are preserved as such, but value
-must be initialized by code. Always initialized to 0.
+must be set by code. Always initialized to 0.
 )
 
 : variable (--)
@@ -134,6 +134,110 @@ must be initialized by code. Always initialized to 0.
 	DE_IMMEDIATE *dictHead DE->type c!
 ;
 
+: IsCompiling
+	(should really be a system flag, set by the colon compiler)
+	*Dict @ DE->address @ 0 ==
+;
+
+(lookup word in dictionary, returning dictionary entry pointer, for word in system buffer nextWord)
+: DictLookupNW (dictPointer -- dictEntry/0) 
+	/0
+		dup 0 == &1 jmp?  (end of dictionary linked list)
+		dup DE->name @ nextWordEq ret?  (found it, returning DE pointer)
+		
+		DE->next @                       (follow next pointer)
+		&0 jmp
+	/1
+		drop
+		-1 ret
+	
+; 
+
+
+
+(the ' word needs to be immediate, so that readNextWord works with the
+correct value. Using the op &word, which looks up the address of the
+word stored in nextWord buffer)
+
+: ' ([name] -- address)
+	readNextWord &word
+; immediate
+
+
+	
+(write byte to code segment)
+: c>C (byte)   
+	comp.out 
+;
+
+(write cell to code segment)
+: >C (cell) 
+	dup 8 >> 0xFF & c>C
+	0xFF & c>C
+;
+
+
+
+(
+Implenting does> which is immediate. It generates a call to dodoes which is 
+not immediate, followed by a "ret". The dodoes creates code, assuming a single
+stack value, perhaps a pointer, which it converts to code. It then generates
+code for a "jmp" to the code following the "does>"
+
+Finally it updates the topmost word dictionary-entry so it points to the code
+above.
+
+The value that the code following does> finds on the stack must be topmost
+on the stack when calling does>
+
+-------------------
+Test:
+
+: x create 314 does> . ;
+x Y
+Y
+
+- should display 314
+-------------------
+)
+
+
+: dodoes (data --)
+	comp:init
+	
+	comp.next       (data code-start)
+	0 c>C           (--write dummy length byte--)
+	
+	swap            (code-start data)
+	
+	(-- write data pointer as code --)
+	OP_CVAL c>C
+	>C
+	
+	(-- jump to code following does> --)
+	
+	OP_CVAL c>C
+	R@ 1+ >C
+	OP_JMP c>C
+	
+	comp:done
+	
+	dup comp.next swap - 1- (code-start length) (1- to skip past length byte)
+	(-- write length byte --)
+	over c!               (code-start)
+	
+	1+                    (actual-code-start)  (-- after length byte now at index -1 --)
+	
+	(-- update top dictionary word address --)
+	*dictHead DE->address !
+	DE_NORMAL *dictHead DE->type c!
+;
+
+: does>
+	(build call to dodoes, then add OP_RET - the code following does> comes after that OP_RET)
+	' dodoes ADDR_CALL_BIT | >C
+	OP_RET c>C
+; immediate
 
 
 

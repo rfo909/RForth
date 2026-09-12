@@ -1,5 +1,12 @@
 (--- Memory related words ---)
 
+(example:
+
+Code[ 1 c>C 2 c>C ]Code constant X
+
+X c@  => 1
+X 1+ c@ => 2
+)
 
 (put next address of code segment on stack)
 : Code[ 
@@ -7,16 +14,6 @@
 	code.next 
 ;
 
-(write byte to code segment)
-: c>C (byte)   
-	comp.out 
-;
-
-(write cell to code segment)
-: >C (cell) 
-	dup 8 >> 0xFF & c>C
-	0xFF & c>C
-;
 
 (commit the "compiled" code)
 : ]Code 
