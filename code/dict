@@ -67,7 +67,8 @@
 		drop
 ;
 
-
+( Easier: Pin ?? )
+: ?? CDictWords ;
 
 (Get address of word in custom dictionary
 

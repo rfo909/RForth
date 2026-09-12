@@ -152,11 +152,6 @@ static const PROGMEM Byte dataSegmentStatic[]={
 
 
 
-
-
-
-
-
 Word staticDataSize() {
   return size;
 }

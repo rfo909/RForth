@@ -2,15 +2,32 @@
 Morse trainer
 )
 
-: lookup (pattern -- char)
-	(pattern is a string of dots and dashes)
-	
-	(smallest=2 biggest=115)
-	(% means undefined)
+60 constant Tick   (length of dit in millis at 20 wpm)
 
-	
-	
-	s"ETIANMSURWDKGOHVF%L%PJBXCYZQ%%54%3%%%2%%+%%%%16=/%%%(%7%%%8%90%%%%%%%%%%%%?%%%%%%%%.%%%%@%%%%%%-%%%%%%%%%%%)%%%%%,"
+: _data
+	s" __ETIANMSURWDKGOHVF_L_PJBXCYZQ__54_3___2__+____16=/___(_7___8_90____________?________.____@______-___________)_____,"
 ;
 
+115 constant #ch
 
+95 constant UNDERLINE ( _ )
+
+
+(fast access to _data string, storing pointer past length byte)
+_data 1+ constant CHARS
+	(CHARS 5 + c@ --> A)
+	
+: ShowChar (value --)
+	dup #ch > &1 jmp?
+		CHARS + c@ emit ret
+	/1 
+		drop
+		UNDERLINE emit
+;
+
+variable KeyState
+
+5 constant MorsePin
+
+	
+		

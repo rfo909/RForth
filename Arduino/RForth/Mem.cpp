@@ -398,6 +398,23 @@ void showFreeMem() {
 }
 
 
+// The OP_CVAL (cell value) is a frequently used op; this function
+// is made specifically for it. This means we know we are working
+// the code segment, and also that both bytes either live in
+// Flash or in the RAM part of the code segment. Moving from 
+// two calls to readByteFast() with results shifted and or'ed together,
+// calling this function directly from op_cval(), increased the speed
+// tests (in RAM on atmega2560) by almost 5% from around
+// 79.8 k ops/sec to around 83.7
+Word readOpCodeDataWord (Word addr) {
+  if (addr < staticCodeBytes) {
+    return staticDataRead(addr) << 8 | staticDataRead(addr+1);
+  } else {
+    Word x=addr-staticCodeBytes;
+    return codeSegment[x] << 8 | codeSegment[x+1];
+  }
+}
+
 
 // For executing code, less checks
 Byte readByteFast (Word addr) {

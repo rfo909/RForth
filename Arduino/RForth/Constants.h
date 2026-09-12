@@ -79,7 +79,7 @@ typedef Byte Boolean;
 #define WORD_INVALID      0xFFFF
 
 
-// CForth.ino
+// RForth.ino
 
 void sPrint (char *msg);
 void sPrintWord (Word word);
@@ -147,6 +147,7 @@ void memDump();
 void memCodeExport();
 void showFreeMem();
 
+Word readOpCodeDataWord (Word addr);
 Byte readByteFast (Word addr);
 
 // ------------------------------------------------------

@@ -521,8 +521,8 @@ void op_comp_done () {
 }
 
 
-// when an op requires additional Bytes (bval and cval - push Byte and cell value)
-Byte getOpcodeParameter() {
+// when an op requires additional Bytes of data, such as bval and cval
+static Byte inline getOpcodeDataByte() {
   return readByteFast(programCounter++);
 }
 
@@ -739,8 +739,10 @@ void op_colon() {
 }
 
 
-void op_bval() {push(getOpcodeParameter());}
-void op_cval() {push(getOpcodeParameter()<<8 | getOpcodeParameter());}
+void op_bval() {push(getOpcodeDataByte());}
+void op_cval() {push(readOpCodeDataWord(programCounter)); programCounter += 2;}
+  
+
 
 void op_dcall() {     // dynamic call
   Word addr=pop();
@@ -932,7 +934,7 @@ void op_blob() {
   // followed by length field n, then n Bytes
   // skip the data, and push the address of the length Byte 
   Word lengthPointer = programCounter;
-  Byte length=getOpcodeParameter();
+  Byte length=getOpcodeDataByte();
   programCounter += length;
   // convert to address by setting high bit
   push(generateCodeAddress(lengthPointer));
@@ -1741,7 +1743,7 @@ void executeCodeByte (Byte b) {
   // detect high bit set, this indicates a Forth call address (14 bits)
 
   if (b & BYTE_CALL_BIT) {
-    Word address = (b<<8) | getOpcodeParameter();
+    Word address = (b<<8) | getOpcodeDataByte();
     /*Serial.print("call=");
     Serial.println(address);*/
     callForth(address);
