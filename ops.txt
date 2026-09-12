@@ -70,7 +70,7 @@ key?                     return boolean for if a key has been pressed (serial)
 key                      read character from serial
 dump                     dump codeSegment and dataSegment below code.HERE and HERE
 code.export              export data for paste into Static.cpp
-&word                    look up code address for word in system buffer nextWord
+&word                    look up code address for word in nextWord
 step                     step one instruction - takes addr of code first time
 dis                      (wordAddr --) disassemble word
 ops                      show op names

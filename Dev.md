@@ -396,8 +396,38 @@ implementing a single op_pin() function in C.
 It starts popping an op, then a pin, and if the op involves write, it also pops the
 value. If the op involves read, it returns a value.
 
+2026-09-12
+----------
+Fixed the ' (apostrophe) word; it used to be an op, but ops can not
+be immediate, which the ' must be in order for readNextWord to function as desired, 
+so moved it to Forth, calling the new &word op to get the code address for the nextWord.
+
+Created the does> word, which builds a call to the dodoes word, then adds a RET. 
+
+The dodoes word expects a value on the data stack, which gets compiled to an 
+OP_CVAL (cell value). Then it calculates a jump address for the code following the 
+RET that "does>" added after the call to dodoes, which is simply "R@ 1+". It compiles that
+into another OP_CVAL followed by a JMP.
+
+NOTE: there is no implicit anything with regards to the value that the code following
+does> gets access to. It may be a code address or a data address, or just a number.
+
+Finally, after realizing how often OP_CVAL is used, I added some optimizations
+to it, which increased ops/second throughput about 5%.
+ 
+
+
 Todo
 ====
+
+- implement op chex( which reads words until finding a matching )chex. The words
+  are supposed to be simple two digit hex codes for bytes, which are written directly
+  to the code segment, for representing arbitrarily large static data. The s" ..." 
+  already does this, but by generating code, plus it is limited to printable
+  character values, and a max length of 255.
+  
+  (possibly s" will handle longer strings, if we disregard the length byte, which
+  will roll over to zero when extending past 255, etc)
 
 - Implement op IsCompiling - controlled via op_colon
 
