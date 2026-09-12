@@ -47,8 +47,26 @@
 
 : rot (a b c -- b c a)
 	>R swap R> swap ;
+	
+	
+	
+(write byte to code segment)
+: c>C (byte)   
+	comp.out 
+;
 
-(for these, we must temp-store the top value on the data stack, since these words have return addresses)
+(write cell to code segment)
+: >C (cell) 
+	dup 8 >> 0xFF & c>C
+	0xFF & c>C
+;
+
+
+
+
+(for the following we must temp-store the top value on the data stack, 
+to preserve the return address of these words themselves
+)
 
 : RDup 
 	R> 
@@ -161,20 +179,17 @@ word stored in nextWord buffer)
 
 : ' ([name] -- address)
 	readNextWord &word
+	IsCompiling &1 jmp?
+	
+	(-- not compiling --)
+	ret
+	
+	/1
+	(-- is compiling --)
+	OP_CVAL c>C
+	>C
 ; immediate
 
-
-	
-(write byte to code segment)
-: c>C (byte)   
-	comp.out 
-;
-
-(write cell to code segment)
-: >C (cell) 
-	dup 8 >> 0xFF & c>C
-	0xFF & c>C
-;
 
 
 
