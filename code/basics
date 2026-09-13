@@ -49,6 +49,10 @@
 	>R swap R> swap ;
 	
 	
+
+: Hi (value -- high-byte) 8 >> 0xFF & ;
+: Lo (value -- low-byte) 0xFF & ;
+
 	
 (write byte to code segment)
 : c>C (byte)   
@@ -57,8 +61,8 @@
 
 (write cell to code segment)
 : >C (cell) 
-	dup 8 >> 0xFF & c>C
-	0xFF & c>C
+	dup Hi c>C
+	Lo c>C
 ;
 
 
@@ -260,7 +264,7 @@ Y
 
 : DE_execute (DE -- ...)
 	dup DE->type c@ DE_CONSTANT == &1 jmp?
-	DE->address @ dcall
+	DE->address @ execute
 	ret
 	/1
 	DE->address @
@@ -272,19 +276,13 @@ Y
 	dup DE->type c@ DE_CONSTANT == &1 jmp?
 
 		(compile call as two bytes with high bit set)
-		DE->address @
-
-		dup 8 >> 0xFF & 0x80 | comp.out
-		0xFF & comp.out
+		DE->address @ ADDR_CALL_BIT | >C
 		ret
 	
 	/1 (constant)
 		(compile static value)
-		OP_CVAL comp.out
-		
-		DE->address @
-		dup 8 >> 0xFF & comp.out
-		0xFF & comp.out 
+		OP_CVAL c>C
+		DE->address @ >C
 ;
 	
 	
@@ -338,9 +336,9 @@ Y
 
 (show 16-bit value)
 : .bits (value --)
-	dup 8 >> 0xFF & .cbits
+	dup Hi .cbits
 	32 emit (space)
-	0xFF & .cbits
+	Lo .cbits
 ;		
 
 

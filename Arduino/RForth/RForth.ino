@@ -507,6 +507,20 @@ void op_nextWord_write() {
   nextWord[len]='\0';
 }
 
+void op_nextWord_atoi() {
+  int i=0;
+  if (myAtoi(nextWord,&i)) {
+    Word w=(Word) i;
+    push(w);
+    push(1);  // boolean ok
+  } else {
+    push(0);  // no value
+    push(0);  // boolean not ok
+  }
+}
+
+
+
 
 void op_dStack_next () {
   push(dStackNext);
@@ -744,7 +758,7 @@ void op_cval() {push(readOpCodeDataWord(programCounter)); programCounter += 2;}
   
 
 
-void op_dcall() {     // dynamic call
+void op_execute() {     // dynamic call
   Word addr=pop();
   callForth(addr);
 }
@@ -774,7 +788,6 @@ void op_bin_or() {Word b=pop(); Word a=pop(); push(a|b);}
 void op_bin_inv() {Word x=pop(); push(~x);}
 void op_lshift() {Word b=pop(); Word a=pop(); push(a<<b);}
 void op_rshift() {Word b=pop(); Word a=pop(); push(a>>b);}
-
 
 void op_dot() {SWord i=pop(); Serial.print(i); Serial.print(" ");}
 void op_dot_u() {Word x=pop(); Serial.print(x); Serial.print(" ");}
@@ -955,7 +968,7 @@ void op_key() {
 
 // ---------------------------------------------------------------------------+
 
-const Byte numOps=116;
+const Byte numOps=117;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -966,7 +979,7 @@ ret \
 jmp \
 jmp? \
 blob \
-dcall \
+execute \
 ret? \
 + \
 - \
@@ -1068,6 +1081,7 @@ readNextWord \
 nextWordEq \
 compile \
 nextWord! \
+nextWordAtoi \
 dStackNext \
 comp:init \
 comp:done \
@@ -1087,7 +1101,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_jmp
 ,&op_cond_jmp
 ,&op_blob
-,&op_dcall
+,&op_execute
 ,&op_cond_ret
 ,&op_add
 ,&op_sub
@@ -1189,6 +1203,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_nextWordEq
 ,&op_compile
 ,&op_nextWord_write
+,&op_nextWord_atoi
 ,&op_dStack_next
 ,&op_comp_init
 ,&op_comp_done
@@ -1197,8 +1212,7 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_min
 };
 
-// --------------------------------------------------------------------------
-
+// ----------------------------------------------------------------------
 
 void op_ops() {
   Byte length=0;

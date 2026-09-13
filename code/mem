@@ -15,7 +15,7 @@ X 1+ c@ => 2
 ;
 
 
-(commit the "compiled" code)
+(commit the "compiled" code, the start address is still on the stack)
 : ]Code 
 	comp:done 
 ;
@@ -53,6 +53,61 @@ X 1+ c@ => 2
 	/1
 		2drop
 ;
+
+
+
+
+(
+Create static data, as sequence of bytes, in the code segment. Does
+not execute code, only parsing byte values.
+
+Returns two values, the start address and the count.
+
+Handles byte values as hex 0xNN or decimal or binary b1001, as
+well as signed.
+
+Ex.
+
+CodeRaw[ 1 2 3 ]CodeRaw
+
+constant Length
+constant Start
+
+)
+
+
+: CodeRaw[
+	comp:init
+	comp.next   (startAddr)
+	
+	/1
+		readNextWord
+		s" ]CodeRaw" nextWordEq &3 jmp?  (--complete--)
+
+		nextWordAtoi not &2 jmp?  (--error--)
+		
+		(startAddr num)
+
+		(-- write byte --)
+		c>C
+		(-- repeat --)
+		&1 jmp 
+		
+	/2
+		(-- invalid numeric --)
+		(startAddr)
+		
+		drop
+		s" cdata( invalid value" .str	
+		ret
+	/3
+		(-- complete --)
+		(startAddr)
+		comp:done
+		dup code.next swap - (startAddr count) (<-- return values)
+
+;
+
 
 
 

@@ -8,7 +8,7 @@ NOTE: if doing changes other than appending new ops to the end of the list,
 any generated code pasted into Static.cpp is invalidated.
 
 ALSO note that ops 2-9 MUST not change location in the list, without changing
-corresponding constants in Constants.h as well as in the cstrings.txt Forth
+corresponding constants in Constants.h as well as in the basics.txt Forth
 library code.
 
 
@@ -33,7 +33,7 @@ jmp          &op_jmp                            #5 (addr --) jump to address
 jmp?         &op_cond_jmp                       #6 (cond addr --) conditional jump if cond != 0
 blob         &op_blob         [len ...]         #7 just skips the data byes, returns pointer to len field
           
-dcall        &op_dcall                          (addr --) dynamic call, take address from stack
+execute      &op_execute                        (addr --) dynamic call, take address from stack
 ret?         &op_cond_ret                       (cond --) conditional return
              
              
@@ -61,7 +61,7 @@ not          &op_not                            logical
 inv          &op_bin_inv                        binary not
 <<           &op_lshift                         (value n1 -- value<<n2)
 >>           &op_rshift                         (value n1 -- value>>n2)
-             
+
 .            &op_dot                            print TOS signed followed by a space
 .u           &op_dot_u                          unsigned
 .hex         &op_dot_hex                        print word on hex format
@@ -162,6 +162,8 @@ readNextWord &op_readNextWord                   read into the nextWord C string 
 nextWordEq   &op_nextWordEq                     (str -- bool)
 compile      &op_compile                        (--) compile nextWord
 nextWord!    &op_nextWord_write                 (str --) insert string as nextWord
+nextWordAtoi &op_nextWord_atoi                 (-- value bool)  do atoi on nextWord (in word code only)
+
 dStackNext   &op_dStack_next                    get current size of dStack
 comp:init    &op_comp_init                      set compileNext=dataNext
 comp:done    &op_comp_done                      set dataNext=compileNext, committing compiled output

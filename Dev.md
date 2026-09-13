@@ -415,20 +415,18 @@ does> gets access to. It may be a code address or a data address, or just a numb
 Finally, after realizing how often OP_CVAL is used, I added some optimizations
 to it, which increased ops/second throughput about 5%.
  
+2026-09-13
+----------
+Changed name of op "dcall" to "execute", in line with traditional Forth.
 
+Added op "nextWordAtoi" which performs the myAtoi() on nextWord, which means it handles all
+number formats as used in the language. It returns two values on the stack, first the
+number value, or 0 if parse failed, then a second boolean value, which is 1 if ok, and 0
+if failed.
 
 Todo
 ====
-
-- implement op chex( which reads words until finding a matching )chex. The words
-  are supposed to be simple two digit hex codes for bytes, which are written directly
-  to the code segment, for representing arbitrarily large static data. The s" ..." 
-  already does this, but by generating code, plus it is limited to printable
-  character values, and a max length of 255.
   
-  (possibly s" will handle longer strings, if we disregard the length byte, which
-  will roll over to zero when extending past 255, etc)
-
 - Implement op IsCompiling - controlled via op_colon
 
 - Implement .nextWord - printing nextWord

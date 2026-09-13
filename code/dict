@@ -38,7 +38,7 @@
 	
 	(*Dict points to last word added, store it in the cdict entry)
 	*Dict @ 
-		RDup R> DE->address !
+		R@ DE->address !
 		
 	(the words that were added to the directory are on top of the reference
 	to the cdict entry, now we need to traverse the new dictionary content
@@ -46,7 +46,7 @@
 	overwrite that with zero. That way we terminate the cdict list)
 	
 	
-	RDup R> 
+	R@ 
 		*Dict @ 
 		_TerminateCDict
 	
