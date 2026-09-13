@@ -93,20 +93,22 @@ Byte hasError();
 // Dict.cpp
 // ------------------------------------------------------
 
-Word getDeNamePtr();
-Byte getDeType();
-Word getDeAddress();
-Word getDeNextPtr();
 
-void setDeType(Byte b);
-void setDeAddress(Word w);
+Word getDeNamePtr(Word dePtr);
+Byte getDeType(Word dePtr);
+Word getDeAddress(Word dePtr);
+Word getDeNextPtr(Word dePtr);
+
+void setDeType(Word dePtr, Byte b);
+void setDeAddress(Word dePtr, Word w);
 
 Word getDictionaryHead();
-void dictEntryFetch (Word ptr);
-void dictEntrySave();
+
 void dictCreate (char *newWord);
-Boolean dictLookup (char *word);
-Boolean dictLookupByAddr (Word addr);
+Word dictLookupDE (char *word);
+Word dictLookupDEByAddr (Word addr);
+
+
 
 // ------------------------------------------------------
 // Static.cpp

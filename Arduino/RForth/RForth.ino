@@ -585,19 +585,19 @@ void compileNextWord () {
     return;
   } 
 
-  Boolean dictFound=dictLookup(nextWord);
-  if (dictFound) {
-    byte type=getDeType();
+  Word dePtr=dictLookupDE(nextWord);
+  if (dePtr != 0) {
+    byte type=getDeType(dePtr);
     if (type==DE_TYPE_NORMAL) {
       // ensure 14 bit address, then set high bit=1
-      Word addr=generateCallAddress(getDeAddress());
+      Word addr=generateCallAddress(getDeAddress(dePtr));
       compileOut((addr>>8) & 0xFF); 
       compileOut(addr & 0xFF);
     } else if (type==DE_TYPE_IMMEDIATE) {
-      callForth(getDeAddress());
+      callForth(getDeAddress(dePtr));
       executeCode();
     } else if (type==DE_TYPE_CONSTANT) {
-      compileNumber(getDeAddress());
+      compileNumber(getDeAddress(dePtr));
     }
     return;
   }
@@ -727,9 +727,9 @@ void op_colon() {
 
       Byte byteCount=(Byte) (getCodeNext()-startPos-1);  // length Byte not included
 
-      dictEntryFetch(getDictionaryHead());  // from call to create() 
+      Word deHead = getDictionaryHead();  // from call to create() 
 
-      printStr(getDeNamePtr());
+      printStr(getDeNamePtr(deHead));
       Serial.print(" ");
       Serial.print(byteCount);
       Serial.println(F(" Bytes"));
@@ -738,12 +738,8 @@ void op_colon() {
       
       writeByte(startPos, byteCount);
 
-      setDeAddress(generateCodeAddress(startPos+1));  // past length Byte
-      setDeType(DE_TYPE_NORMAL);
-
-      // save changes to dict entry
-      dictEntrySave();
-
+      setDeAddress(deHead, generateCodeAddress(startPos+1));  // past length Byte
+      setDeType(deHead, DE_TYPE_NORMAL);
       return;
     }
 
@@ -902,16 +898,15 @@ void op_words() {
   Serial.println();
   Byte len=0;
   while (ptr != 0) {
-    dictEntryFetch(ptr);
-    printStr(getDeNamePtr());
-    len += readByte(getDeNamePtr());
+    printStr(getDeNamePtr(ptr));
+    len += readByte(getDeNamePtr(ptr));
     if (len > 60) {
       Serial.println();
       len=0;
     } else {
       Serial.print(" ");
     }
-    ptr=getDeNextPtr();
+    ptr=getDeNextPtr(ptr);
   }
   Serial.println();
 }
@@ -1264,8 +1259,18 @@ void op_step() {
 
 
 void op_word_code_addr_NW() {
-  if (dictLookup(nextWord)) {
-    push(generateCodeAddress(getDeAddress()));
+  Word ptr=dictLookupDE(nextWord);
+  if (ptr != 0) {
+    push(generateCodeAddress(getDeAddress(ptr)));
+  } else {
+    push(-1);
+  }
+}
+
+void op_word_de_addr_NW() {
+  Word ptr=dictLookupDE(nextWord);
+  if (ptr != 0) {
+    push(ptr);
   } else {
     push(-1);
   }
@@ -1319,20 +1324,19 @@ void op_dis() {
       Serial.print(F(" forthAddr="));
       Serial.print(forthAddr);
 
-      Boolean found=dictLookupByAddr(forthAddr);
-      // 2026-05-05 RFO: this fails when disassembling code in custom
-      if (!found) {
+      Word ptr=dictLookupDEByAddr(forthAddr);
+      if (ptr==0) {
         Serial.print(F("unknown forth code address "));
-        Serial.println(getDeAddress(),16);
+        Serial.println(ptr,16);
         continue;
       } 
       Serial.print(" ");
       Serial.print(F("=>"));
       Serial.print(" ");
-      printStr(getDeNamePtr());
+      printStr(getDeNamePtr(ptr));
       Serial.println();
 
-      Byte type=getDeType();
+      Byte type=getDeType(ptr);
       if (type != DE_TYPE_NORMAL && type != DE_TYPE_IMMEDIATE) {
         setHasError();
         Serial.println(" constant - not callable!");
@@ -1801,8 +1805,7 @@ void loop() {
   clearHasError();
 
   if (firstTime && autorunTopWord()) {
-    dictEntryFetch(getDictionaryHead());
-    callForth(getDeAddress());
+    callForth(getDeAddress(getDictionaryHead()));
   } else {
     if (firstTime) {
       Serial.println();
@@ -1833,11 +1836,12 @@ void loop() {
     return;
   }
 
-  if (dictLookup(nextWord)) {
-    if (getDeType()==DE_TYPE_CONSTANT) {
-      push(getDeAddress());
+  Word ptr=dictLookupDE(nextWord);
+  if (ptr != 0) {
+    if (getDeType(ptr)==DE_TYPE_CONSTANT) {
+      push(getDeAddress(ptr));
     } else {
-      callForth(getDeAddress());
+      callForth(getDeAddress(ptr));
     }
     return;
   }

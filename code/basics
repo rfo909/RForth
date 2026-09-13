@@ -53,6 +53,15 @@
 : Hi (value -- high-byte) 8 >> 0xFF & ;
 : Lo (value -- low-byte) 0xFF & ;
 
+
+(dictionary entry field offsets)
+
+: DE->name (dePtr -- fieldPtr) ;
+: DE->type (dePtr -- fieldPtr) 2 + ;	(1 byte)
+: DE->address (dePtr -- fieldPtr) 3 + ;
+: DE->next (dePtr -- fieldPtr) 5 + ;
+
+
 	
 (write byte to code segment)
 : c>C (byte)   
@@ -63,6 +72,13 @@
 : >C (cell) 
 	dup Hi c>C
 	Lo c>C
+;
+
+
+(generate OP_CVAL n n for value as code)
+: CVAL>C (value --)
+	OP_CVAL c>C
+	>C
 ;
 
 
@@ -132,13 +148,6 @@ to preserve the return address of these words themselves
 
 
 
-(dictionary entry field offsets)
-
-: DE->name (dePtr -- fieldPtr) ;
-: DE->type (dePtr -- fieldPtr) 2 + ;	(1 byte)
-: DE->address (dePtr -- fieldPtr) 3 + ;
-: DE->next (dePtr -- fieldPtr) 5 + ;
-
 (
 NOTE: variables are not given any default value as in regular Forth; they are just 
 pointers to a cell in the data segment, and are preserved as such, but value
@@ -161,21 +170,6 @@ must be set by code. Always initialized to 0.
 	*Dict @ DE->address @ 0 ==
 ;
 
-(lookup word in dictionary, returning dictionary entry pointer, for word in system buffer nextWord)
-: DictLookupNW (dictPointer -- dictEntry/0) 
-	/0
-		dup 0 == &1 jmp?  (end of dictionary linked list)
-		dup DE->name @ nextWordEq ret?  (found it, returning DE pointer)
-		
-		DE->next @                       (follow next pointer)
-		&0 jmp
-	/1
-		drop
-		-1 ret
-	
-; 
-
-
 
 (the ' word needs to be immediate, so that readNextWord works with the
 correct value. Using the op &word, which looks up the address of the
@@ -190,8 +184,7 @@ word stored in nextWord buffer)
 	
 	/1
 	(-- is compiling --)
-	OP_CVAL c>C
-	>C
+	CVAL>C
 ; immediate
 
 
@@ -230,13 +223,11 @@ Y
 	swap            (code-start data)
 	
 	(-- write data pointer as code --)
-	OP_CVAL c>C
-	>C
+	CVAL>C
 	
 	(-- jump to code following does> --)
 	
-	OP_CVAL c>C
-	R@ 1+ >C
+	R@ 1+ CVAL>C
 	OP_JMP c>C
 	
 	comp:done
@@ -259,32 +250,6 @@ Y
 ; immediate
 
 
-
-(execute a dictionary entry)
-
-: DE_execute (DE -- ...)
-	dup DE->type c@ DE_CONSTANT == &1 jmp?
-	DE->address @ execute
-	ret
-	/1
-	DE->address @
-;
-
-(compile a dictionary entry)
-
-: DE_compile (DE -- )
-	dup DE->type c@ DE_CONSTANT == &1 jmp?
-
-		(compile call as two bytes with high bit set)
-		DE->address @ ADDR_CALL_BIT | >C
-		ret
-	
-	/1 (constant)
-		(compile static value)
-		OP_CVAL c>C
-		DE->address @ >C
-;
-	
 	
 	
 

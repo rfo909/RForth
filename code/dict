@@ -68,7 +68,28 @@
 ;
 
 ( Easier: Pin ?? )
+
 : ?? CDictWords ;
+
+
+
+(lookup word in dictionary, returning dictionary entry pointer, for word in system buffer nextWord)
+
+: DictLookupNW (dictPointer -- dictEntry/0) 
+	/0
+		dup 0 == &1 jmp?  (end of dictionary linked list)
+		dup DE->name @ nextWordEq ret?  (found it, returning DE pointer)
+		
+		DE->next @                       (follow next pointer)
+		&0 jmp
+	/1
+		drop
+		-1 ret
+	
+; 
+
+
+
 
 (Get address of word in custom dictionary
 
@@ -84,6 +105,40 @@ with the "dis" word.
 	readNextWord
 	DictLookupNW DE->address @
 ;
+
+
+
+(execute a dictionary entry)
+
+: DE_execute (DE -- ...)
+	dup DE->type c@ DE_CONSTANT == &1 jmp?
+	DE->address @ execute
+	ret
+	/1
+	DE->address @
+;
+
+(compile a dictionary entry)
+
+: DE_compile (DE -- )
+	dup DE->type c@ DE_CONSTANT == &1 jmp?
+	dup DE->type c@ DE_IMMEDIATE == &2 jmp?
+
+		(-- normal word, compile call as two bytes with high bit set--)
+		DE->address @ ADDR_CALL_BIT | >C
+		ret
+	
+	/1 (constant)
+		(-- compile static value --)
+		DE->address @ CVAL>C
+		ret
+		
+	/2 (immediate)
+		(-- just call the word --)
+		DE->address @ execute
+		(ret)
+;
+	
 
 
 ((
@@ -106,10 +161,11 @@ IN <dict> <name>
 	
 	IsCompiling not &2 jmp?   (found but not compile mode)
 
-	DE_compile
-	ret	
+		(-- compiling --)
+		DE_compile
+		ret	
 	
-	/2 (not compiling, found it)
+	/2 (-- not compiling, found it --)
 		DE_execute
 		ret
 
