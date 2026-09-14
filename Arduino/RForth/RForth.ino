@@ -1520,36 +1520,43 @@ void sys_timer () {
     // store current time 
     timers[timerId]=millis();
     return;
-  } else if (function==OP_TIMER_GET || function==OP_TIMER_GET_LONG || function==OP_TIMER_GET_SEC) {
-    unsigned long now=millis();
-    unsigned long t=timers[timerId];
-    unsigned long result;
+  }
 
-    if (t <= now) {
-      result=now-t;
-    } else {
-      // rollover
-      result=((unsigned long) 0xFFFFFFFE)-t+now;
-    }
-    if (function==OP_TIMER_GET_SEC) {
-      result=result/1000;  // millis to seconds
-    }
-    if (function==OP_TIMER_GET_LONG) {
-      pushLong(result);
-    } else {
-      // result is 16 bits only
-      if (result > 0xFFFF) {
-        push(0xFFFF);
-      } else {
-        push((Word) result);
-      }
-    }
-    return;
+  unsigned long now=millis();
+  unsigned long t=timers[timerId];
+  unsigned long result;
+
+  if (t <= now) {
+    result=now-t;
   } else {
-    Serial.println(F("Invalid timer function"));
-    setHasError();
+    // rollover
+    result=((unsigned long) 0xFFFFFFFE)-t+now;
+  }
+
+  if (function==OP_TIMER_GET) {
+    push((Word) min(0x7FFF, result));
+    return;
+  } 
+  if (function==OP_TIMER_GET_LONG) {
+    pushLong(result);
     return;
   }
+  if (function==OP_TIMER_GET_SEC) {
+    result=result/1000;
+    push((Word) min(0x7FFF, result));
+    return;
+  }
+  if (function==OP_TIMER_DIV) {
+    Word factor=pop();
+    unsigned long count=result/factor;
+    unsigned long rest=result%factor;
+    push((Word) min(count,0x7FFF));
+    push((Word) min(rest,0x7FFF));
+    return;
+  }
+
+  Serial.println(F("Invalid timer function"));
+  setHasError();
 }
 
 

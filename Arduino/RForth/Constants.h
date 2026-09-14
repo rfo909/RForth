@@ -42,6 +42,7 @@ typedef struct {
 #define OP_TIMER_GET         1
 #define OP_TIMER_GET_LONG    2
 #define OP_TIMER_GET_SEC     3
+#define OP_TIMER_DIV         4
 
 typedef Byte Boolean;
 
