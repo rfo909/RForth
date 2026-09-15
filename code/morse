@@ -1,40 +1,98 @@
 (
 Morse trainer
---------------
+-------------
 
-When starting input for a new character, set a value to 1. For every 
-dit or dah belonging to the character, shift the value left by 1, and
-if a dah, add 1. 
+In order to train my ears for Morse characters and words, I want to build
+a "bug" type of Morse key, with a single blade in the center and two contact
+points, one on each side, one for dits and one for dahs. 
 
-When end of character is detected, call ShowChar with the value
-from these calculations, to show the character
---------------
+The key then handles timing, in that as long as a contact is closed, it
+repeats dits or dahs at correct length and inbetween space, as well as 
+inbetween symbol time (one dit long).
+
+This eliminates the issue of "button bounce", both because I will not use
+buttons, but just contact points, so no springs involved, but also because
+once detecting a contact on one of the points, it will generate the symbol,
+and space following it, before checking the points again.
+
+I also want to display the characters on an LCD display (I2C), and implement
+a simple menu system for setting the speed. 
+
+
 )
 
-60 constant Tick   (length of dit in millis at 20 wpm)
-
-: _data
+: Chars
 	s" __ETIANMSURWDKGOHVF_L_PJBXCYZQ__54_3___2__+____16=/___(_7___8_90____________?________.____@______-___________)_____,"
 ;
 
-115 constant #ch
+63 constant UNKNOWN ( ? )
 
-95 constant UNDERLINE ( _ )
+5 constant PinDit
+6 constant PinDah
+7 constant PinBeep
+13 constant PinLed
 
-_data 1+ constant CHARS
+variable msTick
 
+: Init
+	PinDit IN Pin .setIn
+	PinDah IN Pin .setIn
+	PinBeep IN Pin .setOut
+	PinLed IN Pin .setOut
 	
-: ShowChar (value --)
-	dup #ch > &1 jmp?
-		CHARS + c@ emit ret
-	/1 
-		drop
-		UNDERLINE emit
+	60 msTick !   (length of dit in millis at 20 wpm)
+	
+	(-- using timer 0 --)
+	0 IN Timers .set
 ;
 
-variable KeyState
+: ShowChar (value --)
+	dup Chars c@ >= &1 jmp?          (-- is value out of bounds? --)
+	Chars + 1+ c@ emit
+	ret
+	/1 (-- out of bounds --)
+		drop
+		UNKNOWN emit
+;
 
-5 constant MorsePin
+(-- test --)
+: ShowR b1010 ShowChar ;
 
-	
-		
+
+(-- wait for ticks to pass, timer #0 --)
+: Wait (ticks --)
+	msTick @ * delay
+;
+
+: SoundOn
+	500 PinBeep IN Pin .writeAnalog
+	1 PinLed IN Pin .writeDigital
+;
+
+: SoundOff
+	0 PinBeep IN Pin .writeDigital
+	0 PinLed IN Pin .writeDigital
+;
+
+: Play (ticks --)
+	(ticks)
+	SoundOn
+	Wait
+	SoundOff
+	(-- pause after symbol --)
+	1 Wait
+;
+
+(-- test --)
+: test
+	Init
+	/1
+		key? ret?
+		1 Play
+		3 Play
+		1 Play
+		3 Wait
+		&1 jmp
+;
+
+
