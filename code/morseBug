@@ -1,0 +1,131 @@
+(
+Morse trainer
+--------------
+
+Building an "elbug" type morse key, with two contact points, and either a single 
+lever moving between them, or two paddles, as is the modern style. The point
+is creating the rythm of morse, which is what I am training my ears to recognize.
+
+The main loop regularly checks the input pins, and generate a single dit or dah,
+followed by a a single dit-length pause, before checking again. 
+
+The speed is selectable somehow, for example after 10 dots we enter the menu?
+
+Using a buzzer to create sound, and an LCD display to type the characters.
+
+If the pause after the last dit or dah extends to three times a dit, it indicates a
+new letter, and then we look up the previous. This is done as follows:
+
+- when starting a new character, set some variable to 1
+- generating a dit: shift left
+- generating a dah: shift left and add 1
+
+When reaching end of character delay, the value is an index into the string
+below, using underscore to mean "unrecognized combination"
+
+)
+
+60 constant InitialTick  (length of dit in millis - 20 wpm)
+variable Tick
+
+
+Tick constant msDit
+Tick 3 * constant msDah
+
+5 constant PinDit
+6 constant PinDah
+7 constant PinBeep
+13 constant PinLed
+
+(-- 0-based string of characters --)
+: Chars
+	s" __ETIANMSURWDKGOHVF_L_PJBXCYZQ__54_3___2__+____16=/___(_7___8_90____________?________.____@______-___________)_____,"
+;
+
+95 constant UnknownChar (-- underline _ --)
+
+
+: ShowChar (value --)
+	Chars			(value str)
+	swap over		(str value str)
+	c@			(str value strLen)
+	over <=		(str value flag)
+	&1 jmp?
+		(str value)
+		+ 1+ c@ emit	(character)
+		ret
+		
+	/1             (-- value out of bounds --)
+		(str value)
+		2drop
+		UnknownChar emit
+;
+
+(-- test --)
+: ShowP b10110 ShowChar ;
+
+
+: Init 
+	InitialTick Tick !
+	
+	PinDit IN Pin .setIn
+	PinDah IN Pin .setIn
+	PinBeep IN Pin .setOut
+	PinLed IN Pin .setOut
+	
+	0 IN Timers .set  (-- for timing delays without input --)
+;
+
+: call? (cond addr -- )
+	swap not &1 jmp?
+		(-- cond true --)
+		execute
+		ret
+	
+	/1 (-- cond false --)
+		drop 
+;
+
+(-- wait until timer 0 has moved a number of millis --)
+: TWait (ms -- )
+	/1
+		0 IN Timers .get (ms elapsed)
+		over >= &2 jmp?
+		&1 jmp
+	/2
+		(-- done --)
+		drop
+;		
+
+(-- play sound --)
+: Play (ms --)
+	msDit TWait
+	
+	512 PinBeep IN Pin .writeAnalog
+	1 PinLed IN Pin .writeDigital
+	delay
+	0 PinBeep IN Pin .writeDigital
+	0 PinLed IN Pin .writeDigital
+	
+	0 IN Timers .set   (-- count time since play --)
+;
+
+: DoDit 
+	Tick Play
+;
+: DoDah 
+	Tick 3 * Play
+;
+
+: MainLoop
+	Init
+	/1
+		PinDit IN Pin .readDigital ' DoDit call?
+		PinDah IN Pin .readDigital ' DoDah call?
+		&1 jmp
+;
+
+
+
+	
+
