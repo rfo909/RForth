@@ -66,7 +66,11 @@
 	#terminate possible current loop waiting for key 
 	SendLine(device," ")
 	
+	inComment=false
 	file.read->line
+		if (line.trim=="))") { inComment=false continue }
+		if (line.trim=="((") inComment=true
+		reject(inComment)
 		break(line.startsWith("#END"))
 		reject(line.trim.startsWith("#"))
 		if (line.trim.startsWith("@@")) {

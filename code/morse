@@ -1,4 +1,4 @@
-(
+((
 Morse trainer
 -------------
 
@@ -19,7 +19,7 @@ I also want to display the characters on an LCD display (I2C), and implement
 a simple menu system for setting the speed. 
 
 
-)
+))
 
 : Chars
 	s" __ETIANMSURWDKGOHVF_L_PJBXCYZQ__54_3___2__+____16=/___(_7___8_90____________?________.____@______-___________)_____,"
@@ -79,10 +79,27 @@ variable msTick
 	SoundOn
 	Wait
 	SoundOff
-	(-- pause after symbol --)
-	1 Wait
 ;
 
+: call? (cond xt --)
+	swap &1 jmp?
+		execute
+	/1
+		drop
+;
+
+: Dit 1 Play ;
+: Dah 3 Play ;
+
+: Main
+	Init
+	0 IN Timers .set
+	/1
+		PinDit IN Pin .readDigital ' Dit call?
+		PinDah IN Pin .readDigital ' Dah call?
+		&1 jmp
+;
+	
 (-- test --)
 : test
 	Init
