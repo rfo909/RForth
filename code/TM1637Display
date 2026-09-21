@@ -68,20 +68,20 @@ variable Digits
 : initPins
 	(// Set the pin direction and default value.)
 	(// Both pins are set as inputs, allowing the pull-up resistors to pull them up)
-	pinClk IN Pin .setIn
-	pinData IN Pin .setIn
+	pinClk IN Pins .setIn
+	pinData IN Pins .setIn
 	
-	0 pinClk IN Pin .writeDigital
-	0 pinData IN Pin .writeDigital
+	0 pinClk IN Pins .writeDigital
+	0 pinData IN Pins .writeDigital
 ;
 
-: clkLow pinClk IN Pin .setOut ;
+: clkLow pinClk IN Pins .setOut ;
 
-: clkHigh pinClk IN Pin .setIn ;
+: clkHigh pinClk IN Pins .setIn ;
 
-: dataLow pinData IN Pin .setIn ;
+: dataLow pinData IN Pins .setIn ;
 
-: dataHigh pinData IN Pin .setOut ;
+: dataHigh pinData IN Pins .setOut ;
 
 : start dataHigh bitDelay ;
 
@@ -119,7 +119,7 @@ variable Digits
 	clkLow dataLow bitDelay
 	clkHigh bitDelay
 	 
-	pinData IN Pin .readDigital   (ack)
+	pinData IN Pins .readDigital   (ack)
 	
 	dup 1 == &1 jmp?
 		(-ack 0-)

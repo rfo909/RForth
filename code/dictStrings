@@ -3,7 +3,7 @@ Simple string library, works with buffers on format N... where N is single byte 
 )
 
 
-CDict String
+CDict Strings
 
 (
 --- Initialize String object

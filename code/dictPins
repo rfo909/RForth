@@ -6,7 +6,7 @@ assign meaningful names without prefix Pin.xxx or similar
 -----------------------------------------------------------
 )
 
-CDict Pin
+CDict Pins
 
 (
 Using the "sys.pin" single op for all things

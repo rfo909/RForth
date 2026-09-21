@@ -17,8 +17,18 @@ and space following it, before checking the points again.
 
 I also want to display the characters on an LCD display (I2C), and implement
 a simple menu system for setting the speed. 
+))
 
 
+((
+The position is calcualated as follows: 
+- start with 1
+- for a dit, left shift one
+- for a dah, left shift one and add 1
+
+After playing a sound (dit or dah), we reset timer 0, and in the
+main check if more than 3 ticks has elapsed, which indicates 
+next letter, so we show the letter associated with the current code
 ))
 
 : Chars
@@ -26,26 +36,22 @@ a simple menu system for setting the speed.
 ;
 
 : Len Chars c@ ;
-: Char Chars + 1+ c@ ;
+: Char (pos -- char) Chars + 1+ c@ ;
 
-
-63 constant Unknown ( ? )
-
-
-# How compact can we make the code
-
+(-- pins --)
 13 constant LED
-6 constant BUZZ
+6 constant BUZZ  (-- must support PWM --)
 7 constant DIT
 5 constant DAH
 
-60 constant Tick
+60 constant Tick  (-- length of dit at 20 wpm --)
 
 : In (pin) IN Pins .setIn ;
 : Out (pin) IN Pins .setOut ;
 : Dr (pin) IN Pins .digitalRead ;
 : Dw (value pin) IN Pins .digitalWrite ;
 : Aw (value pin) IN Pins .analogWrite ;
+
 
 : Init
 	In DIT
@@ -58,40 +64,56 @@ a simple menu system for setting the speed.
 : On  1 LED Dw 512 BUZZ Aw ;
 : Off 0 LED Dw 0 BUZZ Dw ;
 
-: Play (ticks) On Tick * delay Off Tick delay ;
 
-: Dit? 0 DIT Dr not ret? 1+ 1 Play ;
-: Dah? 0 DAH Dr not ret? 1+ 3 Play ;
+(-- check if contacts closed --)
+: Dit? (--bool) 0 DIT Dr not ret? 1+ ;
+: Dah? (--bool) 0 DAH Dr not ret? 1+ ;
 
+(-- reset timer 0 --)
 : TZero 0 IN Timers .set ;
+
+(-- play dit or dah, followed by a one dit delay before returning --)
+: Play (ticks) 
+	On Tick * delay 
+	Off
+	TZero
+	(-- enforce at least 1 tick delay --)
+	Tick delay ;
+
+
+(-- get timer 0 millis --)
 : CSep? 0 IN Timers .get Tick 3 * > ;
 
+(-- check for symbols (dit/dah), play, and update code --)
 : Sym (code--code) 
 	Dit? if 
-		TZero 1 << 
+		1 Play
+		1 << 
 	else
 		Dah? if
-			TZero 1 << 1+
+			3 Play
+			1 << 1+
 		then
 	then
 ;
 
-
+(-- look up character from code, show it, return 1 as new code --)
 : Show (code -- 1)
 	dup 1 == &1 jmp?
 	dup Len >= &1 jmp?
 	Char emit
 	1 ret
-	/1
-	Unknown emit
-	drop
-	1 
+	
+	/1 drop 1
 ;
 		
+(-- Loop forever, and if character separation pause, show character --) 
 : Main
-	1 (code)
+	Init
+	1 (--current code--)
 	/1 
 		Sym   (code)
 		CSep? if Show then (code)
 		&1 jmp
 ;
+

@@ -8,8 +8,8 @@ Compiling this file requires 2498 bytes of free code space in RAM - 2026-08
 @@ dict
 @@ mem
 @@ dictTimers
-@@ dictPin
-@@ dictString
+@@ dictPins
+@@ dictStrings
 
 (code.export)
 
