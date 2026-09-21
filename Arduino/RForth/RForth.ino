@@ -867,8 +867,7 @@ void op_show_stack() {
 }
 
 void op_clear_stacks() {
-  dStackClear();
-  xStackClear();
+  clearStacks();
 }
 
 // Speed testing

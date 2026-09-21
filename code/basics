@@ -84,9 +84,10 @@
 
 
 
-(for the following we must temp-store the top value on the data stack, 
+((
+for the following we must temp-store the top value on the data stack, 
 to preserve the return address of these words themselves
-)
+))
 
 : RDup 
 	R> 
@@ -148,11 +149,11 @@ to preserve the return address of these words themselves
 
 
 
-(
+((
 NOTE: variables are not given any default value as in regular Forth; they are just 
 pointers to a cell in the data segment, and are preserved as such, but value
 must be set by code. Always initialized to 0.
-)
+))
 
 : variable (--)
 	HERE 
@@ -171,9 +172,11 @@ must be set by code. Always initialized to 0.
 ;
 
 
-(the ' word needs to be immediate, so that readNextWord works with the
+((
+the ' word needs to be immediate, so that readNextWord works with the
 correct value. Using the op &word, which looks up the address of the
-word stored in nextWord buffer)
+word stored in nextWord buffer
+))
 
 : ' ([name] -- address)
 	readNextWord &word
@@ -188,9 +191,40 @@ word stored in nextWord buffer)
 ; immediate
 
 
+(-- using the compiler to get op-code for not --)
+
+: _ not ;
+
+' _ c@ constant OP_NOT
 
 
-(
+: if
+	OP_NOT c>C
+	OP_CVAL c>C
+	comp.next >R RSwap
+	0 >C
+	OP_COND_JMP c>C
+; immediate
+
+: then
+	RSwap
+	comp.next R> !
+; immediate
+
+: else
+	RSwap
+	OP_CVAL c>C
+	comp.next >R
+	0 >C
+	OP_JMP c>C
+	
+	RSwap comp.next R> !
+	RSwap
+; immediate
+	
+
+
+((
 Implenting does> which is immediate. It generates a call to dodoes which is 
 not immediate, followed by a "ret". The dodoes creates code, assuming a single
 stack value, perhaps a pointer, which it converts to code. It then generates
@@ -211,7 +245,7 @@ Y
 
 - should display 314
 -------------------
-)
+))
 
 
 : dodoes (data --)
@@ -243,8 +277,10 @@ Y
 	DE_NORMAL *dictHead DE->type c!
 ;
 
+((
+build call to dodoes, then add OP_RET - the code following does> comes after that OP_RET
+))
 : does>
-	(build call to dodoes, then add OP_RET - the code following does> comes after that OP_RET)
 	' dodoes ADDR_CALL_BIT | >C
 	OP_RET c>C
 ; immediate
@@ -309,13 +345,13 @@ Y
 
 34 constant CH_QUOT		(The " character)
 
-(
+((
 Create blob (string) of bytes up to the end quote. Only works 
 for compile, as it generates code into (net yet allocated) memory
 in the code segment. The OP_BLOB executes by reading the length, 
 advancing the program pointer past the length byte and the following
 bytes, then pushing the address of the length byte on the stack
-)
+))
 : s" ( -- )
 	OP_BLOB comp.out
 	

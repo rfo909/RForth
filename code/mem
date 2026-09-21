@@ -1,12 +1,13 @@
 (--- Memory related words ---)
 
-(example:
+((
+example:
 
 Code[ 1 c>C 2 c>C ]Code constant X
 
 X c@  => 1
 X 1+ c@ => 2
-)
+))
 
 (put next address of code segment on stack)
 : Code[ 
@@ -57,7 +58,7 @@ X 1+ c@ => 2
 
 
 
-(
+((
 Create static data, as sequence of bytes, in the code segment. Does
 not execute code, only parsing byte values.
 
@@ -73,7 +74,7 @@ CodeRaw[ 1 2 3 ]CodeRaw
 constant Length
 constant Start
 
-)
+))
 
 
 : CodeRaw[

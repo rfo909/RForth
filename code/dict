@@ -73,7 +73,9 @@
 
 
 
-(lookup word in dictionary, returning dictionary entry pointer, for word in system buffer nextWord)
+((
+lookup word in dictionary, returning dictionary entry pointer, for word in system buffer nextWord
+))
 
 : DictLookupNW (dictPointer -- dictEntry/0) 
 	/0
@@ -91,7 +93,8 @@
 
 
 
-(Get address of word in custom dictionary
+((
+Get address of word in custom dictionary
 
 ex: 
 
@@ -99,7 +102,7 @@ Pin DictWordAddr SetOutput
 
 This stores the address of the code for that word, and can be disassembled
 with the "dis" word. 
-)
+))
 
 : DictWordAddr (dictPointer [word] --)
 	readNextWord

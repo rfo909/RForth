@@ -424,19 +424,17 @@ number formats as used in the language. It returns two values on the stack, firs
 number value, or 0 if parse failed, then a second boolean value, which is 1 if ok, and 0
 if failed.
 
+2026-09-21
+----------
+Added "if-then" and "if-else-then" in basics code file. Uses a single value on the
+return stack per invocation. Tested nesting: "if ... else if ... then then" and that
+worked smoothly.
+
+Fixed the "clear" command to clear all stacks, as it did not include R-stack before.
+
+
 Todo
 ====
   
 - Implement op IsCompiling - controlled via op_colon
-
-- Implement .nextWord - printing nextWord
-
-- Fix dictionary usability, so that stuff like the Timer1 code can be present in Flash without
-  polluting global dictionary namespace
-
-- Rig to use 8 MHz always, regardless of external crystal being 16Mhz (Fuse CKDIV8 + dynamic CKDIV 2).
-	(Detect on some pin in 8MHz harness)
-	
-- Autorun-mechanism with option of physical override
-
 

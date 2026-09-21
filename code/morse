@@ -25,91 +25,73 @@ a simple menu system for setting the speed.
 	s" __ETIANMSURWDKGOHVF_L_PJBXCYZQ__54_3___2__+____16=/___(_7___8_90____________?________.____@______-___________)_____,"
 ;
 
-63 constant UNKNOWN ( ? )
+: Len Chars c@ ;
+: Char Chars + 1+ c@ ;
 
-5 constant PinDit
-6 constant PinDah
-7 constant PinBeep
-13 constant PinLed
 
-variable msTick
+63 constant Unknown ( ? )
+
+
+# How compact can we make the code
+
+13 constant LED
+6 constant BUZZ
+7 constant DIT
+5 constant DAH
+
+60 constant Tick
+
+: In (pin) IN Pins .setIn ;
+: Out (pin) IN Pins .setOut ;
+: Dr (pin) IN Pins .digitalRead ;
+: Dw (value pin) IN Pins .digitalWrite ;
+: Aw (value pin) IN Pins .analogWrite ;
 
 : Init
-	PinDit IN Pin .setIn
-	PinDah IN Pin .setIn
-	PinBeep IN Pin .setOut
-	PinLed IN Pin .setOut
-	
-	60 msTick !   (length of dit in millis at 20 wpm)
-	
-	(-- using timer 0 --)
-	0 IN Timers .set
+	In DIT
+	In DAH
+	Out LED
+	Out BUZZ
 ;
 
-: ShowChar (value --)
-	dup Chars c@ >= &1 jmp?          (-- is value out of bounds? --)
-	Chars + 1+ c@ emit
-	ret
-	/1 (-- out of bounds --)
-		drop
-		UNKNOWN emit
+
+: On  1 LED Dw 512 BUZZ Aw ;
+: Off 0 LED Dw 0 BUZZ Dw ;
+
+: Play (ticks) On Tick * delay Off Tick delay ;
+
+: Dit? 0 DIT Dr not ret? 1+ 1 Play ;
+: Dah? 0 DAH Dr not ret? 1+ 3 Play ;
+
+: TZero 0 IN Timers .set ;
+: CSep? 0 IN Timers .get Tick 3 * > ;
+
+: Sym (code--code) 
+	Dit? if 
+		TZero 1 << 
+	else
+		Dah? if
+			TZero 1 << 1+
+		then
+	then
 ;
 
-(-- test --)
-: ShowR b1010 ShowChar ;
 
-
-(-- wait for ticks to pass, timer #0 --)
-: Wait (ticks --)
-	msTick @ * delay
-;
-
-: SoundOn
-	500 PinBeep IN Pin .writeAnalog
-	1 PinLed IN Pin .writeDigital
-;
-
-: SoundOff
-	0 PinBeep IN Pin .writeDigital
-	0 PinLed IN Pin .writeDigital
-;
-
-: Play (ticks --)
-	(ticks)
-	SoundOn
-	Wait
-	SoundOff
-;
-
-: call? (cond xt --)
-	swap &1 jmp?
-		execute
+: Show (code -- 1)
+	dup 1 == &1 jmp?
+	dup Len >= &1 jmp?
+	Char emit
+	1 ret
 	/1
-		drop
+	Unknown emit
+	drop
+	1 
 ;
-
-: Dit 1 Play ;
-: Dah 3 Play ;
-
+		
 : Main
-	Init
-	0 IN Timers .set
-	/1
-		PinDit IN Pin .readDigital ' Dit call?
-		PinDah IN Pin .readDigital ' Dah call?
+	1 (code)
+	/1 
+		Sym   (code)
+		CSep? if Show then (code)
 		&1 jmp
 ;
-	
-(-- test --)
-: test
-	Init
-	/1
-		key? ret?
-		1 Play
-		3 Play
-		1 Play
-		3 Wait
-		&1 jmp
-;
-
-
