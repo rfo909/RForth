@@ -48,21 +48,25 @@ next letter, so we show the letter associated with the current code
 
 : In (pin) IN Pins .setIn ;
 : Out (pin) IN Pins .setOut ;
-: Dr (pin) IN Pins .digitalRead ;
-: Dw (value pin) IN Pins .digitalWrite ;
-: Aw (value pin) IN Pins .analogWrite ;
+: Dr (pin) IN Pins .readDigital ;
+: Dw (value pin) IN Pins .writeDigital ;
+: Aw (value pin) IN Pins .writeAnalog ;
 
 
 : Init
-	In DIT
-	In DAH
-	Out LED
-	Out BUZZ
+	DIT In
+	DAH In
+	LED Out
+	BUZZ Out
 ;
 
 
-: On  1 LED Dw 512 BUZZ Aw ;
-: Off 0 LED Dw 0 BUZZ Dw ;
+: On  
+	1 LED Dw 
+	60 BUZZ Aw ;
+: Off 
+	0 LED Dw 
+	0 BUZZ Dw ;
 
 
 (-- check if contacts closed --)
@@ -79,6 +83,28 @@ next letter, so we show the letter associated with the current code
 	TZero
 	(-- enforce at least 1 tick delay --)
 	Tick delay ;
+
+: Test
+	Init
+	/1
+		key? ret?
+		1 Play
+		3 Play
+		1 Play
+		2 Tick * delay 
+
+		1 Play
+		2 Tick * delay
+
+		1 Play
+		1 Play
+		1 Play
+		2 Tick * delay
+		
+		3 Play
+		2 Tick * delay
+	&1 jmp
+;
 
 
 (-- get timer 0 millis --)
@@ -112,6 +138,7 @@ next letter, so we show the letter associated with the current code
 	Init
 	1 (--current code--)
 	/1 
+		key? ret?
 		Sym   (code)
 		CSep? if Show then (code)
 		&1 jmp
