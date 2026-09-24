@@ -35,7 +35,8 @@ next letter, so we show the letter associated with the current code
 	s" __ETIANMSURWDKGOHVF_L_PJBXCYZQ__54_3___2__+____16=/___(_7___8_90____________?________.____@______-___________)_____,"
 ;
 
-: Len Chars c@ ;
+Chars c@ constant Len
+
 : Char (pos -- char) Chars + 1+ c@ ;
 
 (-- pins --)
@@ -44,7 +45,7 @@ next letter, so we show the letter associated with the current code
 7 constant DIT
 5 constant DAH
 
-60 constant Tick  (-- length of dit at 20 wpm --)
+80 constant Tick  (-- length of dit at 20 wpm is 60 ms --)
 
 : In (pin) IN Pins .setIn ;
 : Out (pin) IN Pins .setOut ;
