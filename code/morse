@@ -2,33 +2,38 @@
 Morse trainer
 -------------
 
-In order to train my ears for Morse characters and words, I want to build
-a "bug" type of Morse key, with a single blade in the center and two contact
-points, one on each side, one for dits and one for dahs. 
+In order to train my ears for Morse characters and words, I built a
+primitive "bug" type of morse key. It has a single blade in the center an
+two contact to the sides, one for dits and one for dahs. 
 
 The key then handles timing, in that as long as a contact is closed, it
-repeats dits or dahs at correct length and inbetween space, as well as 
-inbetween symbol time (one dit long).
+repeats the symbol associated with that point (dit or dah), at correct
+length and proper spacing. 
 
-This eliminates the issue of "button bounce", both because I will not use
-buttons, but just contact points, so no springs involved, but also because
+This also eliminates the issue of "button bounce", both because I will not use
+buttons, only bare contact points, so no springs involved, but also because
 once detecting a contact on one of the points, it will generate the symbol,
-and space following it, before checking the points again.
+and inter-symbol space following it, which is at least 2 x dit, 
+before checking the points again.
 
 I also want to display the characters on an LCD display (I2C), and implement
-a simple menu system for setting the speed. 
+a simple menu system for setting the speed, all controlled via the morse key.
+
+The input pins for the symbols should be fitted with pulldown resistors,
+and the blade should be supplied with VCC.
 ))
 
 
 ((
-The position is calcualated as follows: 
+The position of the character in the string below, is calcualated as follows: 
+
 - start with 1
 - for a dit, left shift one
 - for a dah, left shift one and add 1
 
 After playing a sound (dit or dah), we reset timer 0, and in the
 main check if more than 3 ticks has elapsed, which indicates 
-next letter, so we show the letter associated with the current code
+next letter, and if so show the letter associated with the current code
 ))
 
 : Chars
@@ -49,6 +54,7 @@ Chars c@ constant Len
 
 : In (pin) IN Pins .setIn ;
 : Out (pin) IN Pins .setOut ;
+
 : Dr (pin) IN Pins .readDigital ;
 : Dw (value pin) IN Pins .writeDigital ;
 : Aw (value pin) IN Pins .writeAnalog ;
@@ -61,18 +67,18 @@ Chars c@ constant Len
 	BUZZ Out
 ;
 
-
 : On  
 	1 LED Dw 
 	60 BUZZ Aw ;
+
 : Off 
 	0 LED Dw 
 	0 BUZZ Dw ;
 
 
 (-- check if contacts closed --)
-: Dit? (--bool) 0 DIT Dr not ret? 1+ ;
-: Dah? (--bool) 0 DAH Dr not ret? 1+ ;
+: Dit? (--bool) DIT Dr ;
+: Dah? (--bool) DAH Dr ;
 
 (-- reset timer 0 --)
 : TZero 0 IN Timers .set ;
@@ -85,34 +91,12 @@ Chars c@ constant Len
 	(-- enforce at least 1 tick delay --)
 	Tick delay ;
 
-: Test
-	Init
-	/1
-		key? ret?
-		1 Play
-		3 Play
-		1 Play
-		2 Tick * delay 
-
-		1 Play
-		2 Tick * delay
-
-		1 Play
-		1 Play
-		1 Play
-		2 Tick * delay
-		
-		3 Play
-		2 Tick * delay
-	&1 jmp
-;
-
 
 (-- get timer 0 millis --)
 : CSep? 0 IN Timers .get Tick 3 * > ;
 
-(-- check for symbols (dit/dah), play, and update code --)
-: Sym (code--code) 
+(-- check for symbols (dit/dah), play, and return updated code --)
+: Sym (code -- code) 
 	Dit? if 
 		1 Play
 		1 << 
@@ -140,7 +124,7 @@ Chars c@ constant Len
 	1 (--current code--)
 	/1 
 		key? ret?
-		Sym   (code)
+		Sym                (code)
 		CSep? if Show then (code)
 		&1 jmp
 ;
