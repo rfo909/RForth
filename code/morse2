@@ -1,0 +1,112 @@
+((
+Morse trainer 2 
+---------------
+
+Straight morse key processing. 
+))
+
+
+((
+The position of the character in the string below, is calcualated as follows: 
+
+- start with 1
+- for a dit, left shift one
+- for a dah, left shift one and add 1
+
+After playing a sound (dit or dah), we reset timer 0, and in the
+main check if more than 3 ticks has elapsed, which indicates 
+next letter, and if so show the letter associated with the current code
+))
+
+: Chars
+	s" __ETIANMSURWDKGOHVF_L_PJBXCYZQ__54_3___2__+____16=/___(_7___8_90____________?________.____@______-___________)_____,"
+;
+
+Chars c@ constant Len
+
+: Char (pos -- char) Chars + 1+ c@ ;
+
+(-- pins --)
+13 constant LED
+6 constant BUZZ  (-- must support PWM --)
+5 constant CONTACT
+
+80 constant Tick  (-- length of dit at 20 wpm is 60 ms --)
+
+: In (pin) IN Pins .setIn ;
+: Out (pin) IN Pins .setOut ;
+
+: Dr (pin) IN Pins .readDigital ;
+: Dw (value pin) IN Pins .writeDigital ;
+: Aw (value pin) IN Pins .writeAnalog ;
+
+
+
+: Init
+	CONTACT In
+	LED Out
+	BUZZ Out
+;
+
+: On  
+	1 LED Dw 
+	60 BUZZ Aw ;
+
+: Off 
+	0 LED Dw 
+	0 BUZZ Dw ;
+
+
+
+(-- look up character from code, show it, return 1 as new code --)
+: Show (code -- 1)
+	dup 1 == &1 jmp?
+	dup Len >= &1 jmp?
+	Char emit
+	1 ret
+	
+	/1 drop 1
+;
+
+: Contact? CONTACT Dr ;
+
+: TZero 0 IN Timers .set ;	(-- reset timer --)
+: TGet 0 IN Timers .get ;
+: CSep? TGet Tick 3 * > ;
+
+: WaitRelease
+	/1
+		Contact? not ret?
+		&1 jmp
+;
+
+		
+(-- Loop forever, and if character separation pause, show character --) 
+: Main
+	Init
+	1 (--current code--)
+	/1
+		CSep? if Show then
+
+		Contact? if
+			
+			On
+			Tick delay
+			1 <<		(modify code)
+			
+			Contact? if
+				Tick 2 * delay
+				1+ 	(modify code)
+			then
+			
+			WaitRelease
+			Off
+			
+			TZero
+			Tick delay      (1 tick sep)
+		then
+		key? ret?
+		
+		&1 jmp
+;
+		
