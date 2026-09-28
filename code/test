@@ -1,11 +1,9 @@
-: pd
-	8 IN Pins .setIn
-	0 8 IN Pins .writeDigital
+: count
+	1
+	begin
+		dup 10 > break?
+		dup .
+		1+
+	again
 ;
 
-: pu
-	8 IN Pins .setIn
-	1 8 IN Pins .writeDigital
-;
-
-: r 8 IN Pins .readDigital . ;

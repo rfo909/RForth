@@ -1,6 +1,8 @@
 2026-04-08 RForth v4
 ====================
 
+Updated 2026-09-28
+
 This is now VERSION 4 of my "bytecode Forth" adventure.
 
 ---
@@ -431,6 +433,21 @@ return stack per invocation. Tested nesting: "if ... else if ... then then" and 
 worked smoothly.
 
 Fixed the "clear" command to clear all stacks, as it did not include R-stack before.
+
+2026-09-28
+----------
+Added "begin ... again" with support for multiple calls to break out of the loop:
+
+```
+: count
+	1
+	begin
+		dup 10 > break?
+		dup .
+		1+
+	again
+;
+```
 
 
 Todo

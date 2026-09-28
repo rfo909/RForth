@@ -223,6 +223,83 @@ word stored in nextWord buffer
 ; immediate
 	
 
+((
+
+# begin ... again
+#
+# Can implement a multiple break by jumping to fixed
+# location before the start of the loop body, to only do single
+# address patching. NOTE: must only call break? directly from
+# inside begin ... again. 
+
+))
+
+
+: begin
+	(-- skip the "break" section --)
+	OP_CVAL c>C
+
+	comp.next 7 + 
+		dup >C
+		>R RSwap        (R: repeatAddr)
+
+	OP_JMP c>C
+	
+	(-- all break's jump to this address --)
+	comp.next >R RSwap      (R: repeatAddr onBreakJumpTo)
+	OP_CVAL c>C
+	comp.next >R RSwap      (R: repeatAddr onBreakJumpTo afterAgainPatchLoc)
+	0 >C
+	OP_JMP c>C
+
+; immediate
+
+
+: break? 
+	R>                      (store return on data stack)
+	(R: repeatAddr onBreakJumpTo afterAgainPatchLoc)
+
+	(-- if condition is met, jump to onBreakJumpTo --)
+	OP_CVAL c>C
+	1 rpick R> >C
+	OP_COND_JMP c>C
+	
+	>R                      (restore return from this word)
+; immediate
+
+: again 
+	R>                      (store return on data stack)
+	(R: repeatAddr onBreakJumpTo afterAgainPatchLoc)
+
+	(-- make jump to repeatAddr --)
+	OP_CVAL c>C
+	2 rpick R> >C
+	OP_JMP c>C
+	
+	(-- patch afterAgainAddr --)
+	comp.next R> !
+	
+	(-- remove onBreakJumpTo from R --)
+	RDrop
+	
+	>R                      (restore return from this word)
+; immediate
+
+((
+(Example)
+: t
+	1
+	begin
+		dup 10 > break?
+		dup 5 % not break?
+		dup .
+		1+
+	again
+;
+
+' t dis
+))
+
 
 ((
 Implenting does> which is immediate. It generates a call to dodoes which is 
