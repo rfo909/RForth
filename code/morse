@@ -50,7 +50,7 @@ Chars c@ constant Len
 7 constant DIT
 5 constant DAH
 
-80 constant Tick  (-- length of dit at 20 wpm is 60 ms --)
+75 constant Tick  (-- length of dit at 20 wpm is 60 ms --)
 
 : In (pin) IN Pins .setIn ;
 : Out (pin) IN Pins .setOut ;
@@ -110,6 +110,13 @@ Chars c@ constant Len
 
 (-- look up character from code, show it, return 1 as new code --)
 : Show (code -- 1)
+	dup 256 == if (........)
+		(--error signal--)
+		drop 
+		1
+		cr (--single newline--)
+	then
+	
 	dup 1 <= &1 jmp?
 	dup Len >= &1 jmp?
 	Char emit
