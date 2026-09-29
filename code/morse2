@@ -31,7 +31,7 @@ Chars c@ constant Len
 6 constant BUZZ  (-- must support PWM --)
 5 constant CONTACT
 
-80 constant Tick  (-- length of dit at 20 wpm is 60 ms --)
+70 constant Tick  (-- length of dit at 20 wpm is 60 ms --)
 
 : In (pin) IN Pins .setIn ;
 : Out (pin) IN Pins .setOut ;

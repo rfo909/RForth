@@ -148,6 +148,22 @@ to preserve the return address of these words themselves
 ;
 
 
+(-- check if n is in range [from .. to] --)
+: in-range? (from to n -- bool)
+	>R R@  (from to n) 
+	>=      (from bool1)
+	swap R>  (b1 from n)
+	<=
+	and
+;
+
+(-- check if  i in in range 0..n-1 --)
+: index-ok? (n i -- bool)
+	0 rot rot
+	swap 1- swap
+	in-range?
+;
+	
 
 ((
 NOTE: variables are not given any default value as in regular Forth; they are just 

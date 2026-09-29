@@ -1,9 +1,14 @@
-: count
-	1
-	begin
-		dup 10 > break?
-		dup .
-		1+
-	again
+: in (from to n-- bool)
+	>R R@  (from to n) 
+	>=      (from bool1)
+	swap R>  (b1 from n)
+	<=
+	and
 ;
 
+: 0..n-1 (n i -- bool)
+	0 rot rot
+	swap 1- swap
+	in
+;
+	
