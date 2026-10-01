@@ -1,7 +1,13 @@
 @@ dictRandom
 
+((
+Automatic trainer for recognition (not sending)
+
+))
+
+( NOTE: Removed special characters and numbers !!! )
 : Chars
-	s" __ETIANMSURWDKGOHVF_L_PJBXCYZQ__54_3___2__+____16=/___(_7___8_90____________?________.____@______-___________)_____,"
+	s" __ETIANMSURWDKGOHVF_L_PJBXCYZQ"
 ;
 
 Chars c@ constant Len
@@ -13,12 +19,11 @@ Chars c@ constant Len
 13 constant LED
 6 constant BUZZ  (-- must support PWM --)
 
-75 constant Tick  (-- length of dit at 20 wpm is 60 ms --)
+60 constant Tick  (-- length of dit at 20 wpm is 60 ms --)
 
 : In (pin) IN Pins .setIn ;
 : Out (pin) IN Pins .setOut ;
 
-: Dr (pin) IN Pins .readDigital ;
 : Dw (value pin) IN Pins .writeDigital ;
 : Aw (value pin) IN Pins .writeAnalog ;
 
@@ -84,20 +89,21 @@ Chars c@ constant Len
 		&1 jmp
 ;
 
+
 : Main
 	/1
-		SelectChar   	(pos)
-		dup Char emit
-		200 delay
-		
-		dup PlayChar
-		Tick 3 * delay
-		dup PlayChar
-		Tick 3 * delay
-		PlayChar
-		
-		200 delay
+		SelectChar dup Char emit
+		SelectChar dup Char emit
+		SelectChar dup Char emit
+		rot rot swap
+		500 delay
+		 
+		PlayChar Tick 3 * delay 
+		PlayChar Tick 3 * delay 
+		PlayChar Tick 3 * delay
+
 		key? ret?
+		32 emit
 		&1 jmp
 ;
 		
