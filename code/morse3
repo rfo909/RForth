@@ -91,19 +91,13 @@ Chars c@ constant Len
 
 
 : Main
+	Init
 	/1
-		SelectChar dup Char emit
-		SelectChar dup Char emit
-		SelectChar dup Char emit
-		rot rot swap
-		500 delay
-		 
-		PlayChar Tick 3 * delay 
-		PlayChar Tick 3 * delay 
-		PlayChar Tick 3 * delay
-
+		SelectChar dup PlayChar
+		2000 delay Char emit
+		1000 delay
+		
 		key? ret?
-		32 emit
 		&1 jmp
 ;
 		
