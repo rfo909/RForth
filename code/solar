@@ -1,0 +1,35 @@
+
+(-- analog read pins --)
+3 constant SCSense     (-- Solar cap voltage sense pin --)
+5 constant CCSense     (-- Charge cap voltage sense pin --)
+
+(-- digital pins controlling NPN Mosfets --)
+6 constant ISwitch     (-- Charge inductor, when disconnect -> Charge Cap --)
+8 constant BSwitch     (-- Connect battery to Charge Cap --)
+
+500 constant BatteryMaxVoltage  
+
+: Out (pin) IN Pins .setOut ;
+: In (pin) IN Pins .setIn ;
+
+	
+
+: ISwitch! (val --) ISwitch IN Pins .writeDigital ;
+: BSwitch! (val --) BSwitch IN Pins .writeDigital ;
+
+: Init
+	SCSense In
+	CCSense In
+	ISwitch Out
+	BSwitch Out
+	0 ISwitch!
+	1 BSwitch!
+	
+
+: SolarVoltage SCSense IN Pins .readAnalog ;
+: ChargeVoltage CCSense IN Pins .readAnalog ;
+
+ 
+: BatteryVoltage (-- voltage)
+	1 BSwitch! 10 delay CCSense IN Pins .readAnalog 0 BSwitch! ;
+

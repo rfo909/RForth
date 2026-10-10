@@ -19,7 +19,7 @@ Chars c@ constant Len
 13 constant LED
 6 constant BUZZ  (-- must support PWM --)
 
-60 constant Tick  (-- length of dit at 20 wpm is 60 ms --)
+70 constant Tick  (-- length of dit at 20 wpm is 60 ms --)
 
 : In (pin) IN Pins .setIn ;
 : Out (pin) IN Pins .setOut ;
@@ -93,8 +93,10 @@ Chars c@ constant Len
 : Main
 	Init
 	/1
-		SelectChar dup PlayChar
-		2000 delay Char emit
+		SelectChar 
+		dup PlayChar 4 Tick * delay
+		3000 delay 
+		Char emit
 		1000 delay
 		
 		key? ret?
