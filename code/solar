@@ -1,35 +1,125 @@
 
 (-- analog read pins --)
-3 constant SCSense     (-- Solar cap voltage sense pin --)
-5 constant CCSense     (-- Charge cap voltage sense pin --)
+3 constant SolarSense  (-- Solar cap voltage sense pin --)
+5 constant ChargeSense (-- Charge cap voltage sense pin --)
 
 (-- digital pins controlling NPN Mosfets --)
-6 constant ISwitch     (-- Charge inductor, when disconnect -> Charge Cap --)
-8 constant BSwitch     (-- Connect battery to Charge Cap --)
+6 constant T1          (-- Charge inductor, when disconnect -> Charge Cap --)
+8 constant T2          (-- Connect battery to Charge Cap --)
 
-500 constant BatteryMaxVoltage  
+500 constant SolarMinVoltage
+500 constant BatteryMaxVoltage
+
+2 constant PumpIntervalMs
 
 : Out (pin) IN Pins .setOut ;
 : In (pin) IN Pins .setIn ;
 
-	
-
-: ISwitch! (val --) ISwitch IN Pins .writeDigital ;
-: BSwitch! (val --) BSwitch IN Pins .writeDigital ;
+: T1! (val --) T1 IN Pins .writeDigital ;
+: T2! (val --) T2 IN Pins .writeDigital ;
 
 : Init
-	SCSense In
-	CCSense In
-	ISwitch Out
-	BSwitch Out
-	0 ISwitch!
-	1 BSwitch!
+	SolarSense In
+	ChargeSense In
+	T1 Out
+	T2 Out
+	0 T1!
+	1 T2!
+;	
+
+(( 
+The T2 transistor connects Charge capacitor to battery. That is the
+charge cycle, after building up sufficient voltage in the charge cap. 
+
+This is also how we read the battery voltage, opening T2 and then
+reading the Charge capacitor voltage
+))
+
+: SolarVoltage SolarSense IN Pins .readAnalog ;
+: ChargeVoltage ChargeSense IN Pins .readAnalog ;
+
+
 	
+: SolarOk? SolarVoltage SolarMinVoltage >= ;
 
-: SolarVoltage SCSense IN Pins .readAnalog ;
-: ChargeVoltage CCSense IN Pins .readAnalog ;
 
- 
-: BatteryVoltage (-- voltage)
-	1 BSwitch! 10 delay CCSense IN Pins .readAnalog 0 BSwitch! ;
+(-- active wait for solar capacitor voltage to rise --)
+: SolarWait (--)
+	50      (count)
+	begin
+		dup 0 == SolarOk? or break?
+		100 delay
+		1-
+	again
+	drop
+;
+	
+(-- pump charge into Charge cap, until voltage ok --)
+: Pump (targetVoltage -- )
+	0 T2! (-- disconnect battery from charge capacitor --)
+	begin
+		SolarWait 
+		SolarOk? not break?
+		
+		(targetVoltage)
+		ChargeVoltage over > break?
+
+		(( 
+		briefly open T1, charging the inductor, then close, which
+		leads to inductor pumping charge at high voltage into the
+		charge capacitor
+		))		
+		1 T1!
+		PumpIntervalMs delay
+		0 T1!
+	again
+	drop
+;
+
+(-- Calculate charge voltage from battery voltage --)
+: CalcTargetVoltage (batteryVoltage -- chargeVoltage)
+	>F
+	120 >F 100 >F F/ F* 
+	F> 
+;
+
+
+: ApplyCharge (-- targetVoltage)
+	1 T2 !
+	10 delay
+	ChargeVoltage (-- when T2 on this is the battery voltage --)
+	0 T2 !
+	CalcTargetVoltage
+;
+
+
+
+: ChargeCycle
+	ApplyCharge (targetVoltage)
+	begin
+		(targetVoltage) Pump
+		SolarOk? not break?
+		ApplyCharge (targetVoltage)	
+		
+		key? break?
+	again
+	2drop
+;
+
+: DeepSleep
+	deep-sleep8
+	Init
+;
+
+: Main
+	/1
+		ChargeCycle
+		DeepSleep
+		&1 jmp
+	
+	
+	
+	
+	
+	
 

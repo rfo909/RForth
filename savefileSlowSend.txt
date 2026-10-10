@@ -112,16 +112,27 @@
 		f.read->line
 			assert(line.contains(" constant "))
 			reject(line.startsWith(":"))   # the 'constant' word def
-			pre=line.before("constant").trim
-			post=line.after("constant").trim
-			report(f.name, line.lineNumber, post)
+			report(f.name, line.lineNumber, line)
 /Constants
 
 
-# Count words and constants
+# Count word defs
 # --
 	CodeDir.files->f
 		f.read->line
-			assert(line.startsWith(":"))
+			assert(line.startsWith(": "))
 			report(f.name, line.lineNumber, line)
 /Words
+
+
+# Count words and constants in files included from Main
+# --
+	CodeDir.file("Main").read->line
+		assert(line.startsWith("@@"))
+		line.after("@@").trim =>fname
+		
+		f=CodeDir.file(fname)
+		f.read->line
+			assert(line.startsWith(":"))
+			report(f.name, line.lineNumber, line)
+/WordsMain
