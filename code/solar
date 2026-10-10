@@ -1,3 +1,7 @@
+((
+This code implements a crude solar charger, intended to charge a number of
+NIMH cells in series, powering the microcontroller that runs this program.
+))
 
 (-- analog read pins --)
 3 constant SolarSense  (-- Solar cap voltage sense pin --)
@@ -32,49 +36,59 @@ The T2 transistor connects Charge capacitor to battery. That is the
 charge cycle, after building up sufficient voltage in the charge cap. 
 
 This is also how we read the battery voltage, opening T2 and then
-reading the Charge capacitor voltage
+reading the Charge capacitor voltage.
 ))
 
 : SolarVoltage SolarSense IN Pins .readAnalog ;
 : ChargeVoltage ChargeSense IN Pins .readAnalog ;
 
-
+: GetBatteryVoltage (--voltage) (-- slow, deep sleeps 32 seconds for battery to stabilize --)
+	1 T2!
+	deep-sleep8
+	deep-sleep8
+	deep-sleep8
+	deep-sleep8
+	Init
 	
+	ChargeVoltage (-- charge cap is in parallel with battery when T2==1 --)
+	0 T2!
+;
+
+(-- is the solar capacitor voltage ready for charging? --)
 : SolarOk? SolarVoltage SolarMinVoltage >= ;
 
-
-(-- active wait for solar capacitor voltage to rise --)
-: SolarWait (--)
-	50      (count)
+: WaitSolarOk (--active wait for max 200ms--)
+	0 IN Timers .set
 	begin
-		dup 0 == SolarOk? or break?
-		100 delay
-		1-
+		SolarOk? break?
+		0 IN Timers .get 200 > break?
 	again
-	drop
 ;
 	
 (-- pump charge into Charge cap, until voltage ok --)
 : Pump (targetVoltage -- )
 	0 T2! (-- disconnect battery from charge capacitor --)
 	begin
-		SolarWait 
+		WaitSolarOk
 		SolarOk? not break?
 		
 		(targetVoltage)
-		ChargeVoltage over > break?
+		ChargeVoltage over >= break?
 
 		(( 
 		briefly open T1, charging the inductor, then close, which
 		leads to inductor pumping charge at high voltage into the
 		charge capacitor
-		))		
+		))	
+			
 		1 T1!
 		PumpIntervalMs delay
 		0 T1!
 	again
 	drop
 ;
+
+
 
 (-- Calculate charge voltage from battery voltage --)
 : CalcTargetVoltage (batteryVoltage -- chargeVoltage)
@@ -84,20 +98,19 @@ reading the Charge capacitor voltage
 ;
 
 
-: ApplyCharge (-- targetVoltage)
+: ApplyCharge (--)
 	1 T2 !
 	10 delay
-	ChargeVoltage (-- when T2 on this is the battery voltage --)
 	0 T2 !
-	CalcTargetVoltage
 ;
 
 
 
-: ChargeCycle
-	ApplyCharge (targetVoltage)
+
+: ChargeCycle (batteryVoltage --)
+	CalcTargetVoltage 	(targetVoltage)
 	begin
-		(targetVoltage) Pump
+		dup Pump
 		SolarOk? not break?
 		ApplyCharge (targetVoltage)	
 		
@@ -112,11 +125,25 @@ reading the Charge capacitor voltage
 ;
 
 : Main
+	Init
 	/1
-		ChargeCycle
-		DeepSleep
+		key? ret?
+		
+		SolarOk? not if 
+			deep-sleep8
+			Init
+			&1 jmp 
+		then
+		
+		GetBatteryVoltage
+		dup BatteryMaxVoltage >= if 
+			drop DeepSleep 
+		else 
+			(batteryVoltage) ChargeCycle 
+		then
+
 		&1 jmp
-	
+;	
 	
 	
 	
