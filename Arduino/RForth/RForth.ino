@@ -219,46 +219,38 @@ static Float longToFloat (Long val) {
 
 
 static void inline push (Word v) {
-#ifdef SAFETY_ON
   if (dStackNext >= DSTACK_SIZE-1) {
     setHasError();
     Serial.println(F("dStack overflow"));
     return;
   }
-#endif
   dStack[dStackNext++]=v;
 }
 
 static Word inline pop () {
-#ifdef SAFETY_ON
   if (dStackNext==0) {
     setHasError();
     Serial.println(F("dStack underflow"));
     return 0;
   }
-#endif
   return dStack[--dStackNext];
 }
 
 static void inline pushLong (Long val) {
-#ifdef SAFETY_ON
   if (xStackNext >= XSTACK_SIZE-1) {
     setHasError();
     Serial.println(F("xStack overflow"));
     return;
   }
-#endif
   xStack[xStackNext++]=val;
 }
 
 static Long inline popLong () {
-#ifdef SAFETY_ON
   if (xStackNext==0) {
     setHasError();
     Serial.println(F("xStack underflow"));
     return 0;
   }
-#endif
   return xStack[--xStackNext];
 }
 
@@ -274,35 +266,29 @@ static Float popFloat () {
 
 
 static Word pick (Word n) {
-#ifdef SAFETY_ON
   if (dStackNext-1-n < 0) {
     setHasError();
     Serial.println(F("dStack underflow (pick)"));
     return 0;
   }
-#endif
   return dStack[dStackNext-1-n];
 }
 
 static Word rpick (Word n) {
-#ifdef SAFETY_ON
   if (rStackNext-1-n < 0) {
     setHasError();
     Serial.println(F("rStack underflow (rpick)"));
     return 0;
   }
-#endif
   return rStack[rStackNext-1-n];
 }
 
 static Long pickLong (Word n) {
-#ifdef SAFETY_ON
   if (xStackNext-1-n < 0) {
     setHasError();
     Serial.println(F("xStack underflow (pickLong)"));
     return 0;
   }
-#endif
   return xStack[xStackNext-1-n];
 }
 
@@ -313,25 +299,29 @@ static Float pickFloat (Word n) {
 
 
 static void rpush (Word v) {
-#ifdef SAFETY_ON
+  /* Print("rpush ");
+  sPrintWord(v);
+  sPrintln(); */
   if (dStackNext >= RSTACK_SIZE-1) {
     setHasError();
     Serial.println(F("rStack overflow"));
     return;
   }
-#endif
   rStack[rStackNext++]=v;
 }
 
 static Word rpop () {
-#ifdef SAFETY_ON
   if (rStackNext==0) {
     setHasError();
     Serial.println(F("rStack underflow"));
     return 0;
   }
-#endif
-  return rStack[--rStackNext];
+  rStackNext--;
+  Word v = rStack[rStackNext];
+  /* sPrint("rpop ");
+  sPrintWord(v);
+  sPrintln(); */
+  return v;
 }
 
 static void showStacks() {
@@ -454,7 +444,6 @@ Word readSerialChar () {
       }
       return (Word) ch;
     }
-	return 0xFFFF;
   }
 }
 
@@ -584,7 +573,7 @@ void callForth (Word addr) {
 
 
 /*
-* Compile word in nextWord buffer
+* Compile nextWord, true if ok, false if error
 */
 void compileNextWord () {
 
@@ -831,53 +820,43 @@ void op_create() {
 void op_dup() {push(pick(0));}
 void op_swap() {Word b=pop(); Word a=pop(); push(b); push(a);}
 void op_drop() {
-#ifdef SAFETY_ON
   if (dStackNext<1) {
     setHasError();
     Serial.println(F("dStack underflow (drop)"));
     return;
   }
-#endif
   dStackNext--;
 }
 void op_2drop() {
-#ifdef SAFETY_ON
   if (dStackNext<2) {
     setHasError();
     Serial.println(F("dStack underflow (2drop)"));
     return;
   }
-#endif
   dStackNext -= 2;
 }
 void op_3drop() {
-#ifdef SAFETY_ON
   if (dStackNext<3) {
     setHasError();
     Serial.println(F("dStack underflow (3drop)"));
     return;
   }
-#endif
   dStackNext -= 3;
 }
 void op_4drop() {
-#ifdef SAFETY_ON
   if (dStackNext<4) {
     setHasError();
     Serial.println(F("dStack underflow (4drop)"));
     return;
   }
-#endif
   dStackNext -= 4;
 }
 void op_over() {
-#ifdef SAFETY_ON
   if (dStackNext < 2) {
     setHasError();
     Serial.println(F("dStack underflow (over)"));
     return;
   }
-#endif
   push(dStack[dStackNext-2]);
 }
 void op_pick() {Word n=pop(); push(pick(n));}

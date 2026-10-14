@@ -2,7 +2,6 @@
 
 
 // #define MONITOR_C_STACK
-#define SAFETY_ON
 
 // signed types
 typedef int SWord;
