@@ -535,14 +535,6 @@ void op_comp_done () {
 }
 
 
-// when an op requires additional Bytes of data, such as bval and cval
-static Byte inline getOpcodeDataByte() {
-  return readByteFast(programCounter++);
-}
-
-
-
-
 
 void compileNumberByte (Byte b) {
     compileOut(OP_BVAL);
@@ -749,7 +741,7 @@ void op_colon() {
 }
 
 
-void op_bval() {push(getOpcodeDataByte());}
+void op_bval() {push(readOpCodeByte(programCounter++));}
 void op_cval() {push(readOpCodeDataWord(programCounter)); programCounter += 2;}
   
 
@@ -941,7 +933,7 @@ void op_blob() {
   // followed by length field n, then n Bytes
   // skip the data, and push the address of the length Byte 
   Word lengthPointer = programCounter;
-  Byte length=getOpcodeDataByte();
+  Byte length=readOpCodeByte(programCounter++);
   programCounter += length;
   // convert to address by setting high bit
   push(generateCodeAddress(lengthPointer));
@@ -1242,7 +1234,7 @@ void op_step() {
   Serial.println(programCounter);
   showStacks();
 
-  Byte op=readByteFast(programCounter++);
+  Byte op=readOpCodeByte(programCounter++);
   Serial.print(F("op="));
   Serial.println(op);
 
@@ -1767,7 +1759,7 @@ void executeCodeByte (Byte b) {
   // detect high bit set, this indicates a Forth call address (14 bits)
 
   if (b & BYTE_CALL_BIT) {
-    Word address = (b<<8) | getOpcodeDataByte();
+    Word address = (b<<8) | readOpCodeByte(programCounter++);
     /*Serial.print("call=");
     Serial.println(address);*/
     callForth(address);
@@ -1786,7 +1778,7 @@ void executeCode() {
       programCounter=0;
       return;     
     }
-    executeCodeByte(readByteFast(programCounter++));
+    executeCodeByte(readOpCodeByte(programCounter++));
   }
 }
 

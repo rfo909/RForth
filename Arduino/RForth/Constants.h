@@ -151,7 +151,7 @@ void memCodeExport();
 void showFreeMem();
 
 Word readOpCodeDataWord (Word addr);
-Byte readByteFast (Word addr);
+Byte readOpCodeByte (Word addr);
 
 // ------------------------------------------------------
 // Util.cpp

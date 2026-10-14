@@ -417,19 +417,11 @@ Word readOpCodeDataWord (Word addr) {
 
 
 // For executing code, less checks
-Byte readByteFast (Word addr) {
-  if (addr & DATA_BIT) {
-    // data segment - remove data bit
-    addr=addr & ADDR_DATA_MASK;
-    return dataSegment[addr];
+Byte readOpCodeByte (Word addr) {
+  if (addr < staticCodeBytes) {
+    return staticDataRead(addr);
   } else {
-    // code segment - strip call bit
-    addr=addr & ADDR_CODE_MASK;
-    if (addr < staticCodeBytes) {
-      return staticDataRead(addr);
-    } else {
-      return codeSegment[addr-staticCodeBytes];
-    }
+    return codeSegment[addr-staticCodeBytes];
   }
 
 }
