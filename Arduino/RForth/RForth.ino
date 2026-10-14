@@ -265,7 +265,7 @@ static Float popFloat () {
 
 
 
-static Word pick (Word n) {
+static Word inline pick (Word n) {
   if (dStackNext-1-n < 0) {
     setHasError();
     Serial.println(F("dStack underflow (pick)"));
