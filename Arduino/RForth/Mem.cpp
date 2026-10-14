@@ -38,14 +38,6 @@ void memInit(void) {
 
 
 void compileOut (Byte b) {
-  /*sPrint("compile");
-  sPrint(" ");
-  sPrint("out");
-  sPrint(" ");
-  sPrintWord(compileNext);
-  sPrint("=>");
-  sPrintWord(b);
-  sPrintln();*/
   codeSegment[compileNext-staticCodeBytes]=b;
   compileNext++;
 }
@@ -71,6 +63,7 @@ void confirmCompile() {
 }
 
 Word generateCodeAddress (Word ptr) {
+#ifdef SAFETY_ON
   if (ptr & DATA_BIT) {
     setHasError();
     sPrint("invalid");
@@ -98,6 +91,7 @@ Word generateCodeAddress (Word ptr) {
     sPrintln();
     return 0;
   }
+#endif
   return (ptr & ADDR_CODE_MASK);   // 00xxxxxx xxxxxxxx
 }
 
@@ -106,6 +100,7 @@ Word generateDataAddress (Word ptr) {
 }
 
 Word generateCallAddress (Word ptr) {
+#ifdef SAFETY_ON
   if (ptr & DATA_BIT) {
     setHasError();
     sPrint("generate");
@@ -122,6 +117,7 @@ Word generateCallAddress (Word ptr) {
     sPrintln();
     return 0;
   }
+#endif
   return generateCodeAddress(ptr) | CALL_BIT;  // 10xxxxxx xxxxxxxx
 }
 
@@ -134,6 +130,7 @@ Word codeHERE() {
 }
 
 void dataAllot (Word count) {
+#ifdef SAFETY_ON
   if (dataNext+count >= DATA_SEGMENT_SIZE) {
     setHasError();
     sPrint("data");
@@ -144,11 +141,13 @@ void dataAllot (Word count) {
     sPrintln();
     return;
   }
+#endif
   dataNext += count;
   compileNext = dataNext;
 }
 
 void codeAllot (Word count) {
+#ifdef SAFETY_ON
   if (codeNext+count >= CODE_SEGMENT_SIZE + staticCodeBytes) {
     setHasError();
     sPrint("code");
@@ -158,6 +157,7 @@ void codeAllot (Word count) {
     sPrint("overflow");
     return;
   }
+#endif
   codeNext += count;
 }
 
@@ -170,6 +170,7 @@ static void verifyReadWriteAddress (Word addr) {
   if (addr & DATA_BIT) {
     // data segment
     addr=addr & ADDR_DATA_MASK;
+#ifdef SAFETY_ON
     if (addr >= dataNext) {
       setHasError();
       sPrint("invalid");
@@ -193,9 +194,11 @@ static void verifyReadWriteAddress (Word addr) {
       sPrintln();
       return;
     }
+#endif
   } else {
     // code segment
     addr=addr & ADDR_CODE_MASK;
+#ifdef SAFETY_ON
     if (addr >= CODE_SEGMENT_SIZE + staticCodeBytes) {
       setHasError();
       sPrint("invalid");
@@ -221,6 +224,7 @@ static void verifyReadWriteAddress (Word addr) {
       sPrintln();
       return;
     }
+#endif
   }
 }
 
