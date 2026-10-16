@@ -743,7 +743,6 @@ void op_colon() {
 
 void op_bval() {push(readOpCodeByte(programCounter++));}
 void op_cval() {push(readOpCodeDataWord(programCounter)); programCounter += 2;}
-  
 
 
 void op_execute() {     // dynamic call
@@ -751,22 +750,61 @@ void op_execute() {     // dynamic call
   callForth(addr);
 }
 
+#define OP2S_ADD        0
+#define OP2S_SUB        1
+#define OP2S_MUL        2
+#define OP2S_MOD        3
+#define OP2S_DIV        4
+#define OP2S_GT         5
+#define OP2S_GE         6
+#define OP2S_LT         7
+#define OP2S_LE         8
+#define OP2S_EQ         9
+
+// Common ops that take two values off the stack and push one
+// are optimized through this function.
+void op2Svalues (Byte op) {
+  if (dStackNext < 2) {
+    setHasError();
+    Serial.println(F("Stack underflow"));
+    return;
+  }
+  dStackNext -= 2;
+  SWord a=dStack[dStackNext];
+  SWord b=dStack[dStackNext+1];
+  SWord x=0;
+  switch (op) {
+  case OP2S_ADD: {x=(a+b); break;}
+  case OP2S_SUB: {x=(a-b); break;}
+  case OP2S_MUL: {x=(a*b); break;}
+  case OP2S_DIV: {x=(a/b); break;}
+  case OP2S_MOD: {x=(a%b); break;}
+  case OP2S_GT: {x=(a>b ? 1 : 0); break;}
+  case OP2S_GE: {x=(a>=b ? 1 : 0); break;}
+  case OP2S_LT: {x=(a<b ? 1 : 0); break;}
+  case OP2S_LE: {x=(a<=b ? 1 : 0); break;}
+  case OP2S_EQ: {x=(a==b ? 1 : 0); break;}
+  }
+  // No boundary check needed as we started by popping two values ...
+  dStack[dStackNext++]=x;
+}
+
 // integer math and comparisons are signed
-void op_add() {SWord b=pop(); SWord a=pop(); push(a+b);}
-void op_sub() {SWord b=pop(); SWord a=pop(); push(a-b);}
-void op_mul() {SWord b=pop(); SWord a=pop(); push(a*b);}
-void op_div() {SWord b=pop(); SWord a=pop(); push(a/b);}
-void op_modulo() {SWord b=pop(); SWord a=pop(); push(a%b);}
+void op_add() {op2Svalues(OP2S_ADD);}
+void op_sub() {op2Svalues(OP2S_SUB);}
+void op_mul() {op2Svalues(OP2S_MUL);}
+void op_div() {op2Svalues(OP2S_DIV);}
+void op_modulo() {op2Svalues(OP2S_MOD);}
 void op_incr() {SWord x=pop(); push(x+1);}
 void op_decr() {SWord x=pop(); push(x-1);}
 
 // compares are signed!
-void op_gt() {SWord b=pop(); SWord a=pop(); push(a>b ? 1 : 0);}
-void op_ge() {SWord b=pop(); SWord a=pop(); push(a>=b ? 1 : 0);}
-void op_lt() {SWord b=pop(); SWord a=pop(); push(a<b ? 1 : 0);}
-void op_le() {SWord b=pop(); SWord a=pop(); push(a<=b ? 1 : 0);}
+void op_gt() {op2Svalues(OP2S_GT);}
+void op_ge() {op2Svalues(OP2S_GE);}
+void op_lt() {op2Svalues(OP2S_LT);}
+void op_le() {op2Svalues(OP2S_LE);}
 
-void op_eq() {Word b=pop(); Word a=pop(); push(a==b ? 1 : 0);}
+void op_eq() {op2Svalues(OP2S_EQ);}
 void op_ne() {Word b=pop(); Word a=pop(); push(a!=b ? 1 : 0);}
 void op_and() {Word b=pop(); Word a=pop(); push(a != 0 && b != 0 ? 1 : 0);}
 void op_or() {Word b=pop(); Word a=pop(); push(a != 0 || b != 0 ? 1 : 0);}
@@ -809,8 +847,24 @@ void op_create() {
   create();
 }
 
-void op_dup() {push(pick(0));}
-void op_swap() {Word b=pop(); Word a=pop(); push(b); push(a);}
+void op_dup() {
+  if (dStackNext==0) {
+    setHasError();
+    Serial.print(F("dStack underflow (dup)"));
+    return;
+  }
+  dStack[dStackNext++]=dStack[dStackNext-1];
+}
+void op_swap() {
+  if (dStackNext < 2) {
+    setHasError();
+    Serial.println(F("dStack underflow (swap)"));
+    return;
+  }
+  Word x=dStack[dStackNext-1];
+  dStack[dStackNext-1]=dStack[dStackNext-2];
+  dStack[dStackNext-2]=x;
+}
 void op_drop() {
   if (dStackNext<1) {
     setHasError();
