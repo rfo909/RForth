@@ -295,8 +295,8 @@ word stored in nextWord buffer
 	(-- patch afterAgainAddr --)
 	comp.next R> !
 	
-	(-- remove onBreakJumpTo from R --)
-	RDrop
+	(-- remove repeatAddr and onBreakJumpTo from R --)
+	RDrop RDrop
 	
 	>R                      (restore return from this word)
 ; immediate

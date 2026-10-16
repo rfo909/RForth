@@ -80,4 +80,4 @@ exits the loop, adding in a few stack ops
 	s" Test3 " .str speedTest3 cr
 ;
 
-RunAll
+(RunAll)

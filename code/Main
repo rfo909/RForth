@@ -1,7 +1,7 @@
 (
-Compiling this file requires 2498 bytes of free code space in RAM - 2026-08
+2026-10
 
-2026-09-28: 2965 bytes
+Compiling this file requires 2591 bytes of free code space in RAM
 )
 
 @@ basics
@@ -9,7 +9,6 @@ Compiling this file requires 2498 bytes of free code space in RAM - 2026-08
 @@ mem
 @@ dictTimers
 @@ dictPins
-@@ dictStrings
 
 (code.export)
 
