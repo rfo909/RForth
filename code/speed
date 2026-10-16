@@ -32,7 +32,28 @@
 	test]
 ;
 
-(initial speed tests)
+((
+2026-10-16
+---------- 
+Wanted to add a more typical test, which loops and conditionally
+exits the loop, adding in a few stack ops
+))
+: speedTest3 [test
+	6000 3 2
+	begin
+		rot 1- dup 0 == break?
+		rot rot 
+		swap
+		dup drop 
+		over drop
+		3 5 + 2 * drop
+	again
+	3drop
+	test]
+;
+
+	
+(baseline: initial speed tests)
 
 (speedTest1: 85.7 K ops/second Arduino Uno (atmega328p) 16 MHz - from Flash)
 (speedTest1: 83.3 K ops/second Arduino Uno (atmega328p) 16 MHz - from RAM)
@@ -44,9 +65,19 @@
 
 (2026-09 optimized OP_CVAL (cell sized value))
 (--------------------------------------------)
-(speedTest1 from RAM: 87.5 K ops/second + 5%)
-(speedTest2 from RAM: 87.8 K ops/second + 5%)
+(speedTest1 from RAM: 87.5 K ops/second + 5% over baseline)
+(speedTest2 from RAM: 87.8 K ops/second + 5% over baseline)
 
-speedTest1
+(2026-10 code segment byte fetch + ops optimizations)
+(---------------------------------------------------)
+(speedTest1:  91.9 K ops/s Arduino Uno - from RAM + 10% over baseline)
+(speedTest2:  92.3 K ops/s ...                    + 10% over baseline)
+(speedTest3: 106.8 K ops/s ...         <= baseline                   )
 
-speedTest2
+: RunAll
+	s" Test1 " .str speedTest1 cr
+	s" Test2 " .str speedTest2 cr
+	s" Test3 " .str speedTest3 cr
+;
+
+RunAll
