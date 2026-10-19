@@ -67,9 +67,13 @@ Chars c@ constant Len
 	BUZZ Out
 ;
 
-: On  
+: DitOn  
 	1 LED Dw 
 	60 BUZZ Aw ;
+
+: DahOn 
+	1 LED Dw 
+	40 BUZZ Aw ;
 
 : Off 
 	0 LED Dw 
@@ -84,16 +88,18 @@ Chars c@ constant Len
 : TZero 0 IN Timers .set ;
 
 (-- play dit or dah, followed by a one dit delay before returning --)
-: Play (ticks) 
-	On Tick * delay 
+: Play (ticks)
+	dup 2 > if DahOn else DitOn then
+	Tick * delay 
 	Off
-	TZero
+	TZero (-- measure character separation from here --)
 	(-- enforce at least 1 tick delay --)
 	Tick delay ;
 
 
 (-- get timer 0 millis --)
 : CSep? 0 IN Timers .get Tick 3 * > ;
+
 
 (-- check for symbols (dit/dah), play, and return updated code --)
 : Sym (code -- code) 
@@ -116,10 +122,12 @@ Chars c@ constant Len
 		1
 		cr (--single newline--)
 	then
-	
+
 	dup 1 <= &1 jmp?
 	dup Len >= &1 jmp?
 	Char emit
+	DitOn 2 delay Off (-- audio confirmation of timing between characters --)
+	
 	1 ret
 	
 	/1 drop 1
