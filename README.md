@@ -3,7 +3,7 @@
 
 *2026-04-18 RFO*
 
-Updated: 2026-09-13 RFO
+Updated: 2026-10-20 RFO
 
 ## Introduction
 
@@ -31,7 +31,7 @@ way of persisting code to Flash, without risk of making variables readonly.
 
 Key points for v4
 
-- specifically for atmega328p
+- deepsleep specifically for atmega328p
 - code segment and data segment
 - efficient Forth word calls
 

@@ -1,7 +1,9 @@
 
 CDict Timers
 
-( timers implemented in C, not physical )
+(-- timers implemented in C, accessing system clock --)
+
+(-- currently supports 2 timers, id 0 and 1 --)
 
 : .set (id -- )             0 sys.timer ;     (store "now" for timer)
 : .get (id -- millis)       1 sys.timer ;     (get millis 0-32k or 0x7FFF if overflow)
