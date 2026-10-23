@@ -13,7 +13,7 @@
 
 : _TerminateCDict (pointer head -- )
 	/0
-		dup 0 == &2 jmp?     (end of list)
+		0= &2 jmp?     (end of list)
 		dup DE->name @ .str cr (initially debug, but ok showing words when closing dict)
 		dup DE->next @       (pointer head next)
 		2 pick               (pointer head next pointer)
@@ -59,7 +59,7 @@
 : CDictWords (head -- )
 	/0
 		cr
-		dup 0 == &1 jmp?
+		0= &1 jmp?
 		dup DE->name @ .str
 		DE->next @
 		&0 jmp
@@ -79,7 +79,7 @@ lookup word in dictionary, returning dictionary entry pointer, for word in syste
 
 : DictLookupNW (dictPointer -- dictEntry/0) 
 	/0
-		dup 0 == &1 jmp?  (end of dictionary linked list)
+		0= &1 jmp?  (end of dictionary linked list)
 		dup DE->name @ nextWordEq ret?  (found it, returning DE pointer)
 		
 		DE->next @                       (follow next pointer)
@@ -158,7 +158,7 @@ IN <dict> <name>
 		DE->address @  (dictionary reference)
 			readNextWord DictLookupNW (word in dictionary reference)
 	
-	dup 0 == &1 jmp?         (not found)
+	0= &1 jmp?         (not found)
 
 	(got DE pointer)
 	

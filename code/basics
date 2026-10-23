@@ -27,6 +27,10 @@
 
 : cells cell * ;
 
+
+: 0= dup 0 == ;
+: 1= dup 1 == ;
+
 : 2dup (a b -- a b a b)
 	over over 
 ;
@@ -399,6 +403,8 @@ build call to dodoes, then add OP_RET - the code following does> comes after tha
 
 
 : cr 0x0A emit ;
+: space 0x20 emit ;
+
 
 : , HERE cell allot ! ;
 
@@ -418,7 +424,7 @@ build call to dodoes, then add OP_RET - the code following does> comes after tha
 : .cbits (byte --)
 	0x80    (byte bit)
 	/0
-		dup 0 == &1 jmp?    (exit)
+		0= &1 jmp?    (exit)
 		dup (byte bit bit)
 		2 pick & .bit (byte bit)
 		1 >>
@@ -431,7 +437,7 @@ build call to dodoes, then add OP_RET - the code following does> comes after tha
 (show 16-bit value)
 : .bits (value --)
 	dup Hi .cbits
-	32 emit (space)
+	space
 	Lo .cbits
 ;		
 

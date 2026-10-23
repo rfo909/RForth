@@ -48,7 +48,7 @@ X 1+ c@ => 2
 		
 		(32 emit dup .)
 		
-		dup 0 == &1 jmp?  (count is 0)
+		0= &1 jmp?  (count is 0)
 		swap
 		&0 jmp
 	/1

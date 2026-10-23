@@ -116,7 +116,7 @@ Chars c@ constant Len
 
 (-- look up character from code, show it, return 1 as new code --)
 : Show (code -- 1)
-	dup 256 == if (........)
+	dup 256 == if (-- 8 dots --)
 		(--error signal--)
 		drop 
 		1
