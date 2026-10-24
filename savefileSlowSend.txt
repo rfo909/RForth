@@ -110,18 +110,27 @@
 # Configure Serial Line
 # --
 	P(1) as Dict => data
-	s="stty -F ${Device} ${Baud} line 0 min 100 time 2 -icrnl -imaxbel -opost -onlcr -isig -icanon -echo"
+	s="stty -F ${Device} ${Baud} line 0 min 10 time 2 -icrnl -imaxbel -opost -onlcr -isig -icanon -echo"
 	s=s.merge(data.mergeCodes)
 	println(s)
 	Dir.run(s.split)
 //ConfigureSerial
 
+# Configure serial for RForth 
+# --
+	ConfigureSerial(Dict.set("Device",Device).set("Baud","9600"))
+/ConfSerial_RForth
+
+# Configure serial for FLASHForth 
+# --
+	ConfigureSerial(Dict.set("Device",Device).set("Baud","38400"))
+/ConfSerial_FlashForth
 
 # Run from RForth code dir
 # --
 	SetDevice
 	Sys.savefile.dir.sub("code").cd
-	ConfigureSerial(Dict.set("Device",Device).set("Baud","9600"))
+	ConfSerial_RForth
 	MainLoop
 /RForth
 
@@ -129,7 +138,7 @@
 # --
 	SetDevice
 	Dir("/home/roar/Downloads/flashforth/avr/forth").cd
-	ConfigureSerial(Dict.set("Device",Device).set("Baud","38400"))
+	ConfSerial_FlashForth
 	MainLoop
 /FlashForth
 

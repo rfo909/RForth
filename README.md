@@ -3,29 +3,28 @@
 
 *2026-04-18 RFO*
 
-Updated: 2026-10-20 RFO
+Updated: 2026-10-24 RFO
 
 ## Introduction
 
-The v3 version of RFOrth was quite successful at compiling my Forth into a bytecode format,
-which is then executed. But there were issues, and in hindsight, it was overly
-complicated.
+This implementation is the fourth (!) attempt of a bytecode compiling Forth-like
+language, and was initiated April 2026. I decided to put the REPL and colon compiler 
+in C, and I made some changes to the memory architecture, splitting it into two
+segments, *code* and *data*. More on that below. 
 
-So I tried writing a new kernel, with the REPL and colon compiler implemented
-in C instead of bytecode, as I did in v3. And I got it up in just a few hours.
-
-Since then the code base has grown steadily, and gone through a few basic changes,
-but as of 2026-04-18 version 3 has been moved out of the way.
+The bytecode operations are single-byte values known as *ops*.
 
 ```
 ?             (list words)
 ops           (list ops = words written in C)
+.s            (show stacks)
+clear         (clear stacks)
 ```
 
 
 ## Changes
 
-The v3 suffered from a few bad design decisions. The most important was that
+The previous version (v3) suffered from a few bad design decisions. The most important was that
 there was no separation between code and data. This meant there was no easy
 way of persisting code to Flash, without risk of making variables readonly.
 
@@ -33,29 +32,25 @@ Key points for v4
 
 - deepsleep specifically for atmega328p
 - code segment and data segment
-- efficient Forth word calls
+- efficient (2 byte) Forth word calls
 
 I also have not implemented local variables, as I realized that creating small
-words, they are not needed.
+words, and using the return stack, they are not needed. 
 
 ### atmega328p
 
 While other CPU's like the 4809 (Nano Every) look good on paper, with more 
 peripherals, more RAM and more Flash, the good old atmega328p has one major
-advantage: proper deep sleep.
+advantage: proper deep sleep. 
 
-The power consumed while running is one thing, but for solar/battery powered applications,
-it is vital that there is a deep sleep mode that runs on micro-amperes, not just
-milli-amps.
+Plus it is my favourite, as it usually comes
+in a DIP 28-pin package, which with less than five components can run
+happily on a breadboard or stripboard.
 
-The atmega328p running at 5V sleeps around 5-7 uA, for 8 seconds at a time, using
-the watchdog timer to wake up. 
+At deep sleep, the atmega328p consumes around 5-7 uA, for at most 8 seconds at a
+time, using the watchdog timer to wake up. This sleep is available via the op "deep-sleep8".
 
-```
-deep-sleep8
-```
-
-On other arduino's it just does a normal delay for 8 seconds.
+On other Arduino's that op is implemented as a simple 8 second delay.
 
 
 ### Code vs data segments
@@ -63,7 +58,7 @@ On other arduino's it just does a normal delay for 8 seconds.
 The code segment is a mix of bytes stored in Flash, and bytes in RAM, while the
 data segment only exists in RAM.
 
-The code segment contains compiled words, and constants, and the dictionary
+The code segment contains compiled words, and constants, as well as the dictionary
 structure, and offers a single address space, regardless of what is stored in
 Flash.
 
@@ -76,7 +71,7 @@ See Dev.md for details.
 
 To maximize functionality in a memory starved environment, plus also
 managing without local variables, means creating short words that call each other. This 
-leads to making calling words should be as efficient as possible.
+leads to making the calling of Forth words as efficient as possible.
 
 The first design idea was using a single byte, allowing up to 127 words, but that felt
 restrictive, as the plans for putting compiled Forth words into Flash matured. 
@@ -188,6 +183,39 @@ most flexible (albeit assembler-like) mechanism for conditionals and loops.
 ;
 ```
 
+# Loops and conditionals
+
+In addition to the above, which is very efficient, we have also "begin ... again"
+with the option of multiple calls to break out of the loop. 
+
+Conditionals follows the normal "if ... then" and "if ... else ... then" pattern
+of Forth.
+
+
+```
+: count (limit --)
+	0 
+	begin
+		2dup == break?
+		dup .
+		1+
+		key? break?  (-- key pressed? --)
+	again
+	2drop
+;
+
+: count2 (limit --)
+	0
+	/1
+		2dup == if 2drop &2 jmp then
+		dup .
+		1+
+		&1 jmp
+	/2
+;
+```
+
+
 # Code in Flash
 
 After having developed words we like to keep, we can call the special op:
@@ -254,38 +282,51 @@ per second. See the "speed" source file under code.
 
 ## Interact over serial
 
+(Rewrite October 2026)
+
 A CFT script called SlowSend handles sending both interactive input and dumping text files
 to the arduino, doing so at reduced speed so the serial input buffer doesn't overflow while 
 searching the dictionary.
 
 The SlowSend script doesn't handle output on serial, so I use a separate terminal.
 
-Note that after hooking up the Arduino via USB, we must make the device read-write. 
+As of October 2026, the SlowSend configures the serial port correctly on Linux,
+by running an *stty* command. The speed is 9600 baud. 
 
+After hooking up the Arduino via USB:
 ```
 sudo chmod 777 /dev/ttyACM0
 ```
+Then in the input terminal, running CFT, load the SlowSend script and
+run the RForth function inside.
 
-Then in one terminal, we can display output
+
+```
+cd RForth
+:load SlowSend
+RForth
+```
+
+This will ask for the device, then configure it, before entering the 
+main loop. 
+
+Now we can open a second terminal, and just do:
+
 
 ```
 cat /dev/ttyACM0
 ```
 
-It is usually wise to briefly open the serial terminal of the Arduino IDE (and close
-it again), to properly configure the tty.
+Alternatively, if not uploading files of source code, interactive use is
+possible with GNU screen or any other terminal emulator:
+
+```
+screen /dev/ttyACM0 9600
+```
 
 Also note that the "cat" must be killed before trying to upload from the IDE.
 
-In another terminal, load the "SlowSend" script and run it from inside CFT
-
-```
-cd RForth
-:load SlowSend
-Main
-```
 
 It doesn't interact with the tty other than when sending, so it co-exists nicely
 with upload and "serial monitor" in the IDE.
-
 
