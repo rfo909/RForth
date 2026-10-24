@@ -7,14 +7,14 @@
 # --
 	#"^n".unEsc.getBytes("ISO-8859-1").getList(0).nth(0)
 	10
-/Newline
+//Newline
 
 # Change serial device
 # --
 	println("Current: ", Db2:Get(Sys.scriptId,"Device","/dev/ttyACM0"))
 	Input("Enter device").get => dev
 	if (dev != "") Db2:Set(Sys.scriptId,"Device",dev)
-/SetDevice
+//SetDevice
 
 # Serial device
 # --
@@ -40,12 +40,12 @@
 		}
 	|
 	device.write(Newline)
-/SendLine
-
+//SendLine
 
 # Code directory
 # --
-	Sys.savefile.dir.sub("code")
+	#Sys.savefile.dir.sub("code")
+	Dir
 /CodeDir
 
 
@@ -87,7 +87,6 @@
 
 # Main loop
 # --
-	SetDevice
 	device=Device
 	
 	Lib:Header("Enter line, q to stop, f to send file")
@@ -103,7 +102,37 @@
 	|
 	device.close
 		
-/Main
+//MainLoop
+
+
+
+
+# Configure Serial Line
+# --
+	P(1) as Dict => data
+	s="stty -F ${Device} ${Baud} line 0 min 100 time 2 -icrnl -imaxbel -opost -onlcr -isig -icanon -echo"
+	s=s.merge(data.mergeCodes)
+	println(s)
+	Dir.run(s.split)
+//ConfigureSerial
+
+
+# Run from RForth code dir
+# --
+	SetDevice
+	Sys.savefile.dir.sub("code").cd
+	ConfigureSerial(Dict.set("Device",Device).set("Baud","9600"))
+	MainLoop
+/RForth
+
+# Run from FlashForth code dir
+# --
+	SetDevice
+	Dir("/home/roar/Downloads/flashforth/avr/forth").cd
+	ConfigureSerial(Dict.set("Device",Device).set("Baud","38400"))
+	MainLoop
+/FlashForth
+
 
 
 # Constants
