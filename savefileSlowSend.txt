@@ -133,7 +133,12 @@
 	MainLoop
 /FlashForth
 
-
+# Reminder
+# --
+	Lib:Header("Main is no more")
+	println("Run RForth or FlashForth")
+	println
+//Main
 
 # Constants
 # --
