@@ -164,6 +164,9 @@ void setup() {
 // NOTE: this sleep function does not alter pin values
 void doDeepSleep(byte duration) {
 
+    byte mask=duration & B00000111;
+    if (duration & B00001000) mask |= B00100000; // WDP3 bit is separate from the other three
+
     //blip(2);
     // https://www.youtube.com/watch?v=urLSDi7SD8M
 
@@ -179,9 +182,6 @@ void doDeepSleep(byte duration) {
 
     WDTCSR = (1<<WDCE) | (1<<WDE) ; // b00011000;  // (24); // change enable and WDE - also resets
 
-    // RFO 2026-11-01
-    byte mask=duration & 7;
-    if (duration & B00100000) mask |= B00100000; // WDP3 bit is separate from the other three
     WDTCSR = mask ; // b00n00nnn;  // (33); // prescalers only, get rid of WDCE and WDE
     //WDTCSR = (1<<WDP2) | (1<<WDP1) | (1<<WDP0) ; // 2 seconds
     //WDTCSR = (1<<WDP3) ; // 4 seconds
