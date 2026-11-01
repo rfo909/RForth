@@ -164,6 +164,8 @@ void setup() {
 // NOTE: this sleep function does not alter pin values
 void doDeepSleep(byte duration) {
 
+    if (duration > 9) duration=9;  // values above are reserved
+      // 1001 is 8 seconds
     byte mask=duration & B00000111;
     if (duration & B00001000) mask |= B00100000; // WDP3 bit is separate from the other three
 
