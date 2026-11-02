@@ -159,12 +159,17 @@
 /Constants
 
 
+
+
 # Count word defs
 # --
 	CodeDir.files->f
-		f.read->line
-			assert(line.startsWith(": "))
-			report(f.name, line.lineNumber, line)
+		count=Inner{
+			f.read->line
+				assert(line.startsWith(": "))
+				out(line)
+		}.length
+		report(f.name,count)
 /Words
 
 
