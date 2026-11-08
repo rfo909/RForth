@@ -37,7 +37,7 @@ next letter, and if so show the letter associated with the current code
 ))
 
 : Chars
-	s" __ETIANMSURWDKGOHVF_L_PJBXCYZQ__54_3___2__+____16=/___(_7___8_90____________?________.____@______-___________)_____,"
+	s"   ETIANMSURWDKGOHVF L PJBXCYZQ  54 3 * 2& +   '16=/   ( 7   8 90          > ?_    ` <.    @      -        ;! )     ,    :                $"
 ;
 
 Chars c@ constant Len
