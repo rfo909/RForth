@@ -1,12 +1,163 @@
 
-: count2 (limit --)
-	0
-	/1
-		2dup == if 2drop &2 jmp then
-		dup .
-		1+
-		&1 jmp
-	/2
+40 constant LPAR
+41 constant RPAR
+32 constant SPACE
+59 constant SEMICOLON
+
+variable _ch
+
+: nextChar key _ch ! ;
+: char _ch @ ;
+
+variable atombuf
+
+: init
+	atombuf @ 0 == if
+		HERE atombuf !
+		20 allot
+	then
+	(-- prime single char buffer --)
+	SPACE _ch !   
+
 ;
+
+(-- pointer to buffer for atom --)
+: atom atombuf @ ;
+
+: clear 0 atom c! ;
+
+: append 
+	char atom atom c@ + 1+ c!
+	atom c@ 1+ atom c!
+;
+
+
+: consume-ws
+	begin
+		char SPACE != ret?
+		nextChar
+	again
+;
+
+
+: isSpace char SPACE == ;
+: isLPAR char LPAR == ;
+: isRPAR char RPAR == ;
+: isSEMICOLON char SEMICOLON == ;
+
+: isSpecial isLPAR isRPAR or isSEMICOLON or ;
+: isDelimeter isSpace isSpecial or ;
+
+
+: getAtom
+	clear
+	consume-ws
+	isSpecial ret?
+	begin
+		append
+		nextChar
+		isDelimeter ret?
+	again
+;
+
+: test init getAtom cr s" |" .str atom .str s" |" .str ;
+
+: isAtom atom c@ ;
+
+
+: Unknown s" Unknown: " .str ;
+
+: comp-atom?
+	isAtom not if 0 ret then
+	
+	atom nextWord! nextWordAtoi if
+		CVAL>C
+	else
+		drop
+		s" Calling word " .str
+		*Dict @ DictLookupNW DE_compile
+	then
+	1
+;
+
+(-- recursion not really supported, but ... --)
+variable #comp-sexpr
+: recurse? 
+	isLPAR not if 0 ret then 
+	s" Recursing " .str cr
+	#comp-sexpr @ execute 
+	1 
+;
+
+(-- we are past LPAR when called --)
+: comp-sexpr 
+	(-- function name --)
+	getAtom
+
+	s" Processing " .str atom .str cr
+	
+	atom nextWord! 
+	*Dict @ DictLookupNW (DE-pointer) (-- -1 if not found --)
+	dup -1 == if
+		cr Unknown atom .str
+		drop ret
+	then
+	
+	(-- process parameters --)
+	begin
+		getAtom
+		s" Parameter '" .str atom .str s" '" .str
+		
+		comp-atom? not if
+			recurse? not if
+				(-- char is RPAR or SEMICOLON --)
+				124 emit char emit 124 emit
+				ret				
+			then
+		then
+	again
+	
+	(DE-pointer) DE_compile
+;
+
+(-- set the recurse variable --)
+
+
+: defun create
+	comp:init
+	comp.next   (codeStart)
+	0 c>C       (--code length byte--)
+
+	init
+	
+	(-- set recurse pointer --) 
+	' comp-sexpr #comp-sexpr !
+	comp-sexpr
+	OP_RET c>C
+	
+	comp:done 
+	
+	
+	(codeStart) dup comp.next swap - 1- (codeStart codeLength)
+	over c!                             (--set code length --) (codeStart)
+	1+                                  (codeStart) (-- actual codeStart --)
+	
+
+	
+	(codeStart) *dictHead DE->address !
+	DE_NORMAL *dictHead DE->type c!
+	;
+
+: alias create
+	comp:init
+	comp.next   (codeStart)
+	readNextWord 
+	*Dict @ DictLookupNW DE_compile
+	OP_RET c>C
+	comp:done 
+	
+	(codeStart) *dictHead DE->address !
+	DE_NORMAL *dictHead DE->type c!
+	;
 
 
