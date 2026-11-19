@@ -67,17 +67,16 @@ variable atombuf
 : isAtom atom c@ ;
 
 
-: Unknown s" Unknown: " .str ;
-
-: comp-atom?
+(-- parameter atom can be numbers only --)
+: comp-param-atom?
 	isAtom not if 0 ret then
 	
 	atom nextWord! nextWordAtoi if
 		CVAL>C
 	else
 		drop
-		s" Calling word " .str
-		*Dict @ DictLookupNW DE_compile
+		cr s" Not an int " .str atom .str
+		#*Dict @ DictLookupNW DE_compile
 	then
 	1
 ;
@@ -99,27 +98,39 @@ variable #comp-sexpr
 	s" Processing " .str atom .str cr
 	
 	atom nextWord! 
-	*Dict @ DictLookupNW (DE-pointer) (-- -1 if not found --)
-	dup -1 == if
-		cr Unknown atom .str
-		drop ret
+	
+	(-- is it an op? --)
+	nextWordOp? 
+	dup 0 >= if
+		1  		(opCode 1)
+	else 
+		*Dict @ DictLookupNW (DE-pointer) (-- -1 if not found --)
+		dup -1 == if
+			cr s" Unknown " .str atom .str
+			drop ret
+		then
+		0         	(DE-pointer 0)
 	then
 	
 	(-- process parameters --)
 	begin
 		getAtom
-		s" Parameter '" .str atom .str s" '" .str
+		isAtom not break?
+		cr s" Parameter '" .str atom .str s" '" .str 
 		
-		comp-atom? not if
-			recurse? not if
-				(-- char is RPAR or SEMICOLON --)
-				124 emit char emit 124 emit
-				ret				
-			then
+		comp-param-atom? not if
+			recurse? not break?  (-- RPAR or SEMICOLON --)
 		then
 	again
 	
-	(DE-pointer) DE_compile
+	(-- generate code for the first atom, which is an op or a dict-entry)  (value flag)
+	if
+		(-- value is op-code --)
+		c>C
+	else
+		(-- value is DictionaryEntry address --)
+		DE_compile
+	then
 ;
 
 (-- set the recurse variable --)
