@@ -1070,9 +1070,9 @@ void op_key() {
 // upate Words script and and run "gen" to get this code
 // "Global variables use 1559 bytes"
 
-// ---------------------------------------------------------------------------+
+// --------------------------------------------------------------------------------
 
-const Byte numOps=118;
+const Byte numOps=119;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -1193,6 +1193,7 @@ comp:done \
 sys.timer \
 max \
 min \
+nextWordOp? \
 ";
 
 typedef void (*FUNC)();
@@ -1316,9 +1317,10 @@ static const PROGMEM FUNC opFunctions[]={
 ,&sys_timer
 ,&op_max
 ,&op_min
+,&op_nextWord_op_lookup
 };
 
-// -----------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 void op_ops() {
   Byte length=0;
@@ -1788,6 +1790,14 @@ void op_l_rshift () {
   Word n=pop();
   Long val=popLong();
   pushLong(val>>n);
+}
+
+
+
+
+void op_nextWord_op_lookup () {
+  byte code=lookupOpCode();
+  push(code);
 }
 
 
