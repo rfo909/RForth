@@ -1,5 +1,3 @@
-((
-))
 
 40 constant LPAR
 41 constant RPAR
@@ -13,15 +11,6 @@ variable _ch
 
 variable atombuf
 
-: init
-	atombuf @ 0 == if
-		HERE atombuf !
-		20 allot
-	then
-	(-- prime single char buffer --)
-	SPACE _ch !   
-
-;
 
 (-- pointer to buffer for atom --)
 : atom atombuf @ ;
@@ -42,98 +31,138 @@ variable atombuf
 ;
 
 
-: isSpace char SPACE == ;
-: isLPAR char LPAR == ;
-: isRPAR char RPAR == ;
-: isSEMICOLON char SEMICOLON == ;
+(-- atom found? --)
+: hasAtom atom c@ 0 > ;
 
-: isSpecial isLPAR isRPAR or isSEMICOLON or ;
-: isDelimeter isSpace isSpecial or ;
+(-- char properties --)
+: charIsSPACE char SPACE == ;
+: charIsLPAR char LPAR == ;
+: charIsRPAR char RPAR == char SEMICOLON == or ;
 
-
-: getAtom
-	clear
-	consume-ws
-	isSpecial ret?
-	begin
-		append
-		nextChar
-		isDelimeter ret?
-	again
-;
-
-: test init getAtom cr s" |" .str atom .str s" |" .str ;
-
-: isAtom atom c@ ;
+: isPar charIsLPAR charIsRPAR or ;
+: isDelimeter charIsSPACE isPar or ;
 
 
-(-- parameter atom can be numbers only --)
-: comp-param-atom?
-	isAtom not if 0 ret then
-	
-	atom nextWord! nextWordAtoi if
-		CVAL>C
-	else
-		drop
-		cr s" Not an int " .str atom .str
-		#*Dict @ DictLookupNW DE_compile
-	then
-	1
-;
-
-(-- recursion not really supported, but ... --)
+(-- comp-sexpr recursion hack --)
 variable #comp-sexpr
-: recurse? 
-	isLPAR not if 0 ret then 
-	s" Recursing " .str cr
-	#comp-sexpr @ execute 
-	1 
-;
+: recurse #comp-sexpr @ execute ;
 
-(-- we are past LPAR when called --)
-: comp-sexpr 
-	(-- function name --)
-	getAtom
 
-	s" Processing " .str atom .str cr
+
+: comp-fn-pre (-- value type)
+	hasAtom not if
+		cr s" Expected fn" .str
+		ret
+	then
 	
+	(-- copy into system buffer nextWord --)
 	atom nextWord! 
 	
 	(-- is it an op? --)
 	nextWordOp? 
 	dup 0 >= if
-		1  		(opCode 1)
-	else 
-		*Dict @ DictLookupNW (DE-pointer) (-- -1 if not found --)
-		dup -1 == if
-			cr s" Unknown " .str atom .str
-			drop ret
-		then
-		0         	(DE-pointer 0)
+		1 ret 		(opCode 1)
 	then
 	
-	(-- process parameters --)
-	begin
-		getAtom
-		isAtom not break?
-		cr s" Parameter '" .str atom .str s" '" .str 
-		
-		comp-param-atom? not if
-			recurse? not break?  (-- RPAR or SEMICOLON --)
-		then
-	again
-	
-	(-- generate code for the first atom, which is an op or a dict-entry)  (value flag)
-	if
-		(-- value is op-code --)
-		c>C
-	else
-		(-- value is DictionaryEntry address --)
-		DE_compile
+	(-- is it a Forth word? --)
+	*Dict @ DictLookupNW (DE-pointer) (-- -1 if not found --)
+	dup -1 == if
+		cr s" Unknown " .str atom .str
+		drop ret
 	then
+	0         	(DE-pointer 0)
 ;
 
-(-- set the recurse variable --)
+: comp-fn-post (value type -- )
+	if c>C else DE_compile then
+;
+
+#END
+
+: comp-param-atom
+	atom nextWord!
+	nextWordAtoi if
+		CVAL>C
+		ret
+	then
+	drop
+	
+	*Dict @ DictLookupNW    (DE-pointer) (-- -1 if not found --)
+	dup -1 == if
+		cr s" Unknown " .str atom .str
+		drop ret
+	then
+	DE_compile
+;
+
+		
+
+: get-atom
+	clear
+	consume-ws
+
+	isPar ret?
+
+	(-- collect atom --)
+	begin
+		append
+		nextChar
+		isDelimeter break?
+	again
+;
+
+
+(-- we are past LPAR when called --)
+: comp-sexpr 
+	getAtom
+	comp-fn-pre
+	
+	clear
+	
+	((
+	After reading the "fn" atom above, the "char" points to the next
+	character, which is either a PAR or SPACE. If it is a PAR, then
+	we either recurse or return.
+	))
+	
+	(-- parameters? --)
+	/1
+		(-- will fail first time, due to clear above --)
+		hasAtom if
+			comp-param-atom
+			clear
+		then
+	
+		charIsRPAR if
+			nextChar
+			&2 jmp
+		then
+		charIsLPAR if 
+			nextChar 
+			recurse
+			&1 jmp 
+		then
+		
+		getAtom
+		
+		&1 jmp
+	/2
+	  
+	(-- about to return --)
+	comp-fn-post
+;
+
+: init
+	atombuf @ 0 == if
+		HERE atombuf !
+		20 allot
+	then
+	(-- prime single char buffer --)
+	SPACE _ch !   
+	(-- set the recurse variable --)
+	' comp-sexpr #comp-sexpr !
+	
+;
 
 
 : defun create
