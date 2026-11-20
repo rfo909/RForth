@@ -191,7 +191,9 @@ variable #comp-sexpr
 
 defun Number + (+ 2 1) 1 ;
 defun Show . Number ;
-defun DoesNotWork . (Number) ;
+: Mul * ;
+defun DoesNotWork . (Mul 3 5) ;
+' DoesNotWork dis
 
 
 ((
