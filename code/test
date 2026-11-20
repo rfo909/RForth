@@ -167,30 +167,34 @@ variable #comp-sexpr
 
 : defun 
 	create
-	comp:init
-	comp.next   (codeStart)
-	0 c>C       (--code length byte--)
 
 	init
-	
-	(-- set recurse pointer --) 
-	' comp-sexpr #comp-sexpr !
+
+	comp:init
+	comp.next >R   (R:codeStart)
+	0 c>C          (--code length byte--)
+
 	comp-sexpr
 	OP_RET c>C
-	
+
 	comp:done 
 	
 	
-	(codeStart) dup comp.next swap - 1- (codeStart codeLength)
-	over c!                             (--set code length --) (codeStart)
-	1+                                  (codeStart) (-- actual codeStart --)
+	comp.next R@ - 1- 	(codeLength)
+		R@ c!		(--set code length --) 
 	
-
-	
-	(codeStart) *dictHead DE->address !
+	R> 1+ *dictHead DE->address !
 	DE_NORMAL *dictHead DE->type c!
-	;
+;
 
+(-- Examples --)
+
+defun Number + (+ 2 1) 1 ;
+defun Show . Number ;
+defun DoesNotWork . (Number) ;
+
+
+((
 : alias create
 	comp:init
 	comp.next   (codeStart)
@@ -202,5 +206,5 @@ variable #comp-sexpr
 	(codeStart) *dictHead DE->address !
 	DE_NORMAL *dictHead DE->type c!
 	;
-
+))
 
