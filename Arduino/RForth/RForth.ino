@@ -1796,7 +1796,7 @@ void op_l_rshift () {
 
 
 void op_nextWord_op_lookup () {
-  byte code=lookupOpCode();
+  SWord code=lookupOpCode();
   push(code);
 }
 
