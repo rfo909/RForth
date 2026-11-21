@@ -6,71 +6,89 @@
 
 variable _ch
 
-: nextChar key _ch ! ;
+: get-next-char key _ch ! ;
 : char _ch @ ;
+
+
+1 constant TOK_ATOM
+2 constant TOK_SEXPR
+3 constant TOK_RETURN
 
 variable atombuf
 
-
 (-- pointer to buffer for atom --)
 : atom atombuf @ ;
-
-: clear 0 atom c! ;
 
 : append 
 	char atom atom c@ + 1+ c!
 	atom c@ 1+ atom c!
 ;
 
-
 : consume-ws
 	begin
 		char SPACE != ret?
-		nextChar
+		get-next-char
 	again
 ;
 
 
-(-- atom found? --)
-: hasAtom atom c@ 0 > ;
-
-(-- char properties --)
-: charIsSPACE char SPACE == ;
-: charIsLPAR char LPAR == ;
-: charIsRPAR char RPAR == char SEMICOLON == or ;
-
-: isPar charIsLPAR charIsRPAR or ;
-: isDelimeter charIsSPACE isPar or ;
+: get-token (--tokType)
+	atom c@ 0 == if
+		(-- last token was not atom which may mean PAR (or space), so we skip it --)
+		get-next-char
+	then
+	
+	0 atom c! (-- clear atom buffer --)
+		
+	consume-ws
+	char LPAR == if TOK_SEXPR ret then
+	char RPAR == 
+	  char SEMICOLON == or
+	    if TOK_RETURN ret then
+	begin
+		append
+		get-next-char
+		char LPAR ==
+		char RPAR == or
+		char SEMICOLON == or
+		char SPACE == or if
+			TOK_ATOM ret
+		then
+	again
+;
 
 
 (-- comp-sexpr recursion hack --)
-variable #comp-sexpr
-: recurse #comp-sexpr @ execute ;
+variable comp-sexpr-ptr
+: recurse comp-sexpr-ptr @ execute ;
 
 
 
 : comp-fn-pre (-- value type)
-	hasAtom not if
-		cr s" Expected fn" .str
+	get-token 
+	dup TOK_ATOM != if
+		cr s" Invalid fn type " .str . cr
 		ret
 	then
-	
+	drop
+			
 	(-- copy into system buffer nextWord --)
 	atom nextWord! 
 	
 	(-- is it an op? --)
 	nextWordOp? 
-	dup 0 >= if
-		1 ret 		(opCode 1)
+	dup -1 != if
+		1 ret    (opcode 1)
 	then
+	drop
 	
 	(-- is it a Forth word? --)
 	*Dict @ DictLookupNW (DE-pointer) (-- -1 if not found --)
 	dup -1 == if
-		cr s" Unknown " .str atom .str
+		cr s" Unknown forth word " .str atom .str cr
 		drop ret
 	then
-	0         	(DE-pointer 0)
+	0                (DE-pointer 0)
 ;
 
 : comp-fn-post (value type -- )
@@ -89,67 +107,24 @@ variable #comp-sexpr
 	
 	*Dict @ DictLookupNW    (DE-pointer) (-- -1 if not found --)
 	dup -1 == if
-		cr s" Unknown " .str atom .str
+		cr s" Unknown param atom " .str atom .str cr
 		drop ret
 	then
 	DE_compile
 ;
 
 		
-
-: get-atom
-	clear
-	consume-ws
-
-	isPar ret?
-
-	(-- collect atom --)
-	begin
-		append
-		nextChar
-		isDelimeter break?
-	again
-;
-
-
-(-- we are past LPAR when called --)
-: comp-sexpr 
-	get-atom
+: comp-sexpr
 	comp-fn-pre
-	
-	clear
-	
-	((
-	After reading the "fn" atom above, the "char" points to the next
-	character, which is either a PAR or SPACE. If it is a PAR, then
-	we either recurse or return.
-	))
 	
 	(-- parameters? --)
 	/1
-		(-- will fail first time, due to clear above --)
-		hasAtom if
-			comp-param-atom
-			clear
-		then
+		get-token   (tokenType)
 	
-		charIsRPAR if
-			nextChar
-			&2 jmp
-		then
-		charIsLPAR if 
-			nextChar 
-			recurse
-			&1 jmp 
-		then
-		
-		get-atom
-		
-		&1 jmp
-	/2
-	  
-	(-- about to return --)
-	comp-fn-post
+		dup TOK_ATOM == if drop comp-param-atom &1 jmp then
+		dup TOK_SEXPR == if drop recurse &1 jmp then
+		dup TOK_RETURN == if drop comp-fn-post ret then
+		cr s" Unknown token type " .str . cr
 ;
 
 : init
@@ -160,8 +135,9 @@ variable #comp-sexpr
 	(-- prime single char buffer --)
 	SPACE _ch !   
 	(-- set the recurse variable --)
-	' comp-sexpr #comp-sexpr !
-	
+	' comp-sexpr comp-sexpr-ptr !
+	(-- clear atom buffer --)
+	0 atom c!
 ;
 
 
@@ -186,14 +162,6 @@ variable #comp-sexpr
 	R> 1+ *dictHead DE->address !
 	DE_NORMAL *dictHead DE->type c!
 ;
-
-(-- Examples --)
-
-defun Number + (+ 2 1) 1 ;
-defun Show . Number ;
-: Mul * ;
-defun DoesNotWork . (Mul 3 5) ;
-' DoesNotWork dis
 
 
 ((
