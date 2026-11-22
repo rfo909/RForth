@@ -449,9 +449,15 @@ Added "begin ... again" with support for multiple calls to break out of the loop
 ;
 ```
 
+2026-11-22
+----------
+Hacked together a rudimentary Lisp S-expression compiler to RForth bytecode. It is
+found in the Lisp source file. 
 
-Todo
-====
-  
-- Implement op IsCompiling - controlled via op_colon
+Had to fix a built-in IsCompiling as well, as the old one was based on the top word
+being a type constant value 0 while being compiled. In order to support (direct)
+recursion, the colon compiler initates by setting type Normal, and address pointing to
+the byte after the length byte, before actually compiling code. 
+
+
 

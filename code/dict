@@ -158,7 +158,7 @@ IN <dict> <name>
 		DE->address @  (dictionary reference)
 			readNextWord DictLookupNW (word in dictionary reference)
 	
-	0= &1 jmp?         (not found)
+	Neg? &1 jmp?         (not found)
 
 	(got DE pointer)
 	

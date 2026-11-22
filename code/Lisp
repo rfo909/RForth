@@ -98,11 +98,6 @@ variable atombuf
 ;
 
 
-(-- comp-sexpr recursion hack --)
-variable comp-sexpr-ptr
-: recurse comp-sexpr-ptr @ execute ;
-
-
 
 : comp-fn-pre (-- value type)
 	get-token 
@@ -117,14 +112,14 @@ variable comp-sexpr-ptr
 	
 	(-- is it an op? --)
 	nextWordOp? 
-	dup -1 != if
+	Neg? not if
 		1 ret    (opcode 1)
 	then
 	drop
 	
 	(-- is it a Forth word? --)
 	*Dict @ DictLookupNW (DE-pointer) (-- -1 if not found --)
-	dup -1 == if
+	Neg? if
 		cr s" Unknown forth word " .str atom .str cr
 		drop ret
 	then
@@ -146,7 +141,7 @@ variable comp-sexpr-ptr
 	drop
 	
 	*Dict @ DictLookupNW    (DE-pointer) (-- -1 if not found --)
-	dup -1 == if
+	Neg? if
 		cr s" Unknown param atom " .str atom .str cr
 		drop ret
 	then
@@ -162,7 +157,7 @@ variable comp-sexpr-ptr
 		get-token   (tokenType)
 	
 		dup TOK_ATOM == if drop comp-param-atom &1 jmp then
-		dup TOK_SEXPR == if drop recurse &1 jmp then
+		dup TOK_SEXPR == if drop comp-sexpr &1 jmp then
 		dup TOK_RETURN == if drop comp-fn-post ret then
 		cr s" Unknown token type " .str . cr
 ;
@@ -174,13 +169,12 @@ variable comp-sexpr-ptr
 	then
 	(-- prime single char buffer --)
 	SPC _ch !   
-	(-- set the recurse variable --)
-	' comp-sexpr comp-sexpr-ptr !
 	(-- clear atom buffer --)
 	0 atom c!
 ;
 
 CDictEnd
+
 
 : defun 
 	create
@@ -206,11 +200,15 @@ CDictEnd
 
 
 
-
 : Lisp[ 
 	IN _Lisp init
 	IN _Lisp comp-sexpr
 ; immediate
+
+: progn ;
+: push ;
+: setq (var value --) swap ! ;
+
 
 
 ((

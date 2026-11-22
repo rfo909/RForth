@@ -8,7 +8,6 @@
 
 unsigned long timers[TIMER_COUNT];
 
-
 static char nextWord[MAX_WORD_LENGTH+1];  // input buffer
 
 static Word programCounter=0;
@@ -22,6 +21,9 @@ static Word rStack[RSTACK_SIZE];
 static Byte rStackNext = 0;
 static Long xStack[XSTACK_SIZE];
 static Byte xStackNext;
+
+static Byte isCompiling=0;
+
 
 void setup() {
   Serial.begin(9600);
@@ -472,6 +474,7 @@ static void clearHasError() {
 
 void setHasError () {
   errorFlag=true;
+  isCompiling=0;
   Serial.println();
   for (Byte i=0; i<20; i++) Serial.print("-");
   Serial.println();
@@ -702,11 +705,16 @@ struct Ref {
   Word addr;
 };
 
+
 static Word tags[NUM_TAGS_REFS]; 
 static struct Ref refs[NUM_TAGS_REFS];
 
+void op_isCompiling() {
+  push(isCompiling);
+}
 
 void op_colon() {  
+  isCompiling=1;
 
   for (int i=0; i<NUM_TAGS_REFS; i++) {
     tags[i]=0;
@@ -719,6 +727,11 @@ void op_colon() {
 
   startCompile();
   Word startPos=getCodeNext();
+
+  // 2026-11-22 Moved some code here from the semicolon part, to allow recursion
+  Word deHead = getDictionaryHead();  // from call to create() 
+  setDeAddress(deHead, generateCodeAddress(startPos+1));  // past length Byte
+  setDeType(deHead, DE_TYPE_NORMAL);
 
   /*Serial.print("After create codeHERE ");
   Serial.println(codeHERE());*/
@@ -783,7 +796,7 @@ void op_colon() {
 
       Byte byteCount=(Byte) (getCodeNext()-startPos-1);  // length Byte not included
 
-      Word deHead = getDictionaryHead();  // from call to create() 
+      //Word deHead = getDictionaryHead();  // from call to create() 
 
       printStr(getDeNamePtr(deHead));
       Serial.print(" ");
@@ -794,8 +807,9 @@ void op_colon() {
       
       writeByte(startPos, byteCount);
 
-      setDeAddress(deHead, generateCodeAddress(startPos+1));  // past length Byte
-      setDeType(deHead, DE_TYPE_NORMAL);
+      //setDeAddress(deHead, generateCodeAddress(startPos+1));  // past length Byte
+      //setDeType(deHead, DE_TYPE_NORMAL);
+      isCompiling=0;
       return;
     }
 
@@ -1070,9 +1084,10 @@ void op_key() {
 // upate Words script and and run "gen" to get this code
 // "Global variables use 1559 bytes"
 
-// --------------------------------------------------------------------------------
 
-const Byte numOps=119;
+// ---------------------------------------------------------------------------+
+
+const Byte numOps=120;
 
 static const PROGMEM char opNames[]="\
 create \
@@ -1194,6 +1209,7 @@ sys.timer \
 max \
 min \
 nextWordOp? \
+IsCompiling \
 ";
 
 typedef void (*FUNC)();
@@ -1318,9 +1334,10 @@ static const PROGMEM FUNC opFunctions[]={
 ,&op_max
 ,&op_min
 ,&op_nextWord_op_lookup
+,&op_isCompiling
 };
 
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 
 void op_ops() {
   Byte length=0;

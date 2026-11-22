@@ -30,6 +30,8 @@
 
 : 0= dup 0 == ;
 : 1= dup 1 == ;
+: Neg? dup 0 < ;
+: Pos? dup 0 > ;
 
 : 2dup (a b -- a b a b)
 	over over 
@@ -186,10 +188,6 @@ must be set by code. Always initialized to 0.
 	DE_IMMEDIATE *dictHead DE->type c!
 ;
 
-: IsCompiling
-	(should really be a system flag, set by the colon compiler)
-	*Dict @ DE->address @ 0 ==
-;
 
 
 ((

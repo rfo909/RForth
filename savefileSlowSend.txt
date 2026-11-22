@@ -26,20 +26,22 @@
 # --
 	P(1) as RawFile => device
 	P(2) as String => line
+	P(3, false) => slow
 	
 	#println(line)
 	ws=false
 	line.getBytes("ISO-8859-1").getList(0)->byte
 		device.write(byte)
 		if (byte==32) {
-			if (!ws) Sys.sleep(50)
+			if (!ws) Sys.sleep(if(slow,70,20))
 			ws=true
 		} else {
 			ws=false
-			Sys.sleep(10)
+			Sys.sleep(if(slow,50,5))
 		}
 	|
 	device.write(Newline)
+	if (slow) Sys.sleep(100)
 //SendLine
 
 # Code directory
@@ -59,7 +61,9 @@
 # --
 	P(1) as RawFile => device
 	P(2) as String? => fname
-		
+	
+	slowMode=false
+	
 	if (fname==null) fname = AskForFilename
 	file=CodeDir.file(fname)
 
@@ -67,19 +71,24 @@
 	SendLine(device," ")
 	
 	inComment=false
+	
 	file.read->line
 		if (line.trim=="))") { inComment=false continue }
 		if (line.trim=="((") inComment=true
 		reject(inComment)
 		break(line.startsWith("#END"))
 		reject(line.trim.startsWith("#"))
+		if (line.trim=="@SLOW") {
+			slowMode=true
+			continue
+		}
 		if (line.trim.startsWith("@@")) {
 			filename=line.trim.after("@@").trim
 			SendFile(device,filename)
 			continue
 		} 	
 		println(fname,"|",line)
-		SendLine(device," " + line)
+		SendLine(device," " + line, slowMode)
 	|
 	println(fname,"COMPLETE")
 /SendFile
