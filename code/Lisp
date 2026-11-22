@@ -1,0 +1,229 @@
+((
+Highly experimental code for parsing Lisp syntax (S-expressions), by
+moving the first atom, the function call, to the end of each
+Sexpr, and leaving the sequence of the parameters unchanged, recursing
+to parse inner Sexpr in ()'s. 
+
+The bulk of the code is stored in a custom dictionary, as it contains
+quite a few words and constants.
+
+Use
+---
+defun A + 2 (* 3 5) ;
+: X Lisp[ +2 (* 2 5) ] . ;
+
+The first defines a word, while the second is to integrate Lisp syntax
+for expressions inside Forth words. 
+))
+
+
+CDict _Lisp
+
+40 constant LPAR
+41 constant RPAR
+32 constant SPC
+10 constant NEWLINE
+9 constant TAB
+59 constant SEMICOLON
+93 constant RBRACKET
+
+variable _ch
+
+: get-next-char key _ch ! ;
+: char _ch @ ;
+
+
+: charIsSpace
+	char SPC ==
+	char NEWLINE == or
+	char TAB == or
+;
+
+: charIsSexpr
+	char LPAR ==
+;
+
+: charIsReturn
+	char RPAR ==
+	char SEMICOLON == or
+	char RBRACKET == or
+;
+
+
+1 constant TOK_ATOM
+2 constant TOK_SEXPR
+3 constant TOK_RETURN
+
+variable atombuf
+
+(-- pointer to buffer for atom --)
+: atom atombuf @ ;
+
+: append 
+	char atom atom c@ + 1+ c!
+	atom c@ 1+ atom c!
+;
+
+: consume-ws
+	begin
+		charIsSpace not ret?
+		get-next-char
+	again
+;
+
+
+: get-token (--tokType)
+	atom c@ 0 == if
+		(-- last token was not atom which may mean PAR (or space), so we skip it --)
+		get-next-char
+	then
+	
+	0 atom c! (-- clear atom buffer --)
+		
+	consume-ws
+	charIsSexpr if TOK_SEXPR ret then
+	charIsReturn if TOK_RETURN ret then
+	
+	(-- atom --)
+	begin
+		append
+		get-next-char
+		charIsSpace
+		  charIsSexpr or
+		  charIsReturn or 
+		    if
+			TOK_ATOM ret
+		    then
+	again
+;
+
+
+(-- comp-sexpr recursion hack --)
+variable comp-sexpr-ptr
+: recurse comp-sexpr-ptr @ execute ;
+
+
+
+: comp-fn-pre (-- value type)
+	get-token 
+	dup TOK_ATOM != if
+		cr s" Invalid fn type " .str . cr
+		ret
+	then
+	drop
+			
+	(-- copy into system buffer nextWord --)
+	atom nextWord! 
+	
+	(-- is it an op? --)
+	nextWordOp? 
+	dup -1 != if
+		1 ret    (opcode 1)
+	then
+	drop
+	
+	(-- is it a Forth word? --)
+	*Dict @ DictLookupNW (DE-pointer) (-- -1 if not found --)
+	dup -1 == if
+		cr s" Unknown forth word " .str atom .str cr
+		drop ret
+	then
+	0                (DE-pointer 0)
+;
+
+: comp-fn-post (value type -- )
+	if c>C else DE_compile then
+;
+
+
+
+: comp-param-atom
+	atom nextWord!
+	nextWordAtoi if
+		CVAL>C
+		ret
+	then
+	drop
+	
+	*Dict @ DictLookupNW    (DE-pointer) (-- -1 if not found --)
+	dup -1 == if
+		cr s" Unknown param atom " .str atom .str cr
+		drop ret
+	then
+	DE_compile
+;
+
+		
+: comp-sexpr
+	comp-fn-pre
+	
+	(-- parameters? --)
+	/1
+		get-token   (tokenType)
+	
+		dup TOK_ATOM == if drop comp-param-atom &1 jmp then
+		dup TOK_SEXPR == if drop recurse &1 jmp then
+		dup TOK_RETURN == if drop comp-fn-post ret then
+		cr s" Unknown token type " .str . cr
+;
+
+: init
+	atombuf @ 0 == if
+		HERE atombuf !
+		20 allot
+	then
+	(-- prime single char buffer --)
+	SPC _ch !   
+	(-- set the recurse variable --)
+	' comp-sexpr comp-sexpr-ptr !
+	(-- clear atom buffer --)
+	0 atom c!
+;
+
+CDictEnd
+
+: defun 
+	create
+
+	IN _Lisp init
+
+	comp:init
+	comp.next >R   (R:codeStart)
+	0 c>C          (--code length byte--)
+
+	IN _Lisp comp-sexpr
+	OP_RET c>C
+
+	comp:done 
+	
+	
+	comp.next R@ - 1- 	(codeLength)
+		R@ c!		(--set code length --) 
+	
+	R> 1+ *dictHead DE->address !
+	DE_NORMAL *dictHead DE->type c!
+;
+
+
+
+
+: Lisp[ 
+	IN _Lisp init
+	IN _Lisp comp-sexpr
+; immediate
+
+
+((
+: alias create
+	comp:init
+	comp.next   (codeStart)
+	readNextWord 
+	*Dict @ DictLookupNW DE_compile
+	OP_RET c>C
+	comp:done 
+	
+	(codeStart) *dictHead DE->address !
+	DE_NORMAL *dictHead DE->type c!
+	;
+))
+
