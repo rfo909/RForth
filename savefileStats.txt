@@ -1,0 +1,12 @@
+Sys.savefile.dir.sub("Arduino").sub("RForth")
+/CCode
+
+Sys.savefile.dir.sub("code")
+/FCode
+
+
+CCode.files->f out(f.length) | _.sum => cbytes
+FCode.files->f out(f.length) | _.sum => fbytes
+println("C-code:", (cbytes/1024).i, "Kbytes")
+println("Forth:",(fbytes/1024).i,"Kbytes")
+/Main

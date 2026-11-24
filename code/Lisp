@@ -65,10 +65,10 @@ variable atombuf
 ;
 
 : consume-ws
-	begin
+	/1
 		charIsSpace not ret?
 		get-next-char
-	again
+	&1 jmp
 ;
 
 
@@ -85,7 +85,7 @@ variable atombuf
 	charIsReturn if TOK_RETURN ret then
 	
 	(-- atom --)
-	begin
+	/1
 		append
 		get-next-char
 		charIsSpace
@@ -94,7 +94,7 @@ variable atombuf
 		    if
 			TOK_ATOM ret
 		    then
-	again
+	&1 jmp
 ;
 
 
@@ -120,7 +120,7 @@ variable atombuf
 	(-- is it a Forth word? --)
 	*Dict @ DictLookupNW (DE-pointer) (-- -1 if not found --)
 	Neg? if
-		cr s" Unknown forth word " .str atom .str cr
+		cr s" Unknown symbol " .str atom .str cr
 		drop ret
 	then
 	0                (DE-pointer 0)
@@ -133,7 +133,7 @@ variable atombuf
 
 
 : comp-param-atom
-	atom nextWord!
+	atom nextWord!     (--returns value 1 or 0 0--)
 	nextWordAtoi if
 		CVAL>C
 		ret
